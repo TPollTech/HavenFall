@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Havenfall V1.8 - Classic Menu Patch</title>
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <section id="mainMenuScreen" class="screen menu-screen main-menu-classic active" data-screen="MAIN_MENU">
+      <div class="main-menu-bg" aria-hidden="true"></div>
+      <div class="main-menu-vignette" aria-hidden="true"></div>
+
+      <div class="classic-title-wrap">
+        <h1 class="game-title">Havenfall</h1>
+        <div class="game-subtitle">Colony Survival Simulator</div>
+      </div>
+
+      <nav class="classic-menu-list" aria-label="Menu principal">
+        <button id="newGameBtn" class="classic-menu-item">Novo Jogo</button>
+        <button id="continueBtn" class="classic-menu-item">Carregar</button>
+        <button id="openSettingsBtn" class="classic-menu-item">Configurações</button>
+        <button id="exitBtn" class="classic-menu-item muted-item">Sair</button>
+      </nav>
+
+      <button id="openLoadBtn" class="hidden-menu-control" aria-hidden="true" tabindex="-1">Carregar Jogo</button>
+      <div id="menuSaveInfo" class="main-menu-save-info">Verificando save...</div>
+    </section>
+
+    <section id="newGameSetupScreen" class="screen setup-screen" data-screen="NEW_GAME_SETUP">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Novo jogo</div>
+            <h1>Configuração da Colônia</h1>
+            <p>Configure a partida. A geração procedural real por seed fica preparada estruturalmente para as próximas versões.</p>
+          </div>
+          <button id="setupBackBtn" class="secondary">Voltar</button>
+        </div>
+
+        <div class="form-grid">
+          <label>Nome da colônia
+            <input id="colonyNameInput" type="text" value="First Haven" maxlength="32" />
+          </label>
+          <label>Seed do mundo
+            <div class="inline-field">
+              <input id="worldSeedInput" type="text" value="" placeholder="ex: ABRIGO-42" />
+              <button id="randomSeedBtn" type="button">Gerar</button>
+            </div>
+          </label>
+          <label>Dificuldade
+            <select id="difficultySelect">
+              <option value="easy">Fácil</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Difícil</option>
+            </select>
+          </label>
+          <label>Quantidade inicial de colonos
+            <select id="colonistCountSelect">
+              <option value="2">2 colonos</option>
+              <option value="3" selected>3 colonos</option>
+              <option value="4">4 colonos</option>
+              <option value="5">5 colonos</option>
+            </select>
+          </label>
+          <label>Recursos iniciais
+            <select id="resourcesPresetSelect">
+              <option value="scarce">Escassos</option>
+              <option value="standard" selected>Padrão</option>
+              <option value="rich">Abundantes</option>
+            </select>
+          </label>
+          <label>Intensidade de eventos
+            <select id="eventIntensitySelect">
+              <option value="low">Baixa</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">Alta</option>
+            </select>
+          </label>
+          <label>Tamanho do mapa
+            <select id="mapSizeSelect">
+              <option value="small">Pequeno · 42x30</option>
+              <option value="standard" selected>Padrão · 64x46</option>
+              <option value="large">Grande · 88x64</option>
+              <option value="huge">Enorme · 118x84</option>
+              <option value="frontier">Fronteira vasta · 150x104</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="setup-summary" id="setupSummary"></div>
+        <div class="menu-actions row">
+          <button id="setupNextBtn">Continuar para Seleção de Colonos</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="colonistSelectScreen" class="screen colonist-select-screen" data-screen="COLONIST_SELECT">
+      <div class="menu-card wide-card max-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Seleção de colonos</div>
+            <h1>Escolha quem vai começar</h1>
+            <p>Rerole colonos individuais, trave os que gostar e inicie a partida com a configuração escolhida.</p>
+          </div>
+          <button id="colonistBackBtn" class="secondary">Voltar</button>
+        </div>
+        <div id="colonistCards" class="colonist-cards"></div>
+        <div class="menu-actions row spread">
+          <button id="rerollAllBtn" class="secondary">Rerolar todos não travados</button>
+          <button id="startSelectedGameBtn">Iniciar Partida</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="loadGameScreen" class="screen load-screen" data-screen="LOAD_GAME">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Carregar</div>
+            <h1>Save local</h1>
+            <p>Esta V1 usa um save local no navegador para continuar rápido.</p>
+          </div>
+          <button id="loadBackBtn" class="secondary">Voltar</button>
+        </div>
+        <div id="loadSlot" class="load-slot"></div>
+        <div class="menu-actions row">
+          <button id="loadSlotBtn">Carregar Save</button>
+          <button id="deleteSaveBtn" class="danger">Apagar Save</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="settingsScreen" class="screen settings-screen" data-screen="SETTINGS">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Configurações</div>
+            <h1>Opções</h1>
+            <p>Base preparada para configurações persistentes.</p>
+          </div>
+          <button id="settingsBackBtn" class="secondary">Voltar</button>
+        </div>
+        <div class="form-grid">
+          <label>Escala da interface
+            <select id="uiScaleSelect">
+              <option value="compact">Compacta</option>
+              <option value="normal" selected>Normal</option>
+              <option value="large">Grande</option>
+            </select>
+          </label>
+          <label>Autosave
+            <select id="autosaveSelect">
+              <option value="on" selected>Ligado</option>
+              <option value="off">Desligado</option>
+            </select>
+          </label>
+        </div>
+        <div class="subtle-box">Nesta etapa, as opções já ficam centralizadas para expansão, sem afetar a gameplay atual.</div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen" data-screen="PLAYING">
+      <div class="game-layout hud-remake-layout">
+        <header id="topBar" class="hud-block topbar component-topbar">
+          <div class="top-left-info">
+            <strong id="colonyTitle">Havenfall</strong>
+            <span id="gameConfigLabel" class="muted">Seed · Dificuldade</span>
+          </div>
+          <div class="clock top-center-info">
+            <span id="dayLabel">Dia 1</span>
+            <span id="timeLabel">06:00</span>
+            <span id="weatherLabel">Tempo limpo</span>
+            <span id="speedLabel">1x</span>
+          </div>
+          <div class="top-actions">
+            <button id="pauseBtn">Pausar</button>
+            <button id="menuPauseBtn" class="secondary">Menu</button>
+          </div>
+        </header>
+
+        <section class="gameplay-viewport" aria-label="Área de gameplay">
+          <canvas id="game" width="1056" height="672" aria-label="Mapa do jogo"></canvas>
+        </section>
+
+        <footer id="hud" class="bottom-command-panel component-hud">
+          <nav id="bottomActionBar" class="hud-block bottom-action-bar component-bottomactionbar" aria-label="Funções de jogabilidade">
+            <div class="bottom-tabs">
+              <button data-tab="build" class="active">Construir</button>
+              <button data-tab="resources">Recursos</button>
+              <button data-tab="tasks">Tarefas</button>
+              <button data-tab="research">Pesquisa</button>
+              <button data-tab="zones">Zonas</button>
+              <button data-tab="colonists">Colonos</button>
+              <button data-tab="selected">Selecionado</button>
+              <button data-tab="events">Eventos</button>
+            </div>
+            <div class="speed-inline">
+              <button data-speed="1">1x</button>
+              <button data-speed="2">2x</button>
+              <button data-speed="3">3x</button>
+            </div>
+          </nav>
+
+          <div class="bottom-panel-content">
+            <section id="buildPanel" class="hud-block card bottom-tab-panel active component-buildpanel" data-panel="build">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Construção</h2>
+                  <p class="panel-hint">Escolha uma construção e clique no mapa para posicionar a blueprint.</p>
+                </div>
+                <button id="cancelBuild" class="secondary">Cancelar construção</button>
+              </div>
+              <div class="build-grid compact-grid">
+                <button data-build="bed">Cama<br><small>12 madeira</small></button>
+                <button data-build="campfire">Fogueira<br><small>6 madeira + 2 pedra</small></button>
+                <button data-build="crate">Depósito<br><small>10 madeira</small></button>
+                <button data-build="wall">Parede<br><small>4 madeira</small></button>
+                <button data-build="crop">Plantação<br><small>2 comida</small></button>
+                <button data-build="bench">Bancada<br><small>18 madeira + 8 pedra</small></button>
+                <button data-build="research_desk">Mesa Pesquisa<br><small>20 madeira + 6 pedra</small></button>
+                <button data-build="forge">Forja<br><small>pesquisar metalurgia</small></button>
+                <button data-build="stove">Fogão<br><small>pesquisar cozinha</small></button>
+                <button data-build="med_station">Estação Médica<br><small>pesquisar medicina</small></button>
+              </div>
+              <div id="buildStatus" class="build-status">Nenhuma construção selecionada.</div>
+            </section>
+
+            <section id="resourcePanel" class="hud-block card bottom-tab-panel component-resourcepanel" data-panel="resources">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Recursos</h2>
+                  <p class="panel-hint">Estoque atual da colônia.</p>
+                </div>
+              </div>
+              <div class="resource-grid resource-strip">
+                <div><img src="assets/sprites/icon_food.png" alt=""> Comida <b id="resFood">0</b></div>
+                <div><img src="assets/sprites/icon_wood.png" alt=""> Madeira <b id="resWood">0</b></div>
+                <div><img src="assets/sprites/icon_stone.png" alt=""> Pedra <b id="resStone">0</b></div>
+                <div><img src="assets/sprites/icon_metal.png" alt=""> Metal <b id="resMetal">0</b></div>
+                <div><img src="assets/sprites/icon_health.png" alt=""> Remédios <b id="resMedicine">0</b></div>
+              </div>
+            </section>
+
+            <section id="tasksPanel" class="hud-block card bottom-tab-panel component-taskspanel" data-panel="tasks">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Tarefas</h2>
+                  <p class="panel-hint">Ajuste a prioridade do colono selecionado. O comando manual por clique continua tendo prioridade.</p>
+                </div>
+              </div>
+              <div id="selectedInfo" class="selected-info-inline empty">Nenhum colono selecionado.</div>
+              <div id="goalsPanel" class="goals compact-goals component-goalspanel">
+                <h2>Objetivos V1.6</h2>
+                <ul id="goalList">
+                  <li data-goal="beds">Construir 2 camas</li>
+                  <li data-goal="campfire">Construir 1 fogueira</li>
+                  <li data-goal="researchDesk">Construir Mesa de Pesquisa</li>
+                  <li data-goal="techs">Desbloquear tecnologias avançadas</li>
+                  <li data-goal="food">Ter 20 comidas</li>
+                  <li data-goal="days">Sobreviver até o Dia 4</li>
+                </ul>
+              </div>
+            </section>
+
+            <section id="researchPanel" class="hud-block card bottom-tab-panel component-researchpanel" data-panel="research">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Pesquisa</h2>
+                  <p class="panel-hint">Construa uma mesa de pesquisa e clique nela para avançar tecnologias.</p>
+                </div>
+              </div>
+              <div id="researchInfo" class="empty">Construa uma Mesa de Pesquisa para iniciar.</div>
+            </section>
+
+            <section id="zonesPanel" class="hud-block card bottom-tab-panel component-zonespanel" data-panel="zones">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Zonas</h2>
+                  <p class="panel-hint">Base pronta para áreas de estoque, trabalho, descanso e restrição.</p>
+                </div>
+              </div>
+              <div class="zone-placeholder-grid">
+                <button class="locked" disabled>Zona de estoque<br><small>em breve</small></button>
+                <button class="locked" disabled>Zona de plantio<br><small>em breve</small></button>
+                <button class="locked" disabled>Zona segura<br><small>em breve</small></button>
+                <button class="locked" disabled>Área proibida<br><small>em breve</small></button>
+              </div>
+            </section>
+
+            <section id="colonistPanel" class="hud-block card bottom-tab-panel component-colonistpanel" data-panel="colonists">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Colonos</h2>
+                  <p class="panel-hint">Clique em um colono para selecionar e ver detalhes na aba Tarefas ou Selecionado.</p>
+                </div>
+              </div>
+              <div id="colonistList" class="colonist-list colonist-strip"></div>
+            </section>
+
+            <section id="selectedObjectPanel" class="hud-block card bottom-tab-panel component-selectedobjectpanel" data-panel="selected">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Selecionado</h2>
+                  <p class="panel-hint">Resumo do colono atual e da ação em andamento.</p>
+                </div>
+              </div>
+              <div id="selectedObjectInfo" class="empty">Use a aba Tarefas para controlar prioridades e detalhes do colono selecionado.</div>
+            </section>
+
+            <section id="eventLogPanel" class="hud-block card bottom-tab-panel log-card component-eventlogpanel" data-panel="events">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Eventos e alertas</h2>
+                  <p class="panel-hint">Histórico rápido da partida.</p>
+                </div>
+              </div>
+              <div id="log"></div>
+            </section>
+          </div>
+        </footer>
+      </div>
+
+      <div id="pauseOverlay" class="pause-overlay">
+        <div class="pause-card">
+          <h1>Jogo pausado</h1>
+          <p>Menu de pausa acessível por ESC ou pelo botão Menu.</p>
+          <div class="menu-actions vertical">
+            <button id="resumeBtn">Continuar</button>
+            <button id="pauseSaveBtn">Salvar jogo</button>
+            <button id="pauseLoadBtn">Carregar jogo</button>
+            <button id="pauseSettingsBtn">Configurações</button>
+            <button id="pauseMainMenuBtn" class="danger">Voltar ao menu inicial</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal">
+    <div class="modal-box">
+      <h1>Havenfall</h1>
+      <p></p>
+      <button id="startBtn">Continuar</button>
+    </div>
+  </div>
+
+  <script src="src/game/00_globals.js"></script>
+  <script src="src/game/01_settings_and_screens.js"></script>
+  <script src="src/game/02_colonist_generation.js"></script>
+  <script src="src/game/03_session_and_world.js"></script>
+  <script src="src/game/04_research_and_priorities.js"></script>
+  <script src="src/game/05_map_and_pathfinding.js"></script>
+  <script src="src/game/06_tasks_and_world_systems.js"></script>
+  <script src="src/game/07_renderer.js"></script>
+  <script src="src/game/08_canvas_input_and_building.js"></script>
+  <script src="src/game/09_hud_ui.js"></script>
+  <script src="src/game/10_save_load.js"></script>
+  <script src="src/game/11_utils_and_loop.js"></script>
+  <script src="src/game/12_event_listeners.js"></script>
+  <script src="src/game/13_main.js"></script>
+</body>
+</html>

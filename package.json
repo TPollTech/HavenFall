@@ -1,0 +1,21 @@
+{
+  "name": "havenfall-v1",
+  "version": "1.7.0",
+  "private": true,
+  "description": "Protótipo 2D survival/colônia com UI fullscreen e código refatorado em módulos menores.",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "2d",
+    "survival",
+    "colony",
+    "canvas",
+    "game",
+    "menu",
+    "seed"
+  ],
+  "author": "Enzo + ChatGPT",
+  "license": "UNLICENSED"
+}
