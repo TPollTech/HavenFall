@@ -1,0 +1,1029 @@
+{
+  "colonistA_down_0": {
+    "file": "colonistA_down_0.png",
+    "box": [
+      73,
+      61,
+      151,
+      189
+    ],
+    "size": [
+      78,
+      128
+    ]
+  },
+  "colonistA_down_1": {
+    "file": "colonistA_down_1.png",
+    "box": [
+      205,
+      59,
+      282,
+      190
+    ],
+    "size": [
+      77,
+      131
+    ]
+  },
+  "colonistA_down_2": {
+    "file": "colonistA_down_2.png",
+    "box": [
+      326,
+      60,
+      406,
+      190
+    ],
+    "size": [
+      80,
+      130
+    ]
+  },
+  "colonistA_down_3": {
+    "file": "colonistA_down_3.png",
+    "box": [
+      457,
+      61,
+      537,
+      190
+    ],
+    "size": [
+      80,
+      129
+    ]
+  },
+  "colonistA_up_0": {
+    "file": "colonistA_up_0.png",
+    "box": [
+      73,
+      203,
+      150,
+      331
+    ],
+    "size": [
+      77,
+      128
+    ]
+  },
+  "colonistA_up_1": {
+    "file": "colonistA_up_1.png",
+    "box": [
+      205,
+      202,
+      281,
+      333
+    ],
+    "size": [
+      76,
+      131
+    ]
+  },
+  "colonistA_up_2": {
+    "file": "colonistA_up_2.png",
+    "box": [
+      329,
+      203,
+      406,
+      333
+    ],
+    "size": [
+      77,
+      130
+    ]
+  },
+  "colonistA_up_3": {
+    "file": "colonistA_up_3.png",
+    "box": [
+      459,
+      203,
+      536,
+      333
+    ],
+    "size": [
+      77,
+      130
+    ]
+  },
+  "colonistA_left_0": {
+    "file": "colonistA_left_0.png",
+    "box": [
+      76,
+      343,
+      146,
+      470
+    ],
+    "size": [
+      70,
+      127
+    ]
+  },
+  "colonistA_left_1": {
+    "file": "colonistA_left_1.png",
+    "box": [
+      208,
+      343,
+      277,
+      470
+    ],
+    "size": [
+      69,
+      127
+    ]
+  },
+  "colonistA_left_2": {
+    "file": "colonistA_left_2.png",
+    "box": [
+      332,
+      343,
+      402,
+      470
+    ],
+    "size": [
+      70,
+      127
+    ]
+  },
+  "colonistA_left_3": {
+    "file": "colonistA_left_3.png",
+    "box": [
+      463,
+      344,
+      532,
+      470
+    ],
+    "size": [
+      69,
+      126
+    ]
+  },
+  "colonistA_right_0": {
+    "file": "colonistA_right_0.png",
+    "box": [
+      76,
+      477,
+      147,
+      603
+    ],
+    "size": [
+      71,
+      126
+    ]
+  },
+  "colonistA_right_1": {
+    "file": "colonistA_right_1.png",
+    "box": [
+      206,
+      477,
+      276,
+      603
+    ],
+    "size": [
+      70,
+      126
+    ]
+  },
+  "colonistA_right_2": {
+    "file": "colonistA_right_2.png",
+    "box": [
+      330,
+      477,
+      401,
+      603
+    ],
+    "size": [
+      71,
+      126
+    ]
+  },
+  "colonistA_right_3": {
+    "file": "colonistA_right_3.png",
+    "box": [
+      460,
+      478,
+      530,
+      603
+    ],
+    "size": [
+      70,
+      125
+    ]
+  },
+  "colonistB_down_0": {
+    "file": "colonistB_down_0.png",
+    "box": [
+      309,
+      21,
+      389,
+      161
+    ],
+    "size": [
+      80,
+      140
+    ]
+  },
+  "colonistB_down_1": {
+    "file": "colonistB_down_1.png",
+    "box": [
+      484,
+      22,
+      568,
+      164
+    ],
+    "size": [
+      84,
+      142
+    ]
+  },
+  "colonistB_down_2": {
+    "file": "colonistB_down_2.png",
+    "box": [
+      657,
+      22,
+      745,
+      160
+    ],
+    "size": [
+      88,
+      138
+    ]
+  },
+  "colonistB_down_3": {
+    "file": "colonistB_down_3.png",
+    "box": [
+      832,
+      22,
+      912,
+      163
+    ],
+    "size": [
+      80,
+      141
+    ]
+  },
+  "colonistB_up_0": {
+    "file": "colonistB_up_0.png",
+    "box": [
+      309,
+      165,
+      391,
+      296
+    ],
+    "size": [
+      82,
+      131
+    ]
+  },
+  "colonistB_up_1": {
+    "file": "colonistB_up_1.png",
+    "box": [
+      479,
+      166,
+      565,
+      299
+    ],
+    "size": [
+      86,
+      133
+    ]
+  },
+  "colonistB_up_2": {
+    "file": "colonistB_up_2.png",
+    "box": [
+      658,
+      165,
+      739,
+      298
+    ],
+    "size": [
+      81,
+      133
+    ]
+  },
+  "colonistB_up_3": {
+    "file": "colonistB_up_3.png",
+    "box": [
+      832,
+      164,
+      913,
+      297
+    ],
+    "size": [
+      81,
+      133
+    ]
+  },
+  "colonistB_right_0": {
+    "file": "colonistB_right_0.png",
+    "box": [
+      307,
+      296,
+      390,
+      426
+    ],
+    "size": [
+      83,
+      130
+    ]
+  },
+  "colonistB_right_1": {
+    "file": "colonistB_right_1.png",
+    "box": [
+      482,
+      297,
+      564,
+      424
+    ],
+    "size": [
+      82,
+      127
+    ]
+  },
+  "colonistB_right_2": {
+    "file": "colonistB_right_2.png",
+    "box": [
+      655,
+      297,
+      738,
+      426
+    ],
+    "size": [
+      83,
+      129
+    ]
+  },
+  "colonistB_right_3": {
+    "file": "colonistB_right_3.png",
+    "box": [
+      831,
+      299,
+      912,
+      426
+    ],
+    "size": [
+      81,
+      127
+    ]
+  },
+  "colonistC_down_0": {
+    "file": "colonistC_down_0.png",
+    "box": [
+      306,
+      439,
+      390,
+      582
+    ],
+    "size": [
+      84,
+      143
+    ]
+  },
+  "colonistC_down_1": {
+    "file": "colonistC_down_1.png",
+    "box": [
+      478,
+      439,
+      565,
+      585
+    ],
+    "size": [
+      87,
+      146
+    ]
+  },
+  "colonistC_down_2": {
+    "file": "colonistC_down_2.png",
+    "box": [
+      650,
+      439,
+      740,
+      581
+    ],
+    "size": [
+      90,
+      142
+    ]
+  },
+  "colonistC_down_3": {
+    "file": "colonistC_down_3.png",
+    "box": [
+      830,
+      439,
+      912,
+      584
+    ],
+    "size": [
+      82,
+      145
+    ]
+  },
+  "colonistC_up_0": {
+    "file": "colonistC_up_0.png",
+    "box": [
+      308,
+      585,
+      391,
+      720
+    ],
+    "size": [
+      83,
+      135
+    ]
+  },
+  "colonistC_up_1": {
+    "file": "colonistC_up_1.png",
+    "box": [
+      476,
+      585,
+      564,
+      723
+    ],
+    "size": [
+      88,
+      138
+    ]
+  },
+  "colonistC_up_2": {
+    "file": "colonistC_up_2.png",
+    "box": [
+      652,
+      585,
+      735,
+      723
+    ],
+    "size": [
+      83,
+      138
+    ]
+  },
+  "colonistC_up_3": {
+    "file": "colonistC_up_3.png",
+    "box": [
+      830,
+      585,
+      914,
+      722
+    ],
+    "size": [
+      84,
+      137
+    ]
+  },
+  "colonistC_right_0": {
+    "file": "colonistC_right_0.png",
+    "box": [
+      312,
+      718,
+      384,
+      846
+    ],
+    "size": [
+      72,
+      128
+    ]
+  },
+  "colonistC_right_1": {
+    "file": "colonistC_right_1.png",
+    "box": [
+      479,
+      718,
+      556,
+      844
+    ],
+    "size": [
+      77,
+      126
+    ]
+  },
+  "colonistC_right_2": {
+    "file": "colonistC_right_2.png",
+    "box": [
+      656,
+      718,
+      729,
+      846
+    ],
+    "size": [
+      73,
+      128
+    ]
+  },
+  "colonistC_right_3": {
+    "file": "colonistC_right_3.png",
+    "box": [
+      835,
+      718,
+      906,
+      845
+    ],
+    "size": [
+      71,
+      127
+    ]
+  },
+  "tile_grass": {
+    "file": "tile_grass.png",
+    "box": [
+      627,
+      63,
+      829,
+      262
+    ],
+    "size": [
+      202,
+      199
+    ]
+  },
+  "tile_dirt": {
+    "file": "tile_dirt.png",
+    "box": [
+      876,
+      63,
+      1079,
+      262
+    ],
+    "size": [
+      203,
+      199
+    ]
+  },
+  "tile_sand": {
+    "file": "tile_sand.png",
+    "box": [
+      627,
+      299,
+      829,
+      499
+    ],
+    "size": [
+      202,
+      200
+    ]
+  },
+  "tile_stone": {
+    "file": "tile_stone.png",
+    "box": [
+      875,
+      299,
+      1078,
+      498
+    ],
+    "size": [
+      203,
+      199
+    ]
+  },
+  "wall_stone": {
+    "file": "wall_stone.png",
+    "box": [
+      593,
+      548,
+      771,
+      666
+    ],
+    "size": [
+      178,
+      118
+    ]
+  },
+  "wall_corner": {
+    "file": "wall_corner.png",
+    "box": [
+      790,
+      541,
+      912,
+      711
+    ],
+    "size": [
+      122,
+      170
+    ]
+  },
+  "door_wood": {
+    "file": "door_wood.png",
+    "box": [
+      947,
+      543,
+      1063,
+      685
+    ],
+    "size": [
+      116,
+      142
+    ]
+  },
+  "window_wood": {
+    "file": "window_wood.png",
+    "box": [
+      1098,
+      549,
+      1196,
+      662
+    ],
+    "size": [
+      98,
+      113
+    ]
+  },
+  "bed_single": {
+    "file": "bed_single.png",
+    "box": [
+      142,
+      650,
+      271,
+      855
+    ],
+    "size": [
+      129,
+      205
+    ]
+  },
+  "table_wood": {
+    "file": "table_wood.png",
+    "box": [
+      333,
+      691,
+      598,
+      850
+    ],
+    "size": [
+      265,
+      159
+    ]
+  },
+  "crate_wood": {
+    "file": "crate_wood.png",
+    "box": [
+      834,
+      721,
+      937,
+      853
+    ],
+    "size": [
+      103,
+      132
+    ]
+  },
+  "stool": {
+    "file": "stool.png",
+    "box": [
+      680,
+      731,
+      756,
+      812
+    ],
+    "size": [
+      76,
+      81
+    ]
+  },
+  "tree": {
+    "file": "tree.png",
+    "box": [
+      87,
+      872,
+      269,
+      1085
+    ],
+    "size": [
+      182,
+      213
+    ]
+  },
+  "bush": {
+    "file": "bush.png",
+    "box": [
+      348,
+      909,
+      521,
+      1061
+    ],
+    "size": [
+      173,
+      152
+    ]
+  },
+  "rock": {
+    "file": "rock.png",
+    "box": [
+      615,
+      916,
+      763,
+      1050
+    ],
+    "size": [
+      148,
+      134
+    ]
+  },
+  "logs": {
+    "file": "logs.png",
+    "box": [
+      839,
+      930,
+      1020,
+      1057
+    ],
+    "size": [
+      181,
+      127
+    ]
+  },
+  "berry": {
+    "file": "berry.png",
+    "box": [
+      338,
+      1071,
+      499,
+      1214
+    ],
+    "size": [
+      161,
+      143
+    ]
+  },
+  "crop_patch": {
+    "file": "crop_patch.png",
+    "box": [
+      563,
+      1087,
+      828,
+      1214
+    ],
+    "size": [
+      265,
+      127
+    ]
+  },
+  "campfire": {
+    "file": "campfire.png",
+    "box": [
+      739,
+      686,
+      935,
+      869
+    ],
+    "size": [
+      196,
+      183
+    ]
+  },
+  "chest_large": {
+    "file": "chest_large.png",
+    "box": [
+      333,
+      944,
+      597,
+      1166
+    ],
+    "size": [
+      264,
+      222
+    ]
+  },
+  "crafting_bench": {
+    "file": "crafting_bench.png",
+    "box": [
+      101,
+      75,
+      411,
+      299
+    ],
+    "size": [
+      310,
+      224
+    ]
+  },
+  "research_desk": {
+    "file": "research_desk.png",
+    "box": [
+      477,
+      80,
+      787,
+      309
+    ],
+    "size": [
+      310,
+      229
+    ]
+  },
+  "stove": {
+    "file": "stove.png",
+    "box": [
+      849,
+      49,
+      1119,
+      309
+    ],
+    "size": [
+      270,
+      260
+    ]
+  },
+  "med_station": {
+    "file": "med_station.png",
+    "box": [
+      995,
+      693,
+      1160,
+      882
+    ],
+    "size": [
+      165,
+      189
+    ]
+  },
+  "wolf_0": {
+    "file": "wolf_0.png",
+    "box": [
+      307,
+      709,
+      428,
+      848
+    ],
+    "size": [
+      121,
+      139
+    ]
+  },
+  "wolf_1": {
+    "file": "wolf_1.png",
+    "box": [
+      460,
+      712,
+      583,
+      845
+    ],
+    "size": [
+      123,
+      133
+    ]
+  },
+  "wolf_2": {
+    "file": "wolf_2.png",
+    "box": [
+      622,
+      705,
+      741,
+      841
+    ],
+    "size": [
+      119,
+      136
+    ]
+  },
+  "wolf_3": {
+    "file": "wolf_3.png",
+    "box": [
+      772,
+      706,
+      892,
+      842
+    ],
+    "size": [
+      120,
+      136
+    ]
+  },
+  "wolf_4": {
+    "file": "wolf_4.png",
+    "box": [
+      939,
+      708,
+      1061,
+      841
+    ],
+    "size": [
+      122,
+      133
+    ]
+  },
+  "icon_food": {
+    "file": "icon_food.png",
+    "box": [
+      82,
+      76,
+      228,
+      230
+    ],
+    "size": [
+      146,
+      154
+    ]
+  },
+  "icon_sleep": {
+    "file": "icon_sleep.png",
+    "box": [
+      287,
+      69,
+      413,
+      232
+    ],
+    "size": [
+      126,
+      163
+    ]
+  },
+  "icon_health": {
+    "file": "icon_health.png",
+    "box": [
+      463,
+      85,
+      607,
+      220
+    ],
+    "size": [
+      144,
+      135
+    ]
+  },
+  "icon_mood": {
+    "file": "icon_mood.png",
+    "box": [
+      659,
+      79,
+      799,
+      221
+    ],
+    "size": [
+      140,
+      142
+    ]
+  },
+  "icon_warn": {
+    "file": "icon_warn.png",
+    "box": [
+      1023,
+      495,
+      1167,
+      627
+    ],
+    "size": [
+      144,
+      132
+    ]
+  },
+  "icon_wood": {
+    "file": "icon_wood.png",
+    "box": [
+      290,
+      887,
+      467,
+      1022
+    ],
+    "size": [
+      177,
+      135
+    ]
+  },
+  "icon_stone": {
+    "file": "icon_stone.png",
+    "box": [
+      524,
+      887,
+      692,
+      1021
+    ],
+    "size": [
+      168,
+      134
+    ]
+  },
+  "icon_metal": {
+    "file": "icon_metal.png",
+    "box": [
+      745,
+      887,
+      922,
+      1033
+    ],
+    "size": [
+      177,
+      146
+    ]
+  },
+  "icon_play": {
+    "file": "icon_play.png",
+    "box": [
+      640,
+      488,
+      785,
+      633
+    ],
+    "size": [
+      145,
+      145
+    ]
+  },
+  "icon_pause": {
+    "file": "icon_pause.png",
+    "box": [
+      457,
+      488,
+      601,
+      633
+    ],
+    "size": [
+      144,
+      145
+    ]
+  }
+}

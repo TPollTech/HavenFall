@@ -1,0 +1,396 @@
+'use strict';
+
+function resizeGameCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(320, Math.floor(rect.width || window.innerWidth));
+  const height = Math.max(240, Math.floor(rect.height || window.innerHeight));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  // Em mundos grandes, escala da câmera não deve tentar encaixar o mapa inteiro na tela.
+  // 1.0 = 1 pixel de mundo por pixel de canvas. O zoom controla a aproximação.
+  viewTransform.scale = camera.zoom;
+  clampCamera();
+  viewTransform.offsetX = width / 2 - camera.x * viewTransform.scale;
+  viewTransform.offsetY = height / 2 - camera.y * viewTransform.scale;
+}
+
+function clampCamera() {
+  if (!canvas.width || !canvas.height || !viewTransform.scale) return;
+
+  const worldW = getWorldWidth();
+  const worldH = getWorldHeight();
+  const visibleWorldW = canvas.width / viewTransform.scale;
+  const visibleWorldH = canvas.height / viewTransform.scale;
+  const halfW = visibleWorldW / 2;
+  const halfH = visibleWorldH / 2;
+
+  if (worldW <= visibleWorldW) camera.x = worldW / 2;
+  else camera.x = clamp(camera.x, halfW, worldW - halfW);
+
+  if (worldH <= visibleWorldH) camera.y = worldH / 2;
+  else camera.y = clamp(camera.y, halfH, worldH - halfH);
+}
+
+function updateCamera(dt) {
+  if (appScreen !== SCREEN.PLAYING || !state) return;
+
+  let dx = 0;
+  let dy = 0;
+
+  if (cameraInput.has('KeyW') || cameraInput.has('ArrowUp')) dy -= 1;
+  if (cameraInput.has('KeyS') || cameraInput.has('ArrowDown')) dy += 1;
+  if (cameraInput.has('KeyA') || cameraInput.has('ArrowLeft')) dx -= 1;
+  if (cameraInput.has('KeyD') || cameraInput.has('ArrowRight')) dx += 1;
+
+  if (dx === 0 && dy === 0) return;
+
+  const len = Math.hypot(dx, dy) || 1;
+  const boost = cameraInput.has('ShiftLeft') || cameraInput.has('ShiftRight') ? 1.7 : 1;
+  camera.x += (dx / len) * camera.speed * boost * dt / Math.max(0.75, camera.zoom * 0.85);
+  camera.y += (dy / len) * camera.speed * boost * dt / Math.max(0.75, camera.zoom * 0.85);
+  clampCamera();
+}
+
+function setCameraZoom(nextZoom, anchor = null) {
+  const previousScale = viewTransform.scale || 1;
+  const oldZoom = camera.zoom;
+  camera.zoom = clamp(Number(nextZoom) || camera.zoom, camera.minZoom, camera.maxZoom);
+
+  if (anchor && canvas.width && canvas.height) {
+    const beforeX = (anchor.x - viewTransform.offsetX) / previousScale;
+    const beforeY = (anchor.y - viewTransform.offsetY) / previousScale;
+    resizeGameCanvas();
+    const afterScale = viewTransform.scale || previousScale;
+    camera.x += beforeX - (anchor.x - viewTransform.offsetX) / afterScale;
+    camera.y += beforeY - (anchor.y - viewTransform.offsetY) / afterScale;
+  }
+
+  clampCamera();
+  if (oldZoom !== camera.zoom) updateUI(true);
+}
+
+function changeCameraZoom(delta, anchor = null) {
+  setCameraZoom(camera.zoom + delta, anchor);
+}
+
+function resetCameraZoom() {
+  setCameraZoom(1.12);
+  centerCameraOnSelectedColonist();
+}
+
+function centerCameraOnSelectedColonist() {
+  const c = selectedColonist?.();
+  if (c) {
+    camera.x = c.px || c.x * TILE + TILE / 2;
+    camera.y = c.py || c.y * TILE + TILE / 2;
+  } else {
+    camera.x = getWorldWidth() / 2;
+    camera.y = getWorldHeight() / 2;
+  }
+  clampCamera();
+}
+
+function visibleWorldBounds(padding = TILE * 2) {
+  const scale = viewTransform.scale || 1;
+  return {
+    left: Math.max(0, (-viewTransform.offsetX / scale) - padding),
+    top: Math.max(0, (-viewTransform.offsetY / scale) - padding),
+    right: Math.min(getWorldWidth(), ((canvas.width - viewTransform.offsetX) / scale) + padding),
+    bottom: Math.min(getWorldHeight(), ((canvas.height - viewTransform.offsetY) / scale) + padding)
+  };
+}
+
+function visibleTileBounds(padding = 2) {
+  const b = visibleWorldBounds(padding * TILE);
+  return {
+    startX: clamp(Math.floor(b.left / TILE), 0, getWorldCols() - 1),
+    endX: clamp(Math.ceil(b.right / TILE), 0, getWorldCols() - 1),
+    startY: clamp(Math.floor(b.top / TILE), 0, getWorldRows() - 1),
+    endY: clamp(Math.ceil(b.bottom / TILE), 0, getWorldRows() - 1)
+  };
+}
+
+function isWorldPointInView(px, py, margin = TILE * 3) {
+  const b = visibleWorldBounds(margin);
+  return px >= b.left && px <= b.right && py >= b.top && py <= b.bottom;
+}
+
+function draw() {
+  resizeGameCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#070b11';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
+  ctx.scale(viewTransform.scale, viewTransform.scale);
+
+  const bounds = visibleTileBounds(2);
+  for (let y = bounds.startY; y <= bounds.endY; y++) {
+    for (let x = bounds.startX; x <= bounds.endX; x++) drawTile(x, y, state.terrain[y]?.[x] || 'grass');
+  }
+
+  if (showDebugGrid || settings?.showGrid) drawGrid(bounds);
+
+  const renderList = [];
+  for (const obj of state.objects) {
+    if (!isTileDiscovered(obj.x, obj.y)) continue;
+    const cx = obj.x * TILE + TILE / 2;
+    const cy = obj.y * TILE + TILE / 2;
+    if (isWorldPointInView(cx, cy)) renderList.push({ kind: 'obj', y: obj.y, data: obj });
+  }
+  for (const wolf of state.wolves) {
+    if (isWorldPointInView(wolf.px, wolf.py)) renderList.push({ kind: 'wolf', y: (wolf.py / TILE), data: wolf });
+  }
+  for (const c of state.colonists) {
+    if (isWorldPointInView(c.px, c.py)) renderList.push({ kind: 'colonist', y: (c.py / TILE), data: c });
+  }
+  renderList.sort((a, b) => a.y - b.y);
+
+  for (const item of renderList) {
+    if (item.kind === 'obj') drawObject(item.data);
+    if (item.kind === 'wolf') drawWolf(item.data);
+    if (item.kind === 'colonist') drawColonist(item.data);
+  }
+
+  drawPoiMarkers();
+  drawBuildPreview();
+  drawFogOfWar(bounds);
+  drawNightOverlay();
+  drawRain();
+  ctx.restore();
+}
+
+function drawTile(x, y, type) {
+  const img = images[`tile_${type}`] || images.tile_grass;
+  ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
+}
+
+function drawGrid(bounds = visibleTileBounds(2)) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,0,0,.13)';
+  ctx.lineWidth = 1;
+  for (let x = bounds.startX; x <= bounds.endX + 1; x++) {
+    ctx.beginPath(); ctx.moveTo(x * TILE, bounds.startY * TILE); ctx.lineTo(x * TILE, (bounds.endY + 1) * TILE); ctx.stroke();
+  }
+  for (let y = bounds.startY; y <= bounds.endY + 1; y++) {
+    ctx.beginPath(); ctx.moveTo(bounds.startX * TILE, y * TILE); ctx.lineTo((bounds.endX + 1) * TILE, y * TILE); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawObject(obj) {
+  const cx = obj.x * TILE + TILE / 2;
+  const cy = obj.y * TILE + TILE / 2;
+  if (obj.type === 'blueprint') {
+    const type = buildDefs[obj.buildType].type;
+    const img = images[objectDefs[type].img];
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    drawAsset(img, cx, cy + 22, objectScale(type), 0.5, 1);
+    ctx.restore();
+    drawProgress(cx, obj.y * TILE + 8, (obj.progress || 0) / buildDefs[obj.buildType].work, '#9bd36a');
+    return;
+  }
+
+  const def = objectDefs[obj.type];
+  if (!def) return;
+  drawAsset(images[def.img], cx, cy + 22, objectScale(obj.type), 0.5, 1);
+  if (obj.type === 'crop') {
+    drawProgress(cx, obj.y * TILE + 7, (obj.growth || 0) / 100, '#80c96c');
+  }
+  if (def.interactable) drawInteractionHint(obj, cx, cy);
+}
+
+function drawInteractionHint(obj, cx, cy) {
+  const unknown = obj.unknown !== false && (!obj.inspected || !obj.looted);
+  const mark = unknown ? '?' : obj.looted ? '✓' : '⋯';
+  ctx.save();
+  ctx.fillStyle = unknown ? 'rgba(227, 169, 63, .30)' : 'rgba(121, 199, 232, .22)';
+  ctx.strokeStyle = unknown ? '#f4c46b' : '#79c7e8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy - 17, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = unknown ? '#fff0c5' : '#dff5ff';
+  ctx.font = '900 15px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(mark, cx, cy - 17);
+  ctx.restore();
+}
+
+function objectScale(type) {
+  return ({
+    tree: 0.54, bush: 0.42, rock: 0.38, ore: 0.34, logs: 0.35, berry: 0.42, crop: 0.22,
+    bed: 0.28, campfire: 0.30, forge: 0.22, stove: 0.24, med_station: 0.24, research_desk: 0.22, crate: 0.34, ruin: 0.30, cache: 0.32, supply_crate: 0.32, wall: 0.29, bench: 0.20,
+    stool: 0.45
+  })[type] || 0.35;
+}
+
+function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false) {
+  if (!img) return;
+  const w = img.width * scale;
+  const h = img.height * scale;
+  ctx.save();
+  if (flip) {
+    ctx.translate(x, y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, -w * ax, -h * ay, w, h);
+  } else {
+    ctx.drawImage(img, x - w * ax, y - h * ay, w, h);
+  }
+  ctx.restore();
+}
+
+function drawColonist(c) {
+  const selected = c.id === selectedColonistId;
+  if (selected) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(155, 211, 106, .28)';
+    ctx.strokeStyle = '#9bd36a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(c.px, c.py + 19, 18, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  const moving = c.path && c.path.length;
+  const frame = moving ? Math.floor(c.anim * 8) % 4 : 0;
+  let dir = c.dir;
+  let flip = false;
+  if ((c.sprite === 'colonistB' || c.sprite === 'colonistC') && dir === 'left') { dir = 'right'; flip = true; }
+  const img = images[`${c.sprite}_${dir}_${frame}`] || images[`${c.sprite}_down_0`];
+  drawAsset(img, c.px, c.py + 24, 0.48, 0.5, 1, flip);
+
+  drawTinyBars(c);
+  drawName(c.name, c.px, c.py - 38);
+}
+
+function drawTinyBars(c) {
+  const x = c.px - 18;
+  const y = c.py - 31;
+  ctx.fillStyle = 'rgba(0,0,0,.6)';
+  ctx.fillRect(x, y, 36, 4);
+  ctx.fillStyle = c.health < 35 ? '#e67866' : '#9bd36a';
+  ctx.fillRect(x, y, 36 * (c.health / 100), 4);
+}
+
+function drawName(name, x, y) {
+  ctx.save();
+  ctx.font = 'bold 12px system-ui';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(name).width + 10;
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  roundRect(x - w / 2, y - 13, w, 18, 8, true, false);
+  ctx.fillStyle = '#f2fff0';
+  ctx.fillText(name, x, y);
+  ctx.restore();
+}
+
+function drawWolf(w) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(230, 120, 102, .22)';
+  ctx.strokeStyle = '#e67866';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(w.px, w.py + 16, 25, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  const frame = Math.floor(w.anim * 6) % 5;
+  drawAsset(images[`wolf_${frame}`], w.px, w.py + 20, 0.36, 0.5, 1, w.dir === 'left');
+}
+
+function drawProgress(cx, y, value, color) {
+  value = clamp(value, 0, 1);
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  ctx.fillRect(cx - 18, y, 36, 5);
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - 18, y, 36 * value, 5);
+  ctx.restore();
+}
+
+function drawNightOverlay() {
+  const hour = state.hour;
+  let alpha = 0;
+  if (hour < 5) alpha = 0.45;
+  else if (hour < 7) alpha = (7 - hour) * 0.18;
+  else if (hour > 20) alpha = Math.min(0.45, (hour - 20) * 0.13);
+  if (alpha > 0) {
+    const b = visibleWorldBounds(TILE);
+    ctx.fillStyle = `rgba(7, 17, 31, ${alpha})`;
+    ctx.fillRect(b.left, b.top, b.right - b.left, b.bottom - b.top);
+  }
+}
+
+function drawRain() {
+  if (state.weather !== 'chuva') return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(170, 210, 255, .45)';
+  ctx.lineWidth = 1;
+  const b = visibleWorldBounds(TILE * 2);
+  const offset = (performance.now() / 14) % 18;
+  for (let x = b.left - 20; x < b.right + 30; x += 38) {
+    for (let y = b.top - 20; y < b.bottom + 30; y += 62) {
+      ctx.beginPath();
+      ctx.moveTo(x + offset, y + offset);
+      ctx.lineTo(x + offset - 10, y + offset + 18);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawFogOfWar(bounds = visibleTileBounds(1)) {
+  if (!state?.world?.exploration) return;
+  ctx.save();
+  for (let y = bounds.startY; y <= bounds.endY; y++) {
+    for (let x = bounds.startX; x <= bounds.endX; x++) {
+      const v = state.world.exploration[y]?.[x] || 0;
+      if (v === 2) continue;
+      ctx.fillStyle = v === 1 ? 'rgba(4, 8, 13, .42)' : 'rgba(2, 4, 8, .88)';
+      ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
+    }
+  }
+  ctx.restore();
+}
+
+function drawPoiMarkers() {
+  if (!state?.world?.pointsOfInterest) return;
+  ctx.save();
+  for (const poi of state.world.pointsOfInterest) {
+    if (!poi.discovered || poi.inspected || !isTileDiscovered(poi.x, poi.y)) continue;
+    if (getObjectAt(poi.x, poi.y)) continue;
+    const x = poi.x * TILE + TILE / 2;
+    const y = poi.y * TILE + TILE / 2;
+    if (!isWorldPointInView(x, y)) continue;
+    ctx.fillStyle = 'rgba(244, 179, 80, .22)';
+    ctx.strokeStyle = '#f4b350';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y - 7, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#f8d78a';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('?', x, y - 2);
+  }
+  ctx.restore();
+}
+
+function drawBuildPreview() {
+  if (!currentBuild || !mouseTile) return;
+  const def = buildDefs[currentBuild];
+  const type = def.type;
+  const can = canPlace(type, mouseTile.x, mouseTile.y) && hasCost(def.cost);
+  ctx.save();
+  ctx.globalAlpha = 0.65;
+  ctx.fillStyle = can ? 'rgba(155, 211, 106, .22)' : 'rgba(230, 120, 102, .28)';
+  ctx.fillRect(mouseTile.x * TILE, mouseTile.y * TILE, TILE, TILE);
+  const img = images[objectDefs[type].img];
+  drawAsset(img, mouseTile.x * TILE + TILE / 2, mouseTile.y * TILE + TILE, objectScale(type), 0.5, 1);
+  ctx.restore();
+}
