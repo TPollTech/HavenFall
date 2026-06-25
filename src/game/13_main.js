@@ -40,6 +40,9 @@ async function loadQolPatchesThenBoot() {
   await loadScript('src/game/15_crafting_wall_fix.js');
   if (typeof installCraftingWallFixPatch === 'function') installCraftingWallFixPatch();
 
+  await loadScript('src/game/16_building_roof_ai_fix.js');
+  if (typeof installBuildingRoofAiFixPatch === 'function') installBuildingRoofAiFixPatch();
+
   bootGame();
 }
 
