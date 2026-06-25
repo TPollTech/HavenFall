@@ -24,6 +24,150 @@ function addResources(gain) {
   for (const [k, v] of Object.entries(gain)) state.resources[k] = (state.resources[k] || 0) + v;
 }
 
+
+function addItems(gain = {}) {
+  state.items = state.items || {};
+  for (const [k, v] of Object.entries(gain)) state.items[k] = (state.items[k] || 0) + v;
+}
+
+function hasItems(cost = {}) {
+  state.items = state.items || {};
+  return Object.entries(cost || {}).every(([k, v]) => (state.items[k] || 0) >= v);
+}
+
+function payItems(cost = {}) {
+  state.items = state.items || {};
+  for (const [k, v] of Object.entries(cost || {})) state.items[k] = Math.max(0, (state.items[k] || 0) - v);
+}
+
+function hasRecipeCost(recipe) {
+  return hasCost(recipe.cost || {}) && hasItems(recipe.itemCost || {});
+}
+
+function payRecipeCost(recipe) {
+  payCost(recipe.cost || {});
+  payItems(recipe.itemCost || {});
+}
+
+function addRecipeOutput(output = {}) {
+  if (output.resources) addResources(output.resources);
+  if (output.items) addItems(output.items);
+}
+
+function itemLabel(key) {
+  return itemDefs[key]?.label || key;
+}
+
+function itemCount(key) {
+  return state?.items?.[key] || 0;
+}
+
+function recipeUnlocked(key) {
+  const recipe = recipeDefs[key];
+  if (!recipe) return false;
+  return !recipe.unlock || !!state.research?.unlocked?.[recipe.unlock];
+}
+
+function recipeStationBuilt(station) {
+  if (!station) return true;
+  return state.objects.some(o => o.type === station);
+}
+
+function getStationObject(station, nearColonist = null) {
+  const list = state.objects.filter(o => o.type === station);
+  if (!list.length) return null;
+  if (!nearColonist) return list[0];
+  return list.sort((a, b) => dist(nearColonist.x, nearColonist.y, a.x, a.y) - dist(nearColonist.x, nearColonist.y, b.x, b.y))[0];
+}
+
+function ensureEquipment(c) {
+  c.equipment = c.equipment || { tool: null, weapon: null, offhand: null };
+  if (!('tool' in c.equipment)) c.equipment.tool = null;
+  if (!('weapon' in c.equipment)) c.equipment.weapon = null;
+  if (!('offhand' in c.equipment)) c.equipment.offhand = null;
+  return c.equipment;
+}
+
+function equipItem(c, itemKey) {
+  const def = itemDefs[itemKey];
+  if (!c || !def?.slot) return false;
+  if (itemCount(itemKey) <= 0) {
+    log(`Não há ${def.label} disponível no estoque.`);
+    return false;
+  }
+  const equipment = ensureEquipment(c);
+  const previous = equipment[def.slot];
+  if (previous) state.items[previous] = (state.items[previous] || 0) + 1;
+  state.items[itemKey] = Math.max(0, (state.items[itemKey] || 0) - 1);
+  equipment[def.slot] = itemKey;
+  log(`${c.name} equipou ${def.label}.`);
+  updateUI(true);
+  return true;
+}
+
+function unequipSlot(c, slot) {
+  const equipment = ensureEquipment(c);
+  const previous = equipment[slot];
+  if (!previous) return false;
+  state.items[previous] = (state.items[previous] || 0) + 1;
+  equipment[slot] = null;
+  log(`${c.name} guardou ${itemLabel(previous)} no estoque.`);
+  updateUI(true);
+  return true;
+}
+
+function autoEquipCraftedItem(c, output = {}) {
+  if (!c || !output.items) return;
+  ensureEquipment(c);
+  const preference = ['weapon', 'tool', 'offhand'];
+  for (const slot of preference) {
+    const candidate = Object.keys(output.items).find(k => itemDefs[k]?.slot === slot && !c.equipment[slot] && itemCount(k) > 0);
+    if (candidate) equipItem(c, candidate);
+  }
+}
+
+function equipmentCombatPower(c) {
+  const eq = ensureEquipment(c);
+  const weapon = itemDefs[eq.weapon];
+  const tool = itemDefs[eq.tool];
+  const offhand = itemDefs[eq.offhand];
+  let power = 0.45; // desarmado é propositalmente fraco
+  if (weapon?.combat) power += weapon.combat;
+  else if (tool?.combat) power += tool.combat * 0.55;
+  if (offhand?.scare) power += offhand.scare;
+  if (c.skills?.defesa) power += c.skills.defesa * 0.08;
+  if (c.role === 'Faz-tudo') power += 0.25;
+  return power;
+}
+
+function equipmentDefense(c) {
+  const eq = ensureEquipment(c);
+  const offhand = itemDefs[eq.offhand];
+  const tool = itemDefs[eq.tool];
+  let defense = 0;
+  if (offhand?.defense) defense += offhand.defense;
+  if (tool?.defense) defense += tool.defense;
+  if (c.skills?.defesa) defense += c.skills.defesa * 0.015;
+  return clamp(defense, 0, 0.75);
+}
+
+function itemCostText(cost = {}, itemCost = {}) {
+  const parts = [
+    ...Object.entries(cost || {}).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${resourceLabel(k)}`),
+    ...Object.entries(itemCost || {}).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${itemLabel(k)}`)
+  ];
+  return parts.join(' + ') || 'sem custo';
+}
+
+function outputText(output = {}) {
+  const parts = [
+    ...Object.entries(output.resources || {}).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${resourceLabel(k)}`),
+    ...Object.entries(output.items || {}).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${itemLabel(k)}`)
+  ];
+  return parts.join(', ') || 'nada';
+}
+
+
 function getObjectAt(x, y) {
   return state.objects.find(o => o.x === x && o.y === y);
 }

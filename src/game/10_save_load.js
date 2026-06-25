@@ -1,7 +1,7 @@
 'use strict';
 
 function serialize() {
-  return JSON.stringify({ state, selectedColonistId, version: '1.9A'  });
+  return JSON.stringify({ state, selectedColonistId, version: '1.9C'  });
 }
 
 function saveGame(manual = false) {
@@ -20,6 +20,8 @@ function migrateLoadedState() {
   state.resources.stone = state.resources.stone || 0;
   state.resources.metal = state.resources.metal || 0;
   state.resources.medicine = state.resources.medicine || 0;
+  state.items = state.items || {};
+  for (const key of ['rope','nails','cloth','leather','arrows']) state.items[key] = state.items[key] || 0;
   state.config = { ...defaultNewGameConfig, colonyName: 'Colônia antiga', seed: 'save-antigo', ...(state.config || {}) };
 
   const cols = state.world?.cols || state.terrain?.[0]?.length || COLS;
@@ -56,7 +58,7 @@ function migrateLoadedState() {
     if (poi.looted === undefined) poi.looted = false;
     if (!poi.lore) poi.lore = loreForPoi(poi.type || 'ruin', 0, state.config.seed);
   }
-  for (const c of state.colonists || []) ensureColonistMeta(c);
+  for (const c of state.colonists || []) { ensureColonistMeta(c); ensureEquipment(c); }
   updateExploration(true);
 }
 

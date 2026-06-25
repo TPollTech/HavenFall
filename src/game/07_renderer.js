@@ -158,6 +158,7 @@ function draw() {
 
   drawPoiMarkers();
   drawBuildPreview();
+  drawGatherSelection();
   drawFogOfWar(bounds);
   drawNightOverlay();
   drawRain();
@@ -202,7 +203,25 @@ function drawObject(obj) {
   if (obj.type === 'crop') {
     drawProgress(cx, obj.y * TILE + 7, (obj.growth || 0) / 100, '#80c96c');
   }
+  if (obj.markedForGather) drawMarkedForGather(cx, cy);
   if (def.interactable) drawInteractionHint(obj, cx, cy);
+}
+
+
+function drawMarkedForGather(cx, cy) {
+  ctx.save();
+  ctx.strokeStyle = '#f4b350';
+  ctx.fillStyle = 'rgba(244, 179, 80, .16)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 17, 19, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#f8d78a';
+  ctx.font = '900 12px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('coleta', cx, cy - 29);
+  ctx.restore();
 }
 
 function drawInteractionHint(obj, cx, cy) {
@@ -265,9 +284,28 @@ function drawColonist(c) {
   if ((c.sprite === 'colonistB' || c.sprite === 'colonistC') && dir === 'left') { dir = 'right'; flip = true; }
   const img = images[`${c.sprite}_${dir}_${frame}`] || images[`${c.sprite}_down_0`];
   drawAsset(img, c.px, c.py + 24, 0.48, 0.5, 1, flip);
+  drawEquipmentBadge(c);
 
   drawTinyBars(c);
   drawName(c.name, c.px, c.py - 38);
+}
+
+
+function drawEquipmentBadge(c) {
+  ensureEquipment(c);
+  const key = c.equipment.weapon || c.equipment.tool || c.equipment.offhand;
+  const item = itemDefs[key];
+  if (!item?.icon || !images[item.icon]) return;
+  ctx.save();
+  ctx.fillStyle = 'rgba(7, 11, 17, .72)';
+  ctx.strokeStyle = '#d6a24a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(c.px + 19, c.py - 17, 11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  drawAsset(images[item.icon], c.px + 19, c.py - 17, 0.095, 0.5, 0.5);
+  ctx.restore();
 }
 
 function drawTinyBars(c) {
@@ -300,6 +338,7 @@ function drawWolf(w) {
   ctx.restore();
   const frame = Math.floor(w.anim * 6) % 5;
   drawAsset(images[`wolf_${frame}`], w.px, w.py + 20, 0.36, 0.5, 1, w.dir === 'left');
+  if (w.hp !== undefined) drawProgress(w.px, w.py - 23, (w.hp || 0) / 100, '#e67866');
 }
 
 function drawProgress(cx, y, value, color) {
@@ -378,6 +417,23 @@ function drawPoiMarkers() {
     ctx.textAlign = 'center';
     ctx.fillText('?', x, y - 2);
   }
+  ctx.restore();
+}
+
+
+function drawGatherSelection() {
+  if (!gatherSelection?.active || !gatherSelection.start || !gatherSelection.current) return;
+  const minX = Math.min(gatherSelection.start.x, gatherSelection.current.x);
+  const minY = Math.min(gatherSelection.start.y, gatherSelection.current.y);
+  const maxX = Math.max(gatherSelection.start.x, gatherSelection.current.x);
+  const maxY = Math.max(gatherSelection.start.y, gatherSelection.current.y);
+  ctx.save();
+  ctx.fillStyle = 'rgba(244, 179, 80, .12)';
+  ctx.strokeStyle = '#f4b350';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 5]);
+  ctx.strokeRect(minX * TILE, minY * TILE, (maxX - minX + 1) * TILE, (maxY - minY + 1) * TILE);
+  ctx.fillRect(minX * TILE, minY * TILE, (maxX - minX + 1) * TILE, (maxY - minY + 1) * TILE);
   ctx.restore();
 }
 

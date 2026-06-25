@@ -74,6 +74,30 @@ function setupEventListeners() {
       c.note = c.task ? c.note : `Prioridade: ${priorityDefs[key].label}`;
       log(`${c.name} agora prioriza ${priorityDefs[key].label.toLowerCase()}.`);
       updateUI(true);
+      return;
+    }
+
+    const craft = e.target.closest('[data-craft]');
+    if (craft && state) {
+      const c = selectedColonist();
+      const station = selectedCraftStationId ? state.objects.find(o => o.id === selectedCraftStationId) : null;
+      assignCraft(c, craft.dataset.craft, station);
+      updateUI(true);
+      return;
+    }
+
+    const equip = e.target.closest('[data-equip-item]');
+    if (equip && state) {
+      const c = selectedColonist();
+      if (c) equipItem(c, equip.dataset.equipItem);
+      return;
+    }
+
+    const unequip = e.target.closest('[data-unequip-slot]');
+    if (unequip && state) {
+      const c = selectedColonist();
+      if (c) unequipSlot(c, unequip.dataset.unequipSlot);
+      return;
     }
   });
 

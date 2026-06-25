@@ -28,12 +28,17 @@ function assignBuild(c, bp) {
 }
 
 function assignScare(c, wolf) {
+  if (!c || !wolf) return;
+  ensureWolfState(wolf);
+  ensureEquipment(c);
   const target = { x: Math.round(wolf.x), y: Math.round(wolf.y) };
   const adj = nearestFreeAdjacent(target.x, target.y, c.x, c.y) || target;
-  c.task = { type: 'scare', wolfId: wolf.id, x: adj.x, y: adj.y };
+  c.task = { type: 'combat', wolfId: wolf.id, x: adj.x, y: adj.y, rounds: 0 };
   c.path = findPath(c.x, c.y, adj.x, adj.y);
   c.work = 0;
-  c.note = 'Espantando animal';
+  const weapon = itemDefs[c.equipment?.weapon]?.label || itemDefs[c.equipment?.tool]?.label || 'sem arma';
+  c.note = `Enfrentando lobo (${weapon})`;
+  log(`${c.name} se prepara para enfrentar um lobo ${weapon === 'sem arma' ? 'sem arma — isso é muito arriscado.' : `com ${weapon}.`}`);
 }
 
 function assignForge(c, forge) {
@@ -78,6 +83,42 @@ function assignHeal(c, station) {
 }
 
 
+function assignCraft(c, recipeKey, stationOverride = null) {
+  const recipe = recipeDefs[recipeKey];
+  if (!recipe) return;
+  if (!recipeUnlocked(recipeKey)) {
+    log(`Receita bloqueada: pesquise ${researchDefs[recipe.unlock]?.label || recipe.unlock}.`);
+    return;
+  }
+  if (!hasRecipeCost(recipe)) {
+    log(`Faltam recursos para fabricar ${recipe.label}. Precisa de ${itemCostText(recipe.cost, recipe.itemCost)}.`);
+    return;
+  }
+  const station = stationOverride || getStationObject(recipe.station, c);
+  if (!station) {
+    log(`Construa ${stationLabels[recipe.station] || recipe.station} antes de fabricar ${recipe.label}.`);
+    return;
+  }
+  const adj = nearestFreeAdjacent(station.x, station.y, c.x, c.y);
+  if (!adj) {
+    log(`${c.name} não conseguiu chegar em ${stationLabels[recipe.station] || 'estação'}.`);
+    return;
+  }
+  c.task = { type: 'craft', recipeKey, objId: station.id, x: adj.x, y: adj.y };
+  c.path = findPath(c.x, c.y, adj.x, adj.y, station);
+  c.work = 0;
+  c.note = `Indo fabricar ${recipe.label}`;
+}
+
+function openCraftingForStation(obj) {
+  if (!obj) return;
+  selectedCraftStationId = obj.id;
+  setHudTab('crafting');
+  updateCraftingUI();
+  updateUI(true);
+}
+
+
 function assignInspect(c, obj) {
   if (!obj) return;
   const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y);
@@ -114,10 +155,51 @@ function isGatherableReady(obj) {
   return true;
 }
 
-function nearestGatherable(c) {
-  return state.objects
-    .filter(o => isGatherableReady(o) && isTileDiscovered(o.x, o.y))
-    .sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0];
+function nearestGatherable(c, markedOnly = false) {
+  const list = state.objects
+    .filter(o => isGatherableReady(o) && isTileDiscovered(o.x, o.y) && (!markedOnly || o.markedForGather))
+    .sort((a, b) => {
+      const marked = Number(!!b.markedForGather) - Number(!!a.markedForGather);
+      if (marked) return marked;
+      return dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y);
+    });
+  return list[0];
+}
+
+function markGatherObjectsInRect(a, b) {
+  if (!state) return 0;
+  const minX = Math.min(a.x, b.x);
+  const maxX = Math.max(a.x, b.x);
+  const minY = Math.min(a.y, b.y);
+  const maxY = Math.max(a.y, b.y);
+  let count = 0;
+  for (const obj of state.objects) {
+    if (obj.x < minX || obj.x > maxX || obj.y < minY || obj.y > maxY) continue;
+    if (!isTileDiscovered(obj.x, obj.y) || !isGatherableReady(obj)) continue;
+    obj.markedForGather = true;
+    count++;
+  }
+  if (count) {
+    log(`${count} recurso${count > 1 ? 's' : ''} marcado${count > 1 ? 's' : ''} para coleta.`);
+    assignMarkedGatherTasks();
+  }
+  return count;
+}
+
+function toggleGatherMark(obj) {
+  if (!obj || !isGatherableReady(obj)) return;
+  obj.markedForGather = !obj.markedForGather;
+  log(`${objectDefs[obj.type]?.name || 'Recurso'} ${obj.markedForGather ? 'marcado para coleta' : 'desmarcado'}.`);
+  if (obj.markedForGather) assignMarkedGatherTasks();
+}
+
+function assignMarkedGatherTasks() {
+  const idle = state.colonists.filter(c => !c.task && c.energy > 14 && c.health > 15);
+  for (const c of idle) {
+    const target = nearestGatherable(c, true);
+    if (!target) break;
+    assignGather(c, target);
+  }
 }
 
 function nearestThreat(c) {
@@ -136,7 +218,7 @@ function assignAutoTask(c) {
   }
 
   if (c.priority === 'gather') {
-    const resource = nearestGatherable(c);
+    const resource = nearestGatherable(c, true) || nearestGatherable(c);
     if (resource) { assignGather(c, resource); return true; }
     c.note = 'Aguardando recurso para coletar';
     return false;
@@ -270,7 +352,7 @@ function handleTaskAtTarget(c, tick) {
     const obj = state.objects.find(o => o.id === task.objId);
     if (!obj) { c.task = null; c.note = 'Ocioso'; return; }
     const def = objectDefs[obj.type];
-    c.work += tick * workRate(c, 'gather');
+    c.work += tick * workRate(c, 'gather', obj);
     c.note = `Coletando ${def.name} ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
       addResources(def.gather);
@@ -279,6 +361,29 @@ function handleTaskAtTarget(c, tick) {
       if (obj.type === 'crop') state.objects.push({ id: uid(), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
       log(`${c.name} coletou ${def.name}.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
+    }
+    return;
+  }
+
+  if (task.type === 'craft') {
+    const recipe = recipeDefs[task.recipeKey];
+    const station = state.objects.find(o => o.id === task.objId);
+    if (!recipe || !station) { c.task = null; c.note = 'Ocioso'; return; }
+    if (!hasRecipeCost(recipe)) {
+      log(`Faltam recursos para fabricar ${recipe.label}.`);
+      c.task = null; c.note = 'Ocioso'; c.work = 0;
+      return;
+    }
+    c.work += tick * workRate(c, 'craft');
+    c.note = `Fabricando ${recipe.label} ${Math.floor((c.work / recipe.duration) * 100)}%`;
+    if (c.work >= recipe.duration) {
+      payRecipeCost(recipe);
+      addRecipeOutput(recipe.output);
+      autoEquipCraftedItem(c, recipe.output);
+      log(`${c.name} fabricou ${recipe.label}. Resultado: ${outputText(recipe.output)}.`);
+      c.mood = clamp(c.mood + 2, 0, 100);
+      c.task = null; c.note = 'Ocioso'; c.work = 0;
+      updateCraftingUI();
     }
     return;
   }
@@ -383,20 +488,106 @@ function handleTaskAtTarget(c, tick) {
     return;
   }
 
-  if (task.type === 'scare') {
-    const wolf = state.wolves.find(w => w.id === task.wolfId);
-    if (!wolf) { c.task = null; c.note = 'Ocioso'; return; }
-    c.work += tick * workRate(c, 'defense');
-    c.note = `Espantando animal ${Math.floor((c.work / 3) * 100)}%`;
-    if (c.work >= 3) {
-      state.wolves = state.wolves.filter(w => w.id !== wolf.id);
-      c.mood = clamp(c.mood + 8, 0, 100);
-      log(`${c.name} espantou um lobo da área.`);
-      c.task = null; c.note = 'Ocioso'; c.work = 0;
-    }
+  if (task.type === 'scare' || task.type === 'combat') {
+    handleCombatTask(c, task, tick);
+    return;
   }
 }
 
+
+
+function ensureWolfState(wolf) {
+  if (!wolf) return;
+  wolf.hp = wolf.hp ?? 100;
+  wolf.morale = wolf.morale ?? 100;
+  wolf.aggression = wolf.aggression ?? 1;
+  wolf.state = wolf.state || 'hunting';
+}
+
+function handleCombatTask(c, task, tick) {
+  const wolf = state.wolves.find(w => w.id === task.wolfId);
+  if (!wolf) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
+  ensureWolfState(wolf);
+  ensureEquipment(c);
+  const power = equipmentCombatPower(c);
+  const defense = equipmentDefense(c);
+  const roundTime = power < 1.2 ? 4.2 : 3.0;
+  c.work += tick * workRate(c, 'defense');
+  c.note = `Confronto com lobo ${Math.floor((c.work / roundTime) * 100)}%`;
+
+  if (c.work < roundTime) return;
+
+  c.work = 0;
+  task.rounds = (task.rounds || 0) + 1;
+
+  const weaponKey = c.equipment?.weapon;
+  const toolKey = c.equipment?.tool;
+  const offhandKey = c.equipment?.offhand;
+  const bowWithoutArrows = weaponKey === 'bow' && itemCount('arrows') <= 0;
+  const weaponName = bowWithoutArrows ? null : (itemDefs[weaponKey]?.label || itemDefs[toolKey]?.label || null);
+  const hasRealWeapon = !!weaponKey && !bowWithoutArrows;
+  if (bowWithoutArrows && task.rounds === 0) log(`${c.name} está com arco, mas não tem flechas. O confronto fica muito mais perigoso.`);
+  if (weaponKey === 'bow' && !bowWithoutArrows) state.items.arrows = Math.max(0, (state.items.arrows || 0) - 1);
+  const hasTorch = offhandKey === 'torch';
+  const hasShield = offhandKey === 'shield';
+  const alliesNearby = state.colonists.filter(other => other.id !== c.id && dist(other.x, other.y, c.x, c.y) <= 3).length;
+  const groupBonus = alliesNearby * 0.35;
+  const chanceRoll = Math.random();
+  const attackPower = power + groupBonus + (hasTorch ? 0.35 : 0);
+  const damageToWolf = hasRealWeapon ? 18 + attackPower * 8 : 4 + attackPower * 3;
+  const danger = clamp((wolf.aggression || 1) * (hasRealWeapon ? 0.42 : 0.92) - defense - groupBonus * 0.12 - (hasTorch ? 0.18 : 0), 0.08, 0.95);
+  const injury = Math.max(0, Math.round((hasRealWeapon ? 5 : 14) + danger * 14 - (hasShield ? 6 : 0)));
+
+  if (!hasRealWeapon && chanceRoll < 0.55) {
+    c.health = clamp(c.health - injury, 1, 100);
+    c.mood = clamp(c.mood - 8, 0, 100);
+    wolf.morale = clamp(wolf.morale - 8 - (hasTorch ? 12 : 0), 0, 100);
+    log(`${c.name} tentou segurar o lobo sem arma. O animal pressionou o ataque, e ${c.name} recuou machucado.`);
+  } else {
+    wolf.hp = clamp(wolf.hp - damageToWolf, 0, 100);
+    wolf.morale = clamp(wolf.morale - (hasTorch ? 28 : 12) - groupBonus * 8, 0, 100);
+    if (chanceRoll < danger) {
+      c.health = clamp(c.health - Math.max(2, Math.floor(injury * 0.55)), 1, 100);
+      log(`${c.name} acertou o lobo com ${weaponName || 'as próprias mãos'}, mas o animal conseguiu contra-atacar.`);
+    } else {
+      log(`${c.name} manteve distância e acertou o lobo com ${weaponName || 'um golpe improvisado'}.`);
+    }
+  }
+
+  if (c.health <= 12) {
+    c.task = null;
+    c.note = 'Ferido e recuando';
+    c.mood = clamp(c.mood - 12, 0, 100);
+    log(`${c.name} ficou em condição ruim e abandonou o confronto. É melhor buscar tratamento.`);
+    return;
+  }
+
+  if (wolf.hp <= 0) {
+    state.wolves = state.wolves.filter(w => w.id !== wolf.id);
+    c.mood = clamp(c.mood + 7, 0, 100);
+    c.note = 'Ameaça neutralizada';
+    c.task = null;
+    log(`${c.name} neutralizou o lobo depois de um confronto difícil.`);
+    return;
+  }
+
+  if (wolf.morale <= 15 || (hasTorch && chanceRoll < 0.42) || (!hasRealWeapon && task.rounds >= 2 && chanceRoll < 0.28)) {
+    state.wolves = state.wolves.filter(w => w.id !== wolf.id);
+    c.mood = clamp(c.mood + 4, 0, 100);
+    c.note = 'Lobo afastado';
+    c.task = null;
+    log(`O lobo hesitou e fugiu da área. ${c.name} sobreviveu ao confronto.`);
+    return;
+  }
+
+  if (!hasRealWeapon && task.rounds >= 3) {
+    c.task = null;
+    c.note = 'Recuou do combate';
+    c.mood = clamp(c.mood - 6, 0, 100);
+    log(`${c.name} percebeu que lutar desarmado era arriscado demais e recuou.`);
+    return;
+  }
+}
 
 function handleInteractionTask(c, task, tick) {
   if (task.type === 'inspectPoi') {
@@ -450,8 +641,14 @@ function finishLoot(c, obj) {
   const poi = obj.poiId ? state.world?.pointsOfInterest?.find(p => p.id === obj.poiId) : null;
   if (poi) poi.looted = true;
   const loot = obj.loot || rollLootForObject(obj);
-  addResources(loot);
-  const lootText = Object.entries(loot).filter(([,v]) => v > 0).map(([k,v]) => `+${v} ${resourceLabel(k)}`).join(', ') || 'nada útil';
+  addResources(loot.resources || loot);
+  addItems(loot.items || {});
+  const resourceLoot = loot.resources || loot;
+  const itemLoot = loot.items || {};
+  const lootText = [
+    ...Object.entries(resourceLoot).filter(([,v]) => v > 0).map(([k,v]) => `+${v} ${resourceLabel(k)}`),
+    ...Object.entries(itemLoot).filter(([,v]) => v > 0).map(([k,v]) => `+${v} ${itemLabel(k)}`)
+  ].join(', ') || 'nada útil';
   log(`${c.name} vasculhou ${objectDefs[obj.type]?.name || 'objeto'} e encontrou ${lootText}.`);
   c.note = 'Loot coletado';
   c.mood = clamp(c.mood + 3, 0, 100);
@@ -459,21 +656,33 @@ function finishLoot(c, obj) {
 
 function rollLootForObject(obj) {
   const rand = seededRandom(`${state.config?.seed || 'save'}|loot|${obj.id}|${obj.type}`);
-  const base = { food: 0, wood: 0, stone: 0, metal: 0, medicine: 0 };
+  const resources = { food: 0, wood: 0, stone: 0, metal: 0, medicine: 0 };
+  const items = {};
+  const maybeItem = (key, chance, min = 1, max = 1) => {
+    if (rand() < chance) items[key] = (items[key] || 0) + min + Math.floor(rand() * (max - min + 1));
+  };
   if (obj.type === 'cache' || obj.type === 'supply_crate') {
-    base.food = Math.floor(rand() * 6) + 2;
-    base.wood = Math.floor(rand() * 5) + 1;
-    base.metal = rand() < 0.62 ? Math.floor(rand() * 4) + 1 : 0;
-    base.medicine = rand() < 0.28 ? 1 : 0;
+    resources.food = Math.floor(rand() * 6) + 2;
+    resources.wood = Math.floor(rand() * 5) + 1;
+    resources.metal = rand() < 0.62 ? Math.floor(rand() * 4) + 1 : 0;
+    resources.medicine = rand() < 0.28 ? 1 : 0;
+    maybeItem('rope', 0.35);
+    maybeItem('nails', 0.55, 1, 3);
+    maybeItem('cloth', 0.32);
+    maybeItem('arrows', 0.22, 2, 6);
   } else if (obj.type === 'ruin') {
-    base.stone = Math.floor(rand() * 5) + 2;
-    base.metal = Math.floor(rand() * 5) + 1;
-    base.medicine = rand() < 0.18 ? 1 : 0;
+    resources.stone = Math.floor(rand() * 5) + 2;
+    resources.metal = Math.floor(rand() * 5) + 1;
+    resources.medicine = rand() < 0.18 ? 1 : 0;
+    maybeItem('nails', 0.48, 1, 4);
+    maybeItem('leather', 0.22);
+    maybeItem('knife', 0.08);
   } else if (obj.type === 'crate') {
-    base.wood = Math.floor(rand() * 4) + 2;
-    base.food = rand() < 0.4 ? Math.floor(rand() * 3) + 1 : 0;
+    resources.wood = Math.floor(rand() * 4) + 2;
+    resources.food = rand() < 0.4 ? Math.floor(rand() * 3) + 1 : 0;
+    maybeItem('rope', 0.18);
   }
-  return base;
+  return { resources, items };
 }
 
 function loreForObject(obj) {
@@ -489,6 +698,7 @@ function resourceLabel(key) {
 
 function updateWolves(dt) {
   for (const w of state.wolves) {
+    ensureWolfState(w);
     const tick = dt * state.speed;
     const nearest = state.colonists
       .slice()
@@ -504,9 +714,12 @@ function updateWolves(dt) {
       w.py += dy / len * 35 * tick;
       w.dir = dx > 0 ? 'right' : 'left';
       if (close < 32) {
-        nearest.health = clamp(nearest.health - tick * 3.2, 1, 100);
-        nearest.mood = clamp(nearest.mood - tick * 1.1, 0, 100);
-        nearest.note = 'Em perigo';
+        const activelyFighting = nearest.task?.type === 'combat' && nearest.task?.wolfId === w.id;
+        const armor = equipmentDefense(nearest);
+        const pressure = activelyFighting ? 1.4 : 3.2;
+        nearest.health = clamp(nearest.health - tick * pressure * (1 - armor), 1, 100);
+        nearest.mood = clamp(nearest.mood - tick * (activelyFighting ? 0.55 : 1.1), 0, 100);
+        nearest.note = activelyFighting ? nearest.note : 'Em perigo';
       }
     } else if (Math.random() < 0.01 * state.speed) {
       w.target = randomEdgeTile(false);
@@ -608,7 +821,7 @@ function randomEvent() {
 
 function spawnWolf() {
   const t = randomThreatTile() || randomEdgeTile();
-  state.wolves.push({ id: uid(), x: t.x, y: t.y, px: t.x * TILE + TILE / 2, py: t.y * TILE + TILE / 2, anim: 0, dir: 'left' });
+  state.wolves.push({ id: uid(), x: t.x, y: t.y, px: t.x * TILE + TILE / 2, py: t.y * TILE + TILE / 2, anim: 0, dir: 'left', hp: 100, morale: 100, aggression: 1 + Math.random() * 0.35, state: 'hunting' });
 }
 
 function randomThreatTile() {

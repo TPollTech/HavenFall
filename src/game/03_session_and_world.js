@@ -458,6 +458,7 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
     colonists,
     wolves: [],
     resources: initialResourcesForConfig(config),
+    items: initialItemsForConfig(config),
     research: makeResearchState(),
     day: 1,
     hour: 6,
@@ -469,6 +470,15 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
     log: [],
     won: false
   };
+}
+
+
+function initialItemsForConfig(config = defaultNewGameConfig) {
+  const preset = config.resourcesPreset || 'standard';
+  const base = { rope: 1, nails: 2, cloth: 1, leather: 0, arrows: 0 };
+  if (preset === 'rich') return { ...base, rope: 2, nails: 5, cloth: 3, leather: 1, arrows: 4 };
+  if (preset === 'scarce') return { rope: 0, nails: 1, cloth: 0, leather: 0, arrows: 0 };
+  return base;
 }
 
 function makeExplorationMatrix(cols, rows) {

@@ -620,3 +620,105 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 .context-action span { font-weight: 900; }
 .context-action small { color: var(--muted); font-size: 11px; font-weight: 650; }
 .context-action.disabled { opacity: .45; }
+
+/* V1.9B/C — crafting, equipment, selection and combat UI */
+.component-craftingpanel {
+  min-height: 0;
+}
+
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recipe-card {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  text-align: left;
+  min-height: 72px;
+  padding: 8px 10px;
+}
+
+.recipe-card img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  grid-row: span 4;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.45));
+}
+
+.recipe-card b,
+.recipe-card small,
+.recipe-card em {
+  display: block;
+  line-height: 1.15;
+}
+
+.recipe-card em {
+  opacity: .72;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.crafting-info,
+.inventory-info {
+  margin-top: 8px;
+}
+
+.inventory-info h3 {
+  margin: 8px 0 6px;
+  font-size: 13px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.item-strip,
+.equipment-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.item-pill,
+.equipment-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(214,162,74,.28);
+  background: rgba(16, 23, 35, .72);
+  border-radius: 10px;
+  padding: 5px 8px;
+  min-height: 34px;
+  color: var(--text-main);
+}
+
+.item-pill img,
+.equipment-slot img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.equipment-slot.empty {
+  color: var(--text-muted);
+  border-style: dashed;
+}
+
+button.mini {
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.context-action.disabled,
+button.locked,
+.recipe-card.locked {
+  opacity: .45;
+}

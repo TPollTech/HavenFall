@@ -50,14 +50,27 @@ function roleBonusText(c) {
   return 'sem bônus';
 }
 
-function workRate(c, kind) {
+function workRate(c, kind, target = null) {
+  ensureEquipment(c);
   let rate = 1;
   if (c.role === 'Coletora' && kind === 'gather') rate += 0.25;
   if (c.role === 'Construtor' && kind === 'build') rate += 0.25;
-  if (c.role === 'Faz-tudo' && ['gather','build','research','forge','cook','heal','defense'].includes(kind)) rate += 0.10;
+  if (c.role === 'Faz-tudo' && ['gather','build','research','forge','cook','heal','defense','craft'].includes(kind)) rate += 0.10;
   if (c.priority === 'build' && kind === 'build') rate += 0.10;
   if (c.priority === 'gather' && kind === 'gather') rate += 0.10;
   if (c.priority === 'defense' && kind === 'defense') rate += 0.10;
+
+  const eq = c.equipment || {};
+  const tool = itemDefs[eq.tool];
+  if (kind === 'build' && tool?.buildBonus) rate += tool.buildBonus;
+  if (kind === 'craft' && tool?.craftBonus) rate += tool.craftBonus;
+  if (kind === 'gather' && tool?.gatherBonus) {
+    const gather = target ? objectDefs[target.type]?.gather || {} : {};
+    if (gather.wood && tool.gatherBonus.wood) rate += tool.gatherBonus.wood;
+    if (gather.stone && tool.gatherBonus.stone) rate += tool.gatherBonus.stone;
+    if (gather.metal && tool.gatherBonus.metal) rate += tool.gatherBonus.metal;
+  }
+
   return rate;
 }
 
@@ -68,6 +81,7 @@ function ensureColonistMeta(c) {
   c.py = c.py ?? c.y * TILE + TILE / 2;
   c.note = c.note || 'Ocioso';
   c.work = c.work || 0;
+  ensureEquipment(c);
 }
 
 function makeColonist(id, name, sprite, x, y, role) {

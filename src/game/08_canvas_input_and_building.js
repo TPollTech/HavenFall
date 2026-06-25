@@ -7,7 +7,41 @@ canvas.addEventListener('mousemove', e => {
 });
 canvas.addEventListener('mouseleave', () => { mouseTile = null; });
 
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0 || appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
+  const tile = tileFromEvent(e);
+  if (!tile || !isInside(tile.x, tile.y)) return;
+  gatherSelection = {
+    start: tile,
+    current: tile,
+    startClientX: e.clientX,
+    startClientY: e.clientY,
+    active: false
+  };
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!gatherSelection) return;
+  const tile = tileFromEvent(e);
+  if (!tile || !isInside(tile.x, tile.y)) return;
+  gatherSelection.current = tile;
+  const moved = Math.hypot(e.clientX - gatherSelection.startClientX, e.clientY - gatherSelection.startClientY);
+  if (moved > 10) gatherSelection.active = true;
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (e.button !== 0 || !gatherSelection) return;
+  const sel = gatherSelection;
+  gatherSelection = null;
+  if (!sel.active) return;
+  suppressNextClick = true;
+  markGatherObjectsInRect(sel.start, sel.current);
+  updateUI(true);
+});
+
 canvas.addEventListener('click', e => {
+  if (suppressNextClick) { suppressNextClick = false; return; }
   hideContextMenu();
   if (appScreen !== SCREEN.PLAYING || !state) return;
   const tile = tileFromEvent(e);
@@ -33,7 +67,11 @@ canvas.addEventListener('click', e => {
   const obj = isTileDiscovered(tile.x, tile.y) ? getObjectAt(tile.x, tile.y) : null;
   if (obj) {
     selectedWorldObjectId = obj.id;
-    routePrimaryObjectAction(c, obj);
+    if (e.shiftKey && isGatherableReady(obj)) {
+      toggleGatherMark(obj);
+    } else {
+      routePrimaryObjectAction(c, obj);
+    }
     updateUI(true);
     return;
   }
@@ -54,10 +92,8 @@ canvas.addEventListener('contextmenu', e => {
 function routePrimaryObjectAction(c, obj) {
   if (!c || !obj) return;
   if (obj.type === 'blueprint') assignBuild(c, obj);
-  else if (obj.type === 'forge') assignForge(c, obj);
+  else if (['bench','forge','stove','med_station'].includes(obj.type)) openCraftingForStation(obj);
   else if (obj.type === 'research_desk') assignResearch(c, obj);
-  else if (obj.type === 'stove') assignCook(c, obj);
-  else if (obj.type === 'med_station') assignHeal(c, obj);
   else if (objectDefs[obj.type]?.interactable) assignInspect(c, obj);
   else if (obj.type === 'crop' && (obj.growth || 0) < 100) log('Essa plantação ainda está crescendo.');
   else if (objectDefs[obj.type]?.gather) assignGather(c, obj);
@@ -95,7 +131,7 @@ function makeContextActions(c, target, tile) {
   if (!c) return actions;
 
   if (target.kind === 'wolf') {
-    actions.push({ label: 'Espantar ameaça', hint: 'manda o colono enfrentar o perigo', run: () => assignScare(c, target.wolf) });
+    actions.push({ label: 'Enfrentar ameaça', hint: 'combate narrado; arma faz diferença', run: () => assignScare(c, target.wolf) });
     return actions;
   }
 
@@ -114,10 +150,14 @@ function makeContextActions(c, target, tile) {
       actions.push({ label: obj.looted ? 'Já vasculhado' : 'Vasculhar / abrir', hint: obj.looted ? 'sem loot restante' : 'coleta suprimentos do local', disabled: !!obj.looted, run: () => assignLoot(c, obj) });
     }
     if (obj.type === 'blueprint') actions.push({ label: 'Construir', hint: buildDefs[obj.buildType]?.label || 'obra', run: () => assignBuild(c, obj) });
-    if (def.gather) actions.push({ label: 'Coletar', hint: def.name || obj.type, run: () => assignGather(c, obj) });
-    if (obj.type === 'forge') actions.push({ label: 'Forjar metal', hint: '3 pedra → 1 metal', run: () => assignForge(c, obj) });
+    if (def.gather) {
+      actions.push({ label: obj.markedForGather ? 'Desmarcar coleta' : 'Marcar para coleta', hint: 'fila automática de coleta', run: () => toggleGatherMark(obj) });
+      actions.push({ label: 'Coletar agora', hint: def.name || obj.type, run: () => assignGather(c, obj) });
+    }
+    if (['bench','forge','stove','med_station'].includes(obj.type)) actions.push({ label: 'Abrir crafting', hint: stationLabels[obj.type] || def.name, run: () => openCraftingForStation(obj) });
+    if (obj.type === 'forge') actions.push({ label: 'Forjar metal rápido', hint: '3 pedra → 1 metal', run: () => assignForge(c, obj) });
     if (obj.type === 'research_desk') actions.push({ label: 'Pesquisar', hint: 'avança a pesquisa atual', run: () => assignResearch(c, obj) });
-    if (obj.type === 'stove') actions.push({ label: 'Preparar comida', hint: 'cozinha refeições', run: () => assignCook(c, obj) });
+    if (obj.type === 'stove') actions.push({ label: 'Preparar comida rápida', hint: 'receita básica', run: () => assignCook(c, obj) });
     if (obj.type === 'med_station') actions.push({ label: 'Receber tratamento', hint: 'usa remédio', run: () => assignHeal(c, obj) });
     actions.push({ label: 'Mover até perto', hint: `${obj.x},${obj.y}`, run: () => assignMoveNearTarget(c, obj) });
     return actions;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Havenfall V1.8 - Classic Menu Patch</title>
+  <title>Havenfall V1.9C - Crafting and Narrated Combat</title>
   <link rel="stylesheet" href="src/styles.css" />
 </head>
 <body>
@@ -191,6 +191,7 @@
               <button data-tab="resources">Recursos</button>
               <button data-tab="tasks">Tarefas</button>
               <button data-tab="research">Pesquisa</button>
+              <button data-tab="crafting">Crafting</button>
               <button data-tab="zones">Zonas</button>
               <button data-tab="colonists">Colonos</button>
               <button data-tab="selected">Selecionado</button>
@@ -252,7 +253,7 @@
               </div>
               <div id="selectedInfo" class="selected-info-inline empty">Nenhum colono selecionado.</div>
               <div id="goalsPanel" class="goals compact-goals component-goalspanel">
-                <h2>Objetivos V1.6</h2>
+                <h2>Objetivos V1.9</h2>
                 <ul id="goalList">
                   <li data-goal="beds">Construir 2 camas</li>
                   <li data-goal="campfire">Construir 1 fogueira</li>
@@ -272,6 +273,18 @@
                 </div>
               </div>
               <div id="researchInfo" class="empty">Construa uma Mesa de Pesquisa para iniciar.</div>
+            </section>
+
+            <section id="craftingPanel" class="hud-block card bottom-tab-panel component-craftingpanel" data-panel="crafting">
+              <div class="panel-title-row">
+                <div>
+                  <h2>Crafting, ferramentas e armas</h2>
+                  <p class="panel-hint">Abra uma bancada/forja/fogão/estação médica com botão direito ou use as receitas disponíveis. Itens equipados mudam coleta e combate.</p>
+                </div>
+              </div>
+              <div id="craftingInfo" class="crafting-info empty">Construa uma bancada para começar.</div>
+              <div id="recipeGrid" class="recipe-grid compact-grid"></div>
+              <div id="inventoryInfo" class="inventory-info"></div>
             </section>
 
             <section id="zonesPanel" class="hud-block card bottom-tab-panel component-zonespanel" data-panel="zones">

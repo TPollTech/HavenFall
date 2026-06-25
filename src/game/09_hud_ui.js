@@ -13,11 +13,17 @@ function setHudTab(tab) {
 function selectedSummary(c) {
   if (!c) return '<span class="empty">Nenhum colono selecionado.</span>';
   ensureColonistMeta(c);
-  const carrying = c.carrying ? escapeHtml(c.carrying.type || c.carrying.name || 'item') : 'nada';
+  ensureEquipment(c);
+  const eq = c.equipment;
+  const equipText = [
+    eq.tool ? `Ferramenta: ${itemLabel(eq.tool)}` : 'Ferramenta: nenhuma',
+    eq.weapon ? `Arma: ${itemLabel(eq.weapon)}` : 'Arma: nenhuma',
+    eq.offhand ? `Apoio: ${itemLabel(eq.offhand)}` : 'Apoio: nenhum'
+  ].join(' · ');
   return `
     <div><b>${escapeHtml(c.name)}</b> <span class="muted">${escapeHtml(c.role)}${c.age ? ` · ${c.age} anos` : ''}</span></div>
     <div class="empty"><b>Estado:</b> ${escapeHtml(c.state || 'idle')} · <b>Tarefa:</b> ${escapeHtml(c.note || 'Ocioso')}</div>
-    <div class="empty"><b>Posição:</b> ${Math.round(c.x)}, ${Math.round(c.y)} · <b>Carregando:</b> ${carrying}</div>
+    <div class="empty"><b>Posição:</b> ${Math.round(c.x)}, ${Math.round(c.y)} · <b>Equipamento:</b> ${escapeHtml(equipText)}</div>
     <div class="empty"><b>Prioridade:</b> ${escapeHtml((priorityDefs[c.priority] || priorityDefs[defaultPriorityForRole(c.role)]).label)}</div>
   `;
 }
@@ -58,6 +64,7 @@ function updateUI(force = false) {
   if (dom.resMedicine) dom.resMedicine.textContent = Math.floor(state.resources.medicine || 0);
   ensureResearchState();
   updateResearchUI();
+  updateCraftingUI();
   updateColonistPanel();
 
   const c = selectedColonist();
@@ -75,6 +82,8 @@ function updateUI(force = false) {
       <div class="empty"><b>Bônus:</b> ${roleBonusText(c)}</div>
       <div class="empty"><b>Preferência:</b> ${escapeHtml(c.workPreference || priority.label)}</div>
       <div class="empty"><b>Habilidades:</b> ${escapeHtml(skills)}</div>
+      <div class="empty"><b>Equipado:</b> ${escapeHtml(equipmentLine(c))}</div>
+      ${equipmentButtons(c)}
       ${traits.length ? `<div class="tags">${traits.map(t => `<span class="tag ${t.startsWith('-') ? 'bad' : t.startsWith('+') ? 'good' : ''}">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
       ${statLine('Comida', c.hunger)}
       ${statLine('Sono', c.energy)}
@@ -146,6 +155,92 @@ function updateResearchUI() {
     <div class="empty">Desbloqueia: ${unlocks}</div>
     <div class="empty">Construa uma Mesa de Pesquisa e clique nela com um colono selecionado.</div>
     <div class="empty"><b>Liberadas:</b> ${unlockedLabels.join(', ') || 'nenhuma ainda'}</div>
+  `;
+}
+
+
+function equipmentLine(c) {
+  ensureEquipment(c);
+  const eq = c.equipment;
+  return [
+    eq.tool ? `Ferramenta: ${itemLabel(eq.tool)}` : 'Ferramenta: nenhuma',
+    eq.weapon ? `Arma: ${itemLabel(eq.weapon)}` : 'Arma: nenhuma',
+    eq.offhand ? `Apoio: ${itemLabel(eq.offhand)}` : 'Apoio: nenhum'
+  ].join(' · ');
+}
+
+function equipmentButtons(c) {
+  ensureEquipment(c);
+  const slots = ['tool','weapon','offhand'];
+  return `<div class="equipment-strip">${slots.map(slot => {
+    const key = c.equipment[slot];
+    if (!key) return `<span class="equipment-slot empty">${slotLabel(slot)} vazio</span>`;
+    const item = itemDefs[key];
+    return `<button class="equipment-slot" data-unequip-slot="${slot}"><img src="assets/sprites/${item.icon}.png" alt=""> ${escapeHtml(item.label)} ✕</button>`;
+  }).join('')}</div>`;
+}
+
+function slotLabel(slot) {
+  return ({ tool: 'Ferramenta', weapon: 'Arma', offhand: 'Apoio' })[slot] || slot;
+}
+
+function updateCraftingUI() {
+  const recipeGrid = document.getElementById('recipeGrid');
+  const info = document.getElementById('craftingInfo');
+  const inventory = document.getElementById('inventoryInfo');
+  if (!recipeGrid || !info || !inventory || !state) return;
+
+  const station = selectedCraftStationId ? state.objects.find(o => o.id === selectedCraftStationId) : null;
+  const stationType = station?.type || null;
+  const c = selectedColonist();
+  const stationTitle = station ? `${objectDefs[station.type]?.name || station.type} em ${station.x},${station.y}` : 'Nenhuma estação aberta';
+
+  info.innerHTML = `
+    <div><b>Estação:</b> ${escapeHtml(stationTitle)}</div>
+    <div class="empty">Botão direito em Bancada/Forja/Fogão/Estação Médica para filtrar receitas. Sem estação selecionada, mostra todas.</div>
+  `;
+
+  const recipes = Object.entries(recipeDefs).filter(([, recipe]) => {
+    if (stationType) return recipe.station === stationType;
+    return true;
+  });
+
+  recipeGrid.innerHTML = recipes.map(([key, recipe]) => {
+    const unlocked = recipeUnlocked(key);
+    const built = recipeStationBuilt(recipe.station);
+    const affordable = hasRecipeCost(recipe);
+    const disabled = !unlocked || !built || !affordable || !c;
+    const output = outputText(recipe.output);
+    const iconKey = Object.keys(recipe.output?.items || {})[0];
+    const icon = itemDefs[iconKey]?.icon || (recipe.output?.resources?.food ? 'icon_food' : 'tool_hammer');
+    const reason = !unlocked ? `Pesquise ${researchDefs[recipe.unlock]?.label || recipe.unlock}` : !built ? `Construa ${stationLabels[recipe.station] || recipe.station}` : !affordable ? `Faltam: ${itemCostText(recipe.cost, recipe.itemCost)}` : recipe.desc;
+    return `
+      <button class="recipe-card ${disabled ? 'locked' : ''}" data-craft="${key}" ${disabled ? 'disabled' : ''}>
+        <img src="assets/sprites/${icon}.png" alt="">
+        <b>${escapeHtml(recipe.label)}</b>
+        <small>${escapeHtml(itemCostText(recipe.cost, recipe.itemCost))}</small>
+        <small>Resultado: ${escapeHtml(output)}</small>
+        <em>${escapeHtml(reason || '')}</em>
+      </button>
+    `;
+  }).join('');
+
+  const itemEntries = Object.entries(state.items || {}).filter(([, qty]) => qty > 0);
+  inventory.innerHTML = `
+    <h3>Itens no estoque</h3>
+    <div class="item-strip">
+      ${itemEntries.length ? itemEntries.map(([key, qty]) => {
+        const item = itemDefs[key] || { label: key, icon: 'icon_warn' };
+        const canEquip = !!item.slot && !!c;
+        return `
+          <div class="item-pill">
+            <img src="assets/sprites/${item.icon}.png" alt="">
+            <span>${escapeHtml(item.label)} <b>x${qty}</b></span>
+            ${canEquip ? `<button class="mini" data-equip-item="${key}">Equipar</button>` : ''}
+          </div>
+        `;
+      }).join('') : '<span class="empty">Nenhum item fabricado ainda.</span>'}
+    </div>
   `;
 }
 
