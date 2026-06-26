@@ -19,7 +19,8 @@ function installEnvironmentDefinitions() {
     label: 'Tocha fixa',
     type: 'torch',
     cost: { wood: 3 },
-    work: 2.4
+    work: 2.4,
+    requires: 'lighting'
   };
 
   window.HavenfallContext.environmentDefsInstalled = true;
@@ -30,7 +31,7 @@ function installTorchBuildButton() {
   if (!grid || grid.querySelector('[data-build="torch"]')) return;
   const btn = document.createElement('button');
   btn.dataset.build = 'torch';
-  btn.innerHTML = 'Tocha fixa<br><small>3 madeira</small>';
+  btn.innerHTML = 'Tocha fixa<br><small>pesquisar iluminação</small>';
   grid.appendChild(btn);
 }
 
