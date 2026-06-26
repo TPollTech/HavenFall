@@ -71,6 +71,8 @@ function generateWorldFromSeed(config) {
     seed: config.seed,
     mapSize: config.mapSize,
     difficulty: config.difficulty,
+    chunkMode: !!size.chunkMode,
+    biomeIntent: size.biomeIntent || 'classic',
     cols,
     rows,
     tileSize: TILE,
@@ -84,8 +86,21 @@ function generateWorldFromSeed(config) {
     spawnPoints,
     pointsOfInterest,
     weatherPattern: generateWeatherPattern(config, rand),
-    generationVersion: '1.8.0'
+    generationVersion: '1.8.1'
   };
+}
+
+function difficultyResourceFactor(difficulty) {
+  if (difficulty === 'easy') return 1.12;
+  if (difficulty === 'hard') return 0.88;
+  if (difficulty === 'hardcore') return 0.72;
+  return 1;
+}
+
+function difficultyRockBonus(difficulty) {
+  if (difficulty === 'hard') return 0.05;
+  if (difficulty === 'hardcore') return 0.085;
+  return 0;
 }
 
 function createTerrainMap(cols, rows, config, rand) {
@@ -103,7 +118,7 @@ function createTerrainMap(cols, rows, config, rand) {
     });
   }
 
-  const hardRockBonus = config.difficulty === 'hard' ? 0.05 : 0;
+  const hardRockBonus = difficultyRockBonus(config.difficulty);
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const edge = Math.min(x, y, cols - 1 - x, rows - 1 - y);
@@ -174,8 +189,7 @@ function generateResourceFields(ctx) {
   const { terrain, cols, rows, spawn, config, rand, add } = ctx;
   const size = getMapSizeDef(config.mapSize);
   const area = cols * rows;
-  const difficultyFactor = config.difficulty === 'easy' ? 1.12 : config.difficulty === 'hard' ? 0.88 : 1;
-  const multiplier = size.resourceMultiplier * difficultyFactor;
+  const multiplier = size.resourceMultiplier * difficultyResourceFactor(config.difficulty);
   const counts = {
     tree: Math.floor(area * 0.030 * multiplier),
     bush: Math.floor(area * 0.012 * multiplier),
@@ -219,159 +233,136 @@ function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
 
 function placeAroundSpawn(add, terrain, spawn, type, amount, minR, maxR, rand) {
   for (let i = 0; i < amount; i++) {
-    for (let tries = 0; tries < 50; tries++) {
-      const angle = rand() * Math.PI * 2;
-      const r = minR + rand() * (maxR - minR);
-      const x = Math.round(spawn.x + Math.cos(angle) * r);
-      const y = Math.round(spawn.y + Math.sin(angle) * r);
-      if (!terrain[y]?.[x]) continue;
-      if (type === 'rock' && terrain[y][x] === 'sand') continue;
-      if (type !== 'rock' && terrain[y][x] === 'stone') continue;
-      if (add(type, x, y)) break;
-    }
+    const angle = rand() * Math.PI * 2;
+    const r = minR + rand() * (maxR - minR);
+    const x = Math.round(spawn.x + Math.cos(angle) * r);
+    const y = Math.round(spawn.y + Math.sin(angle) * r);
+    if (!terrain[y]?.[x]) continue;
+    add(type, x, y);
   }
 }
 
 function generatePointsOfInterest(ctx) {
   const { terrain, objects, cols, rows, spawn, config, rand, add } = ctx;
   const size = getMapSizeDef(config.mapSize);
-  const names = ['Old Depot', 'Broken Camp', 'Stone Ring', 'Abandoned Cache', 'Rusted Outpost', 'Silent Ruin', 'Ashen Shelter', 'Forgotten Relay'];
-  const types = ['ruin', 'cache', 'ore_field', 'wild_grove'];
-  const pois = [];
+  const points = [];
+  const names = ['Oficina afundada', 'Antiga torre de rádio', 'Mercado abandonado', 'Clínica rural', 'Depósito militar', 'Casa soterrada', 'Estação meteorológica'];
+  const types = ['ruin', 'cache', 'supply_crate'];
   for (let i = 0; i < size.poiCount; i++) {
+    const p = farRandomTile(terrain, objects, cols, rows, spawn, rand);
+    if (!p) continue;
     const type = types[Math.floor(rand() * types.length)];
-    const tile = farFreeTile(terrain, objects, cols, rows, spawn, rand, 12 + i * 2);
-    if (!tile) continue;
-    const poi = { id: worldUid('poi', i, config.seed), type, name: names[i % names.length], x: tile.x, y: tile.y, discovered: false, inspected: false, looted: false, lore: loreForPoi(type, i, config.seed) };
-    pois.push(poi);
-    decoratePoi(type, tile.x, tile.y, add, terrain, cols, rows, rand, poi);
-  }
-  return pois;
-}
-
-function decoratePoi(type, x, y, add, terrain, cols, rows, rand, poi = null) {
-  if (type === 'ruin') {
-    add('ruin', x, y, { poiId: poi?.id, inspected: false, looted: false, lore: poi?.lore });
-    [[1,0],[-1,0],[0,1],[0,-1],[2,0],[0,2],[-2,1],[1,-2]].forEach(([dx, dy], i) => {
-      const px = x + dx, py = y + dy;
-      if (!isWorldCoordInside(px, py, cols, rows)) return;
-      if (i % 3 === 0) add('wall', px, py);
-      else if (rand() < 0.48) add('rock', px, py);
+    const obj = add(type, p.x, p.y, { poiId: `poi_${i}` });
+    if (!obj) continue;
+    points.push({
+      id: `poi_${i}`,
+      name: `${names[i % names.length]} ${i + 1}`,
+      type,
+      x: p.x,
+      y: p.y,
+      discovered: false,
+      inspected: false
     });
-    add('supply_crate', x + 1, y + 1, { poiId: poi?.id, inspected: false, looted: false });
   }
-  if (type === 'cache') {
-    add('cache', x, y, { poiId: poi?.id, inspected: false, looted: false, lore: poi?.lore });
-    add('logs', x + 1, y);
-    if (rand() < 0.55) add('campfire', x, y + 1);
-  }
-  if (type === 'ore_field') {
-    add('supply_crate', x, y, { poiId: poi?.id, inspected: false, looted: false, lore: poi?.lore });
-    for (let i = 0; i < 8; i++) {
-      const px = x + Math.floor(rand() * 7) - 3;
-      const py = y + Math.floor(rand() * 7) - 3;
-      if (isWorldCoordInside(px, py, cols, rows)) { terrain[py][px] = 'stone'; add(rand() < 0.62 ? 'ore' : 'rock', px, py); }
-    }
-  }
-  if (type === 'wild_grove') {
-    add('cache', x, y, { poiId: poi?.id, inspected: false, looted: false, lore: poi?.lore });
-    for (let i = 0; i < 10; i++) {
-      const px = x + Math.floor(rand() * 9) - 4;
-      const py = y + Math.floor(rand() * 9) - 4;
-      if (!isWorldCoordInside(px, py, cols, rows)) continue;
-      terrain[py][px] = 'grass';
-      add(rand() < 0.58 ? 'tree' : 'berry', px, py);
-    }
-  }
+  return points;
 }
 
-function loreForPoi(type, index, seed) {
-  const lore = {
-    ruin: ['As marcas nas pedras indicam que alguém tentou fortificar este lugar às pressas.','Há símbolos gastos nas paredes. Parece que a ruína serviu como abrigo durante uma longa estação fria.','Entre os destroços, há sinais de uma antiga oficina improvisada.'],
-    cache: ['A caixa foi escondida debaixo de galhos secos. Quem deixou isso aqui provavelmente esperava voltar.','O baú tem marcas de transporte. Pode ter vindo de uma caravana perdida.','O local parece ter sido abandonado sem tempo de recolher suprimentos.'],
-    ore_field: ['O chão brilha com pequenos veios metálicos. Esta área pode sustentar uma produção inicial de ferramentas.','Pedras rachadas revelam minério escuro logo abaixo da superfície.','Há restos de extração antiga. Alguém já tentou minerar esta região.'],
-    wild_grove: ['O bosque cresceu em volta de objetos antigos. Parece seguro, mas estranhamente silencioso.','A vegetação é densa e fértil. Há sinais de acampamento sob as raízes.','Frutos selvagens cobrem o lugar. No centro, uma caixa esquecida ainda resiste ao tempo.']
-  };
-  const pool = lore[type] || lore.ruin;
-  return pool[hashSeed(`${seed}|poi-lore|${type}|${index}`) % pool.length];
-}
-
-function farFreeTile(terrain, objects, cols, rows, spawn, rand, minDist = 14) {
-  for (let i = 0; i < 240; i++) {
+function farRandomTile(terrain, objects, cols, rows, spawn, rand) {
+  for (let i = 0; i < 320; i++) {
     const x = 3 + Math.floor(rand() * (cols - 6));
     const y = 3 + Math.floor(rand() * (rows - 6));
-    if (Math.hypot(x - spawn.x, y - spawn.y) < minDist) continue;
-    if (terrain[y][x] === 'sand') continue;
+    if (Math.hypot(x - spawn.x, y - spawn.y) < Math.min(cols, rows) * 0.18) continue;
+    if (terrain[y]?.[x] === 'stone') continue;
     if (objects.some(o => o.x === x && o.y === y)) continue;
     return { x, y };
   }
   return null;
 }
 
-function placeStartingCamp({ add, spawn }) {
+function placeStartingCamp({ objects, spawn, add }) {
+  add('campfire', spawn.x, spawn.y);
   add('crate', spawn.x + 2, spawn.y);
-  add('campfire', spawn.x + 3, spawn.y + 1);
+  add('logs', spawn.x - 2, spawn.y + 1);
+}
+
+function makeExplorationMatrix(cols, rows) {
+  return Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
 }
 
 function makeSpawnPoints(spawn, cols, rows) {
-  const candidates = [{ x: spawn.x, y: spawn.y }, { x: spawn.x + 1, y: spawn.y }, { x: spawn.x, y: spawn.y + 1 }, { x: spawn.x - 1, y: spawn.y }, { x: spawn.x, y: spawn.y - 1 }, { x: spawn.x + 1, y: spawn.y + 1 }];
-  return candidates.filter(p => isWorldCoordInside(p.x, p.y, cols, rows));
+  return [
+    { x: Math.max(2, spawn.x - 8), y: Math.max(2, spawn.y - 5), kind: 'northwest' },
+    { x: Math.min(cols - 3, spawn.x + 8), y: Math.max(2, spawn.y - 5), kind: 'northeast' },
+    { x: Math.max(2, spawn.x - 8), y: Math.min(rows - 3, spawn.y + 5), kind: 'southwest' },
+    { x: Math.min(cols - 3, spawn.x + 8), y: Math.min(rows - 3, spawn.y + 5), kind: 'southeast' }
+  ];
 }
 
-function generateWeatherPattern(config, rand) {
-  const intensity = ({ low: 3, normal: 5, high: 8 })[config.eventIntensity] || 5;
-  return Array.from({ length: 20 }, (_, i) => ({ day: i + 1, rainChance: Math.round((0.12 + rand() * 0.18 + intensity * 0.01) * 100) / 100 }));
+function worldUid(type, index, seed) {
+  return `${type}_${index}_${hashSeed(`${seed}|${type}|${index}`).toString(36)}`;
+}
+
+function worldNoise(seed, x, y, salt) {
+  const h = hashSeed(`${seed}|${salt}|${x}|${y}`);
+  return h / 4294967295;
+}
+
+function isWorldCoordInside(x, y, cols, rows) {
+  return x >= 0 && y >= 0 && x < cols && y < rows;
 }
 
 function createInitialState(config = defaultNewGameConfig, selectedColonists = null) {
   config = { ...defaultNewGameConfig, ...config };
   if (!config.seed) config.seed = generateRandomSeed();
   const world = generateWorldFromSeed(config);
-  const candidates = selectedColonists && selectedColonists.length ? selectedColonists : [createColonistCandidate(0, config, `${config.seed}-fallback-0`), createColonistCandidate(1, config, `${config.seed}-fallback-1`), createColonistCandidate(2, config, `${config.seed}-fallback-2`)];
-  const colonists = candidates.slice(0, config.colonistCount).map((candidate, i) => {
-    const spawn = world.spawnPoints[i] || world.spawn;
-    return candidateToColonist(candidate, i + 1, spawn.x, spawn.y);
-  });
+  const spawn = world.spawn;
+  const candidates = selectedColonists?.length ? selectedColonists : Array.from({ length: Number(config.colonistCount || 3) }, (_, i) => createColonistCandidate(i, config));
+  const colonists = candidates.map((candidate, i) => candidateToColonist(candidate, i + 1, spawn.x + i, spawn.y + 2 + (i % 2)));
+  const resources = startingResources(config.resourcesPreset, config.difficulty);
   return {
     config,
-    world: { seed: world.seed, mapSize: world.mapSize, difficulty: world.difficulty, cols: world.cols, rows: world.rows, tileSize: world.tileSize, width: world.width, height: world.height, spawn: world.spawn, spawnPoints: world.spawnPoints, pointsOfInterest: world.pointsOfInterest, weatherPattern: world.weatherPattern, exploration: world.exploration, visibleTiles: world.visibleTiles, generationVersion: world.generationVersion },
-    worldMeta: { seed: world.seed, mapSize: world.mapSize, difficulty: world.difficulty, spawnPoints: world.spawnPoints, weatherPattern: world.weatherPattern },
+    world,
     terrain: world.terrain,
     objects: world.objects,
     colonists,
     wolves: [],
-    resources: initialResourcesForConfig(config),
-    items: initialItemsForConfig(config),
-    research: makeResearchState(),
+    resources,
+    items: startingItems(config.resourcesPreset),
     day: 1,
     hour: 6,
     speed: 1,
-    paused: false,
     weather: 'limpo',
     weatherTime: 0,
     eventDoneToday: false,
+    paused: true,
     log: [],
-    won: false
+    won: false,
+    research: { unlocked: {}, completed: [], current: null, progress: 0 }
   };
 }
 
-function initialResourcesForConfig(config = defaultNewGameConfig) {
-  const table = { scarce: { food: 10, wood: 12, stone: 4, metal: 0, medicine: 0 }, standard: { food: 14, wood: 18, stone: 6, metal: 0, medicine: 1 }, rich: { food: 24, wood: 30, stone: 12, metal: 2, medicine: 2 } };
-  const res = { ...(table[config.resourcesPreset] || table.standard) };
-  if (config.difficulty === 'easy') { res.food += 6; res.wood += 8; res.medicine += 1; }
-  if (config.difficulty === 'hard') { res.food = Math.max(4, res.food - 5); res.wood = Math.max(5, res.wood - 7); res.stone = Math.max(2, res.stone - 3); }
-  return res;
-}
-
-function initialItemsForConfig(config = defaultNewGameConfig) {
-  const preset = config.resourcesPreset || 'standard';
-  const base = { rope: 1, nails: 2, cloth: 1, leather: 0, arrows: 0 };
-  if (preset === 'rich') return { ...base, rope: 2, nails: 5, cloth: 3, leather: 1, arrows: 4 };
-  if (preset === 'scarce') return { rope: 0, nails: 1, cloth: 0, leather: 0, arrows: 0 };
+function startingResources(preset, difficulty = 'normal') {
+  const table = {
+    scarce: { food: 95, wood: 95, stone: 40, metal: 0, medicine: 6 },
+    standard: { food: 170, wood: 300, stone: 20, metal: 0, medicine: 19 },
+    rich: { food: 240, wood: 420, stone: 90, metal: 8, medicine: 28 }
+  };
+  const base = { ...(table[preset] || table.standard) };
+  if (difficulty === 'hard') {
+    base.food = Math.floor(base.food * 0.82);
+    base.medicine = Math.floor(base.medicine * 0.75);
+  }
+  if (difficulty === 'hardcore') {
+    base.food = Math.floor(base.food * 0.62);
+    base.wood = Math.floor(base.wood * 0.78);
+    base.stone = Math.floor(base.stone * 0.75);
+    base.medicine = Math.floor(base.medicine * 0.48);
+  }
   return base;
 }
 
-function isWorldCoordInside(x, y, cols, rows) { return x >= 0 && y >= 0 && x < cols && y < rows; }
-function worldNoise(seed, x, y, salt = 'n') { let h = hashSeed(`${seed}:${salt}:${x}:${y}`) || 1; h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) / 4294967295); }
-function worldUid(prefix, index, seed) { return `${prefix}_${index}_${hashSeed(`${seed}-${prefix}-${index}`).toString(36)}`; }
-function uid() { return Math.floor(Math.random() * 1e9).toString(36) + Date.now().toString(36).slice(-4); }
+function startingItems(preset) {
+  if (preset === 'rich') return { rope: 4, nails: 6, cloth: 4, leather: 3, stoneAxe: 1, pickaxe: 1 };
+  if (preset === 'scarce') return { rope: 1, nails: 1 };
+  return { rope: 2, nails: 2, cloth: 1 };
+}
