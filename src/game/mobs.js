@@ -82,6 +82,12 @@ function installMobSpawnPatches() {
     return nativeMoveAlongPath(c, tick * slow);
   };
 
+  const nativeHandleTaskAtTarget = handleTaskAtTarget;
+  handleTaskAtTarget = function handleTaskAtTargetWithMobHunt(c, tick) {
+    if (c?.task?.type === 'huntMob') return handleHuntMobTask(c, c.task, tick);
+    return nativeHandleTaskAtTarget(c, tick);
+  };
+
   window.HavenfallContext.mobSpawnPatched = true;
 }
 
@@ -130,11 +136,9 @@ function maybeSpawnMobs(dt) {
 function updateRabbit(mob, tick) {
   mob.anim += tick;
   const threat = nearestColonistToMob(mob, 4);
-  if (threat) {
+  if (threat && threat.task?.type !== 'huntMob') {
     mob.state = 'flee';
-    const dx = mob.px - threat.px;
-    const dy = mob.py - threat.py;
-    moveMobVector(mob, dx, dy, 72 * tick);
+    moveMobVector(mob, mob.px - threat.px, mob.py - threat.py, 72 * tick);
     return;
   }
   if (!mob.target || Math.random() < 0.006 * state.speed) mob.target = nearbyFreeTarget(mob, 5);
@@ -167,9 +171,7 @@ function updateWolfPackLogic() {
     wolf.packAllies = allies;
     wolf.aggression = clamp(0.75 + allies * 0.35, 0.65, 1.7);
     const rabbit = nearestMobOfType(wolf, 'rabbit', 5);
-    if (rabbit && Math.random() < 0.015 * state.speed) {
-      wolf.target = { x: rabbit.x, y: rabbit.y };
-    }
+    if (rabbit && Math.random() < 0.015 * state.speed) wolf.target = { x: rabbit.x, y: rabbit.y };
   }
 }
 
@@ -179,6 +181,50 @@ function applySpiderSlow(c, tick) {
   if (!c.statuses.includes('lento')) c.statuses.push('lento');
   c.health = clamp(c.health - tick * 0.22, 1, 100);
   c.note = 'Lento por picada de aranha';
+}
+
+function getMobAt(x, y) {
+  return ensureMobState().find(m => Math.round(m.x) === x && Math.round(m.y) === y) || null;
+}
+
+function assignHuntMob(c, mob) {
+  if (!c || !mob) return false;
+  const adj = nearestFreeAdjacent(mob.x, mob.y, c.x, c.y) || { x: mob.x, y: mob.y };
+  c.task = { type: 'huntMob', mobId: mob.id, x: adj.x, y: adj.y };
+  c.path = findPath(c.x, c.y, adj.x, adj.y);
+  c.work = 0;
+  c.note = `Caçando ${mobName(mob.type)}`;
+  return true;
+}
+
+function handleHuntMobTask(c, task, tick) {
+  const mob = ensureMobState().find(m => m.id === task.mobId);
+  if (!mob) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
+  const close = dist(c.x, c.y, mob.x, mob.y) <= 1;
+  if (!close) {
+    const adj = nearestFreeAdjacent(mob.x, mob.y, c.x, c.y) || { x: mob.x, y: mob.y };
+    c.task.x = adj.x;
+    c.task.y = adj.y;
+    c.path = findPath(c.x, c.y, adj.x, adj.y);
+    return;
+  }
+  ensureEquipment(c);
+  const hasKnife = c.equipment?.weapon === 'knife' || c.equipment?.tool === 'knife';
+  const weapon = itemDefs[c.equipment?.weapon] || itemDefs[c.equipment?.tool];
+  const speed = mob.type === 'rabbit' ? 2.0 : 3.8;
+  c.work += tick * workRate(c, 'defense');
+  c.note = `Caçando ${mobName(mob.type)} ${Math.floor((c.work / speed) * 100)}%`;
+  if (c.work < speed) return;
+  const damage = (weapon?.combat || 1.0) * (hasKnife ? 18 : 12);
+  mob.hp = clamp((mob.hp || 1) - damage, 0, 100);
+  c.work = 0;
+  if (mob.hp <= 0) {
+    const idx = state.mobs.findIndex(m => m.id === mob.id);
+    if (idx >= 0) finishMobDeath(mob, idx, c);
+    c.task = null;
+    c.note = 'Caça concluída';
+    c.mood = clamp(c.mood + (mob.type === 'rabbit' ? 2 : 4), 0, 100);
+  }
 }
 
 function nearestColonistToMob(mob, radius) {
@@ -229,16 +275,16 @@ function moveMobVector(mob, dx, dy, step) {
   if (isBlocked(mob.x, mob.y)) mob.target = null;
 }
 
-function finishMobDeath(mob, index) {
-  const drops = mobDrop(mob);
+function finishMobDeath(mob, index, hunter = null) {
+  const drops = mobDrop(mob, hunter);
   addItems(drops.items || {});
   addResources(drops.resources || {});
   state.mobs.splice(index, 1);
   log(`${mobName(mob.type)} abatido. Recursos adicionados ao estoque.`);
 }
 
-function mobDrop(mob) {
-  const hunterHasKnife = state.colonists?.some(c => c.equipment?.weapon === 'knife' || c.equipment?.tool === 'knife');
+function mobDrop(mob, hunter = null) {
+  const hunterHasKnife = hunter ? (hunter.equipment?.weapon === 'knife' || hunter.equipment?.tool === 'knife') : state.colonists?.some(c => c.equipment?.weapon === 'knife' || c.equipment?.tool === 'knife');
   const bonus = hunterHasKnife ? 1.5 : 1;
   if (mob.type === 'rabbit') return { items: { rawMeat: Math.ceil(2 * bonus), leather: Math.ceil(1 * bonus) } };
   if (mob.type === 'spider') return { items: { rope: 1, venom: 1 } };
@@ -294,6 +340,8 @@ window.canSpawnMob = canSpawnMob;
 window.spawnMob = spawnMob;
 window.updateMobsTick = updateMobsTick;
 window.mobDrop = mobDrop;
+window.getMobAt = getMobAt;
+window.assignHuntMob = assignHuntMob;
 
 installMobSpawnPatches();
 installMobRendererHook();
