@@ -43,6 +43,9 @@ async function loadQolPatchesThenBoot() {
   await loadScript('src/game/16_building_roof_ai_fix.js');
   if (typeof installBuildingRoofAiFixPatch === 'function') installBuildingRoofAiFixPatch();
 
+  await loadScript('src/game/17_ui_sprite_cleanup.js');
+  if (typeof installUiSpriteCleanupPatch === 'function') installUiSpriteCleanupPatch();
+
   bootGame();
 }
 
