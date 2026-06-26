@@ -114,6 +114,14 @@ function installMultiplayerLobbyPatch() {
     setTimeout(() => showCraftToast(`Pedido enviado: ${label}`), 0);
   }
 
+  function loadPlayersPatch() {
+    if (window.__havenfallPlayersPatchInstalled) return;
+    if (document.querySelector('script[src="src/game/24_multiplayer_players_patch.js"]')) return;
+    const script = document.createElement('script');
+    script.src = 'src/game/24_multiplayer_players_patch.js';
+    document.body.appendChild(script);
+  }
+
   async function joinOnlyIfHostExists(event) {
     const btn = event.target?.closest?.('#onlineJoinCleanBtn, #joinHostWorldBtn');
     if (!btn) return;
@@ -244,6 +252,7 @@ function installMultiplayerLobbyPatch() {
   };
 
   installStyles();
+  loadPlayersPatch();
 }
 
 if (typeof window !== 'undefined' && typeof setupEventListeners === 'function') {
