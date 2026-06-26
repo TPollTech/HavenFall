@@ -15,6 +15,9 @@
     { id: 'renderer', file: 'src/game/renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/hud-ui.js' },
+    { id: 'zones', file: 'src/game/zones.js' },
+    { id: 'environment', file: 'src/game/environment.js' },
+    { id: 'ui_modals', file: 'src/game/ui-modals.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
     { id: 'game_loop', file: 'src/game/game-loop.js' },
     { id: 'event_listeners', file: 'src/game/event-listeners.js' }
