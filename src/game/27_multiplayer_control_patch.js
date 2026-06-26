@@ -20,15 +20,15 @@ function installMultiplayerControlPatch() {
   }
 
   function isVisitor() {
-    return sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join';
+    return window.havenfallOnlineSessionActive === true && (sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join');
   }
 
   function isHost() {
-    return !isVisitor();
+    return window.havenfallOnlineSessionActive === true && !isVisitor();
   }
 
   function isOnlineActive() {
-    return !!window.havenfallOnlineMode || sessionStorage.getItem('havenfall-online-mode') === 'join';
+    return window.havenfallOnlineSessionActive === true;
   }
 
   function keyStateFromSet(set) {
@@ -53,20 +53,41 @@ function installMultiplayerControlPatch() {
     return (state?.colonists || []).filter(c => !c.dead && !c.downed && (c.health ?? 100) > 0);
   }
 
+  function chosenColonistIdFor(id) {
+    const saved = sessionStorage.getItem(`havenfall-colonist-choice-${id}`) || localStorage.getItem(`havenfall-colonist-choice-${id}`);
+    const numeric = Number(saved);
+    if (numeric && state?.colonists?.some(c => c.id === numeric && !c.dead && !c.downed)) return numeric;
+    return 0;
+  }
+
   function assignmentMap() {
     const players = activePlayers();
     const colonists = aliveColonists();
+    const used = new Set();
     const map = new Map();
-    players.forEach((p, index) => {
-      const c = colonists[index % Math.max(1, colonists.length)];
-      if (c) map.set(p.id, c.id);
-    });
+
+    for (const p of players) {
+      const chosen = chosenColonistIdFor(p.id);
+      if (chosen && !used.has(chosen)) {
+        map.set(p.id, chosen);
+        used.add(chosen);
+      }
+    }
+
+    for (const p of players) {
+      if (map.has(p.id)) continue;
+      const free = colonists.find(c => !used.has(c.id));
+      if (free) {
+        map.set(p.id, free.id);
+        used.add(free.id);
+      }
+    }
     return map;
   }
 
   function myColonist() {
     const map = assignmentMap();
-    const id = map.get(playerId());
+    const id = map.get(playerId()) || chosenColonistIdFor(playerId());
     return state?.colonists?.find(c => c.id === id) || null;
   }
 
@@ -114,7 +135,7 @@ function installMultiplayerControlPatch() {
   }
 
   async function sendInput() {
-    if (!isVisitor() && !window.havenfallOnlineMode) return;
+    if (!isOnlineActive()) return;
     try {
       await fetch('/api/multiplayer/inputs', {
         method: 'POST',
@@ -160,7 +181,7 @@ function installMultiplayerControlPatch() {
 
     const c = myColonist();
     badge.classList.add('show');
-    badge.innerHTML = `<b>${isVisitor() ? 'VISITANTE' : 'HOST'}</b><span>Teu colono: ${escapeHtml(c?.name || 'aguardando vaga')}</span>`;
+    badge.innerHTML = `<b>${isVisitor() ? 'VISITANTE' : 'HOST'}</b><span>Teu colono: ${escapeHtml(c?.name || 'aguardando escolha')}</span>`;
   }
 
   function installStyles() {
@@ -202,7 +223,7 @@ function installMultiplayerControlPatch() {
 
     if (!owner) {
       c.anim += dt * state.speed;
-      c.note = 'Aguardando jogador online';
+      c.note = 'Sem jogador online';
       c.task = null;
       c.path = [];
       c.work = 0;
@@ -257,6 +278,7 @@ function installMultiplayerControlPatch() {
 
   const previousHostOnline = window.havenfallHostOnline;
   window.havenfallHostOnline = function multiplayerControlHostOnline() {
+    window.havenfallOnlineSessionActive = true;
     window.havenfallOnlineMode = 'host';
     sessionStorage.setItem('havenfall-online-mode', 'host');
     const result = previousHostOnline?.apply(this, arguments);
@@ -266,6 +288,7 @@ function installMultiplayerControlPatch() {
 
   const previousJoinOnline = window.havenfallJoinOnline;
   window.havenfallJoinOnline = function multiplayerControlJoinOnline() {
+    window.havenfallOnlineSessionActive = true;
     window.havenfallOnlineMode = 'join';
     sessionStorage.setItem('havenfall-online-mode', 'join');
     const result = previousJoinOnline?.apply(this, arguments);
