@@ -52,9 +52,6 @@ async function loadQolPatchesThenBoot() {
   await loadScript('src/game/19_sandbox_multiplayer_patch.js');
   if (typeof installSandboxMultiplayerPatch === 'function') installSandboxMultiplayerPatch();
 
-  await loadScript('src/game/20_online_menu_patch.js');
-  if (typeof installOnlineMenuPatch === 'function') installOnlineMenuPatch();
-
   bootGame();
 }
 
