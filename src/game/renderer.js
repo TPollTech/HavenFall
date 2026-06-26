@@ -254,6 +254,11 @@ function drawGrid(bounds = visibleTileBounds(2)) {
   ctx.restore();
 }
 
+function objectRotationTurns(obj, type) {
+  if (type !== 'wall' && type !== 'door') return 0;
+  return ((Number(obj?.rotation) || 0) % 4 + 4) % 4;
+}
+
 function drawObject(obj) {
   const cx = obj.x * TILE + TILE / 2;
   const cy = obj.y * TILE + TILE / 2;
@@ -262,7 +267,7 @@ function drawObject(obj) {
     const img = images[objectDefs[type].img];
     ctx.save();
     ctx.globalAlpha = 0.42;
-    drawAsset(img, cx, (obj.y + 1) * TILE, objectScale(type, img), 0.5, 1);
+    drawAsset(img, cx, (obj.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, objectRotationTurns(obj, type));
     ctx.restore();
     drawProgress(cx, obj.y * TILE + 8, (obj.progress || 0) / buildDefs[obj.buildType].work, '#9bd36a');
     return;
@@ -271,7 +276,7 @@ function drawObject(obj) {
   const def = objectDefs[obj.type];
   if (!def) return;
   const _img = images[def.img];
-  drawAsset(_img, cx, (obj.y + 1) * TILE, objectScale(obj.type, _img), 0.5, 1);
+  drawAsset(_img, cx, (obj.y + 1) * TILE, objectScale(obj.type, _img), 0.5, 1, false, objectRotationTurns(obj, obj.type));
   if (obj.type === 'crop') {
     drawProgress(cx, obj.y * TILE + 7, (obj.growth || 0) / 100, '#80c96c');
   }
@@ -330,14 +335,16 @@ function objectScale(type, img) {
   return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, door:0.31, bench:0.20, stool:0.45 })[type] || 0.35;
 }
 
-function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false) {
+function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false, rotationTurns = 0) {
   if (!img) return;
   const w = img.width * scale;
   const h = img.height * scale;
+  const rotation = ((Number(rotationTurns) || 0) % 4 + 4) % 4;
   ctx.save();
-  if (flip) {
+  if (rotation || flip) {
     ctx.translate(x, y);
-    ctx.scale(-1, 1);
+    if (rotation) ctx.rotate(rotation * Math.PI / 2);
+    if (flip) ctx.scale(-1, 1);
     ctx.drawImage(img, -w * ax, -h * ay, w, h);
   } else {
     ctx.drawImage(img, x - w * ax, y - h * ay, w, h);
@@ -524,6 +531,14 @@ function drawBuildPreview() {
   ctx.fillStyle = can ? 'rgba(155, 211, 106, .22)' : 'rgba(230, 120, 102, .28)';
   ctx.fillRect(mouseTile.x * TILE, mouseTile.y * TILE, TILE, TILE);
   const img = images[objectDefs[type].img];
-  drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1);
+  const rotation = (type === 'wall' || type === 'door') && typeof currentBuildRotation !== 'undefined' ? currentBuildRotation : 0;
+  drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, rotation);
+  if (rotation) {
+    ctx.fillStyle = 'rgba(0,0,0,.62)';
+    ctx.fillRect(mouseTile.x * TILE + 5, mouseTile.y * TILE + 5, 34, 16);
+    ctx.fillStyle = '#ffe2a3';
+    ctx.font = '900 10px system-ui';
+    ctx.fillText(`R ${rotation * 90}°`, mouseTile.x * TILE + 9, mouseTile.y * TILE + 17);
+  }
   ctx.restore();
 }
