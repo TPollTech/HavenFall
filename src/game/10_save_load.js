@@ -24,8 +24,8 @@ function migrateLoadedState() {
   for (const key of ['rope','nails','cloth','leather','arrows']) state.items[key] = state.items[key] || 0;
   state.config = { ...defaultNewGameConfig, colonyName: 'Colônia antiga', seed: 'save-antigo', ...(state.config || {}) };
 
-  const cols = state.world?.cols || state.terrain?.[0]?.length || COLS;
-  const rows = state.world?.rows || state.terrain?.length || ROWS;
+  const cols = state.world?.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
+  const rows = state.world?.rows || state.terrain?.length || MAP_SIZES.standard.rows;
   state.world = {
     seed: state.config.seed,
     mapSize: state.config.mapSize,
@@ -40,6 +40,7 @@ function migrateLoadedState() {
     pointsOfInterest: state.world?.pointsOfInterest || [],
     weatherPattern: state.world?.weatherPattern || state.worldMeta?.weatherPattern || [],
     exploration: state.world?.exploration,
+    visibleTiles: state.world?.visibleTiles || [],
     generationVersion: state.world?.generationVersion || 'migrated'
   };
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
