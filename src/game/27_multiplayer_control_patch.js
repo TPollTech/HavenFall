@@ -14,6 +14,7 @@ function installMultiplayerControlPatch() {
   let playersCache = [];
   let inputTimer = null;
   let commandTimer = null;
+  let lastSpawnCheck = 0;
 
   function playerId() {
     let id = localStorage.getItem('havenfall-player-id');
@@ -22,6 +23,10 @@ function installMultiplayerControlPatch() {
       localStorage.setItem('havenfall-player-id', id);
     }
     return id;
+  }
+
+  function currentNick() {
+    return (localStorage.getItem('havenfall-player-nick') || `Jogador ${playerId().slice(-4).toUpperCase()}`).trim().slice(0, 22) || 'Jogador';
   }
 
   function isVisitor() {
@@ -62,45 +67,70 @@ function installMultiplayerControlPatch() {
     return (state?.colonists || []).filter(c => !c.dead && !c.downed && (c.health ?? 100) > 0);
   }
 
-  function chosenColonistIdFor(id) {
-    const p = playersCache.find(row => row.id === id);
-    const chosenFromServer = Number(p?.chosenColonistId || 0);
-    if (chosenFromServer && state?.colonists?.some(c => c.id === chosenFromServer && !c.dead && !c.downed)) return chosenFromServer;
-    const saved = sessionStorage.getItem(`havenfall-colonist-choice-${id}`) || localStorage.getItem(`havenfall-colonist-choice-${id}`);
-    const numeric = Number(saved);
-    if (numeric && state?.colonists?.some(c => c.id === numeric && !c.dead && !c.downed)) return numeric;
-    return 0;
+  function playerColonistFor(id) {
+    return aliveColonists().find(c => c.playerId === id) || null;
+  }
+
+  function nextColonistId() {
+    return Math.max(0, ...(state?.colonists || []).map(c => Number(c.id) || 0)) + 1;
+  }
+
+  function findSpawnTileForPlayer(index = 0) {
+    const spawn = state?.world?.spawn || state?.spawn || state?.world?.spawnPoints?.[0] || { x: 8, y: 8 };
+    const sx = spawn.x || 8;
+    const sy = spawn.y || 8;
+    for (let radius = 0; radius <= 8; radius++) {
+      for (let y = sy - radius; y <= sy + radius; y++) {
+        for (let x = sx - radius; x <= sx + radius; x++) {
+          if (!isInside(x, y)) continue;
+          if (isBlocked(x, y)) continue;
+          if (state.colonists?.some(c => !c.dead && c.x === x && c.y === y)) continue;
+          return { x, y };
+        }
+      }
+    }
+    return { x: sx + index, y: sy };
+  }
+
+  function spawnColonistForPlayer(p, index = 0) {
+    if (!isHost() || !state || !p?.id) return null;
+    const existing = playerColonistFor(p.id);
+    if (existing) return existing;
+
+    const tile = findSpawnTileForPlayer(index);
+    const sprite = ['colonistA', 'colonistB', 'colonistC'][index % 3];
+    const c = makeColonist(nextColonistId(), p.nick || 'Jogador', sprite, tile.x, tile.y, 'Faz-tudo');
+    c.playerId = p.id;
+    c.playerNick = p.nick || 'Jogador';
+    c.onlineControlled = true;
+    c.workPreference = 'Coleta';
+    c.priority = 'gather';
+    c.note = `Controlado por ${c.playerNick}`;
+    state.colonists.push(c);
+    log(`${c.playerNick} entrou no mundo como colono.`);
+    updateUI(true);
+    setTimeout(() => window.havenfallForcePublishWorld?.('player-spawn'), 80);
+    return c;
+  }
+
+  function ensurePlayerColonists() {
+    if (!isHost() || !state || !activeSession) return;
+    const players = activePlayers();
+    players.forEach((p, index) => spawnColonistForPlayer(p, index));
   }
 
   function assignmentMap() {
-    const players = activePlayers();
-    const colonists = aliveColonists();
-    const used = new Set();
+    if (isHost()) ensurePlayerColonists();
     const map = new Map();
-
-    for (const p of players) {
-      const chosen = chosenColonistIdFor(p.id);
-      if (chosen && !used.has(chosen)) {
-        map.set(p.id, chosen);
-        used.add(chosen);
-      }
-    }
-
-    for (const p of players) {
-      if (map.has(p.id)) continue;
-      const free = colonists.find(c => !used.has(c.id));
-      if (free) {
-        map.set(p.id, free.id);
-        used.add(free.id);
-      }
+    for (const p of activePlayers()) {
+      const c = playerColonistFor(p.id);
+      if (c) map.set(p.id, c.id);
     }
     return map;
   }
 
   function myColonist() {
-    const map = assignmentMap();
-    const id = map.get(playerId()) || chosenColonistIdFor(playerId());
-    return state?.colonists?.find(c => c.id === id) || null;
+    return playerColonistFor(playerId()) || null;
   }
 
   function inputForPlayer(id) {
@@ -166,6 +196,10 @@ function installMultiplayerControlPatch() {
       const data = await res.json();
       playersCache = data.players || playersCache;
       remoteInputs = new Map((data.inputs || []).map(input => [input.id, input]));
+      if (Date.now() - lastSpawnCheck > 600) {
+        lastSpawnCheck = Date.now();
+        ensurePlayerColonists();
+      }
     } catch (_) {}
   }
 
@@ -175,6 +209,7 @@ function installMultiplayerControlPatch() {
       if (!res.ok) return;
       const data = await res.json();
       playersCache = data.players || playersCache;
+      if (isHost()) ensurePlayerColonists();
     } catch (_) {}
   }
 
@@ -194,7 +229,7 @@ function installMultiplayerControlPatch() {
 
     const c = myColonist();
     badge.classList.add('show');
-    badge.innerHTML = `<b>${isVisitor() ? 'VISITANTE' : 'HOST'}</b><span>Teu colono: ${escapeHtml(c?.name || 'aguardando escolha')}</span>`;
+    badge.innerHTML = `<b>${isVisitor() ? 'VISITANTE' : 'HOST'}</b><span>Teu colono: ${escapeHtml(c?.name || 'criando personagem...')}</span>`;
   }
 
   function loadFlowAnimationPatch() {
@@ -210,23 +245,7 @@ function installMultiplayerControlPatch() {
     const style = document.createElement('style');
     style.id = 'multiplayerControlStyles';
     style.textContent = `
-      .online-control-badge {
-        position: fixed;
-        right: 14px;
-        top: 54px;
-        z-index: 86;
-        display: none;
-        align-items: center;
-        gap: 8px;
-        max-width: min(420px, calc(100vw - 28px));
-        padding: 8px 11px;
-        border-radius: 999px;
-        background: rgba(7,11,17,.76);
-        border: 1px solid rgba(255,255,255,.12);
-        color: rgba(232,241,255,.86);
-        font: 900 12px system-ui;
-        box-shadow: 0 12px 28px rgba(0,0,0,.24);
-      }
+      .online-control-badge { position: fixed; right: 14px; top: 54px; z-index: 86; display: none; align-items: center; gap: 8px; max-width: min(420px, calc(100vw - 28px)); padding: 8px 11px; border-radius: 999px; background: rgba(7,11,17,.76); border: 1px solid rgba(255,255,255,.12); color: rgba(232,241,255,.86); font: 900 12px system-ui; box-shadow: 0 12px 28px rgba(0,0,0,.24); }
       .online-control-badge.show { display: flex; }
       .online-control-badge b { color: #9bd36a; letter-spacing: .08em; }
       .online-control-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -238,20 +257,21 @@ function installMultiplayerControlPatch() {
   updateColonist = function multiplayerControlledUpdateColonist(c, dt) {
     if (!state || state.gameOver || !isOnlineActive() || !activeSession) return previousUpdateColonist(c, dt);
 
+    if (isHost()) ensurePlayerColonists();
     const players = activePlayers();
     const map = assignmentMap();
     const owner = players.find(p => map.get(p.id) === c.id);
 
     if (!owner) {
       c.anim += dt * state.speed;
-      c.note = 'Sem jogador online';
-      c.task = null;
-      c.path = [];
-      c.work = 0;
+      c.note = c.playerNick ? `Sem sinal de ${c.playerNick}` : 'Sem jogador online';
       c.x = Math.round((c.px - TILE / 2) / TILE);
       c.y = Math.round((c.py - TILE / 2) / TILE);
       return;
     }
+
+    c.playerNick = owner.nick || c.playerNick || c.name;
+    c.name = c.playerNick;
 
     if (isHost()) {
       const tick = dt * state.speed;
