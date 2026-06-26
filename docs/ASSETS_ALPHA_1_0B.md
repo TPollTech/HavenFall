@@ -1,6 +1,6 @@
 # Assets Alpha 1.0B — States, Beds, Death & Harvest Feedback
 
-Este manifesto lista os sprites finais recomendados para substituir os placeholders visuais desenhados por canvas em `src/game/21_alpha_state_system.js`.
+Este manifesto lista os sprites finais recomendados para substituir os placeholders visuais desenhados por canvas em `src/game/21_alpha_state_system.js` e `src/game/23_alpha_base_doors.js`.
 
 O sistema já funciona sem estes PNGs, mas estes nomes devem ser usados quando os assets forem produzidos.
 
@@ -120,6 +120,9 @@ fx_hit_impact_01.png
 fx_hit_impact_02.png
 fx_sleep_zzz_01.png
 fx_heal_plus_01.png
+fx_door_open_01.png
+fx_door_close_01.png
+fx_door_hit_01.png
 ```
 
 ## Objetos do mundo
@@ -135,6 +138,21 @@ corpse_colonist_01.png
 corpse_wolf_01.png
 ```
 
+## Portas e abrigo
+
+```txt
+door_wood_closed_horizontal.png
+door_wood_open_horizontal_0.png
+door_wood_open_horizontal_1.png
+door_wood_open_horizontal_2.png
+door_wood_closed_vertical.png
+door_wood_open_vertical_0.png
+door_wood_open_vertical_1.png
+door_wood_open_vertical_2.png
+door_wood_damaged_01.png
+door_wood_broken_01.png
+```
+
 ## Lobo
 
 ```txt
@@ -147,12 +165,13 @@ wolf_dead_0.png
 
 ## Observação de implementação
 
-A Alpha 1.0B não depende destes arquivos para rodar. Enquanto eles não existem, `21_alpha_state_system.js` usa:
+A Alpha 1.0B não depende destes arquivos para rodar. Enquanto eles não existem, `21_alpha_state_system.js` e `23_alpha_base_doors.js` usam:
 
 - rotação do sprite base para sono/incapacitado/morto;
 - tags de estado acima do colono;
 - partículas desenhadas por canvas;
 - barras de progresso no recurso alvo;
-- overlay simples na cama ocupada.
+- overlay simples na cama ocupada;
+- porta `door_wood` rotacionada/aberta por canvas.
 
 Quando os PNGs estiverem prontos, o próximo patch deve substituir os desenhos por canvas por sprites reais, mantendo os mesmos nomes de estado.
