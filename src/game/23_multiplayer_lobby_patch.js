@@ -1,6 +1,9 @@
 'use strict';
 
 function installMultiplayerLobbyPatch() {
+  if (window.__havenfallMultiplayerLobbyInstalled) return;
+  window.__havenfallMultiplayerLobbyInstalled = true;
+
   let statusTimer = null;
   let lastRevisionSeen = 0;
 
@@ -183,4 +186,8 @@ function installMultiplayerLobbyPatch() {
   };
 
   installStyles();
+}
+
+if (typeof window !== 'undefined' && typeof setupEventListeners === 'function') {
+  installMultiplayerLobbyPatch();
 }
