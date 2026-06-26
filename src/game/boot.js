@@ -22,6 +22,7 @@
     { id: 'ui_clean_controller', file: 'src/game/ui-clean-controller.js' },
     { id: 'ui_clean_visibility', file: 'src/game/ui-clean-visibility-fix.js' },
     { id: 'modal_compat', file: 'src/game/modal-compat.js' },
+    { id: 'ui_header_structure_fix', file: 'src/game/ui-header-structure-fix.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
