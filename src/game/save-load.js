@@ -13,6 +13,30 @@ function saveGame(manual = false) {
   return true;
 }
 
+function fallbackLoreForPoi(type = 'ruin', index = 0, seed = 'save') {
+  const labels = {
+    ruin: 'Registros antigos mencionam um abrigo improvisado e sinais de abandono apressado.',
+    cache: 'O baú contém marcas de uma rota de sobreviventes que passou por aqui antes da colônia.',
+    supply_crate: 'A caixa parece ter sido deixada por uma expedição perdida durante a queda da região.'
+  };
+  const suffix = typeof hashSeed === 'function' ? hashSeed(`${seed}|${type}|${index}`).toString(36).slice(0, 4).toUpperCase() : String(index + 1);
+  return `${labels[type] || labels.ruin} Código de campo: ${suffix}.`;
+}
+
+function ensureLoadedEntityIds(list, prefix) {
+  if (!Array.isArray(list)) return [];
+  for (let i = 0; i < list.length; i++) {
+    const entity = list[i];
+    if (!entity || typeof entity !== 'object') continue;
+    if (typeof ensureEntityId === 'function') ensureEntityId(entity, prefix);
+    else {
+      entity.id = entity.id || `${prefix}_${i}_${Date.now()}`;
+      entity.uid = entity.uid || entity.id;
+    }
+  }
+  return list;
+}
+
 function migrateLoadedState() {
   state.resources = state.resources || {};
   state.resources.food = state.resources.food || 0;
@@ -30,6 +54,8 @@ function migrateLoadedState() {
     seed: state.config.seed,
     mapSize: state.config.mapSize,
     difficulty: state.config.difficulty,
+    chunkMode: !!state.world?.chunkMode,
+    biomeIntent: state.world?.biomeIntent || getMapSizeDef(state.config.mapSize)?.biomeIntent || 'classic',
     cols,
     rows,
     tileSize: TILE,
@@ -41,11 +67,23 @@ function migrateLoadedState() {
     weatherPattern: state.world?.weatherPattern || state.worldMeta?.weatherPattern || [],
     exploration: state.world?.exploration,
     visibleTiles: state.world?.visibleTiles || [],
+    biomes: state.world?.biomes || null,
     generationVersion: state.world?.generationVersion || 'migrated'
   };
+
+  if (!state.world.biomes && window.BiomeEngine?.createBiomeMap) {
+    state.world.biomes = window.BiomeEngine.createBiomeMap(cols, rows, state.config.seed, state.config);
+  }
+
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
+  state.objects = ensureLoadedEntityIds(state.objects || [], 'obj');
+  state.colonists = ensureLoadedEntityIds(state.colonists || [], 'colonist');
+  state.mobs = ensureLoadedEntityIds(state.mobs || [], 'mob');
+  state.wolves = ensureLoadedEntityIds(state.wolves || [], 'wolf');
+
   ensureExplorationState();
   ensureResearchState();
+
   for (const obj of state.objects || []) {
     if (['ruin','cache','supply_crate'].includes(obj.type)) {
       obj.interactable = true;
@@ -54,11 +92,20 @@ function migrateLoadedState() {
       if (obj.unknown === undefined) obj.unknown = !obj.inspected;
     }
   }
-  for (const poi of state.world.pointsOfInterest || []) {
+
+  for (let i = 0; i < (state.world.pointsOfInterest || []).length; i++) {
+    const poi = state.world.pointsOfInterest[i];
+    if (!poi || typeof poi !== 'object') continue;
     if (poi.inspected === undefined) poi.inspected = false;
     if (poi.looted === undefined) poi.looted = false;
-    if (!poi.lore) poi.lore = loreForPoi(poi.type || 'ruin', 0, state.config.seed);
+    if (!poi.id && typeof uid === 'function') poi.id = uid('poi');
+    if (!poi.lore) {
+      poi.lore = typeof loreForPoi === 'function'
+        ? loreForPoi(poi.type || 'ruin', i, state.config.seed)
+        : fallbackLoreForPoi(poi.type || 'ruin', i, state.config.seed);
+    }
   }
+
   for (const c of state.colonists || []) { ensureColonistMeta(c); ensureEquipment(c); }
   updateExploration(true);
 }
@@ -71,7 +118,7 @@ function loadGame() {
   }
   try {
     const data = JSON.parse(raw);
-    state = data.state;
+    state = data.state || {};
     migrateLoadedState();
     selectedColonistId = data.selectedColonistId || state.colonists?.[0]?.id || 1;
     currentBuild = null;
@@ -80,8 +127,8 @@ function loadGame() {
     updateUI(true);
     return true;
   } catch (err) {
-    console.error(err);
-    if (state) log('Falha ao carregar o save.');
+    console.error('[Save Load Error]', err);
+    if (state) log('Falha ao carregar o save. Veja o console para detalhes.');
     return false;
   }
 }
