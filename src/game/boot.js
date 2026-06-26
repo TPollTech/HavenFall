@@ -21,6 +21,7 @@
     { id: 'biomes', file: 'src/game/biomes.js' },
     { id: 'exploration_system', file: 'src/game/exploration-system.js' },
     { id: 'map_pathfinding', file: 'src/game/map-pathfinding.js' },
+    { id: 'geology_system', file: 'src/game/systems/geology-system.js' },
     { id: 'schedule_manager', file: 'src/game/systems/schedule-manager.js' },
     { id: 'world_systems', file: 'src/game/world-systems.js' },
     { id: 'renderer', file: 'src/game/renderer.js' },
