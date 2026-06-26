@@ -3,6 +3,7 @@
 (() => {
   const CORE_BLUEPRINTS = Object.freeze([
     { id: 'state', file: 'src/game/state.js' },
+    { id: 'asset_audit', file: 'src/game/asset-audit.js' },
     { id: 'game_setup', file: 'src/game/game-setup.js' },
     { id: 'colonist_generation', file: 'src/game/colonist-generation.js' },
     { id: 'research_system', file: 'src/game/research-system.js' },
@@ -10,6 +11,7 @@
     { id: 'colonist_mechanics', file: 'src/game/colonist-mechanics.js' },
     { id: 'screen_manager', file: 'src/game/screen-manager.js' },
     { id: 'world_generator', file: 'src/game/world-generator.js' },
+    { id: 'biomes', file: 'src/game/biomes.js' },
     { id: 'exploration_system', file: 'src/game/exploration-system.js' },
     { id: 'map_pathfinding', file: 'src/game/map-pathfinding.js' },
     { id: 'world_systems', file: 'src/game/world-systems.js' },
@@ -19,9 +21,11 @@
     { id: 'modal_compat', file: 'src/game/modal-compat.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
+    { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
     { id: 'defense', file: 'src/game/defense.js' },
     { id: 'hauling_adv', file: 'src/game/hauling-adv.js' },
     { id: 'climate_adv', file: 'src/game/climate-adv.js' },
+    { id: 'mobs', file: 'src/game/mobs.js' },
     { id: 'ui_modals', file: 'src/game/ui-modals.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
     { id: 'game_loop', file: 'src/game/game-loop.js' },
