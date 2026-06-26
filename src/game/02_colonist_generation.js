@@ -1,26 +1,56 @@
 'use strict';
 
-function initialResourcesForConfig(config) {
-  const table = {
-    scarce: { food: 10, wood: 12, stone: 4, metal: 0, medicine: 0 },
-    standard: { food: 14, wood: 18, stone: 6, metal: 0, medicine: 1 },
-    rich: { food: 24, wood: 30, stone: 12, metal: 2, medicine: 2 }
-  };
-  const res = { ...(table[config.resourcesPreset] || table.standard) };
-  if (config.difficulty === 'easy') { res.food += 6; res.wood += 8; res.medicine += 1; }
-  if (config.difficulty === 'hard') { res.food = Math.max(4, res.food - 5); res.wood = Math.max(5, res.wood - 7); res.stone = Math.max(2, res.stone - 3); }
-  return res;
-}
+const colonistTraitDefs = Object.freeze({
+  physical: {
+    resilient: { label: 'resistente' },
+    short: { label: 'baixo' },
+    tall: { label: 'alto' },
+    agile: { label: 'ágil' },
+    good_vision: { label: 'visão boa' },
+    steady_hands: { label: 'mãos firmes' },
+    tires_fast: { label: 'cansa rápido' },
+    light_step: { label: 'passo leve' }
+  },
+  positive: {
+    calm: { label: 'calmo' },
+    curious: { label: 'curioso' },
+    optimistic: { label: 'otimista' },
+    focused: { label: 'focado' },
+    brave: { label: 'corajoso' },
+    organized: { label: 'organizado' },
+    patient: { label: 'paciente' }
+  },
+  negative: {
+    stubborn: { label: 'teimoso' },
+    fearful: { label: 'medroso' },
+    impatient: { label: 'impaciente' },
+    clumsy: { label: 'desastrado' },
+    nocturnal: { label: 'noturno' },
+    pessimistic: { label: 'pessimista' },
+    distracted: { label: 'distraído' }
+  }
+});
+
+const colonistWorkPreferenceDefs = Object.freeze({
+  build: { label: 'Construção', priority: 'build' },
+  gather: { label: 'Coleta', priority: 'gather' },
+  defense: { label: 'Defesa', priority: 'defense' },
+  research: { label: 'Pesquisa', priority: null },
+  cooking: { label: 'Culinária', priority: null },
+  medicine: { label: 'Medicina', priority: null }
+});
 
 function createColonistCandidate(index, config, forceSeed = null) {
-  const rand = seededRandom(forceSeed || `${config.seed}-colonist-${index}-${Date.now()}-${Math.random()}`);
+  const seed = forceSeed || `${config?.seed || 'default-seed'}-candidate-${index}`;
+  const rand = seededRandom(seed);
   const firstNames = ['Lia','Téo','Nico','Bia','Gael','Mira','Davi','Luma','Caio','Iris','Noa','Eva','Ravi','Mila','Otto','Nina'];
   const roles = ['Coletora', 'Construtor', 'Faz-tudo'];
   const sprites = ['colonistA', 'colonistB', 'colonistC'];
-  const physical = ['resistente', 'baixo', 'alto', 'ágil', 'visão boa', 'mãos firmes', 'cansa rápido', 'passo leve'];
-  const psycheGood = ['calmo', 'curioso', 'otimista', 'focado', 'corajoso', 'organizado', 'paciente'];
-  const psycheBad = ['teimoso', 'medroso', 'impaciente', 'desastrado', 'noturno', 'pessimista', 'distraído'];
-  const workPrefs = ['Construção', 'Coleta', 'Defesa', 'Pesquisa', 'Culinária', 'Medicina'];
+  const workPrefs = Object.keys(colonistWorkPreferenceDefs);
+  const workPreferenceId = workPrefs[Math.floor(rand() * workPrefs.length)];
+  const physicalTraitIds = pickMany(Object.keys(colonistTraitDefs.physical), 2, rand);
+  const positiveTraitIds = pickMany(Object.keys(colonistTraitDefs.positive), 2, rand);
+  const negativeTraitIds = pickMany(Object.keys(colonistTraitDefs.negative), 1, rand);
   const skills = {
     coleta: 1 + Math.floor(rand() * 5),
     construcao: 1 + Math.floor(rand() * 5),
@@ -30,17 +60,22 @@ function createColonistCandidate(index, config, forceSeed = null) {
   };
   const role = roles[Math.floor(rand() * roles.length)];
   return {
-    setupId: uid(),
+    setupId: `candidate_${index}_${hashSeed(seed).toString(36)}`,
     locked: false,
+    rerollCount: 0,
     name: firstNames[Math.floor(rand() * firstNames.length)],
     age: 18 + Math.floor(rand() * 38),
     sprite: sprites[index % sprites.length],
     role,
-    physicalTraits: pickMany(physical, 2, rand),
-    positiveTraits: pickMany(psycheGood, 2, rand),
-    negativeTraits: pickMany(psycheBad, 1, rand),
+    physicalTraitIds,
+    positiveTraitIds,
+    negativeTraitIds,
+    physicalTraits: physicalTraitIds.map(id => colonistTraitLabel('physical', id)),
+    positiveTraits: positiveTraitIds.map(id => colonistTraitLabel('positive', id)),
+    negativeTraits: negativeTraitIds.map(id => colonistTraitLabel('negative', id)),
     skills,
-    workPreference: workPrefs[Math.floor(rand() * workPrefs.length)],
+    workPreferenceId,
+    workPreference: workPreferenceLabel(workPreferenceId),
     needs: {
       hunger: 72 + Math.floor(rand() * 22),
       energy: 72 + Math.floor(rand() * 22),
@@ -59,63 +94,76 @@ function pickMany(list, amount, rand) {
   return out;
 }
 
+function colonistTraitLabel(kind, id) {
+  return colonistTraitDefs[kind]?.[id]?.label || id;
+}
+
+function workPreferenceLabel(id) {
+  return colonistWorkPreferenceDefs[id]?.label || id || 'Sem preferência';
+}
+
 function generateColonistCandidates(config) {
   colonistCandidates = Array.from({ length: config.colonistCount }, (_, i) => createColonistCandidate(i, config, `${config.seed}-candidate-${i}`));
-  renderColonistSelection();
+  if (typeof renderColonistSelection === 'function') renderColonistSelection();
+  return colonistCandidates;
 }
 
 function rerollColonist(index) {
-  if (colonistCandidates[index]?.locked) return;
-  colonistCandidates[index] = createColonistCandidate(index, newGameConfig, `${newGameConfig.seed}-reroll-${index}-${Date.now()}-${Math.random()}`);
-  renderColonistSelection();
+  const current = colonistCandidates[index];
+  if (current?.locked) return;
+  const rerollCount = (current?.rerollCount || 0) + 1;
+  const next = createColonistCandidate(index, newGameConfig, `${newGameConfig.seed}-reroll-${index}-${rerollCount}`);
+  next.rerollCount = rerollCount;
+  colonistCandidates[index] = next;
+  if (typeof renderColonistSelection === 'function') renderColonistSelection();
 }
 
-function renderColonistSelection() {
-  if (!dom.colonistCards) return;
-  dom.colonistCards.innerHTML = colonistCandidates.map((c, i) => `
-    <article class="colonist-card ${c.locked ? 'locked' : ''}">
-      <div class="colonist-head">
-        <div class="colonist-preview"><img src="assets/sprites/${c.sprite}_down_0.png" alt=""></div>
-        <div>
-          <h2>${escapeHtml(c.name)}, ${c.age}</h2>
-          <div class="empty">${escapeHtml(c.role)} · Prefere ${escapeHtml(c.workPreference)}</div>
-        </div>
-      </div>
-      <div class="tags">
-        ${c.physicalTraits.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
-        ${c.positiveTraits.map(t => `<span class="tag good">+ ${escapeHtml(t)}</span>`).join('')}
-        ${c.negativeTraits.map(t => `<span class="tag bad">- ${escapeHtml(t)}</span>`).join('')}
-      </div>
-      <div class="empty">Habilidades: coleta ${c.skills.coleta}, construção ${c.skills.construcao}, defesa ${c.skills.defesa}, pesquisa ${c.skills.pesquisa}, medicina ${c.skills.medicina}</div>
-      <div class="empty">Necessidades: comida ${c.needs.hunger}%, energia ${c.needs.energy}%, humor ${c.needs.mood}%, saúde ${c.needs.health}%</div>
-      <div class="card-actions">
-        <button data-reroll-colonist="${i}" ${c.locked ? 'disabled' : ''}>Rerolar</button>
-        <button data-lock-colonist="${i}" class="${c.locked ? 'active' : 'secondary'}">${c.locked ? 'Travado' : 'Travar'}</button>
-      </div>
-    </article>
-  `).join('');
+function rerollUnlockedColonists() {
+  colonistCandidates = colonistCandidates.map((c, i) => {
+    if (c.locked) return c;
+    const rerollCount = (c.rerollCount || 0) + 1;
+    const next = createColonistCandidate(i, newGameConfig, `${newGameConfig.seed}-reroll-all-${i}-${rerollCount}`);
+    next.rerollCount = rerollCount;
+    return next;
+  });
+  if (typeof renderColonistSelection === 'function') renderColonistSelection();
 }
 
 function candidateToColonist(candidate, id, x, y) {
   const c = makeColonist(id, candidate.name, candidate.sprite, x, y, candidate.role);
+  const workPreferenceId = candidate.workPreferenceId || legacyWorkPreferenceId(candidate.workPreference);
   c.age = candidate.age;
   c.appearance = candidate.sprite;
-  c.physicalTraits = candidate.physicalTraits;
-  c.positiveTraits = candidate.positiveTraits;
-  c.negativeTraits = candidate.negativeTraits;
+  c.physicalTraitIds = candidate.physicalTraitIds || [];
+  c.positiveTraitIds = candidate.positiveTraitIds || [];
+  c.negativeTraitIds = candidate.negativeTraitIds || [];
+  c.physicalTraits = candidate.physicalTraits || c.physicalTraitIds.map(t => colonistTraitLabel('physical', t));
+  c.positiveTraits = candidate.positiveTraits || c.positiveTraitIds.map(t => colonistTraitLabel('positive', t));
+  c.negativeTraits = candidate.negativeTraits || c.negativeTraitIds.map(t => colonistTraitLabel('negative', t));
   c.skills = candidate.skills;
-  c.workPreference = candidate.workPreference;
+  c.workPreferenceId = workPreferenceId;
+  c.workPreference = workPreferenceLabel(workPreferenceId);
   c.hunger = candidate.needs.hunger;
   c.energy = candidate.needs.energy;
   c.mood = candidate.needs.mood;
   c.health = candidate.needs.health;
-  c.priority = priorityFromWorkPreference(candidate.workPreference, candidate.role);
+  c.priority = priorityFromWorkPreference(workPreferenceId, candidate.role);
   return c;
 }
 
-function priorityFromWorkPreference(pref, role) {
-  if (pref === 'Construção') return 'build';
-  if (pref === 'Coleta') return 'gather';
-  if (pref === 'Defesa') return 'defense';
-  return defaultPriorityForRole(role);
+function legacyWorkPreferenceId(pref) {
+  const legacy = {
+    'Construção': 'build',
+    'Coleta': 'gather',
+    'Defesa': 'defense',
+    'Pesquisa': 'research',
+    'Culinária': 'cooking',
+    'Medicina': 'medicine'
+  };
+  return legacy[pref] || pref;
+}
+
+function priorityFromWorkPreference(prefOrId, role) {
+  const id = legacyWorkPreferenceId(prefOrId);
+  return colonistWorkPreferenceDefs[id]?.priority || defaultPriorityForRole(role);
 }
