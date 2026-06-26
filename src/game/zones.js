@@ -3,6 +3,44 @@
 let currentZoneTool = null;
 let zoneDragActive = false;
 
+const zoneDefs = Object.freeze({
+  storage: {
+    label: 'Armazenamento',
+    short: 'Estoque',
+    hint: 'Madeira solta, recursos e itens úteis.',
+    fill: 'rgba(99, 164, 255, .18)',
+    stroke: 'rgba(99, 164, 255, .72)'
+  },
+  dumping: {
+    label: 'Descarte / lixo',
+    short: 'Descarte',
+    hint: 'Área para lixo, carcaças e objetos indesejados.',
+    fill: 'rgba(155, 128, 98, .20)',
+    stroke: 'rgba(210, 160, 95, .76)'
+  },
+  home: {
+    label: 'Casa / área base',
+    short: 'Casa',
+    hint: 'Área que representa a casa e o núcleo da colônia.',
+    fill: 'rgba(112, 212, 146, .18)',
+    stroke: 'rgba(112, 212, 146, .78)'
+  },
+  safe: {
+    label: 'Área segura',
+    short: 'Seguro',
+    hint: 'Refúgio para colonos feridos, doentes ou em perigo.',
+    fill: 'rgba(184, 138, 255, .18)',
+    stroke: 'rgba(184, 138, 255, .78)'
+  },
+  priority: {
+    label: 'Área prioritária',
+    short: 'Prioridade',
+    hint: 'Área de foco para trabalho e movimentação futura.',
+    fill: 'rgba(245, 209, 92, .18)',
+    stroke: 'rgba(245, 209, 92, .82)'
+  }
+});
+
 const zoneSystem = {
   ensureState() {
     if (!state) return null;
@@ -25,8 +63,14 @@ const zoneSystem = {
     if (!zones || !isInside(x, y) || !isTileDiscovered(x, y)) return false;
     const key = this.key(x, y);
     if (!zoneType || zoneType === 'none') delete zones.grid[key];
-    else zones.grid[key] = zoneType;
+    else if (zoneDefs[zoneType]) zones.grid[key] = zoneType;
     return true;
+  },
+
+  clearAll() {
+    const zones = this.ensureState();
+    if (!zones) return;
+    zones.grid = {};
   },
 
   getZoneAt(x, y) {
@@ -47,23 +91,73 @@ const zoneSystem = {
     return out;
   },
 
-  findFreeStorageTile() {
-    const tiles = this.entries('storage');
+  count(type = null) {
+    return this.entries(type).length;
+  },
+
+  counts() {
+    const counts = {};
+    for (const key of Object.keys(zoneDefs)) counts[key] = 0;
+    const zones = this.ensureState();
+    if (!zones) return counts;
+    for (const type of Object.values(zones.grid)) {
+      if (counts[type] !== undefined) counts[type]++;
+    }
+    return counts;
+  },
+
+  findFreeTile(type) {
+    const tiles = this.entries(type);
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
       if (getObjectAt(tile.x, tile.y)) continue;
-      const reserved = state?.colonists?.some(c => c.task?.type === 'haul' && c.task.storageX === tile.x && c.task.storageY === tile.y);
+      const reserved = state?.colonists?.some(c => c.task?.zoneType === type && c.task.zoneX === tile.x && c.task.zoneY === tile.y);
       if (!reserved) return { x: tile.x, y: tile.y };
     }
     return null;
   },
 
-  count(type = null) {
-    return this.entries(type).length;
+  findFreeStorageTile() {
+    return this.findFreeTile('storage');
+  },
+
+  nearestTile(type, fromX, fromY) {
+    const tiles = this.entries(type);
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+      if (isBlocked(tile.x, tile.y)) continue;
+      const d = dist(tile.x, tile.y, fromX, fromY);
+      if (d < bestDist) {
+        bestDist = d;
+        best = { x: tile.x, y: tile.y };
+      }
+    }
+    return best;
   }
 };
 
 window.zoneSystem = zoneSystem;
+
+function zoneLabel(type) {
+  return zoneDefs[type]?.label || type || 'Sem zona';
+}
+
+function zoneToolLabel() {
+  if (!currentZoneTool) return 'nenhuma ferramenta ativa';
+  if (currentZoneTool === 'none') return 'apagando zonas';
+  return `marcando ${zoneDefs[currentZoneTool]?.label?.toLowerCase() || currentZoneTool}`;
+}
+
+function clearZoneTool(reason = '') {
+  if (!currentZoneTool && !zoneDragActive) return;
+  currentZoneTool = null;
+  zoneDragActive = false;
+  updateZonePanel();
+  updateZonesModal();
+  if (reason && typeof log === 'function') log(`Ferramenta de zona desativada${reason ? `: ${reason}` : ''}.`);
+}
 
 function installZonePanel() {
   const panel = document.querySelector('[data-panel="zones"]');
@@ -73,31 +167,135 @@ function installZonePanel() {
     <div class="panel-title-row">
       <div>
         <h2>Zonas</h2>
-        <p class="panel-hint">Marque áreas de armazenamento. Colonos ociosos levam toras soltas para essas zonas.</p>
+        <p class="panel-hint">Atalho rápido. O controle completo abre em modal para não entupir o rodapé.</p>
       </div>
+      <button data-open-zones-modal>Gerenciar zonas</button>
     </div>
     <div class="zone-tool-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-      <button data-zone-tool="storage">Zona de armazenamento</button>
-      <button data-zone-tool="none" class="secondary">Apagar zona</button>
+      ${zoneToolButtonsHtml()}
+      <button data-zone-tool="none" class="secondary">Apagar</button>
+      <button data-clear-zone-tool class="secondary">Desativar ferramenta</button>
     </div>
     <div id="zoneInfo" class="subtle-box">Nenhuma zona marcada ainda.</div>
   `;
 }
 
+function zoneToolButtonsHtml() {
+  return Object.entries(zoneDefs).map(([key, def]) => `<button data-zone-tool="${key}">${def.short}</button>`).join('');
+}
+
+function zoneCountCardsHtml() {
+  const counts = zoneSystem.counts();
+  return Object.entries(zoneDefs).map(([key, def]) => `
+    <div class="colonist-stat-card">
+      <b>${def.label}</b>
+      <span>${counts[key] || 0} tile${counts[key] === 1 ? '' : 's'}</span>
+      <small style="display:block;margin-top:4px;color:#b8b0a0;">${def.hint}</small>
+    </div>
+  `).join('');
+}
+
 function updateZonePanel() {
   const info = document.getElementById('zoneInfo');
   if (!info || !state) return;
-  const storageCount = zoneSystem.count('storage');
-  const toolLabel = currentZoneTool === 'storage' ? 'marcando armazenamento' : currentZoneTool === 'none' ? 'apagando zonas' : 'nenhuma ferramenta ativa';
-  info.innerHTML = `<b>Armazenamento:</b> ${storageCount} tile${storageCount === 1 ? '' : 's'} · <b>Ferramenta:</b> ${toolLabel}`;
+  const counts = zoneSystem.counts();
+  info.innerHTML = `
+    <b>Ferramenta:</b> ${zoneToolLabel()}<br>
+    Estoque: ${counts.storage || 0} · Descarte: ${counts.dumping || 0} · Casa: ${counts.home || 0} · Seguro: ${counts.safe || 0} · Prioridade: ${counts.priority || 0}
+  `;
   document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.zoneTool === currentZoneTool));
 }
 
 function setZoneTool(tool) {
+  if (tool !== 'none' && !zoneDefs[tool]) return;
   currentZoneTool = currentZoneTool === tool ? null : tool;
   currentBuild = null;
   updateZonePanel();
+  updateZonesModal();
   if (typeof updateUI === 'function') updateUI(true);
+}
+
+function ensureZonesModalStyles() {
+  if (document.getElementById('zones-modal-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'zones-modal-styles';
+  style.textContent = `
+    .zones-modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+    .zones-modal-actions button.active,.zone-tool-row button.active{outline:2px solid #f5d15c;background:rgba(245,209,92,.16);}
+    .zones-help-list{margin:10px 0 0;padding-left:18px;color:#b8b0a0;}
+  `;
+  document.head.appendChild(style);
+}
+
+function ensureZonesModalElement() {
+  ensureZonesModalStyles();
+  let modal = document.getElementById('zones-modal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'zones-modal';
+  modal.className = 'game-modal-backdrop';
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(modal);
+  modal.addEventListener('click', event => {
+    if (event.target === modal || event.target.closest('[data-close-zones-modal]')) closeZonesModal();
+    const clear = event.target.closest('[data-clear-zone-tool]');
+    if (clear) clearZoneTool('manual');
+    const wipe = event.target.closest('[data-clear-all-zones]');
+    if (wipe && confirm('Apagar todas as zonas marcadas?')) {
+      zoneSystem.clearAll();
+      updateZonePanel();
+      updateZonesModal();
+      if (typeof updateUI === 'function') updateUI(true);
+    }
+  });
+  return modal;
+}
+
+function openZonesModal() {
+  const modal = ensureZonesModalElement();
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  updateZonesModal();
+}
+
+function closeZonesModal() {
+  const modal = document.getElementById('zones-modal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function updateZonesModal() {
+  const modal = document.getElementById('zones-modal');
+  if (!modal || !modal.classList.contains('show')) return;
+  modal.innerHTML = `
+    <article class="colonist-modal-card">
+      <header class="colonist-modal-header">
+        <div>
+          <div class="kicker">Gerenciamento</div>
+          <h3>Zonas da colônia</h3>
+          <p class="empty">Escolha uma ferramenta e pinte no mapa. Escolher construção desativa a zona automaticamente.</p>
+        </div>
+        <button class="colonist-modal-close" data-close-zones-modal>Fechar</button>
+      </header>
+      <section class="colonist-modal-grid">${zoneCountCardsHtml()}</section>
+      <div class="zones-modal-actions">
+        ${zoneToolButtonsHtml()}
+        <button data-zone-tool="none" class="secondary">Apagar zona</button>
+        <button data-clear-zone-tool class="secondary">Desativar ferramenta</button>
+        <button data-clear-all-zones class="danger">Apagar todas</button>
+      </div>
+      <div class="subtle-box"><b>Ferramenta ativa:</b> ${zoneToolLabel()}</div>
+      <ul class="zones-help-list">
+        <li><b>Armazenamento:</b> recebe toras soltas automaticamente.</li>
+        <li><b>Descarte:</b> reservada para lixo, carcaças e itens indesejados nas próximas simulações.</li>
+        <li><b>Casa:</b> define o núcleo da base.</li>
+        <li><b>Área segura:</b> colonos feridos/doentes podem buscar abrigo nela.</li>
+        <li><b>Prioritária:</b> gancho para foco de trabalho e defesa.</li>
+      </ul>
+    </article>
+  `;
+  document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.zoneTool === currentZoneTool));
 }
 
 function zoneTileFromEvent(event) {
@@ -112,7 +310,10 @@ function paintZoneFromEvent(event) {
   const tile = zoneTileFromEvent(event);
   if (!tile) return false;
   const changed = zoneSystem.setZone(tile.x, tile.y, currentZoneTool);
-  if (changed) updateZonePanel();
+  if (changed) {
+    updateZonePanel();
+    updateZonesModal();
+  }
   return changed;
 }
 
@@ -158,6 +359,16 @@ function installZoneButtons() {
   if (document.body.dataset.zoneButtonsReady === '1') return;
   document.body.dataset.zoneButtonsReady = '1';
   document.addEventListener('click', event => {
+    const open = event.target.closest?.('[data-open-zones-modal]');
+    if (open) {
+      openZonesModal();
+      return;
+    }
+    const clear = event.target.closest?.('[data-clear-zone-tool]');
+    if (clear) {
+      clearZoneTool('manual');
+      return;
+    }
     const btn = event.target.closest?.('[data-zone-tool]');
     if (!btn) return;
     setZoneTool(btn.dataset.zoneTool);
@@ -171,8 +382,9 @@ function drawZonesOverlay() {
   ctx.scale(viewTransform.scale, viewTransform.scale);
   for (const tile of zoneSystem.entries()) {
     if (!isTileDiscovered(tile.x, tile.y)) continue;
-    ctx.fillStyle = tile.type === 'storage' ? 'rgba(99, 164, 255, .18)' : 'rgba(255,255,255,.10)';
-    ctx.strokeStyle = tile.type === 'storage' ? 'rgba(99, 164, 255, .72)' : 'rgba(255,255,255,.35)';
+    const def = zoneDefs[tile.type] || zoneDefs.storage;
+    ctx.fillStyle = def.fill;
+    ctx.strokeStyle = def.stroke;
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE);
@@ -209,10 +421,20 @@ function assignHaulTask(c, obj, storageTile) {
   if (!c || !obj || !storageTile) return false;
   const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
   obj.reservedBy = c.id;
-  c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y };
+  c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y, zoneType: 'storage', zoneX: storageTile.x, zoneY: storageTile.y };
   c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
   c.work = 0;
   c.note = 'Indo buscar toras soltas';
+  return true;
+}
+
+function assignMoveToZone(c, type, note) {
+  if (!c || c.task) return false;
+  const tile = zoneSystem.nearestTile(type, c.x, c.y);
+  if (!tile) return false;
+  c.task = { type: 'move', x: tile.x, y: tile.y, zoneType: type, zoneX: tile.x, zoneY: tile.y };
+  c.path = findPath(c.x, c.y, tile.x, tile.y);
+  c.note = note || `Indo para ${zoneLabel(type)}`;
   return true;
 }
 
@@ -249,27 +471,37 @@ function processHaulTask(c) {
   return false;
 }
 
-function updateZonesTick() {
-  installZonePanel();
-  updateZonePanel();
+function updateZoneBehaviors() {
   if (!state || appScreen !== SCREEN.PLAYING) return;
 
   for (const c of state.colonists || []) {
     if (processHaulTask(c)) continue;
   }
 
-  if (!zoneSystem.count('storage')) return;
   for (const c of state.colonists || []) {
     if (c.task || c.energy < 18 || c.health < 20) continue;
-    const target = findLooseHaulTarget();
-    if (!target) return;
-    const storageTile = zoneSystem.findFreeStorageTile();
-    if (!storageTile) return;
-    assignHaulTask(c, target, storageTile);
+
+    if ((c.health < 38 || c.statuses?.includes('gripe') || c.statuses?.includes('hipotermia')) && assignMoveToZone(c, 'safe', 'Buscando área segura')) continue;
+
+    const target = zoneSystem.count('storage') ? findLooseHaulTarget() : null;
+    if (target) {
+      const storageTile = zoneSystem.findFreeStorageTile();
+      if (storageTile && assignHaulTask(c, target, storageTile)) continue;
+    }
+
+    if (c.mood < 22 && assignMoveToZone(c, 'home', 'Voltando para casa')) continue;
   }
+}
+
+function updateZonesTick() {
+  installZonePanel();
+  updateZonePanel();
+  updateZonesModal();
+  updateZoneBehaviors();
 }
 
 installZonePanel();
 installZoneButtons();
 installZoneInput();
 installZoneRendererHook();
+ensureZonesModalElement();
