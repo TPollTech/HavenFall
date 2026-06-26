@@ -1,6 +1,6 @@
 'use strict';
 
-const RAW_ASSET_PIPELINE_NOTE = 'assets/raw contém artes brutas ainda não recortadas. O jogo só deve carregar arquivos já exportados e registrados em assetNames.';
+const RAW_ASSET_PIPELINE_NOTE = 'Assets brutos em assets/raw são fonte de produção. O runtime carrega apenas sprites exportados em assets/sprites e registrados em assetNames.';
 
 const assetAudit = {
   available: new Set(assetNames),
@@ -84,7 +84,7 @@ const assetAudit = {
           nativeReady,
           fallbackActive: !nativeReady,
           rawSourceOnly: !!normalized.rawRequired && !nativeReady,
-          note: nativeReady ? 'sprite pronto no assetNames' : 'usa fallback até recortar/exportar de assets/raw'
+          note: nativeReady ? 'sprite pronto no assetNames' : 'fallback registrado; raw não é carregado no runtime'
         });
       }
     }
@@ -93,6 +93,11 @@ const assetAudit = {
 
   missingRawExports() {
     return this.report().filter(row => row.rawSourceOnly);
+  },
+
+  printReport() {
+    console.info('[Asset Audit]', this.pipelineNote);
+    console.table?.(this.report());
   }
 };
 
@@ -100,5 +105,7 @@ window.assetAudit = assetAudit;
 window.HavenfallContext = window.HavenfallContext || {};
 window.HavenfallContext.assetAuditReport = assetAudit.report();
 window.HavenfallContext.rawAssetPipelineNote = RAW_ASSET_PIPELINE_NOTE;
-console.info('[Asset Audit]', RAW_ASSET_PIPELINE_NOTE);
-console.table?.(window.HavenfallContext.assetAuditReport);
+
+if (new URLSearchParams(window.location.search).has('assetAudit')) {
+  assetAudit.printReport();
+}
