@@ -7,9 +7,11 @@ function installMultiplayerLobbyPatch() {
   let statusTimer = null;
   let lastRevisionSeen = 0;
   let craftToastTimer = null;
+  let lastStatusHtml = '';
+  let lastBadgeHtml = '';
 
   function mpRole() {
-    return sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join' ? 'visitante' : 'host';
+    return window.havenfallOnlineSessionActive === true && (sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join') ? 'visitante' : 'host';
   }
 
   function sessionUrl() {
@@ -22,7 +24,9 @@ function installMultiplayerLobbyPatch() {
 
   function setOnlineStatus(html) {
     const box = statusBox();
-    if (box) box.innerHTML = html;
+    if (!box || lastStatusHtml === html) return;
+    lastStatusHtml = html;
+    box.innerHTML = html;
   }
 
   function worldLabel(data) {
@@ -44,7 +48,8 @@ function installMultiplayerLobbyPatch() {
 
   async function refreshLobbyStatus() {
     const input = document.getElementById('onlineShareCleanInput') || document.getElementById('onlineShareLink');
-    if (input) input.value = sessionUrl();
+    const url = sessionUrl();
+    if (input && input.value !== url) input.value = url;
 
     try {
       const data = await fetchStatus();
@@ -81,12 +86,17 @@ function installMultiplayerLobbyPatch() {
       return;
     }
     badge.classList.add('show');
+    let html;
     if (!data?.online) {
-      badge.innerHTML = `<b>${escapeHtml(mpRole().toUpperCase())}</b><span>sem mundo publicado neste link</span>`;
-      return;
+      html = `<b>${escapeHtml(mpRole().toUpperCase())}</b><span>sem mundo publicado neste link</span>`;
+    } else {
+      const role = mpRole() === 'visitante' ? 'VISITANTE' : 'HOST';
+      html = `<b>${role}</b><span>${escapeHtml(data.colonyName || 'Colônia')} · Dia ${escapeHtml(data.day || '?')} · rev ${escapeHtml(data.revision || 0)}</span>`;
     }
-    const role = mpRole() === 'visitante' ? 'VISITANTE' : 'HOST';
-    badge.innerHTML = `<b>${role}</b><span>${escapeHtml(data.colonyName || 'Colônia')} · Dia ${escapeHtml(data.day || '?')} · rev ${escapeHtml(data.revision || 0)}</span>`;
+    if (lastBadgeHtml !== html) {
+      lastBadgeHtml = html;
+      badge.innerHTML = html;
+    }
   }
 
   function showCraftToast(message) {
@@ -178,16 +188,8 @@ function installMultiplayerLobbyPatch() {
         box-shadow: 0 12px 28px rgba(0,0,0,.24);
       }
       .online-world-badge.show { display: flex; align-items: center; gap: 9px; }
-      .online-world-badge b {
-        color: #9bd36a;
-        letter-spacing: .08em;
-      }
-      .online-world-badge span {
-        color: rgba(232,241,255,.78);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
+      .online-world-badge b { color: #9bd36a; letter-spacing: .08em; }
+      .online-world-badge span { color: rgba(232,241,255,.78); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
       .station-craft-toast {
         position: fixed;
         left: 50%;
@@ -205,10 +207,7 @@ function installMultiplayerLobbyPatch() {
         box-shadow: 0 12px 32px rgba(0,0,0,.38);
         transition: opacity .16s ease, transform .16s ease;
       }
-      .station-craft-toast.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
+      .station-craft-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     `;
     document.head.appendChild(style);
   }
@@ -227,7 +226,7 @@ function installMultiplayerLobbyPatch() {
     if (screen === 'ONLINE') {
       refreshLobbyStatus();
       if (statusTimer) clearInterval(statusTimer);
-      statusTimer = setInterval(refreshLobbyStatus, 1500);
+      statusTimer = setInterval(refreshLobbyStatus, 2500);
     } else if (screen !== SCREEN.PLAYING) {
       if (statusTimer) clearInterval(statusTimer);
       statusTimer = null;
@@ -247,8 +246,6 @@ function installMultiplayerLobbyPatch() {
     } finally {
       if (shouldGuardStationModal && stationOverlay) stationOverlay.id = originalStationOverlayId;
     }
-
-    if (appScreen === SCREEN.PLAYING && Date.now() % 1500 < 80) refreshLobbyStatus();
   };
 
   installStyles();
