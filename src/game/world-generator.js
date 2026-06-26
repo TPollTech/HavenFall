@@ -86,7 +86,7 @@ function generateWorldFromSeed(config) {
     spawnPoints,
     pointsOfInterest,
     weatherPattern: generateWeatherPattern(config, rand),
-    generationVersion: '1.8.1'
+    generationVersion: '1.8.2'
   };
 }
 
@@ -101,6 +101,26 @@ function difficultyRockBonus(difficulty) {
   if (difficulty === 'hard') return 0.05;
   if (difficulty === 'hardcore') return 0.085;
   return 0;
+}
+
+function eventIntensityValue(intensity) {
+  return ({ low: 3, normal: 5, high: 8 })[intensity] || 5;
+}
+
+function generateWeatherPattern(config, rand) {
+  const intensity = eventIntensityValue(config?.eventIntensity || 'normal');
+  const difficultyBonus = config?.difficulty === 'hardcore' ? 0.06 : config?.difficulty === 'hard' ? 0.035 : 0;
+  return Array.from({ length: 30 }, (_, i) => {
+    const day = i + 1;
+    const seasonalWave = Math.sin((day / 30) * Math.PI * 2) * 0.035;
+    const rainChance = Math.max(0.04, Math.min(0.62, 0.12 + rand() * 0.18 + intensity * 0.01 + seasonalWave + difficultyBonus));
+    const stormChance = Math.max(0.01, Math.min(0.26, 0.025 + intensity * 0.008 + difficultyBonus * 0.55 + rand() * 0.035));
+    return {
+      day,
+      rainChance: Math.round(rainChance * 100) / 100,
+      stormChance: Math.round(stormChance * 100) / 100
+    };
+  });
 }
 
 function createTerrainMap(cols, rows, config, rand) {
