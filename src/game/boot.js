@@ -27,6 +27,7 @@
     { id: 'hauling_adv', file: 'src/game/hauling-adv.js' },
     { id: 'climate_adv', file: 'src/game/climate-adv.js' },
     { id: 'mobs', file: 'src/game/mobs.js' },
+    { id: 'creature_renderer', file: 'src/game/creature-renderer.js' },
     { id: 'mob_interactions', file: 'src/game/mob-interactions.js' },
     { id: 'ui_modals', file: 'src/game/ui-modals.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
