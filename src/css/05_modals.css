@@ -1,0 +1,29 @@
+.game-popup-modal,
+.pause-overlay,
+.modal {
+  background:
+    radial-gradient(circle at center, rgba(227, 169, 63, .08), transparent 42%),
+    rgba(2, 4, 8, .76);
+}
+
+.pause-card,
+.modal-box {
+  border-radius: 26px;
+  border: 1px solid rgba(227, 169, 63, .34);
+  background:
+    linear-gradient(180deg, rgba(24, 28, 38, .98), rgba(10, 13, 19, .98)),
+    radial-gradient(circle at top, rgba(227, 169, 63, .18), transparent 58%);
+  box-shadow: 0 34px 110px rgba(0, 0, 0, .62);
+}
+
+.pause-card h1,
+.modal-box h1,
+.modal-box h2 {
+  color: #fff3df;
+  text-shadow: 0 10px 30px rgba(0,0,0,.38);
+}
+
+.modal-box p,
+.pause-card p {
+  color: #cfc5b4;
+}
