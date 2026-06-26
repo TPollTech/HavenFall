@@ -59,8 +59,60 @@ function equipAvailableHandcart(c) {
   return equipItem(c, 'handcart');
 }
 
+function installHaulingZonePatch() {
+  if (window.HavenfallContext?.haulingZonePatchInstalled || typeof assignHaulTask !== 'function' || typeof processHaulTask !== 'function') return;
+
+  assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile) {
+    if (!c || !obj || !storageTile) return false;
+    const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
+    obj.reservedBy = c.id;
+    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y, zoneType: 'storage', zoneX: storageTile.x, zoneY: storageTile.y };
+    c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
+    c.work = 0;
+    c.note = `Indo buscar toras soltas · carga ${getColonistCurrentLoadCount(c)}/${getColonistMaxCapacity(c)}`;
+    return true;
+  };
+
+  processHaulTask = function processHaulTaskWithCapacity(c) {
+    if (!c?.task || c.task.type !== 'haul') return false;
+    if (c.path?.length) return true;
+
+    const task = c.task;
+    if (task.phase === 'pickup') {
+      const obj = state.objects.find(o => o.id === task.objId);
+      if (!obj) { c.task = null; c.note = 'Ocioso'; return true; }
+      const amount = getHaulAmountForColonist(c, 'wood');
+      c.carrying = { resource: 'wood', amount, label: 'toras' };
+      state.objects = state.objects.filter(o => o.id !== obj.id);
+      if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+      task.phase = 'dropoff';
+      task.x = task.storageX;
+      task.y = task.storageY;
+      c.path = findPath(c.x, c.y, task.storageX, task.storageY);
+      c.note = `Levando toras ao armazenamento · ${amount}/${getColonistMaxCapacity(c)}`;
+      return true;
+    }
+
+    if (task.phase === 'dropoff') {
+      const cargo = c.carrying;
+      if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
+      log(`${c.name} levou ${cargo?.amount || 0} madeira para a zona de armazenamento.`);
+      c.carrying = null;
+      c.task = null;
+      c.work = 0;
+      c.note = 'Ocioso';
+      return true;
+    }
+
+    return false;
+  };
+
+  window.HavenfallContext.haulingZonePatchInstalled = true;
+}
+
 function updateHaulingAdvTick() {
   installHaulingDefinitions();
+  installHaulingZonePatch();
   if (!state || appScreen !== SCREEN.PLAYING || !isResearched('heavy_hauling')) return;
 
   for (const c of state.colonists || []) {
@@ -80,3 +132,4 @@ window.getHaulAmountForColonist = getHaulAmountForColonist;
 window.equipAvailableHandcart = equipAvailableHandcart;
 
 installHaulingDefinitions();
+installHaulingZonePatch();
