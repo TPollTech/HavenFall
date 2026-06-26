@@ -13,6 +13,55 @@ function installQolPatch() {
   let eventLogExpanded = false;
   let wallBuildOrientation = 'horizontal';
   let worldSanitizedForQol = false;
+  let lastAlphaTierKey = null;
+  let lastAlphaDoneSignature = '';
+
+  const alphaTiers = [
+    {
+      key: 'survival',
+      label: 'Tier 1 — Sobrevivência',
+      note: 'Estabeleça o básico para sobreviver ao começo.',
+      goals: [
+        { key: 'wood20', label: 'Coletar 20 madeira', done: () => (state?.resources?.wood || 0) >= 20 },
+        { key: 'stone12', label: 'Coletar 12 pedra', done: () => (state?.resources?.stone || 0) >= 12 },
+        { key: 'bed1', label: 'Construir pelo menos 1 cama', done: () => hasBuiltObject('bed') },
+        { key: 'bench1', label: 'Construir uma bancada', done: () => hasBuiltObject('bench') }
+      ]
+    },
+    {
+      key: 'tools',
+      label: 'Tier 2 — Ferramentas e Base',
+      note: 'Comece a acelerar coleta, construção e defesa.',
+      goals: [
+        { key: 'tool1', label: 'Fabricar ou equipar uma ferramenta', done: () => hasAnyItemOrEquipped(['stoneAxe', 'pickaxe', 'hammer', 'toolkit']) },
+        { key: 'weapon1', label: 'Fabricar ou equipar uma arma simples', done: () => hasAnyItemOrEquipped(['knife', 'spear', 'club', 'bow']) },
+        { key: 'walls4', label: 'Construir 4 paredes para iniciar uma base', done: () => countBuiltObject('wall') >= 4 },
+        { key: 'storage1', label: 'Construir um depósito', done: () => hasBuiltObject('crate') }
+      ]
+    },
+    {
+      key: 'research',
+      label: 'Tier 3 — Pesquisa e Produção',
+      note: 'Desbloqueie estruturas que mudam o ritmo da colônia.',
+      goals: [
+        { key: 'researchDesk', label: 'Construir uma mesa de pesquisa', done: () => hasBuiltObject('research_desk') },
+        { key: 'metalworking', label: 'Concluir Metalurgia básica', done: () => hasResearch('metalworking') },
+        { key: 'forge1', label: 'Construir uma forja', done: () => hasBuiltObject('forge') },
+        { key: 'cooking', label: 'Concluir Cozinha de sobrevivência', done: () => hasResearch('cooking') }
+      ]
+    },
+    {
+      key: 'advanced',
+      label: 'Tier 4 — Colônia Estável',
+      note: 'Prepare a base para eventos mais difíceis e exploração.',
+      goals: [
+        { key: 'stove1', label: 'Construir um fogão', done: () => hasBuiltObject('stove') },
+        { key: 'medicine', label: 'Concluir Primeiros socorros', done: () => hasResearch('medicine') },
+        { key: 'medStation', label: 'Construir uma estação médica', done: () => hasBuiltObject('med_station') },
+        { key: 'day3', label: 'Sobreviver até o dia 3', done: () => (state?.day || 1) >= 3 }
+      ]
+    }
+  ];
 
   function applyRuntimeSettings() {
     document.body.dataset.uiScale = settings.uiScale || 'normal';
@@ -131,6 +180,53 @@ function installQolPatch() {
         color: #f3cf8a;
         font-size: 12px;
         font-weight: 800;
+      }
+      .alpha-progress-card {
+        display: grid;
+        gap: 8px;
+      }
+      .alpha-progress-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .alpha-progress-head b {
+        color: #eaf6ff;
+      }
+      .alpha-tier-pill {
+        white-space: nowrap;
+        border: 1px solid rgba(155, 211, 106, .32);
+        background: rgba(155, 211, 106, .10);
+        color: #c8f09a;
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .alpha-goal-list {
+        display: grid;
+        gap: 5px;
+      }
+      .alpha-goal {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 24px;
+        padding: 5px 7px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.035);
+        color: rgba(232,241,255,.78);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .alpha-goal.done {
+        color: #c8f09a;
+        background: rgba(155, 211, 106, .07);
+      }
+      .alpha-goal span:first-child {
+        width: 18px;
+        text-align: center;
       }
     `;
     document.head.appendChild(style);
@@ -311,16 +407,212 @@ function installQolPatch() {
     }
   }
 
+  function resetStaleOnlineForSingleplayer() {
+    if (!state || window.havenfallOnlineSessionActive === true || state.config?.multiplayer) return;
+    sessionStorage.removeItem('havenfall-online-mode');
+    window.havenfallOnlineMode = null;
+    document.body.classList.remove('online-join-mode', 'online-host-mode');
+  }
+
+  function hasBuiltObject(type) {
+    return !!state?.objects?.some(o => o.type === type);
+  }
+
+  function countBuiltObject(type) {
+    return state?.objects?.filter(o => o.type === type).length || 0;
+  }
+
+  function hasResearch(key) {
+    return !!state?.research?.completed?.includes(key);
+  }
+
+  function hasAnyItemOrEquipped(keys) {
+    const set = new Set(keys);
+    if (Object.entries(state?.items || {}).some(([key, qty]) => set.has(key) && qty > 0)) return true;
+    return !!state?.colonists?.some(c => [c.equipment?.tool, c.equipment?.weapon, c.equipment?.offhand].some(key => set.has(key)));
+  }
+
+  function alphaGoalSignature() {
+    return alphaTiers.flatMap(tier => tier.goals.map(goal => `${goal.key}:${goal.done() ? 1 : 0}`)).join('|');
+  }
+
+  function alphaTierProgress(tier) {
+    const done = tier.goals.filter(goal => goal.done()).length;
+    return { done, total: tier.goals.length, complete: done >= tier.goals.length };
+  }
+
+  function currentAlphaTier() {
+    return alphaTiers.find(tier => !alphaTierProgress(tier).complete) || alphaTiers[alphaTiers.length - 1];
+  }
+
+  function announceAlphaProgression() {
+    if (!state || !state.log) return;
+    const tier = currentAlphaTier();
+    const signature = alphaGoalSignature();
+    if (lastAlphaTierKey === null) lastAlphaTierKey = tier.key;
+    if (lastAlphaDoneSignature === '') lastAlphaDoneSignature = signature;
+    if (tier.key !== lastAlphaTierKey) {
+      lastAlphaTierKey = tier.key;
+      log(`Novo avanço: ${tier.label}.`);
+    }
+    lastAlphaDoneSignature = signature;
+  }
+
+  function renderAlphaProgression() {
+    if (!dom.goalList || !state) return;
+    const tier = currentAlphaTier();
+    const progress = alphaTierProgress(tier);
+    const completedTiers = alphaTiers.filter(t => alphaTierProgress(t).complete).length;
+    dom.goalList.innerHTML = `
+      <div class="alpha-progress-card">
+        <div class="alpha-progress-head">
+          <div><b>Alpha 1.0 — Progressão</b><br><span class="empty">${escapeHtml(tier.note)}</span></div>
+          <span class="alpha-tier-pill">${completedTiers}/${alphaTiers.length} tiers</span>
+        </div>
+        <div><b>${escapeHtml(tier.label)}</b> <span class="empty">${progress.done}/${progress.total}</span></div>
+        <div class="alpha-goal-list">
+          ${tier.goals.map(goal => `<div class="alpha-goal ${goal.done() ? 'done' : ''}"><span>${goal.done() ? '✓' : '•'}</span><span>${escapeHtml(goal.label)}</span></div>`).join('')}
+        </div>
+      </div>
+    `;
+    announceAlphaProgression();
+  }
+
+  function candidateGatherTiles(obj, c) {
+    const dirs = [[0,1],[1,0],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+    return dirs
+      .map(([dx, dy]) => ({ x: obj.x + dx, y: obj.y + dy }))
+      .filter(tile => isInside(tile.x, tile.y) && !isBlocked(tile.x, tile.y))
+      .map(tile => ({ ...tile, distance: dist(c.x, c.y, tile.x, tile.y), path: findPath(c.x, c.y, tile.x, tile.y, obj) }))
+      .filter(tile => (tile.x === c.x && tile.y === c.y) || tile.path.length)
+      .sort((a, b) => (a.path.length || 0) - (b.path.length || 0) || a.distance - b.distance);
+  }
+
+  function assignGatherStable(c, obj, options = {}) {
+    if (!c || !obj || !state) return false;
+    const def = objectDefs[obj.type];
+    if (!def?.gather) return false;
+    if (obj.type === 'crop' && (obj.growth || 0) < 100) {
+      if (!options.silent) log('Essa plantação ainda não está pronta para coleta.');
+      return false;
+    }
+
+    const choices = candidateGatherTiles(obj, c);
+    if (!choices.length) {
+      if (!options.silent) log(`${c.name} não encontrou caminho livre até ${def.name}.`);
+      return false;
+    }
+
+    const target = choices[0];
+    obj.markedForGather = true;
+    c.task = { type: 'gather', objId: obj.id, x: target.x, y: target.y };
+    c.path = (target.x === c.x && target.y === c.y) ? [] : target.path;
+    c.work = 0;
+    c.note = `Indo coletar ${def.name}`;
+    if (!options.silent) log(`${c.name} vai coletar ${def.name}.`);
+    updateUI(true);
+    return true;
+  }
+
+  function nearestUsableColonist(tile) {
+    const list = (state?.colonists || []).filter(c => !c.dead && c.health > 15 && c.energy > 10);
+    const selected = selectedColonist();
+    if (selected && list.includes(selected)) return selected;
+    return list.sort((a, b) => dist(a.x, a.y, tile.x, tile.y) - dist(b.x, b.y, tile.x, tile.y))[0] || null;
+  }
+
+  function clearBadGatherTasks() {
+    if (!state?.colonists) return;
+    for (const c of state.colonists) {
+      if (c.task?.type !== 'gather') continue;
+      const obj = state.objects.find(o => o.id === c.task.objId);
+      if (!obj || !objectDefs[obj.type]?.gather) {
+        c.task = null;
+        c.path = [];
+        c.work = 0;
+        c.note = 'Coleta cancelada';
+        continue;
+      }
+      const atTarget = c.x === c.task.x && c.y === c.task.y;
+      if (!atTarget && (!c.path || !c.path.length)) {
+        const choices = candidateGatherTiles(obj, c);
+        if (choices.length) {
+          c.task.x = choices[0].x;
+          c.task.y = choices[0].y;
+          c.path = choices[0].path;
+          c.note = `Recalculando coleta de ${objectDefs[obj.type].name}`;
+        } else {
+          c.task = null;
+          c.path = [];
+          c.work = 0;
+          c.note = 'Sem caminho para coleta';
+        }
+      }
+    }
+  }
+
+  const originalAssignGather = assignGather;
+  assignGather = function patchedAssignGather(c, obj) {
+    return assignGatherStable(c, obj) || originalAssignGather(c, obj);
+  };
+
+  const originalToggleGatherMark = toggleGatherMark;
+  toggleGatherMark = function patchedToggleGatherMark(obj) {
+    if (!obj || !isGatherableReady(obj)) return originalToggleGatherMark(obj);
+    obj.markedForGather = !obj.markedForGather;
+    log(`${objectDefs[obj.type]?.name || 'Recurso'} ${obj.markedForGather ? 'marcado para coleta' : 'desmarcado'}.`);
+    if (obj.markedForGather) assignMarkedGatherTasks();
+    updateUI(true);
+  };
+
+  const originalAssignMarkedGatherTasks = assignMarkedGatherTasks;
+  assignMarkedGatherTasks = function patchedAssignMarkedGatherTasks() {
+    const idle = state?.colonists?.filter(c => !c.task && c.energy > 14 && c.health > 15) || [];
+    let assigned = 0;
+    for (const c of idle) {
+      const target = nearestGatherable(c, true);
+      if (!target) break;
+      if (assignGatherStable(c, target, { silent: true })) assigned++;
+      else target.markedForGather = false;
+    }
+    if (!assigned) originalAssignMarkedGatherTasks();
+  };
+
+  const originalMakeContextActions = makeContextActions;
+  makeContextActions = function patchedGatherContextActions(c, target, tile) {
+    const actions = originalMakeContextActions(c, target, tile);
+    const obj = target?.kind === 'object' ? target.obj : null;
+    if (!obj || !isGatherableReady(obj)) return actions;
+
+    const clean = actions.filter(action => !/coletar|coleta|marcar/i.test(action.label || ''));
+    clean.unshift({
+      label: `Coletar ${objectDefs[obj.type]?.name || 'recurso'}`,
+      hint: 'manda o colono selecionado ir até um tile livre e coletar',
+      run: () => {
+        const worker = nearestUsableColonist({ x: obj.x, y: obj.y });
+        if (!worker) { log('Nenhum colono disponível para coletar agora.'); return; }
+        selectedColonistId = worker.id;
+        assignGatherStable(worker, obj);
+      }
+    });
+    clean.unshift({
+      label: obj.markedForGather ? 'Desmarcar coleta' : 'Marcar para coleta',
+      hint: 'deixa esse recurso na fila automática de coleta',
+      run: () => toggleGatherMark(obj)
+    });
+    return clean;
+  };
+
   const originalAssignAutoTask = assignAutoTask;
   assignAutoTask = function patchedAssignAutoTask(c) {
     if (!c) return false;
-    c.autoThinkCooldown = c.autoThinkCooldown ?? (2 + Math.random() * 4);
+    c.autoThinkCooldown = c.autoThinkCooldown ?? (1.2 + Math.random() * 2.2);
     if (c.autoThinkCooldown > 0) {
       if (!c.note || c.note === 'Ocioso') c.note = 'Aguardando ordem';
       return false;
     }
     const assigned = originalAssignAutoTask(c);
-    c.autoThinkCooldown = assigned ? 5 + Math.random() * 5 : 9 + Math.random() * 9;
+    c.autoThinkCooldown = assigned ? 2.8 + Math.random() * 3.5 : 5.5 + Math.random() * 6;
     return assigned;
   };
 
@@ -352,7 +644,7 @@ function installQolPatch() {
     if (!def?.gather) return originalHandleTaskAtTarget(c, tick);
 
     c.work += tick * workRate(c, 'gather', obj);
-    c.note = `Coletando ${def.name} ${Math.floor((c.work / def.work) * 100)}%`;
+    c.note = `Coletando ${def.name} ${Math.min(100, Math.floor((c.work / def.work) * 100))}%`;
 
     if (c.work < def.work) return;
 
@@ -376,6 +668,7 @@ function installQolPatch() {
     if (obj.type === 'crop') state.objects.push({ id: uid(), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
     log(`${c.name} coletou ${def.name}.`);
     c.task = null; c.note = 'Ocioso'; c.work = 0;
+    updateUI(true);
   };
 
   const originalPlaceBlueprint = placeBlueprint;
@@ -434,19 +727,39 @@ function installQolPatch() {
     dom.buildStatus.innerHTML = `Construindo: Parede. Clique no chão do mapa. <span class="wall-orientation-pill">R: ${orientation}</span>`;
   }
 
+  function checkAlphaGameOver() {
+    if (!state || state.gameOver || appScreen !== SCREEN.PLAYING || !activeSession) return;
+    const colonists = state.colonists || [];
+    if (!colonists.length) return;
+    const alive = colonists.some(c => !c.dead && (c.health ?? 100) > 0);
+    if (alive) return;
+    state.gameOver = true;
+    state.paused = true;
+    log('Fim da colônia: nenhum colono sobreviveu.');
+    updateUI(true);
+  }
+
   const originalUpdateUI = updateUI;
   updateUI = function patchedUpdateUI(force = false) {
+    resetStaleOnlineForSingleplayer();
     sanitizeWorldForQol();
+    clearBadGatherTasks();
     originalUpdateUI(force);
     installEventLogClamp();
     refreshWallBuildStatus();
+    renderAlphaProgression();
+    checkAlphaGameOver();
   };
 
   const originalStartNewGame = startNewGame;
   startNewGame = function patchedStartNewGame(config, selectedColonists) {
     worldSanitizedForQol = false;
+    lastAlphaTierKey = null;
+    lastAlphaDoneSignature = '';
     originalStartNewGame(config, selectedColonists);
     sanitizeWorldForQol(true);
+    resetStaleOnlineForSingleplayer();
+    updateUI(true);
   };
 
   const originalLoadGame = loadGame;
@@ -454,6 +767,7 @@ function installQolPatch() {
     const result = originalLoadGame();
     worldSanitizedForQol = false;
     sanitizeWorldForQol(true);
+    resetStaleOnlineForSingleplayer();
     updateUI(true);
     return result;
   };
@@ -471,6 +785,7 @@ function installQolPatch() {
   setScreen = function patchedSetScreen(screen) {
     originalSetScreen(screen);
     if (screen === SCREEN.SETTINGS) syncSettingsControls();
+    if (screen === SCREEN.PLAYING) renderAlphaProgression();
   };
 
   injectQolStyles();
