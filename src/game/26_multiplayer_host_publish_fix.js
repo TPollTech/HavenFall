@@ -6,6 +6,17 @@ function installMultiplayerHostPublishFixPatch() {
 
   let lastForcedPublish = 0;
   let forcing = false;
+  let allowHostUntil = 0;
+  let pendingHost = false;
+
+  function allowManualHost() {
+    allowHostUntil = Date.now() + 7000;
+    pendingHost = true;
+  }
+
+  function isManualHostAllowed() {
+    return Date.now() < allowHostUntil;
+  }
 
   function isHostMode() {
     return !(sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join');
@@ -46,8 +57,18 @@ function installMultiplayerHostPublishFixPatch() {
     setTimeout(() => forcePublish(reason), 950);
   }
 
+  document.addEventListener('click', event => {
+    if (event.target?.closest?.('#onlineHostCleanBtn, #hostCurrentWorldBtn')) allowManualHost();
+  }, true);
+
   const previousHostOnline = window.havenfallHostOnline;
   window.havenfallHostOnline = function fixedHavenfallHostOnline() {
+    if (!isManualHostAllowed()) {
+      const pill = document.getElementById('multiplayerPill');
+      if (pill) pill.textContent = 'Offline local';
+      return false;
+    }
+    pendingHost = false;
     sessionStorage.setItem('havenfall-online-mode', 'host');
     window.havenfallOnlineMode = 'host';
     const result = previousHostOnline?.apply(this, arguments);
@@ -58,7 +79,11 @@ function installMultiplayerHostPublishFixPatch() {
   const previousSetScreen = setScreen;
   setScreen = function hostPublishAwareSetScreen(screen) {
     previousSetScreen(screen);
-    if (screen === SCREEN.PLAYING && isHostMode()) publishSoon('entered-playing');
+    if (screen === SCREEN.PLAYING && pendingHost && isManualHostAllowed()) {
+      pendingHost = false;
+      setTimeout(() => window.havenfallHostOnline?.(), 40);
+    }
+    if (screen === SCREEN.PLAYING && isHostMode() && isManualHostAllowed()) publishSoon('entered-playing');
   };
 
   window.havenfallForcePublishWorld = forcePublish;
