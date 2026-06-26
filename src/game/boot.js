@@ -32,6 +32,7 @@
     { id: 'research_overlay', file: 'src/game/ui/research-overlay.js' },
     { id: 'colonist_modal', file: 'src/game/ui/colonist-modal.js' },
     { id: 'ui_manager', file: 'src/game/ui/ui-manager.js' },
+    { id: 'pause_menu', file: 'src/game/ui/pause-menu.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
     { id: 'game_loop', file: 'src/game/game-loop.js' },
     { id: 'event_listeners', file: 'src/game/event-listeners.js' }
