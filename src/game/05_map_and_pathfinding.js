@@ -1,5 +1,33 @@
 'use strict';
 
+let spatialObjectGrid = new Map();
+let spatialObjectsRef = null;
+let spatialObjectsLength = -1;
+
+function tileKey(x, y) {
+  return (x << 16) | y;
+}
+
+function ensureSpatialGrid() {
+  const objects = state?.objects || [];
+  if (objects === spatialObjectsRef && objects.length === spatialObjectsLength) return;
+
+  spatialObjectGrid.clear();
+  spatialObjectsRef = objects;
+  spatialObjectsLength = objects.length;
+
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    if (!obj) continue;
+    spatialObjectGrid.set(tileKey(obj.x, obj.y), obj);
+  }
+}
+
+function invalidateSpatialGrid() {
+  spatialObjectsRef = null;
+  spatialObjectsLength = -1;
+}
+
 function log(message) {
   const hour = formatHour(state.hour);
   state.log.unshift(`[Dia ${state.day} ${hour}] ${message}`);
@@ -23,7 +51,6 @@ function payCost(cost) {
 function addResources(gain) {
   for (const [k, v] of Object.entries(gain)) state.resources[k] = (state.resources[k] || 0) + v;
 }
-
 
 function addItems(gain = {}) {
   state.items = state.items || {};
@@ -70,14 +97,32 @@ function recipeUnlocked(key) {
 
 function recipeStationBuilt(station) {
   if (!station) return true;
-  return state.objects.some(o => o.type === station);
+  ensureSpatialGrid();
+  const objects = spatialObjectsRef || [];
+  for (let i = 0; i < objects.length; i++) {
+    if (objects[i]?.type === station) return true;
+  }
+  return false;
 }
 
 function getStationObject(station, nearColonist = null) {
-  const list = state.objects.filter(o => o.type === station);
-  if (!list.length) return null;
-  if (!nearColonist) return list[0];
-  return list.sort((a, b) => dist(nearColonist.x, nearColonist.y, a.x, a.y) - dist(nearColonist.x, nearColonist.y, b.x, b.y))[0];
+  ensureSpatialGrid();
+  const objects = spatialObjectsRef || [];
+  let best = null;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    if (obj?.type !== station) continue;
+    if (!nearColonist) return obj;
+    const d = dist(nearColonist.x, nearColonist.y, obj.x, obj.y);
+    if (d < bestDist) {
+      bestDist = d;
+      best = obj;
+    }
+  }
+
+  return best;
 }
 
 function ensureEquipment(c) {
@@ -131,7 +176,7 @@ function equipmentCombatPower(c) {
   const weapon = itemDefs[eq.weapon];
   const tool = itemDefs[eq.tool];
   const offhand = itemDefs[eq.offhand];
-  let power = 0.45; // desarmado é propositalmente fraco
+  let power = 0.45;
   if (weapon?.combat) power += weapon.combat;
   else if (tool?.combat) power += tool.combat * 0.55;
   if (offhand?.scare) power += offhand.scare;
@@ -167,13 +212,18 @@ function outputText(output = {}) {
   return parts.join(', ') || 'nada';
 }
 
-
 function getObjectAt(x, y) {
-  return state.objects.find(o => o.x === x && o.y === y);
+  ensureSpatialGrid();
+  return spatialObjectGrid.get(tileKey(x, y)) || null;
 }
 
 function getWolfAt(x, y) {
-  return state.wolves.find(w => Math.round(w.x) === x && Math.round(w.y) === y);
+  const wolves = state?.wolves || [];
+  for (let i = 0; i < wolves.length; i++) {
+    const wolf = wolves[i];
+    if (Math.round(wolf.x) === x && Math.round(wolf.y) === y) return wolf;
+  }
+  return null;
 }
 
 function isInside(x, y) {
@@ -183,52 +233,89 @@ function isInside(x, y) {
 function isBlocked(x, y, target = null) {
   if (!isInside(x, y)) return true;
   if (target && target.x === x && target.y === y) return false;
+
   const obj = getObjectAt(x, y);
   if (obj && obj.type !== 'blueprint' && objectDefs[obj.type]?.blocks) return true;
-  if (state.colonists.some(c => Math.round(c.x) === x && Math.round(c.y) === y && Math.abs(c.px - (x * TILE + TILE / 2)) < 5 && Math.abs(c.py - (y * TILE + TILE / 2)) < 5)) return false;
+
+  const colonists = state?.colonists || [];
+  for (let i = 0; i < colonists.length; i++) {
+    const c = colonists[i];
+    if (Math.round(c.x) === x && Math.round(c.y) === y && Math.abs(c.px - (x * TILE + TILE / 2)) < 5 && Math.abs(c.py - (y * TILE + TILE / 2)) < 5) return false;
+  }
+
   return false;
 }
 
 function findPath(startX, startY, endX, endY, target = null) {
-  startX = Math.round(startX); startY = Math.round(startY);
-  endX = Math.round(endX); endY = Math.round(endY);
-  if (!isInside(endX, endY)) return [];
-  const key = (x, y) => `${x},${y}`;
-  const queue = [[startX, startY]];
-  const came = new Map([[key(startX, startY), null]]);
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  startX = Math.round(startX);
+  startY = Math.round(startY);
+  endX = Math.round(endX);
+  endY = Math.round(endY);
 
-  while (queue.length) {
-    const [x, y] = queue.shift();
-    if (x === endX && y === endY) break;
-    for (const [dx, dy] of dirs) {
-      const nx = x + dx, ny = y + dy;
-      const k = key(nx, ny);
-      if (!came.has(k) && !isBlocked(nx, ny, target)) {
-        came.set(k, [x, y]);
-        queue.push([nx, ny]);
+  if (!isInside(endX, endY)) return [];
+  if (startX === endX && startY === endY) return [];
+
+  const queue = [{ x: startX, y: startY }];
+  let head = 0;
+  const came = new Map();
+  const startKey = tileKey(startX, startY);
+  const endKey = tileKey(endX, endY);
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  const maxIterations = Math.min(getWorldCols() * getWorldRows(), 4000);
+  let found = false;
+  let iterations = 0;
+
+  came.set(startKey, -1);
+
+  while (head < queue.length && iterations++ < maxIterations) {
+    const curr = queue[head++];
+    const currKey = tileKey(curr.x, curr.y);
+    if (currKey === endKey) {
+      found = true;
+      break;
+    }
+
+    for (let i = 0; i < dirs.length; i++) {
+      const nx = curr.x + dirs[i][0];
+      const ny = curr.y + dirs[i][1];
+      const nKey = tileKey(nx, ny);
+      if (!came.has(nKey) && !isBlocked(nx, ny, target)) {
+        came.set(nKey, currKey);
+        queue.push({ x: nx, y: ny });
       }
     }
   }
 
-  const endKey = key(endX, endY);
-  if (!came.has(endKey)) return [];
+  if (!found || !came.has(endKey)) return [];
+
   const path = [];
-  let cur = [endX, endY];
-  while (cur) {
-    path.push({ x: cur[0], y: cur[1] });
-    cur = came.get(key(cur[0], cur[1]));
+  let currentKey = endKey;
+  while (currentKey !== startKey && currentKey !== -1) {
+    path.push({ x: currentKey >> 16, y: currentKey & 0xFFFF });
+    currentKey = came.get(currentKey);
   }
+
   path.reverse();
-  path.shift();
   return path;
 }
 
 function nearestFreeAdjacent(x, y, fromX, fromY) {
-  const candidates = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]
-    .filter(([cx, cy]) => !isBlocked(cx, cy))
-    .sort((a, b) => dist(a[0], a[1], fromX, fromY) - dist(b[0], b[1], fromX, fromY));
-  return candidates[0] ? { x: candidates[0][0], y: candidates[0][1] } : null;
+  const candidates = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+  let best = null;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const cx = candidates[i][0];
+    const cy = candidates[i][1];
+    if (isBlocked(cx, cy)) continue;
+    const d = dist(cx, cy, fromX, fromY);
+    if (d < bestDist) {
+      bestDist = d;
+      best = { x: cx, y: cy };
+    }
+  }
+
+  return best;
 }
 
 function dist(ax, ay, bx, by) {
