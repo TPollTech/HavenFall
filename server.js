@@ -49,6 +49,26 @@ function readJsonBody(req, limit = 2_500_000) {
   });
 }
 
+function multiplayerStatus() {
+  const updated = multiplayerUpdatedAt ? new Date(multiplayerUpdatedAt).getTime() : 0;
+  const ageSeconds = updated ? Math.max(0, (Date.now() - updated) / 1000) : null;
+  const online = !!multiplayerSnapshot && ageSeconds !== null && ageSeconds < 8;
+  const cfg = multiplayerSnapshot?.config || {};
+  return {
+    ok: true,
+    online,
+    revision: multiplayerRevision,
+    updatedAt: multiplayerUpdatedAt,
+    ageSeconds,
+    colonyName: cfg.colonyName || null,
+    seed: cfg.seed || null,
+    day: multiplayerSnapshot?.day || null,
+    hour: multiplayerSnapshot?.hour || null,
+    colonists: Array.isArray(multiplayerSnapshot?.colonists) ? multiplayerSnapshot.colonists.length : 0,
+    wolves: Array.isArray(multiplayerSnapshot?.wolves) ? multiplayerSnapshot.wolves.length : 0
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const safeUrl = decodeURIComponent(req.url.split('?')[0]);
 
@@ -57,11 +77,17 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (safeUrl === '/api/multiplayer/status' && req.method === 'GET') {
+    sendJson(res, 200, multiplayerStatus());
+    return;
+  }
+
   if (safeUrl === '/api/multiplayer/state' && req.method === 'GET') {
     sendJson(res, 200, {
       ok: true,
       revision: multiplayerRevision,
       updatedAt: multiplayerUpdatedAt,
+      status: multiplayerStatus(),
       snapshot: multiplayerSnapshot
     });
     return;
@@ -77,7 +103,7 @@ const server = http.createServer(async (req, res) => {
       multiplayerSnapshot = body.snapshot;
       multiplayerRevision += 1;
       multiplayerUpdatedAt = new Date().toISOString();
-      sendJson(res, 200, { ok: true, revision: multiplayerRevision, updatedAt: multiplayerUpdatedAt });
+      sendJson(res, 200, { ok: true, revision: multiplayerRevision, updatedAt: multiplayerUpdatedAt, status: multiplayerStatus() });
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
     }
@@ -111,5 +137,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`HavenFall rodando em http://localhost:${PORT}`);
-  console.log(`LAN: abra http://SEU-IP-LOCAL:${PORT} no outro PC. Espectador: http://SEU-IP-LOCAL:${PORT}/?join=1`);
+  console.log(`Online local: http://localhost:${PORT}/?join=1`);
+  console.log(`Para amigo fora da rede, use: cloudflared tunnel --url http://localhost:${PORT}`);
 });
