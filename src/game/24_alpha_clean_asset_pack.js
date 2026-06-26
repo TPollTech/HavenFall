@@ -1,8 +1,7 @@
 'use strict';
 
-function installAlphaCleanAssetPack() {
-  if (window.__havenfallAlphaCleanAssetPackInstalled) return;
-  window.__havenfallAlphaCleanAssetPackInstalled = true;
+(() => {
+  if (window.HavenfallContext?.assetPackInstalled) return;
 
   const CLEAN_ASSETS = Object.freeze({
     stone_wall_clean: 'assets/clean/edificios/stone_wall.png',
@@ -17,11 +16,24 @@ function installAlphaCleanAssetPack() {
     tool_cabinet_clean: 'assets/clean/edificios/tool_cabinet.png'
   });
 
-  function loadOptionalImage(key, src) {
+  const ASSET_MAPPINGS = Object.freeze({
+    stone_wall_clean: ['wall'],
+    bed_single_clean: ['bed'],
+    campfire_clean: ['campfire'],
+    crate_wood_clean: ['crate', 'supply_crate'],
+    chest_large_clean: ['cache'],
+    crafting_bench_clean: ['bench'],
+    research_desk_clean: ['research_desk'],
+    stove_clean: ['stove'],
+    forge_clean: ['forge'],
+    tool_cabinet_clean: ['med_station']
+  });
+
+  function loadOptionalImage(key, src, targetImages) {
     return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
-        images[key] = img;
+        targetImages[key] = img;
         resolve(true);
       };
       img.onerror = () => resolve(false);
@@ -29,41 +41,55 @@ function installAlphaCleanAssetPack() {
     });
   }
 
-  function applyCleanObjectMappings() {
-    if (images.stone_wall_clean && objectDefs.wall) objectDefs.wall.img = 'stone_wall_clean';
-    if (images.bed_single_clean && objectDefs.bed) objectDefs.bed.img = 'bed_single_clean';
-    if (images.campfire_clean && objectDefs.campfire) objectDefs.campfire.img = 'campfire_clean';
-    if (images.crate_wood_clean && objectDefs.crate) objectDefs.crate.img = 'crate_wood_clean';
-    if (images.crate_wood_clean && objectDefs.supply_crate) objectDefs.supply_crate.img = 'crate_wood_clean';
-    if (images.chest_large_clean && objectDefs.cache) objectDefs.cache.img = 'chest_large_clean';
-    if (images.crafting_bench_clean && objectDefs.bench) objectDefs.bench.img = 'crafting_bench_clean';
-    if (images.research_desk_clean && objectDefs.research_desk) objectDefs.research_desk.img = 'research_desk_clean';
-    if (images.stove_clean && objectDefs.stove) objectDefs.stove.img = 'stove_clean';
-    if (images.forge_clean && objectDefs.forge) objectDefs.forge.img = 'forge_clean';
-    if (images.tool_cabinet_clean && objectDefs.med_station) objectDefs.med_station.img = 'tool_cabinet_clean';
+  function applyCleanObjectMappings(targetImages, targetDefs) {
+    if (!targetImages || !targetDefs) return;
+
+    Object.entries(ASSET_MAPPINGS).forEach(([assetKey, objectKeys]) => {
+      if (!targetImages[assetKey]) return;
+
+      objectKeys.forEach(objKey => {
+        if (targetDefs[objKey]) {
+          targetDefs[objKey].img = assetKey;
+        }
+      });
+    });
   }
 
   function injectCleanAssets() {
-    if (typeof images !== 'object') return Promise.resolve(false);
-    return Promise.all(Object.entries(CLEAN_ASSETS).map(([key, src]) => loadOptionalImage(key, src)))
-      .then(results => {
-        const loaded = results.filter(Boolean).length;
-        applyCleanObjectMappings();
-        window.havenfallCleanAssetsLoaded = loaded;
-        if (loaded > 0 && typeof log === 'function' && state?.log) log(`${loaded} assets limpos carregados.`);
-        return loaded > 0;
-      });
+    const activeImages = typeof images !== 'undefined' ? images : null;
+    const activeDefs = typeof objectDefs !== 'undefined' ? objectDefs : null;
+
+    if (!activeImages || typeof activeImages !== 'object') {
+      return Promise.resolve(false);
+    }
+
+    return Promise.all(
+      Object.entries(CLEAN_ASSETS).map(([key, src]) => loadOptionalImage(key, src, activeImages))
+    ).then(results => {
+      const loadedCount = results.filter(Boolean).length;
+
+      applyCleanObjectMappings(activeImages, activeDefs);
+
+      window.HavenfallContext = window.HavenfallContext || {};
+      window.HavenfallContext.cleanAssetsLoaded = loadedCount;
+
+      if (loadedCount > 0 && typeof log === 'function' && typeof state !== 'undefined' && state?.log) {
+        log(`${loadedCount} assets limpos aplicados dinamicamente.`);
+      }
+
+      return loadedCount > 0;
+    });
   }
 
-  const previousLoadImages = loadImages;
-  loadImages = function alphaCleanAssetLoadImages() {
-    return previousLoadImages().then(() => injectCleanAssets());
-  };
+  if (typeof window !== 'undefined' && typeof loadImages === 'function') {
+    const originalLoadImages = loadImages;
+    loadImages = function alphaCleanAssetLoadImages() {
+      return originalLoadImages().then(() => injectCleanAssets());
+    };
+  }
 
-  window.havenfallInjectCleanAssets = injectCleanAssets;
-  window.havenfallCleanAssetPaths = CLEAN_ASSETS;
-}
-
-if (typeof window !== 'undefined' && typeof loadImages === 'function') {
-  installAlphaCleanAssetPack();
-}
+  window.HavenfallContext = window.HavenfallContext || {};
+  window.HavenfallContext.assetPackInstalled = true;
+  window.HavenfallContext.injectCleanAssets = injectCleanAssets;
+  window.HavenfallContext.cleanAssetPaths = CLEAN_ASSETS;
+})();
