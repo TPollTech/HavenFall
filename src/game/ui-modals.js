@@ -182,5 +182,20 @@ function installColonistModalCanvasClick() {
   });
 }
 
+function loadResearchOverlayModule() {
+  if (window.HavenfallUI?.researchOverlayLoading || window.HavenfallUI?.researchOverlayReady) return;
+  window.HavenfallUI = window.HavenfallUI || {};
+  window.HavenfallUI.researchOverlayLoading = true;
+  const script = document.createElement('script');
+  script.src = 'src/game/ui/research-overlay.js';
+  script.dataset.uiModule = 'research-overlay';
+  script.onerror = () => {
+    window.HavenfallUI.researchOverlayLoading = false;
+    console.warn('[UI] Falha ao carregar research-overlay.js');
+  };
+  document.body.appendChild(script);
+}
+
 installColonistModalCanvasClick();
 ensureColonistModalElement();
+loadResearchOverlayModule();
