@@ -146,6 +146,11 @@ function installZoneInput() {
     if (typeof updateUI === 'function') updateUI(true);
   }, true);
 
+  canvas.addEventListener('click', event => {
+    if (!currentZoneTool) return;
+    stopCanvasEvent(event);
+  }, true);
+
   canvas.addEventListener('mouseleave', () => { zoneDragActive = false; }, true);
 }
 
