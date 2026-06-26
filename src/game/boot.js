@@ -32,6 +32,7 @@
     { id: 'hauling_adv', file: 'src/game/hauling-adv.js' },
     { id: 'climate_adv', file: 'src/game/climate-adv.js' },
     { id: 'mobs', file: 'src/game/mobs.js' },
+    { id: 'blood_wolf', file: 'src/game/mobs/blood-wolf.js' },
     { id: 'creature_renderer', file: 'src/game/creature-renderer.js' },
     { id: 'mob_interactions', file: 'src/game/mob-interactions.js' },
     { id: 'ui_icon_safety', file: 'src/game/ui/icon-safety.js' },
