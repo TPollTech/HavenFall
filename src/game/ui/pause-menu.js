@@ -37,6 +37,30 @@
     legacy.style.overflow = 'hidden';
   }
 
+  function closeAnchoredPanels() {
+    const panel = document.getElementById('anchored-ui-panel');
+    if (panel) {
+      panel.classList.remove('is-active');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+    document.querySelectorAll('#bottom-navigation-dock .is-active').forEach(el => el.classList.remove('is-active'));
+  }
+
+  function forceCloseAll(options = {}) {
+    const except = options.except || null;
+    if (except !== 'pause') closePauseMenu();
+    if (except !== 'panel') closeAnchoredPanels();
+    if (except !== 'research') window.HavenfallUI.closeResearchOverlay?.();
+    document.getElementById('colonist-modal')?.classList.remove('show');
+    document.getElementById('ui-modal-backdrop')?.classList.remove('is-active', 'show');
+    document.querySelectorAll('[id^="modal-"], .game-popup-modal:not(#eventModal)').forEach(el => {
+      el.classList.remove('show', 'is-active', 'active');
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    });
+    neutralizeLegacyPauseOverlay();
+  }
+
   function makeButton(label, action, className = '') {
     const button = document.createElement('button');
     button.type = 'button';
@@ -85,6 +109,7 @@
     card.append(kicker, title, desc, actions);
     overlay.append(card);
     overlay.addEventListener('pointerdown', event => event.stopPropagation());
+    overlay.addEventListener('wheel', event => { event.preventDefault(); event.stopPropagation(); }, { passive: false });
     overlay.addEventListener('click', onPauseMenuClick);
     document.body.appendChild(overlay);
     return overlay;
@@ -109,6 +134,7 @@
   }
 
   function openPauseMenu() {
+    forceCloseAll({ except: 'pause' });
     const overlay = ensurePauseMenu();
     neutralizeLegacyPauseOverlay();
     document.body.classList.add('hf-pause-open');
@@ -126,8 +152,33 @@
     document.body.classList.remove('hf-pause-open');
   }
 
+  function handleScreenState(screen) {
+    neutralizeLegacyPauseOverlay();
+    if (screen === SCREEN.PAUSED) openPauseMenu();
+    else closePauseMenu();
+    if (screen !== SCREEN.PLAYING && screen !== SCREEN.PAUSED) forceCloseAll();
+  }
+
+  function patchSetScreenForPauseMenu() {
+    if (typeof setScreen !== 'function' || window.HavenfallUI.pauseSetScreenHooked) return;
+    const nativeSetScreen = setScreen;
+    setScreen = function setScreenWithPauseMenu(screen) {
+      nativeSetScreen(screen);
+      handleScreenState(screen);
+    };
+    window.HavenfallUI.pauseSetScreenHooked = true;
+  }
+
   ensurePauseMenu();
+  patchSetScreenForPauseMenu();
+
   window.HavenfallUI.openPauseMenu = openPauseMenu;
   window.HavenfallUI.closePauseMenu = closePauseMenu;
   window.HavenfallUI.neutralizeLegacyPauseOverlay = neutralizeLegacyPauseOverlay;
+  window.HavenfallUI.forceCloseAll = forceCloseAll;
+
+  window.uiManager = window.uiManager || {};
+  window.uiManager.forceCloseAll = forceCloseAll;
+  window.uiManager.openPauseMenu = openPauseMenu;
+  window.uiManager.closePauseMenu = closePauseMenu;
 })();
