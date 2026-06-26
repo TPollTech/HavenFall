@@ -1,22 +1,51 @@
 'use strict';
 
-function cameraBottomUiSafePx() {
-  if (appScreen !== SCREEN.PLAYING) return 0;
+const rendererLayoutCache = {
+  bottomReservedPx: 0,
+  canvasCssWidth: 0,
+  canvasCssHeight: 0,
+  lastMeasure: 0
+};
+
+const rendererScratch = {
+  renderList: []
+};
+
+function measureRendererLayout(force = false) {
+  const now = performance.now();
+  const forced = force === true || force?.type === 'resize';
+  if (!forced && rendererLayoutCache.canvasCssWidth && now - rendererLayoutCache.lastMeasure < 200) return;
+
+  rendererLayoutCache.lastMeasure = now;
+
+  const rect = canvas.getBoundingClientRect();
+  rendererLayoutCache.canvasCssWidth = Math.max(320, Math.floor(rect.width || window.innerWidth));
+  rendererLayoutCache.canvasCssHeight = Math.max(240, Math.floor(rect.height || window.innerHeight));
+
+  if (appScreen !== SCREEN.PLAYING) {
+    rendererLayoutCache.bottomReservedPx = 0;
+    return;
+  }
+
   const hud = document.getElementById('hud');
-  if (!hud || !canvas.width || !canvas.height) return 0;
+  if (!hud || !canvas.width || !canvas.height) return;
 
   const hudRect = hud.getBoundingClientRect();
-  const canvasRect = canvas.getBoundingClientRect();
-  if (!hudRect.height || !canvasRect.height) return 0;
+  if (!hudRect.height || !rect.height) return;
 
-  const cssOverlap = Math.max(0, canvasRect.bottom - hudRect.top);
-  const cssToCanvas = canvas.height / Math.max(1, canvasRect.height);
+  const cssOverlap = Math.max(0, rect.bottom - hudRect.top);
+  const cssToCanvas = canvas.height / Math.max(1, rect.height);
   const reserved = (cssOverlap + 18) * cssToCanvas;
-  return clamp(Math.floor(reserved), 0, Math.floor(canvas.height * 0.45));
+  rendererLayoutCache.bottomReservedPx = clamp(Math.floor(reserved), 0, Math.floor(canvas.height * 0.45));
+}
+
+function cameraBottomUiSafePx() {
+  measureRendererLayout();
+  return rendererLayoutCache.bottomReservedPx;
 }
 
 function cameraSafeViewport() {
-  const bottomReserved = cameraBottomUiSafePx();
+  const bottomReserved = rendererLayoutCache.bottomReservedPx;
   return {
     width: canvas.width,
     height: Math.max(160, canvas.height - bottomReserved),
@@ -24,13 +53,16 @@ function cameraSafeViewport() {
   };
 }
 
-function resizeGameCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  const width = Math.max(320, Math.floor(rect.width || window.innerWidth));
-  const height = Math.max(240, Math.floor(rect.height || window.innerHeight));
+function resizeGameCanvas(force = false) {
+  measureRendererLayout(force);
+
+  const width = rendererLayoutCache.canvasCssWidth || Math.max(320, Math.floor(window.innerWidth));
+  const height = rendererLayoutCache.canvasCssHeight || Math.max(240, Math.floor(window.innerHeight));
+
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
+    measureRendererLayout(true);
   }
 
   viewTransform.scale = camera.zoom;
@@ -86,7 +118,7 @@ function setCameraZoom(nextZoom, anchor = null) {
   if (anchor && canvas.width && canvas.height) {
     const beforeX = (anchor.x - viewTransform.offsetX) / previousScale;
     const beforeY = (anchor.y - viewTransform.offsetY) / previousScale;
-    resizeGameCanvas();
+    resizeGameCanvas(true);
     const afterScale = viewTransform.scale || previousScale;
     camera.x += beforeX - (anchor.x - viewTransform.offsetX) / afterScale;
     camera.y += beforeY - (anchor.y - viewTransform.offsetY) / afterScale;
@@ -155,30 +187,44 @@ function draw() {
 
   const bounds = visibleTileBounds(2);
   for (let y = bounds.startY; y <= bounds.endY; y++) {
-    for (let x = bounds.startX; x <= bounds.endX; x++) drawTile(x, y, state.terrain[y]?.[x] || 'grass');
+    const row = state.terrain[y];
+    if (!row) continue;
+    for (let x = bounds.startX; x <= bounds.endX; x++) drawTile(x, y, row[x] || 'grass');
   }
 
   if (showDebugGrid || settings?.showGrid) drawGrid(bounds);
 
-  const renderList = [];
-  for (const obj of state.objects) {
+  const renderList = rendererScratch.renderList;
+  renderList.length = 0;
+
+  const objects = state.objects || [];
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
     if (!isTileDiscovered(obj.x, obj.y)) continue;
     const cx = obj.x * TILE + TILE / 2;
     const cy = obj.y * TILE + TILE / 2;
     if (isWorldPointInView(cx, cy)) renderList.push({ kind: 'obj', y: obj.y, data: obj });
   }
-  for (const wolf of state.wolves) {
+
+  const wolves = state.wolves || [];
+  for (let i = 0; i < wolves.length; i++) {
+    const wolf = wolves[i];
     if (isWorldPointInView(wolf.px, wolf.py)) renderList.push({ kind: 'wolf', y: (wolf.py / TILE), data: wolf });
   }
-  for (const c of state.colonists) {
+
+  const colonists = state.colonists || [];
+  for (let i = 0; i < colonists.length; i++) {
+    const c = colonists[i];
     if (isWorldPointInView(c.px, c.py)) renderList.push({ kind: 'colonist', y: (c.py / TILE), data: c });
   }
+
   renderList.sort((a, b) => a.y - b.y);
 
-  for (const item of renderList) {
+  for (let i = 0; i < renderList.length; i++) {
+    const item = renderList[i];
     if (item.kind === 'obj') drawObject(item.data);
-    if (item.kind === 'wolf') drawWolf(item.data);
-    if (item.kind === 'colonist') drawColonist(item.data);
+    else if (item.kind === 'wolf') drawWolf(item.data);
+    else if (item.kind === 'colonist') drawColonist(item.data);
   }
 
   drawPoiMarkers();
