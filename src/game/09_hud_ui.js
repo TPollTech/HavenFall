@@ -127,7 +127,7 @@ function updateColonistPanel() {
   if (!dom.colonistList || !state?.colonists) return;
   dom.colonistList.innerHTML = state.colonists.map(c => `
     <div class="colonist-row ${c.id === selectedColonistId ? 'active' : ''}" data-select-colonist="${c.id}">
-      <img src="assets/sprites/${c.sprite}_down_0.png" alt="">
+      <img src="assets/sprites/${c.sprite}_down_0.png" alt="" style="background:#1a2030;border-radius:4px;">
       <div><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.note || 'Ocioso')}</small></div>
       <span>${Math.floor(c.mood || 0)}%</span>
     </div>
@@ -176,7 +176,7 @@ function equipmentButtons(c) {
     const key = c.equipment[slot];
     if (!key) return `<span class="equipment-slot empty">${slotLabel(slot)} vazio</span>`;
     const item = itemDefs[key];
-    return `<button class="equipment-slot" data-unequip-slot="${slot}"><img src="assets/sprites/${item.icon}.png" alt=""> ${escapeHtml(item.label)} ✕</button>`;
+    return `<button class="equipment-slot" data-unequip-slot="${slot}"><img src="assets/sprites/${item.icon}.png" alt="" style="background:#1a2030;border-radius:3px;padding:2px;"> ${escapeHtml(item.label)} ✕</button>`;
   }).join('')}</div>`;
 }
 
@@ -216,7 +216,7 @@ function updateCraftingUI() {
     const reason = !unlocked ? `Pesquise ${researchDefs[recipe.unlock]?.label || recipe.unlock}` : !built ? `Construa ${stationLabels[recipe.station] || recipe.station}` : !affordable ? `Faltam: ${itemCostText(recipe.cost, recipe.itemCost)}` : recipe.desc;
     return `
       <button class="recipe-card ${disabled ? 'locked' : ''}" data-craft="${key}" ${disabled ? 'disabled' : ''}>
-        <img src="assets/sprites/${icon}.png" alt="">
+        <img src="assets/sprites/${icon}.png" alt="" style="background:#1a2030;border-radius:3px;padding:2px;">
         <b>${escapeHtml(recipe.label)}</b>
         <small>${escapeHtml(itemCostText(recipe.cost, recipe.itemCost))}</small>
         <small>Resultado: ${escapeHtml(output)}</small>
@@ -234,7 +234,7 @@ function updateCraftingUI() {
         const canEquip = !!item.slot && !!c;
         return `
           <div class="item-pill">
-            <img src="assets/sprites/${item.icon}.png" alt="">
+            <img src="assets/sprites/${item.icon}.png" alt="" style="background:#1a2030;border-radius:3px;padding:2px;">
             <span>${escapeHtml(item.label)} <b>x${qty}</b></span>
             ${canEquip ? `<button class="mini" data-equip-item="${key}">Equipar</button>` : ''}
           </div>
