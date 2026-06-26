@@ -1,5 +1,29 @@
 'use strict';
 
+function cameraBottomUiSafePx() {
+  if (appScreen !== SCREEN.PLAYING) return 0;
+  const hud = document.getElementById('hud');
+  if (!hud || !canvas.width || !canvas.height) return 0;
+
+  const hudRect = hud.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  if (!hudRect.height || !canvasRect.height) return 0;
+
+  const cssOverlap = Math.max(0, canvasRect.bottom - hudRect.top);
+  const cssToCanvas = canvas.height / Math.max(1, canvasRect.height);
+  const reserved = (cssOverlap + 18) * cssToCanvas;
+  return clamp(Math.floor(reserved), 0, Math.floor(canvas.height * 0.45));
+}
+
+function cameraSafeViewport() {
+  const bottomReserved = cameraBottomUiSafePx();
+  return {
+    width: canvas.width,
+    height: Math.max(160, canvas.height - bottomReserved),
+    bottomReserved
+  };
+}
+
 function resizeGameCanvas() {
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(320, Math.floor(rect.width || window.innerWidth));
@@ -9,12 +33,11 @@ function resizeGameCanvas() {
     canvas.height = height;
   }
 
-  // Em mundos grandes, escala da câmera não deve tentar encaixar o mapa inteiro na tela.
-  // 1.0 = 1 pixel de mundo por pixel de canvas. O zoom controla a aproximação.
   viewTransform.scale = camera.zoom;
   clampCamera();
+  const safe = cameraSafeViewport();
   viewTransform.offsetX = width / 2 - camera.x * viewTransform.scale;
-  viewTransform.offsetY = height / 2 - camera.y * viewTransform.scale;
+  viewTransform.offsetY = safe.height / 2 - camera.y * viewTransform.scale;
 }
 
 function clampCamera() {
@@ -22,8 +45,9 @@ function clampCamera() {
 
   const worldW = getWorldWidth();
   const worldH = getWorldHeight();
-  const visibleWorldW = canvas.width / viewTransform.scale;
-  const visibleWorldH = canvas.height / viewTransform.scale;
+  const safe = cameraSafeViewport();
+  const visibleWorldW = safe.width / viewTransform.scale;
+  const visibleWorldH = safe.height / viewTransform.scale;
   const halfW = visibleWorldW / 2;
   const halfH = visibleWorldH / 2;
 
@@ -95,11 +119,12 @@ function centerCameraOnSelectedColonist() {
 
 function visibleWorldBounds(padding = TILE * 2) {
   const scale = viewTransform.scale || 1;
+  const safe = cameraSafeViewport();
   return {
     left: Math.max(0, (-viewTransform.offsetX / scale) - padding),
     top: Math.max(0, (-viewTransform.offsetY / scale) - padding),
-    right: Math.min(getWorldWidth(), ((canvas.width - viewTransform.offsetX) / scale) + padding),
-    bottom: Math.min(getWorldHeight(), ((canvas.height - viewTransform.offsetY) / scale) + padding)
+    right: Math.min(getWorldWidth(), ((safe.width - viewTransform.offsetX) / scale) + padding),
+    bottom: Math.min(getWorldHeight(), ((safe.height - viewTransform.offsetY) / scale) + padding)
   };
 }
 
@@ -208,7 +233,6 @@ function drawObject(obj) {
   if (def.interactable) drawInteractionHint(obj, cx, cy);
 }
 
-
 function drawMarkedForGather(cx, cy) {
   ctx.save();
   ctx.strokeStyle = '#f4b350';
@@ -250,14 +274,14 @@ const OBJECT_TARGET_H = {
   bed: TILE * 1.2,   campfire: TILE * 1.2, forge: TILE * 1.1,
   stove: TILE * 1.0, med_station: TILE * 1.0, research_desk: TILE * 1.0,
   crate: TILE * 1.1, ruin: TILE * 1.0,  cache: TILE * 1.1,
-  supply_crate: TILE * 1.1, wall: TILE * 1.5, bench: TILE * 1.0, stool: TILE * 1.0
+  supply_crate: TILE * 1.1, wall: TILE * 1.5, door: TILE * 1.35, bench: TILE * 1.0, stool: TILE * 1.0
 };
 
 function objectScale(type, img) {
   const targetH = OBJECT_TARGET_H[type] || TILE;
   const imgH = img?.naturalHeight || img?.height || 0;
   if (imgH > 0) return targetH / imgH;
-  return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, bench:0.20, stool:0.45 })[type] || 0.35;
+  return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, door:0.31, bench:0.20, stool:0.45 })[type] || 0.35;
 }
 
 function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false) {
@@ -298,7 +322,6 @@ function drawColonist(c) {
   drawTinyBars(c);
   drawName(c.name, c.px, c.py - 38);
 }
-
 
 function drawEquipmentBadge(c) {
   ensureEquipment(c);
@@ -428,7 +451,6 @@ function drawPoiMarkers() {
   }
   ctx.restore();
 }
-
 
 function drawGatherSelection() {
   if (!gatherSelection?.active || !gatherSelection.start || !gatherSelection.current) return;
