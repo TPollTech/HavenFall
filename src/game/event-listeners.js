@@ -36,12 +36,6 @@
     if (typeof clearZoneTool === 'function') clearZoneTool(reason);
   }
 
-  function toggleColonistLock(idx) {
-    if (!colonistCandidates || !colonistCandidates[idx]) return;
-    colonistCandidates[idx].locked = !colonistCandidates[idx].locked;
-    if (typeof renderColonistSelection === 'function') renderColonistSelection();
-  }
-
   function changeColonistPriority(key) {
     if (!state || typeof selectedColonist !== 'function') return;
     const c = selectedColonist();
@@ -93,15 +87,17 @@
       return;
     }
 
-    const reroll = target.closest('[data-reroll-colonist]');
-    if (reroll) {
-      rerollColonist(Number(reroll.dataset.rerollColonist));
+    const skill = target.closest('[data-builder-skill][data-builder-index][data-builder-delta]');
+    if (skill) {
+      event.preventDefault();
+      updateColonistBuilderSkill(Number(skill.dataset.builderIndex), skill.dataset.builderSkill, Number(skill.dataset.builderDelta));
       return;
     }
 
-    const lock = target.closest('[data-lock-colonist]');
-    if (lock) {
-      toggleColonistLock(Number(lock.dataset.lockColonist));
+    const reroll = target.closest('[data-reroll-colonist]');
+    if (reroll) {
+      event.preventDefault();
+      applyColonistBuilderPreset(Number(reroll.dataset.rerollColonist), 'balanced');
       return;
     }
 
@@ -161,6 +157,25 @@
     if (speed) {
       setGameSpeed(speed.dataset.speed);
     }
+  }
+
+  function handleDelegatedChange(event) {
+    const preset = event.target.closest?.('[data-builder-preset]');
+    if (preset) {
+      applyColonistBuilderPreset(Number(preset.dataset.builderPreset), preset.value);
+      return;
+    }
+
+    const field = event.target.closest?.('[data-builder-field][data-builder-index]');
+    if (field) {
+      updateColonistBuilderField(Number(field.dataset.builderIndex), field.dataset.builderField, field.value);
+    }
+  }
+
+  function handleDelegatedInput(event) {
+    const field = event.target.closest?.('[data-builder-field][data-builder-index]');
+    if (!field || field.dataset.builderField !== 'name') return;
+    updateColonistBuilderField(Number(field.dataset.builderIndex), 'name', field.value);
   }
 
   function handleCanvasWheel(event) {
@@ -302,9 +317,14 @@
       });
 
     on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
-    on(dom.buttons.rerollAll, 'click', rerollUnlockedColonists);
+    if (dom.buttons.rerollAll) dom.buttons.rerollAll.hidden = true;
     on(dom.buttons.startSelectedGame, 'click', () => {
       if (!newGameConfig) newGameConfig = readNewGameConfig();
+      const validation = typeof validateColonistBuilders === 'function' ? validateColonistBuilders() : { ok: true };
+      if (!validation.ok) {
+        renderColonistSelection?.();
+        return;
+      }
       startNewGame(newGameConfig, colonistCandidates);
       syncSpeedButtons();
     });
@@ -327,6 +347,8 @@
     on(dom.inputs.autosave, 'change', e => { settings.autosave = e.target.value; saveSettings(); });
 
     document.addEventListener('click', handleDelegatedClick);
+    document.addEventListener('change', handleDelegatedChange);
+    document.addEventListener('input', handleDelegatedInput);
 
     on(dom.buttons.cancelBuild, 'click', () => { currentBuild = null; updateUI(true); });
     on(dom.buttons.pause, 'click', () => { setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING); syncSpeedButtons(); });
