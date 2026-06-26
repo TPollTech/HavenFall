@@ -1,9 +1,13 @@
-.bottom-command-panel {
-  pointer-events: none;
+.bottom-command-panel,
+#hud,
+#bottomActionBar,
+.bottom-panel-content {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .bottom-command-panel > * {
-  pointer-events: auto;
+  pointer-events: none !important;
 }
 
 .anchored-ui-panel {
@@ -13,7 +17,7 @@
   transform: translate(-50%, 18px);
   width: min(1120px, calc(100vw - 28px));
   max-height: min(46vh, 390px);
-  z-index: 9900;
+  z-index: 10;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
@@ -165,9 +169,28 @@
   border-color: rgba(185,141,255,.34);
 }
 
+#bottom-navigation-dock {
+  z-index: 20 !important;
+}
+
 #bottom-navigation-dock[hidden],
 #top-resource-bar[hidden] {
   display: none !important;
+}
+
+body.ui-modern-panels [id^="modal-"],
+body.ui-modern-panels #ui-modal-backdrop,
+body.ui-modern-panels .game-popup-modal:not(#eventModal):not(#pauseOverlay) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#eventModal,
+#pauseOverlay,
+.confirmation-modal,
+.confirm-modal {
+  z-index: 100 !important;
 }
 
 @media(max-width:760px) {
