@@ -28,6 +28,12 @@ function installWorkbenchExpansionDefs() {
   window.HavenfallContext.workbenchExpansionInstalled = true;
 }
 
+function recipeStationBuilt(stationType) {
+  if (!stationType) return false;
+  if (!state?.objects?.length) return false;
+  return state.objects.some(o => o.type === stationType);
+}
+
 function installWorkbenchBuildButtons() {
   const grid = document.querySelector('.build-grid');
   if (!grid) return;
@@ -73,6 +79,7 @@ function updateWorkbenchToolsTick() {
   }
 }
 
+window.recipeStationBuilt = recipeStationBuilt;
 window.updateWorkbenchToolsTick = updateWorkbenchToolsTick;
 
 installWorkbenchExpansionDefs();
