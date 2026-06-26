@@ -82,7 +82,6 @@ function assignHeal(c, station) {
   c.note = 'Indo receber tratamento';
 }
 
-
 function assignCraft(c, recipeKey, stationOverride = null) {
   const recipe = recipeDefs[recipeKey];
   if (!recipe) return;
@@ -117,7 +116,6 @@ function openCraftingForStation(obj) {
   updateCraftingUI();
   updateUI(true);
 }
-
 
 function assignInspect(c, obj) {
   if (!obj) return;
@@ -193,8 +191,67 @@ function toggleGatherMark(obj) {
   if (obj.markedForGather) assignMarkedGatherTasks();
 }
 
+function taskPriorityValue(c, key) {
+  if (!c || !state?.taskPriorities) return 2;
+  const row = state.taskPriorities[c.id] || state.taskPriorities[String(c.id)];
+  if (!row || row[key] === undefined) return 2;
+  return Math.max(0, Math.min(4, Number(row[key]) || 0));
+}
+
+function taskPriorityOrder(c) {
+  return [
+    ['gather', taskPriorityValue(c, 'gather')],
+    ['build', taskPriorityValue(c, 'build')],
+    ['research', taskPriorityValue(c, 'research')],
+    ['handle', taskPriorityValue(c, 'handle')]
+  ].filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
+}
+
+function canDoPriorityTask(c, key) {
+  if (taskPriorityValue(c, key) <= 0) return false;
+  if (key === 'gather') return !!(nearestGatherable(c, true) || nearestGatherable(c));
+  if (key === 'build') return !!nearestBlueprint(c);
+  if (key === 'research') {
+    ensureResearchState();
+    return !!state.research?.current && !!state.objects.find(o => o.type === 'research_desk');
+  }
+  if (key === 'handle') {
+    const haulReady = typeof zoneSystem !== 'undefined' && zoneSystem?.count?.('storage') && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function' && findLooseHaulTarget();
+    return !!haulReady;
+  }
+  return false;
+}
+
+function assignPriorityTask(c, key) {
+  if (key === 'gather') {
+    const resource = nearestGatherable(c, true) || nearestGatherable(c);
+    if (resource) { assignGather(c, resource); return true; }
+  }
+
+  if (key === 'build') {
+    const bp = nearestBlueprint(c);
+    if (bp) { assignBuild(c, bp); return true; }
+  }
+
+  if (key === 'research') {
+    ensureResearchState();
+    const desk = state.objects.find(o => o.type === 'research_desk');
+    if (desk && state.research?.current) { assignResearch(c, desk); return true; }
+  }
+
+  if (key === 'handle') {
+    if (typeof zoneSystem !== 'undefined' && zoneSystem?.count?.('storage') && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function') {
+      const target = findLooseHaulTarget();
+      const storageTile = zoneSystem.findFreeStorageTile?.();
+      if (target && storageTile && assignHaulTask(c, target, storageTile)) return true;
+    }
+  }
+
+  return false;
+}
+
 function assignMarkedGatherTasks() {
-  const idle = state.colonists.filter(c => !c.task && c.energy > 14 && c.health > 15);
+  const idle = state.colonists.filter(c => !c.task && c.energy > 14 && c.health > 15 && taskPriorityValue(c, 'gather') > 0);
   for (const c of idle) {
     const target = nearestGatherable(c, true);
     if (!target) break;
@@ -210,6 +267,7 @@ function nearestThreat(c) {
 
 function assignAutoTask(c) {
   ensureColonistMeta(c);
+
   if (c.priority === 'defense') {
     const threat = nearestThreat(c);
     if (threat) { assignScare(c, threat); return true; }
@@ -217,20 +275,12 @@ function assignAutoTask(c) {
     return false;
   }
 
-  if (c.priority === 'gather') {
-    const resource = nearestGatherable(c, true) || nearestGatherable(c);
-    if (resource) { assignGather(c, resource); return true; }
-    c.note = 'Aguardando recurso para coletar';
-    return false;
+  const ordered = taskPriorityOrder(c);
+  for (const [key] of ordered) {
+    if (canDoPriorityTask(c, key) && assignPriorityTask(c, key)) return true;
   }
 
-  if (c.priority === 'build') {
-    const bp = nearestBlueprint(c);
-    if (bp) { assignBuild(c, bp); return true; }
-    c.note = 'Aguardando obra';
-    return false;
-  }
-
+  c.note = ordered.length ? 'Aguardando tarefa prioritária' : 'Tarefas automáticas desativadas';
   return false;
 }
 
@@ -498,388 +548,9 @@ function handleTaskAtTarget(c, tick) {
 
 function ensureWolfState(wolf) {
   if (!wolf) return;
-  wolf.hp = wolf.hp ?? 100;
-  wolf.morale = wolf.morale ?? 100;
-  wolf.aggression = wolf.aggression ?? 1;
-  wolf.state = wolf.state || 'hunting';
-}
-
-function handleCombatTask(c, task, tick) {
-  const wolf = state.wolves.find(w => w.id === task.wolfId);
-  if (!wolf) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
-  ensureWolfState(wolf);
-  ensureEquipment(c);
-  const power = equipmentCombatPower(c);
-  const defense = equipmentDefense(c);
-  const roundTime = power < 1.2 ? 4.2 : 3.0;
-  c.work += tick * workRate(c, 'defense');
-  c.note = `Confronto com lobo ${Math.floor((c.work / roundTime) * 100)}%`;
-
-  if (c.work < roundTime) return;
-
-  c.work = 0;
-  task.rounds = (task.rounds || 0) + 1;
-
-  const weaponKey = c.equipment?.weapon;
-  const toolKey = c.equipment?.tool;
-  const offhandKey = c.equipment?.offhand;
-  const bowWithoutArrows = weaponKey === 'bow' && itemCount('arrows') <= 0;
-  const weaponName = bowWithoutArrows ? null : (itemDefs[weaponKey]?.label || itemDefs[toolKey]?.label || null);
-  const hasRealWeapon = !!weaponKey && !bowWithoutArrows;
-  if (bowWithoutArrows && task.rounds === 0) log(`${c.name} está com arco, mas não tem flechas. O confronto fica muito mais perigoso.`);
-  if (weaponKey === 'bow' && !bowWithoutArrows) state.items.arrows = Math.max(0, (state.items.arrows || 0) - 1);
-  const hasTorch = offhandKey === 'torch';
-  const hasShield = offhandKey === 'shield';
-  const alliesNearby = state.colonists.filter(other => other.id !== c.id && dist(other.x, other.y, c.x, c.y) <= 3).length;
-  const groupBonus = alliesNearby * 0.35;
-  const chanceRoll = Math.random();
-  const attackPower = power + groupBonus + (hasTorch ? 0.35 : 0);
-  const damageToWolf = hasRealWeapon ? 18 + attackPower * 8 : 4 + attackPower * 3;
-  const danger = clamp((wolf.aggression || 1) * (hasRealWeapon ? 0.42 : 0.92) - defense - groupBonus * 0.12 - (hasTorch ? 0.18 : 0), 0.08, 0.95);
-  const injury = Math.max(0, Math.round((hasRealWeapon ? 5 : 14) + danger * 14 - (hasShield ? 6 : 0)));
-
-  if (!hasRealWeapon && chanceRoll < 0.55) {
-    c.health = clamp(c.health - injury, 1, 100);
-    c.mood = clamp(c.mood - 8, 0, 100);
-    wolf.morale = clamp(wolf.morale - 8 - (hasTorch ? 12 : 0), 0, 100);
-    log(`${c.name} tentou segurar o lobo sem arma. O animal pressionou o ataque, e ${c.name} recuou machucado.`);
-  } else {
-    wolf.hp = clamp(wolf.hp - damageToWolf, 0, 100);
-    wolf.morale = clamp(wolf.morale - (hasTorch ? 28 : 12) - groupBonus * 8, 0, 100);
-    if (chanceRoll < danger) {
-      c.health = clamp(c.health - Math.max(2, Math.floor(injury * 0.55)), 1, 100);
-      log(`${c.name} acertou o lobo com ${weaponName || 'as próprias mãos'}, mas o animal conseguiu contra-atacar.`);
-    } else {
-      log(`${c.name} manteve distância e acertou o lobo com ${weaponName || 'um golpe improvisado'}.`);
-    }
-  }
-
-  if (c.health <= 12) {
-    c.task = null;
-    c.note = 'Ferido e recuando';
-    c.mood = clamp(c.mood - 12, 0, 100);
-    log(`${c.name} ficou em condição ruim e abandonou o confronto. É melhor buscar tratamento.`);
-    return;
-  }
-
-  if (wolf.hp <= 0) {
-    state.wolves = state.wolves.filter(w => w.id !== wolf.id);
-    c.mood = clamp(c.mood + 7, 0, 100);
-    c.note = 'Ameaça neutralizada';
-    c.task = null;
-    log(`${c.name} neutralizou o lobo depois de um confronto difícil.`);
-    return;
-  }
-
-  if (wolf.morale <= 15 || (hasTorch && chanceRoll < 0.42) || (!hasRealWeapon && task.rounds >= 2 && chanceRoll < 0.28)) {
-    state.wolves = state.wolves.filter(w => w.id !== wolf.id);
-    c.mood = clamp(c.mood + 4, 0, 100);
-    c.note = 'Lobo afastado';
-    c.task = null;
-    log(`O lobo hesitou e fugiu da área. ${c.name} sobreviveu ao confronto.`);
-    return;
-  }
-
-  if (!hasRealWeapon && task.rounds >= 3) {
-    c.task = null;
-    c.note = 'Recuou do combate';
-    c.mood = clamp(c.mood - 6, 0, 100);
-    log(`${c.name} percebeu que lutar desarmado era arriscado demais e recuou.`);
-    return;
-  }
-}
-
-function handleInteractionTask(c, task, tick) {
-  if (task.type === 'inspectPoi') {
-    const poi = state.world?.pointsOfInterest?.find(p => p.id === task.poiId);
-    if (!poi) { c.task = null; c.note = 'Ocioso'; return; }
-    c.work += tick * workRate(c, 'research');
-    c.note = `Investigando ${poi.name} ${Math.floor((c.work / 2.6) * 100)}%`;
-    if (c.work >= 2.6) {
-      poi.inspected = true;
-      poi.discovered = true;
-      log(`${c.name} investigou ${poi.name}: ${poi.lore || 'há sinais de uma história esquecida neste lugar.'}`);
-      c.mood = clamp(c.mood + 3, 0, 100);
-      c.task = null; c.note = 'Investigação concluída'; c.work = 0;
-    }
-    return;
-  }
-
-  const obj = state.objects.find(o => o.id === task.objId);
-  if (!obj) { c.task = null; c.note = 'Ocioso'; return; }
-  const def = objectDefs[obj.type] || { name: 'objeto', work: 2.5 };
-  const workNeeded = def.work || 2.5;
-  c.work += tick * workRate(c, task.type === 'inspect' ? 'research' : 'gather');
-  c.note = `${task.type === 'inspect' ? 'Investigando' : 'Vasculhando'} ${def.name} ${Math.floor((c.work / workNeeded) * 100)}%`;
-  if (c.work < workNeeded) return;
-
-  if (task.type === 'inspect') finishInspect(c, obj);
-  else finishLoot(c, obj);
-  c.task = null;
-  c.work = 0;
-}
-
-function finishInspect(c, obj) {
-  obj.inspected = true;
-  obj.unknown = false;
-  const poi = obj.poiId ? state.world?.pointsOfInterest?.find(p => p.id === obj.poiId) : null;
-  if (poi) poi.inspected = true;
-  const lore = obj.lore || poi?.lore || loreForObject(obj);
-  log(`${c.name} investigou ${objectDefs[obj.type]?.name || 'objeto'}: ${lore}`);
-  c.note = 'Investigação concluída';
-  c.mood = clamp(c.mood + 2, 0, 100);
-}
-
-function finishLoot(c, obj) {
-  if (obj.looted) {
-    log(`${objectDefs[obj.type]?.name || 'Objeto'} já foi vasculhado.`);
-    c.note = 'Nada encontrado';
-    return;
-  }
-  obj.looted = true;
-  obj.unknown = false;
-  const poi = obj.poiId ? state.world?.pointsOfInterest?.find(p => p.id === obj.poiId) : null;
-  if (poi) poi.looted = true;
-  const loot = obj.loot || rollLootForObject(obj);
-  addResources(loot.resources || loot);
-  addItems(loot.items || {});
-  const resourceLoot = loot.resources || loot;
-  const itemLoot = loot.items || {};
-  const lootText = [
-    ...Object.entries(resourceLoot).filter(([,v]) => v > 0).map(([k,v]) => `+${v} ${resourceLabel(k)}`),
-    ...Object.entries(itemLoot).filter(([,v]) => v > 0).map(([k,v]) => `+${v} ${itemLabel(k)}`)
-  ].join(', ') || 'nada útil';
-  log(`${c.name} vasculhou ${objectDefs[obj.type]?.name || 'objeto'} e encontrou ${lootText}.`);
-  c.note = 'Loot coletado';
-  c.mood = clamp(c.mood + 3, 0, 100);
-}
-
-function rollLootForObject(obj) {
-  const rand = seededRandom(`${state.config?.seed || 'save'}|loot|${obj.id}|${obj.type}`);
-  const resources = { food: 0, wood: 0, stone: 0, metal: 0, medicine: 0 };
-  const items = {};
-  const maybeItem = (key, chance, min = 1, max = 1) => {
-    if (rand() < chance) items[key] = (items[key] || 0) + min + Math.floor(rand() * (max - min + 1));
-  };
-  if (obj.type === 'cache' || obj.type === 'supply_crate') {
-    resources.food = Math.floor(rand() * 6) + 2;
-    resources.wood = Math.floor(rand() * 5) + 1;
-    resources.metal = rand() < 0.62 ? Math.floor(rand() * 4) + 1 : 0;
-    resources.medicine = rand() < 0.28 ? 1 : 0;
-    maybeItem('rope', 0.35);
-    maybeItem('nails', 0.55, 1, 3);
-    maybeItem('cloth', 0.32);
-    maybeItem('arrows', 0.22, 2, 6);
-  } else if (obj.type === 'ruin') {
-    resources.stone = Math.floor(rand() * 5) + 2;
-    resources.metal = Math.floor(rand() * 5) + 1;
-    resources.medicine = rand() < 0.18 ? 1 : 0;
-    maybeItem('nails', 0.48, 1, 4);
-    maybeItem('leather', 0.22);
-    maybeItem('knife', 0.08);
-  } else if (obj.type === 'crate') {
-    resources.wood = Math.floor(rand() * 4) + 2;
-    resources.food = rand() < 0.4 ? Math.floor(rand() * 3) + 1 : 0;
-    maybeItem('rope', 0.18);
-  }
-  return { resources, items };
-}
-
-function loreForObject(obj) {
-  if (obj.type === 'ruin') return 'pedras quebradas, cinzas antigas e marcas de ferramentas revelam que este lugar já foi usado como abrigo.';
-  if (obj.type === 'cache' || obj.type === 'supply_crate') return 'a tampa está gasta, mas ainda há sinais de que alguém tentou proteger estes suprimentos.';
-  if (obj.type === 'crate') return 'a madeira está úmida e antiga, mas o conteúdo ainda pode ser útil.';
-  return 'não parece comum. Talvez exista algo útil ou alguma pista neste local.';
-}
-
-function resourceLabel(key) {
-  return ({ food: 'comida', wood: 'madeira', stone: 'pedra', metal: 'metal', medicine: 'remédio' })[key] || key;
-}
-
-function updateWolves(dt) {
-  for (const w of state.wolves) {
-    ensureWolfState(w);
-    const tick = dt * state.speed;
-    const nearest = state.colonists
-      .slice()
-      .sort((a, b) => Math.hypot(a.px - w.px, a.py - w.py) - Math.hypot(b.px - w.px, b.py - w.py))[0];
-    if (!nearest) continue;
-    const close = Math.hypot(nearest.px - w.px, nearest.py - w.py);
-    w.anim += tick;
-    if (close < TILE * 4) {
-      const dx = nearest.px - w.px;
-      const dy = nearest.py - w.py;
-      const len = Math.hypot(dx, dy) || 1;
-      w.px += dx / len * 35 * tick;
-      w.py += dy / len * 35 * tick;
-      w.dir = dx > 0 ? 'right' : 'left';
-      if (close < 32) {
-        const activelyFighting = nearest.task?.type === 'combat' && nearest.task?.wolfId === w.id;
-        const armor = equipmentDefense(nearest);
-        const pressure = activelyFighting ? 1.4 : 3.2;
-        nearest.health = clamp(nearest.health - tick * pressure * (1 - armor), 1, 100);
-        nearest.mood = clamp(nearest.mood - tick * (activelyFighting ? 0.55 : 1.1), 0, 100);
-        nearest.note = activelyFighting ? nearest.note : 'Em perigo';
-      }
-    } else if (Math.random() < 0.01 * state.speed) {
-      w.target = randomEdgeTile(false);
-    }
-    if (w.target) {
-      const tx = w.target.x * TILE + TILE / 2;
-      const ty = w.target.y * TILE + TILE / 2;
-      const dx = tx - w.px;
-      const dy = ty - w.py;
-      const len = Math.hypot(dx, dy) || 1;
-      if (len < 4) w.target = null;
-      else { w.px += dx / len * 24 * tick; w.py += dy / len * 24 * tick; }
-    }
-    w.x = Math.round((w.px - TILE / 2) / TILE);
-    w.y = Math.round((w.py - TILE / 2) / TILE);
-  }
-}
-
-function randomEdgeTile(forWolf = true) {
-  const side = Math.floor(Math.random() * 4);
-  const cols = getWorldCols();
-  const rows = getWorldRows();
-  if (side === 0) return { x: 1, y: 1 + Math.floor(Math.random() * (rows - 2)) };
-  if (side === 1) return { x: cols - 2, y: 1 + Math.floor(Math.random() * (rows - 2)) };
-  if (side === 2) return { x: 1 + Math.floor(Math.random() * (cols - 2)), y: 1 };
-  return { x: 1 + Math.floor(Math.random() * (cols - 2)), y: rows - 2 };
-}
-
-function updateWorld(dt) {
-  if (!state || appScreen !== SCREEN.PLAYING) return;
-  const tick = dt * state.speed;
-  state.hour += tick * 0.085;
-  if (state.hour >= 24) {
-    state.day += 1;
-    state.hour -= 24;
-    state.eventDoneToday = false;
-    log(`A colônia chegou ao Dia ${state.day}.`);
-  }
-
-  if (!state.eventDoneToday && state.hour > 7.5) {
-    state.eventDoneToday = true;
-    randomEvent();
-  }
-
-  const intensityChance = ({ low: 0.0008, normal: 0.0018, high: 0.0035 })[state.config?.eventIntensity || 'normal'] || 0.0018;
-  if (Math.random() < intensityChance * state.speed) randomEvent();
-
-  if (state.weatherTime > 0) {
-    state.weatherTime -= tick;
-    if (state.weatherTime <= 0) {
-      state.weather = 'limpo';
-      log('O tempo abriu.');
-    }
-  }
-
-  for (const obj of state.objects) {
-    if (obj.type === 'crop') {
-      const rainBonus = state.weather === 'chuva' ? 2.1 : 1;
-      obj.growth = clamp((obj.growth || 0) + tick * 0.85 * rainBonus, 0, 100);
-    }
-  }
-
-  for (const c of state.colonists) updateColonist(c, dt);
-  updateWolves(dt);
-  updateExploration();
-  checkGoals();
-}
-
-function randomEvent() {
-  const options = ['rain', 'supplies', 'wolf', 'berries', 'ore'];
-  const event = options[Math.floor(Math.random() * options.length)];
-  if (event === 'rain') {
-    state.weather = 'chuva';
-    state.weatherTime = 45;
-    log('Chuva fina: plantações crescem mais rápido hoje.');
-  } else if (event === 'supplies') {
-    const wood = 4 + Math.floor(Math.random() * 7);
-    const food = 2 + Math.floor(Math.random() * 5);
-    const medicine = Math.random() < 0.35 ? 1 : 0;
-    addResources({ wood, food, medicine });
-    log(`Caixas antigas encontradas: +${wood} madeira, +${food} comida${medicine ? ' e +1 remédio' : ''}.`);
-  } else if (event === 'wolf') {
-    spawnWolf();
-    log('Um lobo apareceu perto da colônia. Selecione um colono e clique nele para espantar.');
-  } else if (event === 'berries') {
-    for (let i = 0; i < 2; i++) {
-      const tile = freeRandomTile();
-      if (tile) state.objects.push({ id: uid(), type: 'berry', x: tile.x, y: tile.y });
-    }
-    log('Frutas silvestres brotaram perto da base.');
-  } else if (event === 'ore') {
-    const tile = freeRandomStoneTile() || freeRandomTile();
-    if (tile) {
-      state.objects.push({ id: uid(), type: 'ore', x: tile.x, y: tile.y });
-      log('Um veio de metal foi encontrado em uma área rochosa.');
-    }
-  }
-}
-
-function spawnWolf() {
-  const t = randomThreatTile() || randomEdgeTile();
-  state.wolves.push({ id: uid(), x: t.x, y: t.y, px: t.x * TILE + TILE / 2, py: t.y * TILE + TILE / 2, anim: 0, dir: 'left', hp: 100, morale: 100, aggression: 1 + Math.random() * 0.35, state: 'hunting' });
-}
-
-function randomThreatTile() {
-  const base = state.colonists[Math.floor(Math.random() * state.colonists.length)] || selectedColonist();
-  if (!base) return null;
-  for (let i = 0; i < 80; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 12 + Math.floor(Math.random() * 12);
-    const x = Math.round(base.x + Math.cos(angle) * radius);
-    const y = Math.round(base.y + Math.sin(angle) * radius);
-    if (isInside(x, y) && !isBlocked(x, y)) return { x, y };
-  }
-  return null;
-}
-
-function freeRandomTile() {
-  const cols = getWorldCols();
-  const rows = getWorldRows();
-  for (let i = 0; i < 160; i++) {
-    const x = 2 + Math.floor(Math.random() * (cols - 4));
-    const y = 2 + Math.floor(Math.random() * (rows - 4));
-    if (!getObjectAt(x, y) && !isBlocked(x, y)) return { x, y };
-  }
-  return null;
-}
-
-function freeRandomStoneTile() {
-  const cols = getWorldCols();
-  const rows = getWorldRows();
-  for (let i = 0; i < 200; i++) {
-    const x = 2 + Math.floor(Math.random() * (cols - 4));
-    const y = 2 + Math.floor(Math.random() * (rows - 4));
-    if (state.terrain[y]?.[x] === 'stone' && !getObjectAt(x, y)) return { x, y };
-  }
-  return null;
-}
-
-function checkGoals() {
-  ensureResearchState();
-  const beds = state.objects.filter(o => o.type === 'bed').length;
-  const campfire = state.objects.some(o => o.type === 'campfire');
-  const researchDesk = state.objects.some(o => o.type === 'research_desk');
-  const allTechs = researchOrder.every(key => !!state.research.unlocked[key]);
-  setGoal('beds', beds >= 2);
-  setGoal('campfire', campfire);
-  setGoal('researchDesk', researchDesk);
-  setGoal('techs', allTechs);
-  setGoal('food', state.resources.food >= 20);
-  setGoal('days', state.day >= 4);
-  if (!state.won && beds >= 2 && campfire && researchDesk && allTechs && state.resources.food >= 20 && state.day >= 4) {
-    state.won = true;
-    setScreen(SCREEN.PAUSED);
-    showModal('Base estabilizada!', 'Tu venceu a V1.8: a colônia tem cama, fogo, comida, mesa de pesquisa e tecnologias avançadas desbloqueadas. Dá pra continuar jogando, mas esse é o final do protótipo.', 'Continuar jogando');
-    log('Objetivos da V1.8 concluídos.');
-  }
-}
-
-function setGoal(key, done) {
-  const el = dom.goalList?.querySelector(`[data-goal="${key}"]`);
-  if (el) el.classList.toggle('done', done);
+  wolf.id ??= uid();
+  wolf.hp = wolf.hp === undefined ? 100 : wolf.hp;
+  wolf.morale = wolf.morale === undefined ? 65 : wolf.morale;
+  wolf.attackCooldown = wolf.attackCooldown || 0;
+  wolf.attackAnimTimer = wolf.attackAnimTimer || 0;
 }
