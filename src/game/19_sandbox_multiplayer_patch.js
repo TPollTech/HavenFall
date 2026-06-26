@@ -8,13 +8,20 @@ function installSandboxMultiplayerPatch() {
   let pullTimer = null;
   let publishTimer = null;
 
+  function isOnlineSessionActive() {
+    return window.havenfallOnlineSessionActive === true;
+  }
+
   function isJoinMode() {
-    return window.havenfallOnlineMode === 'join'
+    return isOnlineSessionActive() && (
+      window.havenfallOnlineMode === 'join'
       || sessionStorage.getItem('havenfall-online-mode') === 'join'
-      || new URLSearchParams(window.location.search).has('join');
+      || new URLSearchParams(window.location.search).has('join')
+    );
   }
 
   function setOnlineMode(mode) {
+    window.havenfallOnlineSessionActive = true;
     window.havenfallOnlineMode = mode === 'join' ? 'join' : 'host';
     sessionStorage.setItem('havenfall-online-mode', window.havenfallOnlineMode);
     document.body.classList.toggle('online-join-mode', window.havenfallOnlineMode === 'join');
@@ -329,7 +336,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   async function publishState() {
-    if (publishing || isJoinMode() || !state || appScreen !== SCREEN.PLAYING) return;
+    if (publishing || isJoinMode() || !state || appScreen !== SCREEN.PLAYING || !isOnlineSessionActive()) return;
     publishing = true;
     try {
       const res = await fetch('/api/multiplayer/state', {
@@ -349,7 +356,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   async function pullState() {
-    if (pulling) return;
+    if (pulling || !isJoinMode()) return;
     pulling = true;
     try {
       const res = await fetch('/api/multiplayer/state', { cache: 'no-store' });
@@ -390,7 +397,7 @@ function installSandboxMultiplayerPatch() {
   window.havenfallHostOnline = function havenfallHostOnline() {
     setOnlineMode('host');
     stopPullLoop();
-    setMpStatus('Host online: jogue normalmente; visitantes entram pelo menu Online.');
+    setMpStatus('Host online: mundo publicado.');
     startPublishLoop();
     publishState();
   };
@@ -424,10 +431,8 @@ function installSandboxMultiplayerPatch() {
     setTimeout(() => {
       installStyles();
       ensureSandboxButtons();
-      if (isJoinMode()) {
+      if (new URLSearchParams(window.location.search).has('join')) {
         window.havenfallJoinOnline();
-      } else {
-        window.havenfallHostOnline();
       }
     }, 800);
   };
