@@ -131,4 +131,14 @@ function installMobVisionPatch() {
       w.y = Math.round((w.py - TILE / 2) / TILE);
     }
   };
+
+  if (!window.__havenfallAlphaStateSystemLoaderInstalled) {
+    window.__havenfallAlphaStateSystemLoaderInstalled = true;
+    const script = document.createElement('script');
+    script.src = 'src/game/21_alpha_state_system.js';
+    script.onload = () => {
+      if (typeof installAlphaStateSystemPatch === 'function') installAlphaStateSystemPatch();
+    };
+    document.body.appendChild(script);
+  }
 }
