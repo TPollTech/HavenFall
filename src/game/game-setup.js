@@ -14,11 +14,14 @@ function saveSettings() {
 }
 
 function generateRandomSeed() {
-  const parts = ['ILHA','PEDRA','FOGO','VENTO','RUA','BASE','METAL','NOITE','COLONO','MATA'];
-  const a = parts[Math.floor(Math.random() * parts.length)];
-  const b = Math.floor(1000 + Math.random() * 9000);
-  const c = Math.random().toString(36).slice(2, 5).toUpperCase();
-  return `${a}-${b}-${c}`;
+  const prefixes = ['HVF', 'ASH', 'FALL', 'VALE', 'RUIN', 'HAVEN'];
+  const codenames = ['OMEGA', 'EMBER', 'BOREAL', 'ONYX', 'ECHO', 'NOVA', 'VANTA', 'ORION', 'WRAITH', 'CIPHER'];
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const number = Math.floor(10 + Math.random() * 90);
+  const letter = Math.random().toString(36).slice(2, 3).toUpperCase();
+  const suffix = codenames[Math.floor(Math.random() * codenames.length)];
+  const checksum = Math.random().toString(36).slice(2, 5).toUpperCase();
+  return `${prefix}-${number}${letter}-${suffix}-${checksum}`;
 }
 
 function hashSeed(str) {
@@ -45,16 +48,20 @@ function setupInputValue(key, fallback = '') {
   return el ? el.value : fallback;
 }
 
+function clampColonistCount(value) {
+  return Math.max(1, Math.min(50, Math.floor(Number(value) || 3)));
+}
+
 function readNewGameConfig() {
   const seed = setupInputValue('worldSeed').trim() || generateRandomSeed();
   return {
     colonyName: setupInputValue('colonyName').trim() || 'First Haven',
     seed,
     difficulty: setupInputValue('difficulty', 'normal'),
-    colonistCount: Number(setupInputValue('colonistCount', 3)),
+    colonistCount: clampColonistCount(setupInputValue('colonistCount', 3)),
     resourcesPreset: setupInputValue('resourcesPreset', 'standard'),
     eventIntensity: setupInputValue('eventIntensity', 'normal'),
-    mapSize: setupInputValue('mapSize', 'standard')
+    mapSize: setupInputValue('mapSize', 'giant')
   };
 }
 
@@ -62,20 +69,17 @@ function writeNewGameConfig(config = defaultNewGameConfig) {
   if (dom.inputs.colonyName) dom.inputs.colonyName.value = config.colonyName || 'First Haven';
   if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = config.seed || generateRandomSeed();
   if (dom.inputs.difficulty) dom.inputs.difficulty.value = config.difficulty || 'normal';
-  if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(config.colonistCount || 3);
+  if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(clampColonistCount(config.colonistCount || 3));
   if (dom.inputs.resourcesPreset) dom.inputs.resourcesPreset.value = config.resourcesPreset || 'standard';
   if (dom.inputs.eventIntensity) dom.inputs.eventIntensity.value = config.eventIntensity || 'normal';
-  if (dom.inputs.mapSize) dom.inputs.mapSize.value = config.mapSize || 'standard';
+  if (dom.inputs.mapSize) dom.inputs.mapSize.value = config.mapSize || 'giant';
   updateSetupSummary();
 }
 
 function updateSetupSummary() {
   if (!dom.setupSummary) return;
-  const cfg = readNewGameConfigSafe();
-  dom.setupSummary.innerHTML = `
-    <b>Resumo:</b> ${escapeHtml(cfg.colonyName)} · Seed <b>${escapeHtml(cfg.seed || 'será gerada')}</b> · ${labelDifficulty(cfg.difficulty)} · ${cfg.colonistCount} colonos · mapa ${labelMapSize(cfg.mapSize)} · eventos ${labelEventIntensity(cfg.eventIntensity)}.
-    <br><span class="muted-inline">A seed agora gera terreno, recursos, metais, ruínas, pontos especiais e spawn de forma determinística.</span>
-  `;
+  dom.setupSummary.remove();
+  dom.setupSummary = null;
 }
 
 function readNewGameConfigSafe() {
@@ -83,6 +87,15 @@ function readNewGameConfigSafe() {
   catch (_) { return { ...defaultNewGameConfig, seed: '' }; }
 }
 
-function labelDifficulty(v) { return ({ easy: 'Fácil', normal: 'Normal', hard: 'Difícil' })[v] || v; }
+function labelDifficulty(v) {
+  return ({ easy: 'Fácil', normal: 'Normal', hard: 'Difícil', hardcore: 'Hardcore' })[v] || v;
+}
 function labelEventIntensity(v) { return ({ low: 'baixa', normal: 'normal', high: 'alta' })[v] || v; }
-function labelMapSize(v) { return ({ small: 'pequeno', standard: 'padrão', large: 'grande', huge: 'enorme', frontier: 'fronteira vasta' })[v] || v; }
+function labelMapSize(v) {
+  return ({
+    large: 'grande',
+    huge: 'enorme',
+    giant: 'gigante',
+    infinite_chunks: 'infinito por chunks'
+  })[v] || v;
+}
