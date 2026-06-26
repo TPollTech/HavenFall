@@ -1,5 +1,15 @@
 'use strict';
 
+const SCREEN_DOM_MAP = Object.freeze({
+  [SCREEN.MAIN_MENU]: 'main',
+  [SCREEN.NEW_GAME_SETUP]: 'setup',
+  [SCREEN.COLONIST_SELECT]: 'colonists',
+  [SCREEN.LOAD_GAME]: 'load',
+  [SCREEN.SETTINGS]: 'settings',
+  [SCREEN.PLAYING]: 'game',
+  [SCREEN.PAUSED]: 'game'
+});
+
 function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -16,20 +26,24 @@ function saveSettings() {
 function setScreen(screen) {
   previousScreen = appScreen;
   appScreen = screen;
-  Object.values(dom.screens).forEach(el => el && el.classList.remove('active'));
-  if (screen === SCREEN.MAIN_MENU) dom.screens.main.classList.add('active');
-  if (screen === SCREEN.NEW_GAME_SETUP) dom.screens.setup.classList.add('active');
-  if (screen === SCREEN.COLONIST_SELECT) dom.screens.colonists.classList.add('active');
-  if (screen === SCREEN.LOAD_GAME) dom.screens.load.classList.add('active');
-  if (screen === SCREEN.SETTINGS) dom.screens.settings.classList.add('active');
-  if (screen === SCREEN.PLAYING || screen === SCREEN.PAUSED) dom.screens.game.classList.add('active');
-  dom.pauseOverlay.classList.toggle('show', screen === SCREEN.PAUSED);
+
+  const activeKey = SCREEN_DOM_MAP[screen];
+  Object.entries(dom.screens).forEach(([key, el]) => {
+    if (el) el.classList.toggle('active', key === activeKey);
+  });
+
+  if (dom.pauseOverlay) dom.pauseOverlay.classList.toggle('show', screen === SCREEN.PAUSED);
   if (state) state.paused = screen !== SCREEN.PLAYING;
   started = screen === SCREEN.PLAYING;
-  refreshMenuSaveInfo();
-  refreshLoadScreen();
+
+  triggerScreenSideEffects(screen);
+}
+
+function triggerScreenSideEffects() {
+  if (typeof refreshMenuSaveInfo === 'function') refreshMenuSaveInfo();
+  if (typeof refreshLoadScreen === 'function') refreshLoadScreen();
   updateSetupSummary();
-  if (state) updateUI(true);
+  if (state && typeof updateUI === 'function') updateUI(true);
 }
 
 function goBackFromSettings() {
@@ -63,28 +77,32 @@ function seededRandom(seed) {
   };
 }
 
+function setupInputValue(key, fallback = '') {
+  const el = dom.inputs?.[key];
+  return el ? el.value : fallback;
+}
+
 function readNewGameConfig() {
-  const seedInput = document.getElementById('worldSeedInput');
-  if (!seedInput.value.trim()) seedInput.value = generateRandomSeed();
+  const seed = setupInputValue('worldSeed').trim() || generateRandomSeed();
   return {
-    colonyName: document.getElementById('colonyNameInput').value.trim() || 'First Haven',
-    seed: seedInput.value.trim(),
-    difficulty: document.getElementById('difficultySelect').value,
-    colonistCount: Number(document.getElementById('colonistCountSelect').value),
-    resourcesPreset: document.getElementById('resourcesPresetSelect').value,
-    eventIntensity: document.getElementById('eventIntensitySelect').value,
-    mapSize: document.getElementById('mapSizeSelect').value
+    colonyName: setupInputValue('colonyName').trim() || 'First Haven',
+    seed,
+    difficulty: setupInputValue('difficulty', 'normal'),
+    colonistCount: Number(setupInputValue('colonistCount', 3)),
+    resourcesPreset: setupInputValue('resourcesPreset', 'standard'),
+    eventIntensity: setupInputValue('eventIntensity', 'normal'),
+    mapSize: setupInputValue('mapSize', 'standard')
   };
 }
 
 function writeNewGameConfig(config = defaultNewGameConfig) {
-  document.getElementById('colonyNameInput').value = config.colonyName || 'First Haven';
-  document.getElementById('worldSeedInput').value = config.seed || generateRandomSeed();
-  document.getElementById('difficultySelect').value = config.difficulty || 'normal';
-  document.getElementById('colonistCountSelect').value = String(config.colonistCount || 3);
-  document.getElementById('resourcesPresetSelect').value = config.resourcesPreset || 'standard';
-  document.getElementById('eventIntensitySelect').value = config.eventIntensity || 'normal';
-  document.getElementById('mapSizeSelect').value = config.mapSize || 'standard';
+  if (dom.inputs.colonyName) dom.inputs.colonyName.value = config.colonyName || 'First Haven';
+  if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = config.seed || generateRandomSeed();
+  if (dom.inputs.difficulty) dom.inputs.difficulty.value = config.difficulty || 'normal';
+  if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(config.colonistCount || 3);
+  if (dom.inputs.resourcesPreset) dom.inputs.resourcesPreset.value = config.resourcesPreset || 'standard';
+  if (dom.inputs.eventIntensity) dom.inputs.eventIntensity.value = config.eventIntensity || 'normal';
+  if (dom.inputs.mapSize) dom.inputs.mapSize.value = config.mapSize || 'standard';
   updateSetupSummary();
 }
 
