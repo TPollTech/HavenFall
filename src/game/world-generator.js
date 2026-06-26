@@ -67,7 +67,7 @@ function generateWorldFromSeed(config) {
   const exploration = makeExplorationMatrix(cols, rows);
   const spawnPoints = makeSpawnPoints(spawn, cols, rows);
 
-  return {
+  const world = {
     seed: config.seed,
     mapSize: config.mapSize,
     difficulty: config.difficulty,
@@ -88,6 +88,8 @@ function generateWorldFromSeed(config) {
     weatherPattern: generateWeatherPattern(config, rand),
     generationVersion: '1.8.2'
   };
+
+  return window.BiomeEngine?.applyToWorld ? window.BiomeEngine.applyToWorld(world, config) : world;
 }
 
 function difficultyResourceFactor(difficulty) {
