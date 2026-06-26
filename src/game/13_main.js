@@ -56,6 +56,7 @@ function installCleanOnlineAndStationMenus() {
     const style = document.createElement('style');
     style.id = 'cleanOnlineStationStyles';
     style.textContent = `
+      button[data-tab="crafting"], #craftingPanel { display:none!important; }
       .online-card { max-width: 980px; }
       .online-grid { display:grid; grid-template-columns:repeat(2,minmax(260px,1fr)); gap:12px; margin:14px 0; }
       .online-mode-card,.online-status-box,.online-share-box { background:rgba(18,22,31,.68); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:13px; }
@@ -252,6 +253,7 @@ function installCleanOnlineAndStationMenus() {
 
   const prevUpdateUI = updateUI;
   updateUI = function cleanPatchUpdateUI(force = false) {
+    if (activeHudTab === 'crafting') setHudTab('build');
     prevUpdateUI(force);
     ensureOnlineButton();
     const station = activeStation();
@@ -264,6 +266,7 @@ function installCleanOnlineAndStationMenus() {
     ensureOnlineButton();
     ensureOnlineScreen();
     ensureStationOverlay();
+    if (activeHudTab === 'crafting') setHudTab('build');
   };
 
   window.addEventListener('keydown', event => {
