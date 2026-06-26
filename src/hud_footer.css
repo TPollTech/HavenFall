@@ -1,0 +1,405 @@
+/* Alpha 1.0 — Definitive Footer HUD
+   This file owns the bottom gameplay HUD. Keep footer-specific layout here instead of scattering fixes across gameplay patches. */
+
+:root {
+  --alpha-footer-h: clamp(150px, 22vh, 218px);
+  --alpha-footer-gap: 8px;
+}
+
+/* Footer shell: compact overlay, never page-sized. */
+#hud.bottom-command-panel {
+  position: absolute !important;
+  z-index: 7 !important;
+  left: max(10px, env(safe-area-inset-left)) !important;
+  right: max(10px, env(safe-area-inset-right)) !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  min-height: 0 !important;
+  height: var(--alpha-footer-h) !important;
+  max-height: var(--alpha-footer-h) !important;
+  display: grid !important;
+  grid-template-rows: 38px minmax(0, 1fr) !important;
+  gap: var(--alpha-footer-gap) !important;
+  pointer-events: auto !important;
+}
+
+#bottomActionBar.bottom-action-bar {
+  min-height: 0 !important;
+  height: 38px !important;
+  padding: 4px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, rgba(10, 14, 21, .82), rgba(8, 11, 17, .60)) !important;
+}
+
+#bottomActionBar .bottom-tabs {
+  min-width: 0 !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+  padding-bottom: 1px !important;
+}
+
+#bottomActionBar .bottom-tabs button,
+#bottomActionBar .speed-inline button {
+  flex: 0 0 auto !important;
+  min-width: 74px !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 4px 8px !important;
+  border-radius: 9px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+#bottomActionBar .bottom-tabs button.active {
+  background: linear-gradient(180deg, rgba(227, 169, 63, .44), rgba(114, 74, 22, .50)) !important;
+  border-color: rgba(255, 217, 139, .72) !important;
+  outline: 0 !important;
+}
+
+#bottomActionBar .speed-inline {
+  display: flex !important;
+  gap: 4px !important;
+  align-items: center !important;
+}
+
+#bottomActionBar .speed-inline button {
+  min-width: 36px !important;
+  padding-inline: 6px !important;
+}
+
+/* Panel region: every tab owns its own internal scroll. */
+#hud .bottom-panel-content {
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+#hud .bottom-tab-panel {
+  display: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 9px !important;
+  border-radius: 15px !important;
+  background: linear-gradient(180deg, rgba(10, 14, 21, .78), rgba(9, 12, 18, .56)) !important;
+}
+
+#hud .bottom-tab-panel.active {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 7px !important;
+}
+
+#hud .panel-title-row {
+  min-height: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+
+#hud .panel-title-row h2 {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+}
+
+#hud .panel-hint {
+  margin: 1px 0 0 !important;
+  max-width: 72ch !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  opacity: .78 !important;
+}
+
+#hud #cancelBuild {
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+}
+
+/* Common tab content grids. */
+#hud .build-grid,
+#hud .recipe-grid,
+#hud .resource-grid,
+#hud .zone-placeholder-grid,
+#hud .colonist-list,
+#hud .selected-info-inline,
+#hud #selectedObjectInfo,
+#hud #researchInfo,
+#hud #log,
+#hud #goalList,
+#hud .alpha-progress-card {
+  min-height: 0 !important;
+  overflow: auto !important;
+  align-content: start !important;
+  scrollbar-width: thin;
+}
+
+#hud .build-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)) !important;
+  gap: 6px !important;
+}
+
+#hud .build-grid button,
+#hud .zone-placeholder-grid button,
+#hud .recipe-grid button,
+#hud .recipe-card {
+  min-height: 44px !important;
+  padding: 6px 7px !important;
+  font-size: 11px !important;
+  line-height: 1.08 !important;
+  border-radius: 10px !important;
+}
+
+#hud .build-grid small,
+#hud .zone-placeholder-grid small,
+#hud .recipe-grid small,
+#hud .recipe-card small,
+#hud .recipe-card em {
+  font-size: 9px !important;
+  line-height: 1.05 !important;
+}
+
+#hud .build-status {
+  min-height: 18px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  font-size: 11px !important;
+}
+
+#hud .resource-grid,
+#hud .zone-placeholder-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr)) !important;
+  gap: 6px !important;
+}
+
+#hud .resource-grid div {
+  min-height: 40px !important;
+  padding: 6px 8px !important;
+  border-radius: 11px !important;
+  font-size: 12px !important;
+}
+
+#hud .resource-grid img {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+#hud .resource-grid b {
+  font-size: 16px !important;
+}
+
+/* Tasks tab: selected info + Alpha goals side-by-side on desktop. */
+#tasksPanel.bottom-tab-panel.active {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+#tasksPanel #selectedInfo {
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+#tasksPanel #goalsPanel {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+#tasksPanel #goalList {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+}
+
+#hud .alpha-progress-card {
+  max-height: 100% !important;
+}
+
+#hud .alpha-progress-head {
+  gap: 8px !important;
+}
+
+#hud .alpha-goal-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)) !important;
+  gap: 5px !important;
+}
+
+#hud .alpha-goal {
+  min-height: 22px !important;
+  padding: 4px 6px !important;
+  font-size: 11px !important;
+}
+
+/* Colonists and selected details. */
+#hud .colonist-strip {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)) !important;
+  gap: 6px !important;
+}
+
+#hud .colonist-row {
+  min-height: 42px !important;
+  padding: 6px !important;
+  border-radius: 11px !important;
+}
+
+#hud .colonist-row img {
+  width: 24px !important;
+  height: 32px !important;
+}
+
+#hud .colonist-row small {
+  max-width: 150px !important;
+  font-size: 10px !important;
+}
+
+#hud .selected-info-inline {
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)) !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+}
+
+#hud .priority-box {
+  padding: 6px !important;
+  margin: 0 !important;
+}
+
+#hud .priority-buttons {
+  gap: 4px !important;
+  margin: 5px 0 !important;
+}
+
+#hud button.mini {
+  min-height: 24px !important;
+  padding: 4px 6px !important;
+  font-size: 10px !important;
+}
+
+#hud #selectedObjectInfo,
+#hud #researchInfo {
+  padding-right: 4px !important;
+}
+
+#eventLogPanel.bottom-tab-panel.active {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+#hud #log {
+  height: auto !important;
+  max-height: none !important;
+  column-count: 2 !important;
+  column-gap: 18px !important;
+  font-size: 11px !important;
+  line-height: 1.28 !important;
+}
+
+#hud #log p {
+  margin-bottom: 4px !important;
+  padding-bottom: 3px !important;
+}
+
+/* Crafting by station lives in modal; footer only keeps inventory readable when visible. */
+#hud #craftingPanel.active {
+  overflow: auto !important;
+}
+
+#hud .inventory-info,
+#hud .crafting-info {
+  margin: 0 !important;
+  overflow: auto !important;
+}
+
+#hud .item-strip,
+#hud .equipment-strip {
+  gap: 5px !important;
+}
+
+#hud .item-pill,
+#hud .equipment-slot {
+  min-height: 28px !important;
+  padding: 4px 6px !important;
+  font-size: 11px !important;
+}
+
+#hud .item-pill img,
+#hud .equipment-slot img {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+@media (min-width: 1181px) {
+  #tasksPanel.bottom-tab-panel.active {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, .8fr) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+  #tasksPanel .panel-title-row {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  :root { --alpha-footer-h: clamp(188px, 30vh, 258px); }
+  #hud.bottom-command-panel {
+    grid-template-rows: 72px minmax(0, 1fr) !important;
+  }
+  #bottomActionBar.bottom-action-bar {
+    height: 72px !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 32px 28px !important;
+  }
+  #bottomActionBar .bottom-tabs {
+    height: 32px !important;
+  }
+  #bottomActionBar .speed-inline {
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --top-h: 82px;
+    --alpha-footer-h: min(292px, 38vh);
+  }
+  #hud.bottom-command-panel {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+  }
+  #hud .panel-hint {
+    display: none !important;
+  }
+  #hud .build-grid,
+  #hud .resource-grid,
+  #hud .zone-placeholder-grid,
+  #hud .colonist-strip,
+  #hud .selected-info-inline,
+  #hud .alpha-goal-list {
+    grid-template-columns: 1fr !important;
+  }
+  #hud #log {
+    column-count: 1 !important;
+  }
+}
