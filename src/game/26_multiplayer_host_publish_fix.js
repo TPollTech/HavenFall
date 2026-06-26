@@ -14,8 +14,14 @@ function installMultiplayerHostPublishFixPatch() {
     pendingHost = true;
   }
 
+  function allowSetupHost() {
+    allowHostUntil = Date.now() + 7000;
+    pendingHost = false;
+    window.havenfallAllowHostFromSetup = true;
+  }
+
   function isManualHostAllowed() {
-    return Date.now() < allowHostUntil;
+    return Date.now() < allowHostUntil || window.havenfallAllowHostFromSetup === true;
   }
 
   function isHostMode() {
@@ -71,7 +77,9 @@ function installMultiplayerHostPublishFixPatch() {
     pendingHost = false;
     sessionStorage.setItem('havenfall-online-mode', 'host');
     window.havenfallOnlineMode = 'host';
+    window.havenfallOnlineSessionActive = true;
     const result = previousHostOnline?.apply(this, arguments);
+    window.havenfallAllowHostFromSetup = false;
     publishSoon('host-online');
     return result;
   };
@@ -87,6 +95,7 @@ function installMultiplayerHostPublishFixPatch() {
   };
 
   window.havenfallForcePublishWorld = forcePublish;
+  window.havenfallAllowManualHostStart = allowSetupHost;
 }
 
 if (typeof window !== 'undefined' && typeof setScreen === 'function') {
