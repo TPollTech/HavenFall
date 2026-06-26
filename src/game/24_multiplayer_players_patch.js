@@ -151,6 +151,14 @@ function installMultiplayerPlayersPatch() {
     panel.innerHTML = `<b>Online</b>${players.slice(0, 4).map(p => `<span>${escapeHtml(p.nick || 'Jogador')}</span>`).join('')}`;
   }
 
+  function loadHostPublishFix() {
+    if (window.__havenfallHostPublishFixInstalled) return;
+    if (document.querySelector('script[src="src/game/26_multiplayer_host_publish_fix.js"]')) return;
+    const script = document.createElement('script');
+    script.src = 'src/game/26_multiplayer_host_publish_fix.js';
+    document.body.appendChild(script);
+  }
+
   function installStyles() {
     if (document.getElementById('multiplayerPlayersStyles')) return;
     const style = document.createElement('style');
@@ -236,6 +244,7 @@ function installMultiplayerPlayersPatch() {
   };
 
   installStyles();
+  loadHostPublishFix();
   setNick(nick());
   sendHeartbeat();
   if (heartbeatTimer) clearInterval(heartbeatTimer);
