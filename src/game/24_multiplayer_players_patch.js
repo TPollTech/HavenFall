@@ -151,11 +151,11 @@ function installMultiplayerPlayersPatch() {
     panel.innerHTML = `<b>Online</b>${players.slice(0, 4).map(p => `<span>${escapeHtml(p.nick || 'Jogador')}</span>`).join('')}`;
   }
 
-  function loadHostPublishFix() {
-    if (window.__havenfallHostPublishFixInstalled) return;
-    if (document.querySelector('script[src="src/game/26_multiplayer_host_publish_fix.js"]')) return;
+  function loadPatch(src, marker) {
+    if (window[marker]) return;
+    if (document.querySelector(`script[src="${src}"]`)) return;
     const script = document.createElement('script');
-    script.src = 'src/game/26_multiplayer_host_publish_fix.js';
+    script.src = src;
     document.body.appendChild(script);
   }
 
@@ -244,7 +244,8 @@ function installMultiplayerPlayersPatch() {
   };
 
   installStyles();
-  loadHostPublishFix();
+  loadPatch('src/game/26_multiplayer_host_publish_fix.js', '__havenfallHostPublishFixInstalled');
+  loadPatch('src/game/27_multiplayer_control_patch.js', '__havenfallMultiplayerControlInstalled');
   setNick(nick());
   sendHeartbeat();
   if (heartbeatTimer) clearInterval(heartbeatTimer);
