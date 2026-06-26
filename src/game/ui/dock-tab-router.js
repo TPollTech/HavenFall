@@ -20,6 +20,7 @@
       '.dock-table-wrap{overflow:auto;max-height:260px;border-radius:14px;border:1px solid rgba(255,255,255,.08)}.dock-table{width:100%;border-collapse:collapse;font-size:12px}.dock-table th,.dock-table td{padding:9px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left}.dock-table th{position:sticky;top:0;background:rgba(12,16,24,.98);color:#ffe2a3}.dock-table small{display:block;color:#b8b0a0}.dock-table tr.is-selected{background:rgba(59,130,246,.12)}',
       '.mini-bar{display:grid;grid-template-columns:42px 1fr 34px;gap:6px;align-items:center;margin:2px 0}.mini-bar i{height:6px;background:rgba(0,0,0,.38);border-radius:999px;overflow:hidden}.mini-bar em{display:block;height:100%;background:#3b82f6}.mini-bar small{font-size:10px}',
       '.priority-dots{display:flex;gap:3px}.priority-dots button{width:26px;height:26px;padding:0;border-radius:8px}.priority-dots button.is-active{background:rgba(247,184,74,.24);border-color:rgba(247,184,74,.8)}',
+      '#anchored-ui-panel[data-active-dock-tab="tasks"]{max-height:min(34vh,300px);padding:10px;bottom:84px}#anchored-ui-panel[data-active-dock-tab="tasks"] .anchored-ui-header{padding-bottom:6px;margin-bottom:0}#anchored-ui-panel[data-active-dock-tab="tasks"] .anchored-ui-body{overflow:hidden!important;padding-right:0}#anchored-ui-panel[data-active-dock-tab="tasks"] .dock-table-wrap{overflow:hidden!important;max-height:none!important;border-radius:12px}.task-priority-panel{display:grid;gap:6px;min-height:0;overflow:hidden}.task-legend{display:flex;gap:10px;justify-content:flex-end;color:#b8b0a0;font-size:10px;margin-top:-2px}.task-compact-table{table-layout:fixed;font-size:10.5px;line-height:1.05}.task-compact-table th,.task-compact-table td{padding:4px 6px!important}.task-compact-table th:first-child{width:22%}.task-compact-table th:not(:first-child){width:19.5%;text-align:center}.task-priority-cell{text-align:center!important}.task-colonist{min-width:0}.task-colonist-line{display:flex;align-items:center;gap:6px;min-width:0}.task-colonist-line b{font-size:11px;color:#fff3df;white-space:nowrap}.task-colonist-line span{font-size:9px;color:#b8b0a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task-status-bar{display:block;height:4px;margin-top:3px;border-radius:999px;background:rgba(0,0,0,.42);overflow:hidden}.task-status-bar i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#f7b84a)}.priority-dots.compact{display:flex;justify-content:center;gap:2px}.priority-dots.compact button{width:20px;height:20px;border-radius:7px;font-size:10px;font-weight:900;padding:0;background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.14);color:#d7dce8}.priority-dots.compact button:hover{border-color:rgba(247,184,74,.6);background:rgba(247,184,74,.12)}.priority-dots.compact button.is-active{background:linear-gradient(180deg,#ffc95d,#9b650f);border-color:#ffe2a3;color:#111827;box-shadow:0 0 0 1px rgba(255,226,163,.35),0 0 14px rgba(247,184,74,.65);transform:translateY(-1px)}',
       '.event-feed{display:grid;gap:7px;max-height:270px;overflow-y:auto;padding-right:4px}.event-row{display:grid;gap:2px;padding:9px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);animation:eventFade .18s ease}.event-row b{font-size:11px;color:#b8b0a0}.event-row.danger{border-color:rgba(239,68,68,.34);color:#ffd2d2}.event-row.warn{border-color:rgba(247,184,74,.38);color:#ffe5ad}.event-row.info{border-color:rgba(96,165,250,.34)}@keyframes eventFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}',
       'body.zone-brush-active canvas{cursor:crosshair!important}'
     ].join('\n');
@@ -49,6 +50,8 @@
     window.uiManager?.forceCloseAll?.({ except: 'panel' });
     activeDockTab = key;
     title.textContent = TAB_LABELS[key] || key;
+    panel.dataset.activeDockTab = key;
+    body.dataset.activeDockTab = key;
     body.innerHTML = view.render ? view.render() : '<div class="dock-empty">Aba sem renderizador.</div>';
     panel.hidden = false;
     panel.classList.add('is-active');
@@ -60,6 +63,14 @@
   function refreshDockPanel(key = activeDockTab) {
     if (!key || key !== activeDockTab) return;
     renderDockPanel(key);
+  }
+
+  function clearDockPanelState() {
+    const { panel, body } = panelParts();
+    if (panel) delete panel.dataset.activeDockTab;
+    if (body) delete body.dataset.activeDockTab;
+    activeDockTab = null;
+    setDockButton(null);
   }
 
   function handleDockClick(event) {
@@ -74,8 +85,7 @@
     if (activeDockTab === key && panel?.classList.contains('is-active')) {
       panel.classList.remove('is-active');
       panel.setAttribute('aria-hidden', 'true');
-      activeDockTab = null;
-      setDockButton(null);
+      clearDockPanelState();
       return;
     }
     renderDockPanel(key);
