@@ -6,6 +6,9 @@ function installMultiplayerFlowAnimationFixPatch() {
 
   const lastPos = new Map();
   let lastWorldRev = 0;
+  let lastPickerSignature = '';
+  let layoutNormalized = false;
+  let lastNormalizeAt = 0;
 
   function playerId() {
     let id = localStorage.getItem('havenfall-player-id');
@@ -52,8 +55,9 @@ function installMultiplayerFlowAnimationFixPatch() {
     localStorage.setItem(`havenfall-colonist-choice-${playerId()}`, String(id));
     sessionStorage.setItem(`havenfall-colonist-choice-${playerId()}`, String(id));
     selectedColonistId = Number(id);
+    lastPickerSignature = '';
+    renderColonistPicker(true);
     updateUI(true);
-    renderColonistPicker();
   }
 
   function ensureMultiplayerSetupUi() {
@@ -83,14 +87,19 @@ function installMultiplayerFlowAnimationFixPatch() {
       });
       document.getElementById('mpJoinWorldBtn')?.addEventListener('click', () => {
         document.getElementById('onlineJoinCleanBtn')?.click();
-        setTimeout(renderColonistPicker, 900);
+        setTimeout(() => renderColonistPicker(true), 900);
       });
+      layoutNormalized = false;
     }
 
     normalizeOnlineLayout();
   }
 
-  function normalizeOnlineLayout() {
+  function normalizeOnlineLayout(force = false) {
+    const now = Date.now();
+    if (!force && layoutNormalized && now - lastNormalizeAt < 1000) return;
+    lastNormalizeAt = now;
+
     const screen = document.getElementById('onlineScreenClean') || document.getElementById('onlineScreen');
     const card = screen?.querySelector('.online-card, .menu-card');
     if (!screen || !card) return;
@@ -114,24 +123,30 @@ function installMultiplayerFlowAnimationFixPatch() {
 
     const nickTitle = nick?.querySelector('h3');
     const playersTitle = players?.querySelector('h3');
-    if (nickTitle) nickTitle.textContent = 'Nick';
-    if (playersTitle) playersTitle.textContent = 'Jogadores';
+    if (nickTitle && nickTitle.textContent !== 'Nick') nickTitle.textContent = 'Nick';
+    if (playersTitle && playersTitle.textContent !== 'Jogadores') playersTitle.textContent = 'Jogadores';
 
     const nickText = nick?.querySelector('p');
-    if (nickText) nickText.textContent = 'Nome que aparece acima do teu colono.';
+    if (nickText && nickText.textContent !== 'Nome que aparece acima do teu colono.') nickText.textContent = 'Nome que aparece acima do teu colono.';
+
+    layoutNormalized = true;
   }
 
-  function renderColonistPicker() {
+  function renderColonistPicker(force = false) {
     const holder = document.getElementById('mpColonistPicker');
     if (!holder) return;
 
     const colonists = aliveColonists();
+    const chosen = chosenColonistId();
+    const signature = colonists.map(c => `${c.id}:${Math.round(c.health || 0)}:${Math.round(c.mood || 0)}`).join('|') + `#${chosen}`;
+    if (!force && signature === lastPickerSignature) return;
+    lastPickerSignature = signature;
+
     if (!colonists.length) {
       holder.innerHTML = '<span class="empty">Nenhum colono vivo disponível neste mundo.</span>';
       return;
     }
 
-    const chosen = chosenColonistId();
     holder.innerHTML = `
       <h4>Escolher teu colono</h4>
       <div class="mp-colonist-grid">
@@ -191,20 +206,20 @@ function installMultiplayerFlowAnimationFixPatch() {
   setScreen = function flowFixSetScreen(screen) {
     previousSetScreen(screen);
     if (screen === 'ONLINE') {
+      layoutNormalized = false;
       ensureMultiplayerSetupUi();
-      renderColonistPicker();
-      normalizeOnlineLayout();
+      renderColonistPicker(true);
+      normalizeOnlineLayout(true);
     }
   };
 
   const previousUpdateUI = updateUI;
   updateUI = function flowFixUpdateUI(force = false) {
     previousUpdateUI(force);
+    if (appScreen !== 'ONLINE') return;
     ensureMultiplayerSetupUi();
-    if (appScreen === 'ONLINE') {
-      renderColonistPicker();
-      normalizeOnlineLayout();
-    }
+    renderColonistPicker(false);
+    normalizeOnlineLayout(false);
   };
 
   async function syncPickerFromWorld() {
@@ -215,8 +230,8 @@ function installMultiplayerFlowAnimationFixPatch() {
       const data = await res.json();
       if ((data.revision || 0) !== lastWorldRev) {
         lastWorldRev = data.revision || 0;
-        renderColonistPicker();
-        normalizeOnlineLayout();
+        renderColonistPicker(true);
+        normalizeOnlineLayout(false);
       }
     } catch (_) {}
   }
@@ -226,10 +241,7 @@ function installMultiplayerFlowAnimationFixPatch() {
     const style = document.createElement('style');
     style.id = 'multiplayerFlowAnimationStyles';
     style.textContent = `
-      .online-compact-screen {
-        overflow: hidden !important;
-        padding: 12px !important;
-      }
+      .online-compact-screen { overflow: hidden !important; padding: 12px !important; }
       .online-compact-card {
         width: min(980px, 96vw) !important;
         max-height: 88vh !important;
@@ -237,11 +249,7 @@ function installMultiplayerFlowAnimationFixPatch() {
         padding: 16px !important;
         scrollbar-gutter: stable;
       }
-      .online-compact-card .screen-title-row {
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 10px;
-      }
+      .online-compact-card .screen-title-row { align-items: flex-start; gap: 12px; margin-bottom: 10px; }
       .online-compact-card h1 { margin: 2px 0 4px !important; font-size: clamp(26px, 4vw, 42px) !important; }
       .online-compact-card h2,
       .online-compact-card h3,
@@ -250,10 +258,7 @@ function installMultiplayerFlowAnimationFixPatch() {
       .online-hidden-legacy-actions { display: none !important; }
       .online-players-card,
       .online-status-box,
-      .online-share-box {
-        margin: 9px 0 !important;
-        padding: 11px !important;
-      }
+      .online-share-box { margin: 9px 0 !important; padding: 11px !important; }
       .online-share-box p { display: none !important; }
       .online-flow-grid { display:grid; grid-template-columns:repeat(2,minmax(180px,1fr)); gap:10px; margin-top:8px; }
       .mp-colonist-picker { margin-top:10px; }
@@ -282,7 +287,7 @@ function installMultiplayerFlowAnimationFixPatch() {
   }
 
   installStyles();
-  setInterval(syncPickerFromWorld, 1200);
+  setInterval(syncPickerFromWorld, 1800);
 }
 
 if (typeof window !== 'undefined' && typeof drawColonist === 'function') {
