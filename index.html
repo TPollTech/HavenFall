@@ -168,6 +168,15 @@
             <strong id="colonyTitle">Havenfall</strong>
             <span id="gameConfigLabel" class="muted">Seed · Dificuldade</span>
           </div>
+
+          <div id="top-resource-bar" class="top-resource-bar" aria-label="Recursos da colônia">
+            <div class="res-item" title="Comida"><span class="res-icon">🥩</span> Comida <b id="resFood">0</b></div>
+            <div class="res-item" title="Madeira"><span class="res-icon">🪵</span> Madeira <b id="resWood">0</b></div>
+            <div class="res-item" title="Pedra"><span class="res-icon">🪨</span> Pedra <b id="resStone">0</b></div>
+            <div class="res-item" title="Metal"><span class="res-icon">🪙</span> Metal <b id="resMetal">0</b></div>
+            <div class="res-item" title="Remédios"><span class="res-icon">💊</span> Remédios <b id="resMedicine">0</b></div>
+          </div>
+
           <div class="clock top-center-info">
             <span id="dayLabel">Dia 1</span>
             <span id="timeLabel">06:00</span>
@@ -180,7 +189,7 @@
         </header>
 
         <section class="gameplay-viewport" aria-label="Área de gameplay">
-          <canvas id="game" width="1056" height="672" aria-label="Mapa do jogo"></canvas>
+          <canvas id="game" aria-label="Mapa do jogo"></canvas>
         </section>
 
         <footer id="hud" class="bottom-command-panel component-hud">
@@ -229,14 +238,8 @@
             </section>
 
             <section id="resourcePanel" class="hud-block card bottom-tab-panel component-resourcepanel" data-panel="resources">
-              <div class="panel-title-row"><div><h2>Recursos</h2><p class="panel-hint">Estoque atual da colônia.</p></div></div>
-              <div class="resource-grid resource-strip">
-                <div><img src="assets/sprites/icon_food.png" alt=""> Comida <b id="resFood">0</b></div>
-                <div><img src="assets/sprites/icon_wood.png" alt=""> Madeira <b id="resWood">0</b></div>
-                <div><img src="assets/sprites/icon_stone.png" alt=""> Pedra <b id="resStone">0</b></div>
-                <div><img src="assets/sprites/icon_metal.png" alt=""> Metal <b id="resMetal">0</b></div>
-                <div><img src="assets/sprites/icon_health.png" alt=""> Remédios <b id="resMedicine">0</b></div>
-              </div>
+              <div class="panel-title-row"><div><h2>Recursos</h2><p class="panel-hint">Visão detalhada do estoque geral.</p></div></div>
+              <div class="subtle-box">Utilize a barra superior para monitoramento global. Itens avançados e manufaturados entrarão aqui nas próximas sub-versões.</div>
             </section>
 
             <section id="tasksPanel" class="hud-block card bottom-tab-panel component-taskspanel" data-panel="tasks">
@@ -297,7 +300,7 @@
     </section>
   </main>
 
-  <div id="eventModal" class="modal" aria-hidden="true">
+  <div id="eventModal" class="modal game-popup-modal" aria-hidden="true">
     <div class="modal-box">
       <h2>Dia 1 — O Primeiro Fogo</h2>
       <p>Três sobreviventes chegam a um vale desconhecido. Recursos são poucos, a noite cai cedo e algo se move entre as árvores. Construa abrigo, mantenha todos vivos e pesquise tecnologias para transformar o acampamento em uma colônia.</p>
@@ -305,7 +308,7 @@
     </div>
   </div>
 
-  <div id="pauseOverlay" class="pause-overlay" aria-hidden="true">
+  <div id="pauseOverlay" class="pause-overlay game-popup-modal" aria-hidden="true">
     <div class="pause-card">
       <div class="kicker">Pausado</div>
       <h1>Menu</h1>
@@ -320,6 +323,6 @@
     </div>
   </div>
 
-  <script src="src/game/boot.js"></script>
+  <script type="module" src="src/game/boot.js"></script>
 </body>
 </html>
