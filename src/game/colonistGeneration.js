@@ -40,17 +40,28 @@ const colonistWorkPreferenceDefs = Object.freeze({
   medicine: { label: 'Medicina', priority: null }
 });
 
+const COLONIST_FIRST_NAMES = Object.freeze(['Lia','Téo','Nico','Bia','Gael','Mira','Davi','Luma','Caio','Iris','Noa','Eva','Ravi','Mila','Otto','Nina']);
+const COLONIST_ROLES = Object.freeze(['Coletora', 'Construtor', 'Faz-tudo']);
+const COLONIST_SPRITES = Object.freeze(['colonistA', 'colonistB', 'colonistC']);
+
+const TRAIT_KEYS_CACHE = Object.freeze({
+  physical: Object.freeze(Object.keys(colonistTraitDefs.physical)),
+  positive: Object.freeze(Object.keys(colonistTraitDefs.positive)),
+  negative: Object.freeze(Object.keys(colonistTraitDefs.negative)),
+  workPrefs: Object.freeze(Object.keys(colonistWorkPreferenceDefs))
+});
+
+function randomFrom(list, rand) {
+  return list[Math.floor(rand() * list.length)];
+}
+
 function createColonistCandidate(index, config, forceSeed = null) {
   const seed = forceSeed || `${config?.seed || 'default-seed'}-candidate-${index}`;
-  const rand = seededRandom(seed);
-  const firstNames = ['Lia','Téo','Nico','Bia','Gael','Mira','Davi','Luma','Caio','Iris','Noa','Eva','Ravi','Mila','Otto','Nina'];
-  const roles = ['Coletora', 'Construtor', 'Faz-tudo'];
-  const sprites = ['colonistA', 'colonistB', 'colonistC'];
-  const workPrefs = Object.keys(colonistWorkPreferenceDefs);
-  const workPreferenceId = workPrefs[Math.floor(rand() * workPrefs.length)];
-  const physicalTraitIds = pickMany(Object.keys(colonistTraitDefs.physical), 2, rand);
-  const positiveTraitIds = pickMany(Object.keys(colonistTraitDefs.positive), 2, rand);
-  const negativeTraitIds = pickMany(Object.keys(colonistTraitDefs.negative), 1, rand);
+  const rand = typeof seededRandom === 'function' ? seededRandom(seed) : Math.random;
+  const workPreferenceId = randomFrom(TRAIT_KEYS_CACHE.workPrefs, rand);
+  const physicalTraitIds = pickMany(TRAIT_KEYS_CACHE.physical, 2, rand);
+  const positiveTraitIds = pickMany(TRAIT_KEYS_CACHE.positive, 2, rand);
+  const negativeTraitIds = pickMany(TRAIT_KEYS_CACHE.negative, 1, rand);
   const skills = {
     coleta: 1 + Math.floor(rand() * 5),
     construcao: 1 + Math.floor(rand() * 5),
@@ -58,14 +69,16 @@ function createColonistCandidate(index, config, forceSeed = null) {
     pesquisa: 1 + Math.floor(rand() * 5),
     medicina: 1 + Math.floor(rand() * 5)
   };
-  const role = roles[Math.floor(rand() * roles.length)];
+  const role = randomFrom(COLONIST_ROLES, rand);
+  const hSeed = typeof hashSeed === 'function' ? hashSeed(seed).toString(36) : String(index);
+
   return {
-    setupId: `candidate_${index}_${hashSeed(seed).toString(36)}`,
+    setupId: `candidate_${index}_${hSeed}`,
     locked: false,
     rerollCount: 0,
-    name: firstNames[Math.floor(rand() * firstNames.length)],
+    name: randomFrom(COLONIST_FIRST_NAMES, rand),
     age: 18 + Math.floor(rand() * 38),
-    sprite: sprites[index % sprites.length],
+    sprite: COLONIST_SPRITES[index % COLONIST_SPRITES.length],
     role,
     physicalTraitIds,
     positiveTraitIds,
@@ -86,10 +99,15 @@ function createColonistCandidate(index, config, forceSeed = null) {
 }
 
 function pickMany(list, amount, rand) {
-  const copy = list.slice();
+  const len = list.length;
+  if (amount <= 0 || len === 0) return [];
+  if (amount >= len) return list.slice();
+  if (amount === 1) return [randomFrom(list, rand)];
+
   const out = [];
-  while (out.length < amount && copy.length) {
-    out.push(copy.splice(Math.floor(rand() * copy.length), 1)[0]);
+  while (out.length < amount) {
+    const candidate = randomFrom(list, rand);
+    if (!out.includes(candidate)) out.push(candidate);
   }
   return out;
 }
@@ -103,7 +121,9 @@ function workPreferenceLabel(id) {
 }
 
 function generateColonistCandidates(config) {
-  colonistCandidates = Array.from({ length: config.colonistCount }, (_, i) => createColonistCandidate(i, config, `${config.seed}-candidate-${i}`));
+  const count = Math.max(1, Number(config?.colonistCount || defaultNewGameConfig.colonistCount || 3));
+  const seed = config?.seed || 'fallback-seed';
+  colonistCandidates = Array.from({ length: count }, (_, i) => createColonistCandidate(i, config, `${seed}-candidate-${i}`));
   if (typeof renderColonistSelection === 'function') renderColonistSelection();
   return colonistCandidates;
 }
@@ -111,21 +131,29 @@ function generateColonistCandidates(config) {
 function rerollColonist(index) {
   const current = colonistCandidates[index];
   if (current?.locked) return;
+
   const rerollCount = (current?.rerollCount || 0) + 1;
-  const next = createColonistCandidate(index, newGameConfig, `${newGameConfig.seed}-reroll-${index}-${rerollCount}`);
+  const cfg = newGameConfig || defaultNewGameConfig;
+  const seed = cfg?.seed || 'fallback-seed';
+  const next = createColonistCandidate(index, cfg, `${seed}-reroll-${index}-${rerollCount}`);
+
   next.rerollCount = rerollCount;
   colonistCandidates[index] = next;
   if (typeof renderColonistSelection === 'function') renderColonistSelection();
 }
 
 function rerollUnlockedColonists() {
+  const cfg = newGameConfig || defaultNewGameConfig;
+  const seed = cfg?.seed || 'fallback-seed';
+
   colonistCandidates = colonistCandidates.map((c, i) => {
     if (c.locked) return c;
     const rerollCount = (c.rerollCount || 0) + 1;
-    const next = createColonistCandidate(i, newGameConfig, `${newGameConfig.seed}-reroll-all-${i}-${rerollCount}`);
+    const next = createColonistCandidate(i, cfg, `${seed}-reroll-all-${i}-${rerollCount}`);
     next.rerollCount = rerollCount;
     return next;
   });
+
   if (typeof renderColonistSelection === 'function') renderColonistSelection();
 }
 
