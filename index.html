@@ -230,12 +230,7 @@
             </section>
 
             <section id="resourcePanel" class="hud-block card bottom-tab-panel component-resourcepanel" data-panel="resources">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Recursos</h2>
-                  <p class="panel-hint">Estoque atual da colônia.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Recursos</h2><p class="panel-hint">Estoque atual da colônia.</p></div></div>
               <div class="resource-grid resource-strip">
                 <div><img src="assets/sprites/icon_food.png" alt=""> Comida <b id="resFood">0</b></div>
                 <div><img src="assets/sprites/icon_wood.png" alt=""> Madeira <b id="resWood">0</b></div>
@@ -246,12 +241,7 @@
             </section>
 
             <section id="tasksPanel" class="hud-block card bottom-tab-panel component-taskspanel" data-panel="tasks">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Tarefas</h2>
-                  <p class="panel-hint">Ajuste a prioridade do colono selecionado. O comando manual por clique continua tendo prioridade.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Tarefas</h2><p class="panel-hint">Ajuste a prioridade do colono selecionado. O comando manual por clique continua tendo prioridade.</p></div></div>
               <div id="selectedInfo" class="selected-info-inline empty">Nenhum colono selecionado.</div>
               <div id="goalsPanel" class="goals compact-goals component-goalspanel">
                 <h2>Objetivos V1.9</h2>
@@ -267,34 +257,19 @@
             </section>
 
             <section id="researchPanel" class="hud-block card bottom-tab-panel component-researchpanel" data-panel="research">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Pesquisa</h2>
-                  <p class="panel-hint">Construa uma mesa de pesquisa e clique nela para avançar tecnologias.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Pesquisa</h2><p class="panel-hint">Construa uma mesa de pesquisa e clique nela para avançar tecnologias.</p></div></div>
               <div id="researchInfo" class="empty">Construa uma Mesa de Pesquisa para iniciar.</div>
             </section>
 
             <section id="craftingPanel" class="hud-block card bottom-tab-panel component-craftingpanel" data-panel="crafting">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Crafting, ferramentas e armas</h2>
-                  <p class="panel-hint">Abra uma bancada/forja/fogão/estação médica com botão direito ou use as receitas disponíveis. Itens equipados mudam coleta e combate.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Crafting, ferramentas e armas</h2><p class="panel-hint">Abra uma bancada/forja/fogão/estação médica com botão direito ou use as receitas disponíveis. Itens equipados mudam coleta e combate.</p></div></div>
               <div id="craftingInfo" class="crafting-info empty">Construa uma bancada para começar.</div>
               <div id="recipeGrid" class="recipe-grid compact-grid"></div>
               <div id="inventoryInfo" class="inventory-info"></div>
             </section>
 
             <section id="zonesPanel" class="hud-block card bottom-tab-panel component-zonespanel" data-panel="zones">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Zonas</h2>
-                  <p class="panel-hint">Base pronta para áreas de estoque, trabalho, descanso e restrição.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Zonas</h2><p class="panel-hint">Base pronta para áreas de estoque, trabalho, descanso e restrição.</p></div></div>
               <div class="zone-placeholder-grid">
                 <button class="locked" disabled>Zona de estoque<br><small>em breve</small></button>
                 <button class="locked" disabled>Zona de plantio<br><small>em breve</small></button>
@@ -304,32 +279,17 @@
             </section>
 
             <section id="colonistPanel" class="hud-block card bottom-tab-panel component-colonistpanel" data-panel="colonists">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Colonos</h2>
-                  <p class="panel-hint">Clique em um colono para selecionar e ver detalhes na aba Tarefas ou Selecionado.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Colonos</h2><p class="panel-hint">Clique em um colono para selecionar e ver detalhes na aba Tarefas ou Selecionado.</p></div></div>
               <div id="colonistList" class="colonist-list colonist-strip"></div>
             </section>
 
             <section id="selectedObjectPanel" class="hud-block card bottom-tab-panel component-selectedobjectpanel" data-panel="selected">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Selecionado</h2>
-                  <p class="panel-hint">Resumo do colono atual e da ação em andamento.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Selecionado</h2><p class="panel-hint">Resumo do colono atual e da ação em andamento.</p></div></div>
               <div id="selectedObjectInfo" class="empty">Use a aba Tarefas para controlar prioridades e detalhes do colono selecionado.</div>
             </section>
 
             <section id="eventLogPanel" class="hud-block card bottom-tab-panel log-card component-eventlogpanel" data-panel="events">
-              <div class="panel-title-row">
-                <div>
-                  <h2>Eventos e alertas</h2>
-                  <p class="panel-hint">Histórico rápido da partida.</p>
-                </div>
-              </div>
+              <div class="panel-title-row"><div><h2>Eventos e alertas</h2><p class="panel-hint">Histórico rápido da partida.</p></div></div>
               <div id="log"></div>
             </section>
           </div>
@@ -360,16 +320,18 @@
     </div>
   </div>
 
-  <script src="src/game/00_globals.js"></script>
-  <script src="src/game/01_settings_and_screens.js"></script>
-  <script src="src/game/02_colonist_generation.js"></script>
-  <script src="src/game/03_session_and_world.js"></script>
-  <script src="src/game/04_research_and_priorities.js"></script>
+  <script src="src/game/global.js"></script>
+  <script src="src/game/gameSetup.js"></script>
+  <script src="src/game/colonistGeneration.js"></script>
+  <script src="src/game/researchSystem.js"></script>
+  <script src="src/game/colonistMechanics.js"></script>
+  <script src="src/game/screenManager.js"></script>
+  <script src="src/game/worldGenerator.js"></script>
+  <script src="src/game/explorationSystem.js"></script>
   <script src="src/game/05_map_and_pathfinding.js"></script>
   <script src="src/game/06_tasks_and_world_systems.js"></script>
   <script src="src/game/07_renderer.js"></script>
   <script src="src/game/08_canvas_input_and_building.js"></script>
-  <script src="src/game/09_hud_ui.js"></script>
   <script src="src/game/10_save_load.js"></script>
   <script src="src/game/11_utils_and_loop.js"></script>
   <script src="src/game/12_event_listeners.js"></script>
