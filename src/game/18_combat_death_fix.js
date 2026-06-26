@@ -5,6 +5,145 @@ function installCombatDeathFixPatch() {
     return !!c && !c.dead && (c.health ?? 100) > 0;
   }
 
+  function livingColonists() {
+    return (state?.colonists || []).filter(isColonistAlive);
+  }
+
+  function ensureGameOverStyles() {
+    if (document.getElementById('gameOverPatchStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'gameOverPatchStyles';
+    style.textContent = `
+      .game-over-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 220;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: radial-gradient(circle at center, rgba(67, 25, 28, .72), rgba(2, 4, 8, .92));
+        backdrop-filter: blur(4px);
+      }
+      .game-over-overlay.show { display: grid; }
+      .game-over-card {
+        width: min(620px, 94vw);
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,.14);
+        background: linear-gradient(145deg, rgba(16,18,27,.98), rgba(38,28,31,.98));
+        box-shadow: 0 26px 90px rgba(0,0,0,.55);
+        padding: 24px;
+        text-align: center;
+      }
+      .game-over-card .kicker {
+        color: #f0b46d;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        font-weight: 900;
+        font-size: 12px;
+      }
+      .game-over-card h1 {
+        margin: 8px 0 10px;
+        font-size: clamp(32px, 6vw, 58px);
+      }
+      .game-over-card p {
+        color: rgba(232,241,255,.75);
+        line-height: 1.55;
+      }
+      .game-over-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 18px 0;
+      }
+      .game-over-stats div {
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(255,255,255,.045);
+        padding: 10px;
+      }
+      .game-over-stats b { display:block; font-size: 20px; }
+      .game-over-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureGameOverOverlay() {
+    ensureGameOverStyles();
+    let overlay = document.getElementById('gameOverOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'gameOverOverlay';
+    overlay.className = 'game-over-overlay';
+    overlay.innerHTML = `
+      <div class="game-over-card">
+        <div class="kicker">Colônia perdida</div>
+        <h1>Fim de jogo</h1>
+        <p>Todos os colonos morreram. A simulação foi pausada e este mundo não possui mais sobreviventes ativos.</p>
+        <div class="game-over-stats">
+          <div><b id="gameOverDay">-</b><span>Dia</span></div>
+          <div><b id="gameOverSeed">-</b><span>Seed</span></div>
+          <div><b id="gameOverWorld">-</b><span>Mundo</span></div>
+        </div>
+        <div class="game-over-actions">
+          <button id="gameOverNewGameBtn">Nova colônia</button>
+          <button id="gameOverMenuBtn" class="secondary">Menu principal</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#gameOverNewGameBtn')?.addEventListener('click', () => {
+      overlay.classList.remove('show');
+      activeSession = false;
+      state = createInitialState({ ...defaultNewGameConfig, colonyName: 'First Haven', seed: generateRandomSeed() });
+      writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
+      setScreen(SCREEN.NEW_GAME_SETUP);
+      updateUI(true);
+    });
+
+    overlay.querySelector('#gameOverMenuBtn')?.addEventListener('click', () => {
+      overlay.classList.remove('show');
+      setScreen(SCREEN.MAIN_MENU);
+    });
+
+    return overlay;
+  }
+
+  function showGameOverOverlay() {
+    const overlay = ensureGameOverOverlay();
+    const day = document.getElementById('gameOverDay');
+    const seed = document.getElementById('gameOverSeed');
+    const world = document.getElementById('gameOverWorld');
+    if (day) day.textContent = String(state?.day || 1);
+    if (seed) seed.textContent = String(state?.config?.seed || '-').slice(0, 12);
+    if (world) world.textContent = String(state?.config?.colonyName || 'Colônia');
+    overlay.classList.add('show');
+  }
+
+  function checkColonyGameOver() {
+    if (!state || !activeSession) return false;
+    if (!state.colonists || state.colonists.length === 0) return false;
+    if (state.gameOver) return true;
+    if (livingColonists().length > 0) return false;
+
+    state.gameOver = true;
+    state.paused = true;
+    state.speed = 0;
+    currentBuild = null;
+    selectedCraftStationId = null;
+    if (typeof hideContextMenu === 'function') hideContextMenu();
+    log('Fim de jogo: todos os colonos morreram.');
+    showGameOverOverlay();
+    updateUI(true);
+    return true;
+  }
+
   function markColonistDead(c, reason = 'não resistiu aos ferimentos') {
     if (!c || c.dead) return;
     c.health = 0;
@@ -20,11 +159,16 @@ function installCombatDeathFixPatch() {
       const next = state.colonists.find(isColonistAlive);
       selectedColonistId = next?.id || c.id;
     }
+
+    checkColonyGameOver();
   }
+
+  window.havenfallCheckGameOver = checkColonyGameOver;
 
   const previousUpdateColonist = updateColonist;
   updateColonist = function deathAwareUpdateColonist(c, dt) {
     if (!c) return;
+    if (state?.gameOver) return;
     if (c.dead || c.health <= 0) {
       markColonistDead(c);
       return;
@@ -34,6 +178,7 @@ function installCombatDeathFixPatch() {
   };
 
   updateWolves = function deathAwareUpdateWolves(dt) {
+    if (state?.gameOver) return;
     for (const w of state.wolves) {
       ensureWolfState(w);
       const tick = dt * state.speed;
@@ -83,6 +228,7 @@ function installCombatDeathFixPatch() {
   };
 
   handleCombatTask = function deathAwareHandleCombatTask(c, task, tick) {
+    if (state?.gameOver) return;
     if (!isColonistAlive(c)) {
       markColonistDead(c);
       return;
@@ -179,4 +325,20 @@ function installCombatDeathFixPatch() {
       log(`${c.name} percebeu que lutar desarmado era arriscado demais e recuou.`);
     }
   };
+
+  const previousUpdateWorld = updateWorld;
+  updateWorld = function gameOverAwareUpdateWorld(dt) {
+    if (state?.gameOver) return;
+    previousUpdateWorld(dt);
+    checkColonyGameOver();
+  };
+
+  const previousLoadGame = loadGame;
+  loadGame = function gameOverAwareLoadGame() {
+    const result = previousLoadGame();
+    if (result && state?.gameOver) setTimeout(showGameOverOverlay, 50);
+    return result;
+  };
+
+  ensureGameOverStyles();
 }
