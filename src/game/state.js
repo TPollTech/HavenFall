@@ -5,11 +5,11 @@ const ctx = canvas.getContext('2d');
 const TILE = 48;
 
 const MAP_SIZES = Object.freeze({
-  small: { label: 'pequeno', cols: 42, rows: 30, resourceMultiplier: 0.75, poiCount: 3 },
-  standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 },
-  large: { label: 'grande', cols: 88, rows: 64, resourceMultiplier: 1.35, poiCount: 8 },
-  huge: { label: 'enorme', cols: 118, rows: 84, resourceMultiplier: 1.85, poiCount: 12 },
-  frontier: { label: 'fronteira vasta', cols: 150, rows: 104, resourceMultiplier: 2.4, poiCount: 18 }
+  large: { label: 'grande', cols: 96, rows: 70, resourceMultiplier: 1.35, poiCount: 9 },
+  huge: { label: 'enorme', cols: 132, rows: 96, resourceMultiplier: 1.9, poiCount: 14 },
+  giant: { label: 'gigante', cols: 172, rows: 124, resourceMultiplier: 2.55, poiCount: 22, biomeIntent: 'multi' },
+  infinite_chunks: { label: 'infinito por chunks', cols: 220, rows: 156, resourceMultiplier: 3.1, poiCount: 30, chunkMode: true, biomeIntent: 'multi' },
+  standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 }
 });
 
 let viewTransform = { scale: 1, offsetX: 0, offsetY: 0 };
@@ -22,7 +22,7 @@ function getWorldRows() { return state?.world?.rows || state?.terrain?.length ||
 function getTileSize() { return state?.world?.tileSize || TILE; }
 function getWorldWidth() { return getWorldCols() * getTileSize(); }
 function getWorldHeight() { return getWorldRows() * getTileSize(); }
-function getMapSizeDef(size) { return MAP_SIZES[size] || MAP_SIZES.standard; }
+function getMapSizeDef(size) { return MAP_SIZES[size] || MAP_SIZES.giant || MAP_SIZES.standard; }
 
 const SAVE_KEY = 'havenfall-v1-save';
 const SETTINGS_KEY = 'havenfall-v1-settings';
@@ -89,7 +89,7 @@ const dom = {
     colonyName: document.getElementById('colonyNameInput'),
     worldSeed: document.getElementById('worldSeedInput'),
     difficulty: document.getElementById('difficultySelect'),
-    colonistCount: document.getElementById('colonistCountSelect'),
+    colonistCount: document.getElementById('colonist-count') || document.getElementById('colonistCountSelect'),
     resourcesPreset: document.getElementById('resourcesPresetSelect'),
     eventIntensity: document.getElementById('eventIntensitySelect'),
     mapSize: document.getElementById('mapSizeSelect'),
@@ -242,4 +242,4 @@ let roofTick = 0;
 let lastSpriteCleanupAt = 0;
 const transparentSpriteUrl = new Map();
 
-const defaultNewGameConfig = { colonyName: 'First Haven', seed: '', difficulty: 'normal', colonistCount: 3, resourcesPreset: 'standard', eventIntensity: 'normal', mapSize: 'standard' };
+const defaultNewGameConfig = { colonyName: 'First Haven', seed: '', difficulty: 'normal', colonistCount: 3, resourcesPreset: 'standard', eventIntensity: 'normal', mapSize: 'giant' };
