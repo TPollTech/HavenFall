@@ -1,67 +1,5 @@
 'use strict';
 
-function refreshMenuSaveInfo() {
-  if (!dom.menuSaveInfo) return;
-  const continueBtn = document.getElementById('continueBtn');
-
-  if (activeSession && state) {
-    if (continueBtn) {
-      continueBtn.textContent = 'Continuar';
-      continueBtn.disabled = false;
-    }
-    dom.menuSaveInfo.innerHTML = `Partida em andamento · <b>${escapeHtml(state.config?.colonyName || 'Colônia sem nome')}</b> · Dia ${state.day || 1}`;
-    return;
-  }
-
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) {
-    if (continueBtn) {
-      continueBtn.textContent = 'Carregar';
-      continueBtn.disabled = false;
-    }
-    dom.menuSaveInfo.textContent = 'Nenhum save local encontrado.';
-    return;
-  }
-
-  try {
-    const data = JSON.parse(raw);
-    const s = data.state;
-    if (continueBtn) {
-      continueBtn.textContent = 'Continuar';
-      continueBtn.disabled = false;
-    }
-    dom.menuSaveInfo.innerHTML = `Save local · <b>${escapeHtml(s.config?.colonyName || 'Colônia sem nome')}</b> · Dia ${s.day || 1} · Seed ${escapeHtml(s.config?.seed || 'antiga')}`;
-  } catch (_) {
-    if (continueBtn) {
-      continueBtn.textContent = 'Carregar';
-      continueBtn.disabled = true;
-    }
-    dom.menuSaveInfo.textContent = 'Save local encontrado, mas parece corrompido.';
-  }
-}
-
-function refreshLoadScreen() {
-  if (!dom.loadSlot) return;
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) {
-    dom.loadSlot.innerHTML = 'Nenhum save local encontrado.';
-    const loadBtn = document.getElementById('loadSlotBtn');
-    if (loadBtn) loadBtn.disabled = true;
-    return;
-  }
-  try {
-    const data = JSON.parse(raw);
-    const s = data.state;
-    const cols = s.world?.cols || s.terrain?.[0]?.length || COLS;
-    const rows = s.world?.rows || s.terrain?.length || ROWS;
-    dom.loadSlot.innerHTML = `<strong>${escapeHtml(s.config?.colonyName || 'Colônia sem nome')}</strong><br>Dia ${s.day || 1}, ${formatHour(s.hour || 6)} · Seed ${escapeHtml(s.config?.seed || 'save antigo')} · ${cols}x${rows} · ${s.colonists?.length || 0} colonos`;
-    const loadBtn = document.getElementById('loadSlotBtn');
-    if (loadBtn) loadBtn.disabled = false;
-  } catch (_) {
-    dom.loadSlot.innerHTML = 'Save local encontrado, mas não foi possível ler o resumo.';
-  }
-}
-
 function startNewGame(config, selectedColonists) {
   state = createInitialState(config, selectedColonists);
   ensureResearchState();
@@ -143,6 +81,7 @@ function generateWorldFromSeed(config) {
     terrain,
     objects,
     exploration,
+    visibleTiles: [],
     spawn,
     spawnPoints,
     pointsOfInterest,
@@ -450,6 +389,7 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
       pointsOfInterest: world.pointsOfInterest,
       weatherPattern: world.weatherPattern,
       exploration: world.exploration,
+      visibleTiles: world.visibleTiles,
       generationVersion: world.generationVersion
     },
     worldMeta: { seed: world.seed, mapSize: world.mapSize, difficulty: world.difficulty, spawnPoints: world.spawnPoints, weatherPattern: world.weatherPattern },
@@ -472,6 +412,17 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
   };
 }
 
+function initialResourcesForConfig(config = defaultNewGameConfig) {
+  const table = {
+    scarce: { food: 10, wood: 12, stone: 4, metal: 0, medicine: 0 },
+    standard: { food: 14, wood: 18, stone: 6, metal: 0, medicine: 1 },
+    rich: { food: 24, wood: 30, stone: 12, metal: 2, medicine: 2 }
+  };
+  const res = { ...(table[config.resourcesPreset] || table.standard) };
+  if (config.difficulty === 'easy') { res.food += 6; res.wood += 8; res.medicine += 1; }
+  if (config.difficulty === 'hard') { res.food = Math.max(4, res.food - 5); res.wood = Math.max(5, res.wood - 7); res.stone = Math.max(2, res.stone - 3); }
+  return res;
+}
 
 function initialItemsForConfig(config = defaultNewGameConfig) {
   const preset = config.resourcesPreset || 'standard';
@@ -488,32 +439,44 @@ function makeExplorationMatrix(cols, rows) {
 function ensureExplorationState() {
   if (!state) return;
   state.world = state.world || {};
-  state.world.cols = state.world.cols || state.terrain?.[0]?.length || COLS;
-  state.world.rows = state.world.rows || state.terrain?.length || ROWS;
+  state.world.cols = state.world.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
+  state.world.rows = state.world.rows || state.terrain?.length || MAP_SIZES.standard.rows;
   state.world.tileSize = state.world.tileSize || TILE;
   state.world.width = state.world.cols * state.world.tileSize;
   state.world.height = state.world.rows * state.world.tileSize;
+  if (!Array.isArray(state.world.visibleTiles)) state.world.visibleTiles = [];
   if (!Array.isArray(state.world.exploration) || state.world.exploration.length !== state.world.rows || state.world.exploration[0]?.length !== state.world.cols) {
     state.world.exploration = makeExplorationMatrix(state.world.cols, state.world.rows);
+    state.world.visibleTiles = [];
   }
 }
 
 function updateExploration(force = false) {
   if (!state?.colonists) return;
   ensureExplorationState();
-  const rows = getWorldRows();
-  const cols = getWorldCols();
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      if (state.world.exploration[y][x] === 2) state.world.exploration[y][x] = 1;
-    }
-  }
+  clearPreviousVisibleTiles(force);
+  const visible = new Set();
   const baseRadius = force ? 10 : 8;
-  for (const c of state.colonists) revealAround(c.x, c.y, baseRadius);
+  for (const c of state.colonists) revealAround(c.x, c.y, baseRadius, visible);
+  state.world.visibleTiles = Array.from(visible);
   updatePoiDiscovery();
 }
 
-function revealAround(cx, cy, radius = 8) {
+function clearPreviousVisibleTiles(force = false) {
+  const previous = Array.isArray(state?.world?.visibleTiles) ? state.world.visibleTiles : [];
+  if (force && !previous.length) {
+    for (const row of state.world.exploration) {
+      for (let x = 0; x < row.length; x++) if (row[x] === 2) row[x] = 1;
+    }
+    return;
+  }
+  for (const key of previous) {
+    const [x, y] = key.split(',').map(Number);
+    if (state.world.exploration?.[y]?.[x] === 2) state.world.exploration[y][x] = 1;
+  }
+}
+
+function revealAround(cx, cy, radius = 8, visible = null) {
   ensureExplorationState();
   const rows = getWorldRows();
   const cols = getWorldCols();
@@ -521,7 +484,10 @@ function revealAround(cx, cy, radius = 8) {
   for (let y = Math.max(0, cy - radius); y <= Math.min(rows - 1, cy + radius); y++) {
     for (let x = Math.max(0, cx - radius); x <= Math.min(cols - 1, cx + radius); x++) {
       const d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
-      if (d2 <= r2) state.world.exploration[y][x] = 2;
+      if (d2 <= r2) {
+        state.world.exploration[y][x] = 2;
+        if (visible) visible.add(`${x},${y}`);
+      }
     }
   }
 }
