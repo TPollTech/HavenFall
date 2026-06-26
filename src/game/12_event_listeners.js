@@ -4,7 +4,19 @@ function on(el, eventName, handler, options) {
   if (el) el.addEventListener(eventName, handler, options);
 }
 
+function syncSpeedButtons() {
+  document.querySelectorAll('[data-speed]').forEach(btn => {
+    const active = !!state && Number(btn.dataset.speed) === Number(state.speed || 1) && appScreen === SCREEN.PLAYING;
+    btn.classList.toggle('active', active);
+  });
+}
+
 function setupEventListeners() {
+  if (dom.speedLabel) {
+    dom.speedLabel.remove();
+    dom.speedLabel = null;
+  }
+
   on(dom.buttons.continue, 'click', continueFromMenu);
   on(dom.buttons.newGame, 'click', () => {
     writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
@@ -37,15 +49,17 @@ function setupEventListeners() {
   on(dom.buttons.startSelectedGame, 'click', () => {
     if (!newGameConfig) newGameConfig = readNewGameConfig();
     startNewGame(newGameConfig, colonistCandidates);
+    syncSpeedButtons();
   });
   on(dom.buttons.loadBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
-  on(dom.buttons.loadSlot, 'click', loadAndPlay);
+  on(dom.buttons.loadSlot, 'click', () => { loadAndPlay(); syncSpeedButtons(); });
   on(dom.buttons.deleteSave, 'click', () => {
     if (confirm('Apagar o save local?')) {
       localStorage.removeItem(SAVE_KEY);
       activeSession = false;
       refreshMenuSaveInfo();
       refreshLoadScreen();
+      syncSpeedButtons();
     }
   });
   on(dom.buttons.settingsBack, 'click', goBackFromSettings);
@@ -130,16 +144,19 @@ function setupEventListeners() {
     if (!state) return;
     state.speed = Number(btn.dataset.speed);
     setScreen(SCREEN.PLAYING);
+    syncSpeedButtons();
   }));
+  syncSpeedButtons();
+
   on(dom.buttons.cancelBuild, 'click', () => { currentBuild = null; updateUI(true); });
-  on(dom.buttons.pause, 'click', () => setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING));
-  on(dom.buttons.pauseMenu, 'click', () => setScreen(SCREEN.PAUSED));
-  on(dom.buttons.resume, 'click', () => setScreen(SCREEN.PLAYING));
+  on(dom.buttons.pause, 'click', () => { setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING); syncSpeedButtons(); });
+  on(dom.buttons.pauseMenu, 'click', () => { setScreen(SCREEN.PAUSED); syncSpeedButtons(); });
+  on(dom.buttons.resume, 'click', () => { setScreen(SCREEN.PLAYING); syncSpeedButtons(); });
   on(dom.buttons.pauseSave, 'click', () => { saveGame(true); updateUI(true); });
-  on(dom.buttons.pauseLoad, 'click', loadAndPlay);
+  on(dom.buttons.pauseLoad, 'click', () => { loadAndPlay(); syncSpeedButtons(); });
   on(dom.buttons.pauseSettings, 'click', () => setScreen(SCREEN.SETTINGS));
-  on(dom.buttons.pauseMainMenu, 'click', () => setScreen(SCREEN.MAIN_MENU));
-  on(dom.buttons.modalStart, 'click', () => { dom.modal.classList.remove('show'); setScreen(SCREEN.PLAYING); });
+  on(dom.buttons.pauseMainMenu, 'click', () => { setScreen(SCREEN.MAIN_MENU); syncSpeedButtons(); });
+  on(dom.buttons.modalStart, 'click', () => { dom.modal.classList.remove('show'); setScreen(SCREEN.PLAYING); syncSpeedButtons(); });
 
   canvas.addEventListener('wheel', e => {
     if (appScreen !== SCREEN.PLAYING) return;
@@ -185,6 +202,7 @@ function setupEventListeners() {
     if (e.code === 'Space' && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
       e.preventDefault();
       setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING);
+      syncSpeedButtons();
     }
     if (e.key === 'Escape') {
       if (appScreen === SCREEN.PLAYING) setScreen(SCREEN.PAUSED);
@@ -192,8 +210,13 @@ function setupEventListeners() {
       else if (appScreen !== SCREEN.MAIN_MENU) setScreen(SCREEN.MAIN_MENU);
       currentBuild = null;
       hideContextMenu?.();
+      syncSpeedButtons();
     }
-    if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED) && ['1','2','3'].includes(e.key)) { state.speed = Number(e.key); setScreen(SCREEN.PLAYING); }
+    if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED) && ['1','2','3'].includes(e.key)) {
+      state.speed = Number(e.key);
+      setScreen(SCREEN.PLAYING);
+      syncSpeedButtons();
+    }
   });
 
   window.addEventListener('keyup', e => {
