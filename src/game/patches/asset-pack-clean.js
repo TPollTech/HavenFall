@@ -13,7 +13,8 @@
     research_desk_clean: 'assets/clean/edificios/desk_research.png',
     stove_clean: 'assets/clean/edificios/stove.png',
     forge_clean: 'assets/clean/edificios/forge.png',
-    tool_cabinet_clean: 'assets/clean/edificios/tool_cabinet.png'
+    tool_cabinet_clean: 'assets/clean/edificios/tool_cabinet.png',
+    res_bones: 'assets/sprites/res_bones.png'
   });
 
   const ASSET_MAPPINGS = Object.freeze({
@@ -27,6 +28,10 @@
     stove_clean: ['stove'],
     forge_clean: ['forge'],
     tool_cabinet_clean: ['med_station']
+  });
+
+  const ITEM_ICON_MAPPINGS = Object.freeze({
+    bones: 'res_bones'
   });
 
   function loadOptionalImage(key, src, targetImages) {
@@ -55,9 +60,20 @@
     });
   }
 
+  function applyItemIconMappings(targetImages, targetItems) {
+    if (!targetImages || !targetItems) return;
+
+    Object.entries(ITEM_ICON_MAPPINGS).forEach(([itemKey, assetKey]) => {
+      if (targetImages[assetKey] && targetItems[itemKey]) {
+        targetItems[itemKey].icon = assetKey;
+      }
+    });
+  }
+
   function injectCleanAssets() {
     const activeImages = typeof images !== 'undefined' ? images : null;
     const activeDefs = typeof objectDefs !== 'undefined' ? objectDefs : null;
+    const activeItems = typeof itemDefs !== 'undefined' ? itemDefs : null;
 
     if (!activeImages || typeof activeImages !== 'object') {
       return Promise.resolve(false);
@@ -69,6 +85,7 @@
       const loadedCount = results.filter(Boolean).length;
 
       applyCleanObjectMappings(activeImages, activeDefs);
+      applyItemIconMappings(activeImages, activeItems);
 
       window.HavenfallContext = window.HavenfallContext || {};
       window.HavenfallContext.cleanAssetsLoaded = loadedCount;
