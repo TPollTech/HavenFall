@@ -49,6 +49,9 @@ async function loadQolPatchesThenBoot() {
   await loadScript('src/game/18_combat_death_fix.js');
   if (typeof installCombatDeathFixPatch === 'function') installCombatDeathFixPatch();
 
+  await loadScript('src/game/19_sandbox_multiplayer_patch.js');
+  if (typeof installSandboxMultiplayerPatch === 'function') installSandboxMultiplayerPatch();
+
   bootGame();
 }
 
