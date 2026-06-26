@@ -2,27 +2,27 @@
 
 (() => {
   const CORE_BLUEPRINTS = Object.freeze([
-    { id: 'state', file: 'src/game/global.js' },
-    { id: 'setup', file: 'src/game/gameSetup.js' },
-    { id: 'colonist_generation', file: 'src/game/colonistGeneration.js' },
-    { id: 'research', file: 'src/game/researchSystem.js' },
-    { id: 'colonist_mechanics', file: 'src/game/colonistMechanics.js' },
-    { id: 'ui', file: 'src/game/screenManager.js' },
-    { id: 'world_generator', file: 'src/game/worldGenerator.js' },
-    { id: 'exploration', file: 'src/game/explorationSystem.js' },
-    { id: 'map_pathfinding', file: 'src/game/05_map_and_pathfinding.js' },
-    { id: 'tasks_world', file: 'src/game/06_tasks_and_world_systems.js' },
-    { id: 'render', file: 'src/game/07_renderer.js' },
-    { id: 'canvas_input_building', file: 'src/game/08_canvas_input_and_building.js' },
-    { id: 'hud_ui', file: 'src/game/09_hud_ui.js' },
-    { id: 'save_load', file: 'src/game/10_save_load.js' },
-    { id: 'game_loop', file: 'src/game/11_utils_and_loop.js' },
-    { id: 'event_listeners', file: 'src/game/12_event_listeners.js' }
+    { id: 'state', file: 'src/game/state.js' },
+    { id: 'game_setup', file: 'src/game/game-setup.js' },
+    { id: 'colonist_generation', file: 'src/game/colonist-generation.js' },
+    { id: 'research_system', file: 'src/game/research-system.js' },
+    { id: 'colonist_mechanics', file: 'src/game/colonist-mechanics.js' },
+    { id: 'screen_manager', file: 'src/game/screen-manager.js' },
+    { id: 'world_generator', file: 'src/game/world-generator.js' },
+    { id: 'exploration_system', file: 'src/game/exploration-system.js' },
+    { id: 'map_pathfinding', file: 'src/game/map-pathfinding.js' },
+    { id: 'world_systems', file: 'src/game/world-systems.js' },
+    { id: 'renderer', file: 'src/game/renderer.js' },
+    { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
+    { id: 'hud_ui', file: 'src/game/hud-ui.js' },
+    { id: 'save_load', file: 'src/game/save-load.js' },
+    { id: 'game_loop', file: 'src/game/game-loop.js' },
+    { id: 'event_listeners', file: 'src/game/event-listeners.js' }
   ]);
 
   const PATCH_BLUEPRINTS = Object.freeze([
-    { id: 'asset_pack_clean', file: 'src/game/patches/asset_pack_clean.js', optional: true },
-    { id: 'ui_icon_safety', file: 'src/game/patches/ui_icon_safety.js', optional: true }
+    { id: 'asset_pack_clean', file: 'src/game/patches/asset-pack-clean.js', optional: true },
+    { id: 'ui_icon_safety', file: 'src/game/patches/ui-icon-safety.js', optional: true }
   ]);
 
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
