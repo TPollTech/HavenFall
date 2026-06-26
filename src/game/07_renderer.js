@@ -191,7 +191,7 @@ function drawObject(obj) {
     const img = images[objectDefs[type].img];
     ctx.save();
     ctx.globalAlpha = 0.42;
-    drawAsset(img, cx, cy + 22, objectScale(type), 0.5, 1);
+    drawAsset(img, cx, (obj.y + 1) * TILE, objectScale(type, img), 0.5, 1);
     ctx.restore();
     drawProgress(cx, obj.y * TILE + 8, (obj.progress || 0) / buildDefs[obj.buildType].work, '#9bd36a');
     return;
@@ -199,7 +199,8 @@ function drawObject(obj) {
 
   const def = objectDefs[obj.type];
   if (!def) return;
-  drawAsset(images[def.img], cx, cy + 22, objectScale(obj.type), 0.5, 1);
+  const _img = images[def.img];
+  drawAsset(_img, cx, (obj.y + 1) * TILE, objectScale(obj.type, _img), 0.5, 1);
   if (obj.type === 'crop') {
     drawProgress(cx, obj.y * TILE + 7, (obj.growth || 0) / 100, '#80c96c');
   }
@@ -243,12 +244,20 @@ function drawInteractionHint(obj, cx, cy) {
   ctx.restore();
 }
 
-function objectScale(type) {
-  return ({
-    tree: 0.54, bush: 0.42, rock: 0.38, ore: 0.34, logs: 0.35, berry: 0.42, crop: 0.22,
-    bed: 0.28, campfire: 0.30, forge: 0.22, stove: 0.24, med_station: 0.24, research_desk: 0.22, crate: 0.34, ruin: 0.30, cache: 0.32, supply_crate: 0.32, wall: 0.29, bench: 0.20,
-    stool: 0.45
-  })[type] || 0.35;
+const OBJECT_TARGET_H = {
+  tree: TILE * 2.0,  bush: TILE * 1.4,  rock: TILE * 1.2,  ore: TILE * 1.0,
+  logs: TILE * 0.9,  berry: TILE * 1.4,  crop: TILE * 0.7,
+  bed: TILE * 1.2,   campfire: TILE * 1.2, forge: TILE * 1.1,
+  stove: TILE * 1.0, med_station: TILE * 1.0, research_desk: TILE * 1.0,
+  crate: TILE * 1.1, ruin: TILE * 1.0,  cache: TILE * 1.1,
+  supply_crate: TILE * 1.1, wall: TILE * 1.5, bench: TILE * 1.0, stool: TILE * 1.0
+};
+
+function objectScale(type, img) {
+  const targetH = OBJECT_TARGET_H[type] || TILE;
+  const imgH = img?.naturalHeight || img?.height || 0;
+  if (imgH > 0) return targetH / imgH;
+  return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, bench:0.20, stool:0.45 })[type] || 0.35;
 }
 
 function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false) {
@@ -447,6 +456,6 @@ function drawBuildPreview() {
   ctx.fillStyle = can ? 'rgba(155, 211, 106, .22)' : 'rgba(230, 120, 102, .28)';
   ctx.fillRect(mouseTile.x * TILE, mouseTile.y * TILE, TILE, TILE);
   const img = images[objectDefs[type].img];
-  drawAsset(img, mouseTile.x * TILE + TILE / 2, mouseTile.y * TILE + TILE, objectScale(type), 0.5, 1);
+  drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1);
   ctx.restore();
 }
