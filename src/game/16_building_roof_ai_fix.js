@@ -5,14 +5,14 @@ function installBuildingRoofAiFixPatch() {
 
   const system = {
     installed: true,
-    wallIndex: new Map(),
-    solidWallIndex: new Map(),
-    doorIndex: new Map(),
-    roofSet: new Set(),
-    roofArrayRef: null,
-    wallIndexDirty: true,
-    lastWallObjectCount: -1,
-    roofTick: 0,
+    wallIndex,
+    solidWallIndex,
+    doorIndex,
+    roofSet,
+    roofArrayRef,
+    wallIndexDirty,
+    lastWallObjectCount,
+    roofTick,
 
     tileKey(x, y) {
       return `${Math.round(x)},${Math.round(y)}`;
@@ -22,6 +22,7 @@ function installBuildingRoofAiFixPatch() {
       return !!obj && (
         obj.type === 'wall' ||
         obj.type === 'door' ||
+        objectDefs[obj.type]?.roofBoundary ||
         (obj.type === 'blueprint' && (obj.buildType === 'wall' || obj.buildType === 'door'))
       );
     },
@@ -42,6 +43,7 @@ function installBuildingRoofAiFixPatch() {
 
     markStructureDirty() {
       this.wallIndexDirty = true;
+      wallIndexDirty = true;
     },
 
     ensureBuildingDefs() {
@@ -49,7 +51,7 @@ function installBuildingRoofAiFixPatch() {
         objectDefs.door = {
           name: 'porta',
           img: 'door_wood',
-          blocks: true,
+          blocks: false,
           door: true,
           roofBoundary: true
         };
@@ -58,8 +60,8 @@ function installBuildingRoofAiFixPatch() {
         buildDefs.door = {
           label: 'Porta',
           type: 'door',
-          cost: { wood: 6, stone: 1 },
-          work: 3.5
+          cost: { wood: 6 },
+          work: 4
         };
       }
     },
@@ -68,9 +70,9 @@ function installBuildingRoofAiFixPatch() {
       const objects = state?.objects || [];
       if (!force && !this.wallIndexDirty && this.lastWallObjectCount === objects.length) return;
 
-      this.wallIndex = new Map();
-      this.solidWallIndex = new Map();
-      this.doorIndex = new Map();
+      this.wallIndex = wallIndex = new Map();
+      this.solidWallIndex = solidWallIndex = new Map();
+      this.doorIndex = doorIndex = new Map();
 
       for (const obj of objects) {
         if (!this.isWallLike(obj)) continue;
@@ -80,8 +82,8 @@ function installBuildingRoofAiFixPatch() {
         if (this.isDoorLike(obj)) this.doorIndex.set(key, obj);
       }
 
-      this.lastWallObjectCount = objects.length;
-      this.wallIndexDirty = false;
+      this.lastWallObjectCount = lastWallObjectCount = objects.length;
+      this.wallIndexDirty = wallIndexDirty = false;
     },
 
     wallAt(x, y) {
@@ -102,26 +104,26 @@ function installBuildingRoofAiFixPatch() {
     setRoofedTiles(roofed) {
       if (!state) return;
       state.roofs = roofed;
-      this.roofArrayRef = roofed;
-      this.roofSet = new Set(roofed);
+      this.roofArrayRef = roofArrayRef = roofed;
+      this.roofSet = roofSet = new Set(roofed);
       state.roofCount = roofed.length;
     },
 
     syncRoofSetFromState() {
       if (!state?.roofs) {
-        this.roofArrayRef = null;
-        this.roofSet = new Set();
+        this.roofArrayRef = roofArrayRef = null;
+        this.roofSet = roofSet = new Set();
         return;
       }
       if (this.roofArrayRef !== state.roofs) {
-        this.roofArrayRef = state.roofs;
-        this.roofSet = new Set(state.roofs);
+        this.roofArrayRef = roofArrayRef = state.roofs;
+        this.roofSet = roofSet = new Set(state.roofs);
       }
     },
 
     updateRoofMap(force = false) {
       if (!state?.objects || !state?.world) return;
-      this.roofTick += 1;
+      this.roofTick = roofTick = roofTick + 1;
       if (!force && this.roofTick % 60 !== 0) return;
 
       this.rebuildWallIndex(force || this.wallIndexDirty);
@@ -226,12 +228,12 @@ function installBuildingRoofAiFixPatch() {
       if (!c || !state?.items) return;
       ensureEquipment(c);
       if (action === 'combat') {
-        const weapon = this.bestStockItemFor(
+        const equipment = this.bestStockItemFor(
           def => def.slot === 'weapon' && (!def.needsAmmo || itemCount(def.needsAmmo) > 0),
           def => def.combat || 0
         );
         const offhand = this.bestStockItemFor(def => def.slot === 'offhand', def => (def.defense || 0) + (def.scare || 0));
-        this.equipBestFor(c, 'weapon', weapon);
+        this.equipBestFor(c, 'weapon', equipment);
         this.equipBestFor(c, 'offhand', offhand);
         return;
       }
