@@ -14,6 +14,7 @@
     { id: 'tasks_world', file: 'src/game/06_tasks_and_world_systems.js' },
     { id: 'render', file: 'src/game/07_renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/08_canvas_input_and_building.js' },
+    { id: 'hud_ui', file: 'src/game/09_hud_ui.js' },
     { id: 'save_load', file: 'src/game/10_save_load.js' },
     { id: 'game_loop', file: 'src/game/11_utils_and_loop.js' },
     { id: 'event_listeners', file: 'src/game/12_event_listeners.js' }
