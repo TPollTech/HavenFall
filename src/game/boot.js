@@ -19,10 +19,6 @@
     { id: 'renderer', file: 'src/game/renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/hud-ui.js' },
-    { id: 'ui_clean_controller', file: 'src/game/ui-clean-controller.js' },
-    { id: 'ui_clean_visibility', file: 'src/game/ui-clean-visibility-fix.js' },
-    { id: 'modal_compat', file: 'src/game/modal-compat.js' },
-    { id: 'ui_header_structure_fix', file: 'src/game/ui-header-structure-fix.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
@@ -32,56 +28,39 @@
     { id: 'mobs', file: 'src/game/mobs.js' },
     { id: 'creature_renderer', file: 'src/game/creature-renderer.js' },
     { id: 'mob_interactions', file: 'src/game/mob-interactions.js' },
-    { id: 'ui_modals', file: 'src/game/ui-modals.js' },
+    { id: 'ui_icon_safety', file: 'src/game/ui/icon-safety.js' },
+    { id: 'research_overlay', file: 'src/game/ui/research-overlay.js' },
+    { id: 'colonist_modal', file: 'src/game/ui/colonist-modal.js' },
+    { id: 'ui_manager', file: 'src/game/ui/ui-manager.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
     { id: 'game_loop', file: 'src/game/game-loop.js' },
     { id: 'event_listeners', file: 'src/game/event-listeners.js' }
-  ]);
-
-  const PATCH_BLUEPRINTS = Object.freeze([
-    { id: 'asset_pack_clean', file: 'src/game/patches/asset-pack-clean.js', optional: true },
-    { id: 'ui_icon_safety', file: 'src/game/patches/ui-icon-safety.js', optional: true }
   ]);
 
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
 
   function loadScript(blueprint) {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = blueprint.file;
-      script.dataset.blueprintId = blueprint.id;
-      script.onload = () => resolve(blueprint);
-      script.onerror = () => {
-        const err = new Error(`Falha ao carregar módulo: ${blueprint.id} (${blueprint.file})`);
-        if (blueprint.optional) resolve({ ...blueprint, skipped: true, error: err });
-        else reject(err);
-      };
-      document.body.appendChild(script);
+      const el = document.createElement('script');
+      el.src = blueprint.file;
+      el.dataset.blueprintId = blueprint.id;
+      el.onload = () => resolve(blueprint);
+      el.onerror = () => reject(new Error(`Falha ao carregar ${blueprint.id}`));
+      document.body.appendChild(el);
     });
   }
 
-  async function loadBlueprintsInOrder(blueprints) {
-    const loaded = [];
-    for (const blueprint of blueprints) loaded.push(await loadScript(blueprint));
-    return loaded;
-  }
-
-  function showBootError(error) {
-    console.error(error);
-    const box = document.createElement('div');
-    box.style.cssText = 'position:fixed;inset:20px;z-index:9999;display:grid;place-items:center;background:rgba(2,4,8,.82);color:#f4efe4;font:16px system-ui;text-align:center;padding:24px;';
-    box.innerHTML = `<div style="max-width:720px;background:#121722;border:1px solid rgba(227,169,63,.35);border-radius:18px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.45)"><h1 style="margin:0 0 10px">Falha ao iniciar Havenfall</h1><p style="color:#b8b0a0">${String(error.message || error)}</p><p style="color:#b8b0a0;font-size:13px">Confira o console e confirme se os módulos do manifesto existem no caminho correto.</p></div>`;
-    document.body.appendChild(box);
-  }
-
   async function bootFromManifest() {
-    window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, patches: PATCH_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
+    window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
-      await loadBlueprintsInOrder(CORE_BLUEPRINTS);
-      await loadBlueprintsInOrder(PATCH_BLUEPRINTS);
+      for (const blueprint of CORE_BLUEPRINTS) await loadScript(blueprint);
       await loadScript(ENTRY_BLUEPRINT);
     } catch (error) {
-      showBootError(error);
+      console.error(error);
+      const box = document.createElement('div');
+      box.textContent = `Falha ao iniciar Havenfall: ${error.message || error}`;
+      box.style.cssText = 'position:fixed;inset:20px;z-index:9999;display:grid;place-items:center;background:#080b10;color:#f4efe4;font:16px system-ui;text-align:center;padding:24px;';
+      document.body.appendChild(box);
     }
   }
 
