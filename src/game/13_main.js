@@ -302,6 +302,10 @@ async function loadQolPatchesThenBoot() {
   if (typeof installSandboxMultiplayerPatch === 'function') installSandboxMultiplayerPatch();
 
   installCleanOnlineAndStationMenus();
+
+  await loadScript('src/game/23_multiplayer_lobby_patch.js');
+  if (typeof installMultiplayerLobbyPatch === 'function') installMultiplayerLobbyPatch();
+
   bootGame();
 }
 
