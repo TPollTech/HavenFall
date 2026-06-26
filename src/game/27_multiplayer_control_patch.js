@@ -46,6 +46,10 @@ function installMultiplayerControlPatch() {
     };
   }
 
+  function hasMoveInput(keys = {}) {
+    return !!(keys.up || keys.down || keys.left || keys.right);
+  }
+
   function activePlayers() {
     return (playersCache || []).filter(p => p?.id).sort((a, b) => {
       const ar = a.role === 'host' ? -1 : 1;
@@ -105,7 +109,7 @@ function installMultiplayerControlPatch() {
   }
 
   function moveControlledColonist(c, keys, tick, label) {
-    if (!c || c.dead || c.downed) return;
+    if (!c || c.dead || c.downed) return false;
 
     let dx = 0;
     let dy = 0;
@@ -114,12 +118,12 @@ function installMultiplayerControlPatch() {
     if (keys.left) dx -= 1;
     if (keys.right) dx += 1;
 
+    if (!dx && !dy) return false;
+
     c.task = null;
     c.path = [];
     c.work = 0;
     c.note = label ? `Controlado por ${label}` : 'Controle online';
-
-    if (!dx && !dy) return;
 
     const len = Math.hypot(dx, dy) || 1;
     const speed = 88 * (c.energy < 20 ? 0.72 : 1) * (c.mood < 20 ? 0.84 : 1);
@@ -140,6 +144,7 @@ function installMultiplayerControlPatch() {
 
     c.x = Math.round((c.px - TILE / 2) / TILE);
     c.y = Math.round((c.py - TILE / 2) / TILE);
+    return true;
   }
 
   async function sendInput() {
@@ -250,11 +255,25 @@ function installMultiplayerControlPatch() {
 
     if (isHost()) {
       const tick = dt * state.speed;
+      const keys = inputForPlayer(owner.id);
       c.anim += tick;
       c.hunger = clamp(c.hunger - tick * 0.12, 0, 100);
       c.energy = clamp(c.energy - tick * 0.06, 0, 100);
       c.mood = clamp(c.mood - tick * 0.015, 0, 100);
-      moveControlledColonist(c, inputForPlayer(owner.id), tick, owner.nick);
+
+      if (hasMoveInput(keys)) {
+        moveControlledColonist(c, keys, tick, owner.nick);
+        return;
+      }
+
+      if (c.task) {
+        previousUpdateColonist(c, dt);
+        return;
+      }
+
+      c.note = `Aguardando comando de ${owner.nick || 'jogador'}`;
+      c.x = Math.round((c.px - TILE / 2) / TILE);
+      c.y = Math.round((c.py - TILE / 2) / TILE);
       return;
     }
 
