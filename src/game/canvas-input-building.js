@@ -9,6 +9,8 @@ canvas.addEventListener('mouseup', handleCanvasMouseUp);
 canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 
+const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse'];
+
 function handleCanvasMouseDown(e) {
   if (e.button !== 0 || appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
   const tile = tileFromEvent(e);
@@ -114,7 +116,7 @@ function handleCanvasContextMenu(e) {
 function routePrimaryObjectAction(c, obj) {
   if (!c || !obj) return;
   if (obj.type === 'blueprint') assignBuild(c, obj);
-  else if (['bench','forge','stove','med_station'].includes(obj.type)) openCraftingForStation(obj);
+  else if (CRAFT_STATION_TYPES.includes(obj.type)) openCraftingForStation(obj);
   else if (obj.type === 'research_desk') assignResearch(c, obj);
   else if (objectDefs[obj.type]?.interactable) assignInspect(c, obj);
   else if (obj.type === 'crop' && (obj.growth || 0) < 100) log('Essa plantação ainda está crescendo.');
@@ -177,7 +179,7 @@ function makeContextActions(c, target, tile) {
       actions.push({ label: obj.markedForGather ? 'Desmarcar coleta' : 'Marcar para coleta', hint: 'fila automática de coleta', run: () => toggleGatherMark(obj) });
       actions.push({ label: 'Coletar agora', hint: def.name || obj.type, run: () => assignGather(c, obj) });
     }
-    if (['bench','forge','stove','med_station'].includes(obj.type)) actions.push({ label: 'Abrir crafting', hint: stationLabels[obj.type] || def.name, run: () => openCraftingForStation(obj) });
+    if (CRAFT_STATION_TYPES.includes(obj.type)) actions.push({ label: 'Abrir crafting', hint: stationLabels[obj.type] || def.name, run: () => openCraftingForStation(obj) });
     if (obj.type === 'forge') actions.push({ label: 'Forjar metal rápido', hint: '3 pedra → 1 metal', run: () => assignForge(c, obj) });
     if (obj.type === 'research_desk') actions.push({ label: 'Pesquisar', hint: 'avança a pesquisa atual', run: () => assignResearch(c, obj) });
     if (obj.type === 'stove') actions.push({ label: 'Preparar comida rápida', hint: 'receita básica', run: () => assignCook(c, obj) });
@@ -288,9 +290,11 @@ function placeBlueprint(buildKey, x, y) {
   if (!isBuildUnlocked(buildKey)) { log(`Precisa pesquisar ${researchDefs[def.requires]?.label || 'tecnologia'} antes de construir ${def.label}.`); return; }
   if (def.type === 'door' && !hasAdjacentWallForDoor(x, y)) { log('A porta precisa encostar em uma parede existente ou em uma blueprint de parede.'); return; }
   if (!canPlace(def.type, x, y)) { log('Não dá para construir nesse lugar.'); return; }
-  if (!hasCost(def.cost)) { log('Recursos insuficientes para essa construção.'); return; }
-  payCost(def.cost);
+  if (!hasCost(def.cost || {}) || !hasItems(def.itemCost || {})) { log(`Recursos insuficientes para essa construção. Precisa de ${itemCostText(def.cost, def.itemCost)}.`); return; }
+  payCost(def.cost || {});
+  payItems(def.itemCost || {});
   state.objects.push({ id: uid(), type: 'blueprint', buildType: buildKey, x, y, progress: 0 });
+  if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   log(`Planta de ${def.label} posicionada.`);
   const c = selectedColonist();
   const bp = getObjectAt(x, y);
