@@ -13,6 +13,12 @@
     return target.closest ? target : target.parentElement || null;
   }
 
+  function isLegacyHudClick(target) {
+    if (!target?.closest) return false;
+    if (target.closest('#anchored-ui-panel, #bottom-navigation-dock, .research-tree-overlay, #eventModal, #pauseOverlay')) return false;
+    return !!target.closest('#hud, #bottomActionBar, #ui-modal-backdrop, [id^="modal-"], [data-ui-modal]');
+  }
+
   function isTypingTarget(el = document.activeElement) {
     if (!el) return false;
     const tag = el.tagName;
@@ -58,7 +64,6 @@
 
     cancelZoneToolForAction('construção selecionada');
     currentBuild = buildKey;
-    if (typeof setHudTab === 'function') setHudTab('build');
     if (typeof updateUI === 'function') updateUI(true);
   }
 
@@ -79,6 +84,13 @@
   function handleDelegatedClick(event) {
     const target = eventTargetElement(event);
     if (!target) return;
+
+    if (isLegacyHudClick(target)) {
+      event.preventDefault();
+      event.stopPropagation();
+      window.uiManager?.closeAllOldModals?.();
+      return;
+    }
 
     const reroll = target.closest('[data-reroll-colonist]');
     if (reroll) {
@@ -132,14 +144,14 @@
     }
 
     const tab = target.closest('[data-tab]');
-    if (tab) {
+    if (tab && !target.closest('#bottomActionBar, #hud')) {
       if (tab.dataset.tab !== 'zones') cancelZoneToolForAction('aba trocada');
       setHudTab(tab.dataset.tab);
       return;
     }
 
     const build = target.closest('[data-build]');
-    if (build) {
+    if (build && !target.closest('#hud, #bottomActionBar')) {
       selectBuildTool(build.dataset.build);
       return;
     }
@@ -213,6 +225,7 @@
     }
 
     if (event.key === 'Escape') {
+      if (window.uiManager?.closeCurrentPanel) window.uiManager.closeCurrentPanel();
       if (appScreen === SCREEN.PLAYING) setScreen(SCREEN.PAUSED);
       else if (appScreen === SCREEN.PAUSED) setScreen(SCREEN.PLAYING);
       else if (appScreen !== SCREEN.MAIN_MENU) setScreen(SCREEN.MAIN_MENU);
