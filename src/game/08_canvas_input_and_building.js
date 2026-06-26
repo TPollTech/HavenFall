@@ -239,11 +239,21 @@ function tileFromEvent(e) {
   return { x, y };
 }
 
+function isWallAnchorAt(x, y) {
+  const obj = getObjectAt(x, y);
+  return !!obj && (obj.type === 'wall' || (obj.type === 'blueprint' && obj.buildType === 'wall'));
+}
+
+function hasAdjacentWallForDoor(x, y) {
+  return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isWallAnchorAt(x + dx, y + dy));
+}
+
 function canPlace(type, x, y) {
   if (!isInside(x, y) || x < 1 || y < 1 || x > getWorldCols() - 2 || y > getWorldRows() - 2) return false;
   if (!isTileDiscovered(x, y)) return false;
   if (getObjectAt(x, y)) return false;
   if (state.colonists.some(c => Math.round(c.x) === x && Math.round(c.y) === y)) return false;
+  if (type === 'door' && !hasAdjacentWallForDoor(x, y)) return false;
   return state.terrain[y]?.[x] !== 'stone' || type === 'wall';
 }
 
@@ -251,6 +261,7 @@ function placeBlueprint(buildKey, x, y) {
   const def = buildDefs[buildKey];
   if (!def) return;
   if (!isBuildUnlocked(buildKey)) { log(`Precisa pesquisar ${researchDefs[def.requires]?.label || 'tecnologia'} antes de construir ${def.label}.`); return; }
+  if (def.type === 'door' && !hasAdjacentWallForDoor(x, y)) { log('A porta precisa encostar em uma parede existente ou em uma blueprint de parede.'); return; }
   if (!canPlace(def.type, x, y)) { log('Não dá para construir nesse lugar.'); return; }
   if (!hasCost(def.cost)) { log('Recursos insuficientes para essa construção.'); return; }
   payCost(def.cost);
