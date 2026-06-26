@@ -7,7 +7,7 @@ function ensureColonistModalStyles() {
   style.textContent = `
     .game-modal-backdrop{position:fixed;inset:0;z-index:8500;display:none;align-items:center;justify-content:center;background:rgba(2,4,8,.58);backdrop-filter:blur(4px);padding:18px;}
     .game-modal-backdrop.show{display:flex;}
-    .colonist-modal-card{width:min(620px,96vw);max-height:86vh;overflow:auto;background:#111722;border:1px solid rgba(227,169,63,.35);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.48);color:#f4efe4;padding:18px;}
+    .colonist-modal-card{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#111722;border:1px solid rgba(227,169,63,.35);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.48);color:#f4efe4;padding:18px;}
     .colonist-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.10);padding-bottom:12px;margin-bottom:14px;}
     .colonist-modal-header h3{margin:0;font-size:22px;}
     .colonist-modal-close{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#f4efe4;border-radius:10px;padding:8px 10px;cursor:pointer;}
@@ -86,12 +86,30 @@ function colonyInventoryRows(c) {
   return rows.join('');
 }
 
+function survivalStatsHtml(c) {
+  const load = typeof getColonistCurrentLoadCount === 'function' ? getColonistCurrentLoadCount(c) : (c.carrying?.amount || 0);
+  const max = typeof getColonistMaxCapacity === 'function' ? getColonistMaxCapacity(c) : 2;
+  const roomTemp = Number(c.roomTemperature ?? (typeof roomTemperatureAt === 'function' ? roomTemperatureAt(Math.round(c.x), Math.round(c.y)) : 18));
+  const external = Number(state.environment?.externalTemperature ?? roomTemp);
+  const immunityVisible = typeof isResearched === 'function' && isResearched('medicine');
+  const immunity = Math.floor(c.immunity ?? 35);
+  return `
+    <section class="colonist-modal-grid">
+      <div class="colonist-stat-card"><b>Temperatura do ambiente</b>${roomTemp.toFixed(1)}°C<br><small>Externo: ${external.toFixed(1)}°C</small></div>
+      <div class="colonist-stat-card"><b>Carga</b>${load} / ${max}<br><small>${c.equipment?.offhand === 'handcart' ? 'Carrinho equipado' : 'Sem carrinho'}</small></div>
+      <div class="colonist-stat-card"><b>Automação</b>${typeof isResearched === 'function' && isResearched('heavy_hauling') ? 'Carga pesada ativa' : 'Carga básica'}</div>
+      ${immunityVisible ? `<div class="colonist-stat-card"><b>Imunidade</b>${immunity}%<br><small>Medicina pesquisada</small></div>` : ''}
+    </section>
+  `;
+}
+
 function openColonistDetailsModal(colonistId) {
   if (!state) return;
   const c = state.colonists.find(col => col.id === colonistId) || selectedColonist();
   if (!c) return;
   if (typeof ensureColonistEnvironment === 'function') ensureColonistEnvironment(c);
   ensureColonistMeta(c);
+  ensureEquipment(c);
 
   const modal = ensureColonistModalElement();
   modal.innerHTML = `
@@ -107,14 +125,18 @@ function openColonistDetailsModal(colonistId) {
 
       ${colonistStatusBadges(c)}
 
+      <h4>Status de sobrevivência</h4>
       <section class="colonist-modal-grid">
         <div class="colonist-stat-card"><b>Saúde</b>${Math.floor(c.health || 0)}%</div>
         <div class="colonist-stat-card"><b>Fome</b>${Math.floor(c.hunger || 0)}%</div>
         <div class="colonist-stat-card"><b>Energia</b>${Math.floor(c.energy || 0)}%</div>
         <div class="colonist-stat-card"><b>Humor</b>${Math.floor(c.mood || 0)}%</div>
         <div class="colonist-stat-card"><b>Umidade</b>${Math.floor(c.wetness || 0)}%</div>
-        <div class="colonist-stat-card"><b>Temperatura</b>${Number(c.bodyTemperature || 37).toFixed(1)}°C</div>
+        <div class="colonist-stat-card"><b>Temperatura corporal</b>${Number(c.bodyTemperature || 37).toFixed(1)}°C</div>
       </section>
+
+      <h4>Carga, clima e automação</h4>
+      ${survivalStatsHtml(c)}
 
       <h4>Equipamento pessoal</h4>
       <div class="inventory-list">${equipmentModalRows(c)}</div>
@@ -140,6 +162,9 @@ function useItemFromInventory(colonistId, itemKey) {
   if (itemKey === 'torch' && itemCount('torch') > 0) {
     equipItem(c, 'torch');
     log(`${c.name} pegou uma tocha para iluminação e defesa.`);
+  }
+  if (itemKey === 'handcart' && typeof equipAvailableHandcart === 'function') {
+    equipAvailableHandcart(c);
   }
   openColonistDetailsModal(c.id);
 }
