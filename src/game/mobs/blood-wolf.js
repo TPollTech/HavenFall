@@ -9,7 +9,7 @@
     if (!window.mobSpawnConfig) return;
     window.mobSpawnConfig[BLOOD_WOLF_TYPE] = {
       maxCount: BLOOD_WOLF_CAP,
-      spawnChance: BLOOD_WOLF_BASE_CHANCE,
+      spawnChance: 0,
       hostile: true,
       biomeLocked: true
     };
