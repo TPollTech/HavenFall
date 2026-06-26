@@ -5,7 +5,6 @@
 
   const PANEL_TITLES = Object.freeze({
     build: 'Construção',
-    resources: 'Recursos',
     tasks: 'Tarefas',
     research: 'Pesquisa',
     crafting: 'Crafting',
@@ -15,292 +14,372 @@
     events: 'Eventos'
   });
 
-  const TOP_RESOURCE_HTML = `
-    <div id="top-resource-bar" class="ui-top-bar" aria-label="Recursos da colônia">
-      <div class="res-item"><img src="assets/sprites/icon_food.png" alt=""> Comida: <span id="txt-food">0</span></div>
-      <div class="res-item"><img src="assets/sprites/icon_wood.png" alt=""> Madeira: <span id="txt-wood">0</span></div>
-      <div class="res-item"><img src="assets/sprites/icon_stone.png" alt=""> Pedra: <span id="txt-stone">0</span></div>
-      <div class="res-item"><img src="assets/sprites/icon_metal.png" alt=""> Metal: <span id="txt-metal">0</span></div>
-      <div class="res-item"><img src="assets/sprites/icon_health.png" alt=""> Remédios: <span id="txt-meds">0</span></div>
+  const RESOURCE_BAR_HTML = `
+    <div id="top-resource-bar" class="ui-clean-top-bar" aria-label="Recursos da colônia">
+      <div class="ui-clean-res"><img src="assets/sprites/icon_food.png" alt="">Comida <b id="txt-food">0</b></div>
+      <div class="ui-clean-res"><img src="assets/sprites/icon_wood.png" alt="">Madeira <b id="txt-wood">0</b></div>
+      <div class="ui-clean-res"><img src="assets/sprites/icon_stone.png" alt="">Pedra <b id="txt-stone">0</b></div>
+      <div class="ui-clean-res"><img src="assets/sprites/icon_metal.png" alt="">Metal <b id="txt-metal">0</b></div>
+      <div class="ui-clean-res"><img src="assets/sprites/icon_health.png" alt="">Remédios <b id="txt-meds">0</b></div>
     </div>
   `;
 
-  const safeSelectorValue = value => String(value || '').replace(/"/g, '\\"');
+  const DOCK_HTML = `
+    <nav id="bottom-navigation-dock" class="ui-clean-bottom-dock" aria-label="Navegação da interface">
+      <button type="button" data-open-ui-modal="build">Construir</button>
+      <button type="button" data-open-ui-modal="research">Pesquisa</button>
+      <button type="button" data-open-ui-modal="crafting">Crafting</button>
+      <button type="button" data-open-ui-modal="zones">Zonas</button>
+      <button type="button" data-open-ui-modal="colonists">Colonos</button>
+      <button type="button" data-open-ui-modal="tasks">Tarefas</button>
+      <button type="button" data-open-ui-modal="selected">Selecionado</button>
+      <button type="button" data-open-ui-modal="events">Eventos</button>
+      <span class="ui-clean-speed" aria-label="Velocidade do jogo">
+        <button type="button" data-speed="1">1x</button>
+        <button type="button" data-speed="2">2x</button>
+        <button type="button" data-speed="3">3x</button>
+      </span>
+    </nav>
+  `;
 
-  function injectFloatingUiStyles() {
-    if (document.getElementById('floating-ui-remake-styles')) return;
+  const CLEAN_CSS = `
+    /* ALFA 1.0 UI CLEAN RESET — camada independente do HUD antigo */
+    #hud,
+    .bottom-command-panel,
+    .component-hud,
+    .bottom-action-bar,
+    .component-bottomactionbar {
+      all: unset !important;
+      display: contents !important;
+      pointer-events: none !important;
+    }
+
+    #hud .bottom-tabs,
+    #hud .speed-inline,
+    #hud #bottomActionBar,
+    #hud [data-tab="resources"],
+    #resourcePanel {
+      display: none !important;
+    }
+
+    body.ui-clean-modal-open #game { cursor: default; }
+
+    .ui-clean-top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 2000;
+      min-height: 42px;
+      padding: 6px 14px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(8px, 1.8vw, 24px);
+      color: #fff7e8;
+      background: linear-gradient(180deg, rgba(0,0,0,.86), rgba(0,0,0,.42) 70%, transparent);
+      font: 800 13px Inter, system-ui, sans-serif;
+      text-shadow: 0 2px 10px rgba(0,0,0,.75);
+      pointer-events: auto;
+    }
+
+    .ui-clean-res {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      white-space: nowrap;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(8, 13, 21, .52);
+      backdrop-filter: blur(12px) saturate(1.15);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .ui-clean-res img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,.45));
+    }
+
+    .ui-clean-res b {
+      color: #f4c95d;
+      font-weight: 950;
+      min-width: 22px;
+      text-align: right;
+    }
+
+    .ui-clean-bottom-dock {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      max-width: calc(100vw - 24px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(13, 20, 33, .86);
+      box-shadow: 0 22px 70px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(18px) saturate(1.2);
+      pointer-events: auto;
+    }
+
+    .ui-clean-bottom-dock button {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 9px 13px;
+      min-height: 38px;
+      background: rgba(255,255,255,.075);
+      color: #f8efe0;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: -.01em;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      transition: transform .08s ease, background .08s ease, border-color .08s ease;
+      white-space: nowrap;
+    }
+
+    .ui-clean-bottom-dock button:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.12);
+      border-color: rgba(244,201,93,.55);
+    }
+
+    .ui-clean-bottom-dock button.is-active,
+    .ui-clean-bottom-dock button.active {
+      background: linear-gradient(180deg, rgba(227,169,63,.44), rgba(120,78,24,.55));
+      border-color: rgba(255,220,130,.72);
+      color: #fff8e9;
+    }
+
+    .ui-clean-speed {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 4px;
+      padding-left: 10px;
+      border-left: 1px solid rgba(255,255,255,.12);
+    }
+
+    .ui-clean-scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 2100;
+      display: none;
+      background: rgba(0,0,0,.20);
+      pointer-events: auto;
+    }
+
+    .ui-clean-scrim.is-active { display: block; }
+
+    .game-popup-modal {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      z-index: 2200 !important;
+      display: none !important;
+      width: min(820px, calc(100vw - 28px)) !important;
+      max-height: min(78vh, 760px) !important;
+      overflow: auto !important;
+      transform: translate(-50%, -50%) scale(.98) !important;
+      padding: 20px !important;
+      border-radius: 22px !important;
+      border: 1px solid rgba(134, 165, 225, .38) !important;
+      background: linear-gradient(180deg, rgba(21, 30, 49, .96), rgba(13, 19, 32, .96)) !important;
+      color: #f8efe0 !important;
+      box-shadow: 0 30px 100px rgba(0,0,0,.74), inset 0 1px 0 rgba(255,255,255,.08) !important;
+      backdrop-filter: blur(18px) saturate(1.18) !important;
+      pointer-events: auto !important;
+    }
+
+    .game-popup-modal.is-active {
+      display: block !important;
+      transform: translate(-50%, -50%) scale(1) !important;
+    }
+
+    .game-popup-modal::before {
+      content: attr(data-modal-title);
+      display: block;
+      margin: 0 88px 10px 0;
+      color: #f4c95d;
+      font-size: 12px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+
+    .game-popup-modal .ui-clean-close {
+      position: sticky;
+      top: 0;
+      float: right;
+      z-index: 2;
+      margin: -6px -6px 10px 12px;
+      border-radius: 999px;
+      padding: 8px 11px;
+    }
+
+    .game-popup-modal .build-grid,
+    .game-popup-modal .recipe-grid {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+    }
+
+    .game-popup-modal #log {
+      height: auto !important;
+      max-height: 48vh !important;
+      overflow: auto !important;
+      column-count: 1 !important;
+    }
+
+    .game-popup-modal .selected-info-inline,
+    .game-popup-modal .goals ul,
+    .game-popup-modal .zone-placeholder-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    }
+
+    .topbar.component-topbar {
+      top: 50px !important;
+      left: 14px !important;
+      right: 14px !important;
+      min-height: 42px !important;
+      padding: 8px 10px !important;
+      background: linear-gradient(180deg, rgba(12,15,22,.48), rgba(12,15,22,.20)) !important;
+      border-color: rgba(255,255,255,.08) !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,.16) !important;
+    }
+
+    .topbar.component-topbar .top-left-info strong { font-size: 16px !important; }
+    .topbar.component-topbar .muted { max-width: 42vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar.component-topbar .clock span { padding: 5px 8px !important; background: rgba(5,8,13,.42) !important; }
+
+    @media (max-width: 900px) {
+      .ui-clean-top-bar { flex-wrap: wrap; justify-content: flex-start; gap: 5px; padding: 5px 8px 10px; }
+      .ui-clean-res { font-size: 11px; padding: 4px 7px; }
+      .ui-clean-bottom-dock { justify-content: flex-start; overflow-x: auto; border-radius: 18px; bottom: 10px; }
+      .ui-clean-bottom-dock button { font-size: 11px; padding: 8px 10px; }
+      .game-popup-modal { width: calc(100vw - 18px) !important; max-height: 78vh !important; padding: 16px !important; }
+      .topbar.component-topbar { top: 72px !important; grid-template-columns: 1fr !important; }
+    }
+  `;
+
+  const modalSelector = tab => `[data-panel="${String(tab || '').replace(/"/g, '\\"')}"]`;
+
+  function injectCleanStyles() {
+    document.getElementById('floating-ui-remake-styles')?.remove();
+    document.getElementById('ui-clean-alpha-styles')?.remove();
     const style = document.createElement('style');
-    style.id = 'floating-ui-remake-styles';
-    style.textContent = `
-      body.ui-modal-open #game { cursor: default; }
-      .ui-top-bar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 42px;
-        z-index: 900;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: clamp(10px, 2vw, 28px);
-        padding: 6px 16px;
-        pointer-events: auto;
-        background: linear-gradient(180deg, rgba(0,0,0,.80), rgba(0,0,0,.28) 72%, transparent);
-        color: #fff6e6;
-        text-shadow: 0 2px 10px rgba(0,0,0,.75);
-      }
-      .ui-top-bar .res-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-width: 0;
-        white-space: nowrap;
-        font-size: 13px;
-        font-weight: 850;
-        padding: 4px 9px;
-        border: 1px solid rgba(255,255,255,.08);
-        border-radius: 999px;
-        background: rgba(7,11,17,.38);
-        backdrop-filter: blur(10px);
-      }
-      .ui-top-bar .res-item img { width: 20px; height: 20px; object-fit: contain; }
-      .ui-top-bar .res-item span { color: #f5d15c; font-weight: 950; }
-
-      .topbar.component-topbar {
-        top: 48px;
-        left: 14px;
-        right: 14px;
-        min-height: 44px;
-        padding: 8px 10px;
-        background: linear-gradient(180deg, rgba(12,15,22,.52), rgba(12,15,22,.22));
-        border-color: rgba(255,255,255,.08);
-        box-shadow: 0 10px 30px rgba(0,0,0,.18);
-      }
-      .topbar.component-topbar .top-left-info strong { font-size: 16px; }
-      .topbar.component-topbar .muted { max-width: 45vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .topbar.component-topbar .clock span { padding: 5px 8px; background: rgba(5,8,13,.44); }
-
-      .bottom-command-panel.component-hud {
-        position: fixed;
-        z-index: 920;
-        left: 50%;
-        right: auto;
-        bottom: 18px;
-        transform: translateX(-50%);
-        width: auto;
-        min-height: 0;
-        max-height: none;
-        display: block;
-        padding: 0;
-        background: transparent;
-        border: 0;
-        box-shadow: none;
-        pointer-events: none;
-        backdrop-filter: none;
-      }
-      .bottom-command-panel.component-hud .bottom-action-bar {
-        pointer-events: auto;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, .82);
-        border: 1px solid rgba(255,255,255,.10);
-        box-shadow: 0 18px 48px rgba(0,0,0,.45);
-        backdrop-filter: blur(16px) saturate(1.15);
-      }
-      .bottom-command-panel.component-hud .bottom-tabs {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-      }
-      .bottom-command-panel.component-hud .bottom-tabs button,
-      .bottom-command-panel.component-hud .speed-inline button {
-        min-height: 36px;
-        border-radius: 999px;
-        padding: 8px 12px;
-        white-space: nowrap;
-        background: rgba(255,255,255,.07);
-      }
-      .bottom-command-panel.component-hud .bottom-tabs button.active {
-        background: linear-gradient(180deg, rgba(227,169,63,.42), rgba(136,88,26,.46));
-      }
-      .bottom-command-panel.component-hud .speed-inline {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        border-left: 1px solid rgba(255,255,255,.10);
-        padding-left: 10px;
-      }
-      .bottom-command-panel.component-hud .bottom-panel-content { display: contents; }
-      .bottom-command-panel.component-hud .bottom-tab-panel {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: min(760px, calc(100vw - 32px));
-        max-height: min(76vh, 720px);
-        transform: translate(-50%, -50%) scale(.98);
-        z-index: 1000;
-        display: none;
-        overflow: auto;
-        padding: 18px;
-        border-radius: 20px;
-        background: rgba(20, 28, 47, .94);
-        border: 1px solid rgba(121, 152, 215, .36);
-        box-shadow: 0 28px 90px rgba(0,0,0,.72);
-        backdrop-filter: blur(18px) saturate(1.15);
-      }
-      .bottom-command-panel.component-hud .bottom-tab-panel.active { display: none; }
-      .bottom-command-panel.component-hud .bottom-tab-panel.is-popup-active {
-        display: block;
-        transform: translate(-50%, -50%) scale(1);
-      }
-      .bottom-command-panel.component-hud .bottom-tab-panel::before {
-        content: attr(data-modal-title);
-        display: block;
-        color: #f5d15c;
-        font-size: 12px;
-        font-weight: 950;
-        letter-spacing: .15em;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-      }
-      .bottom-command-panel.component-hud .bottom-tab-panel .ui-popup-close {
-        position: sticky;
-        top: 0;
-        float: right;
-        z-index: 2;
-        margin: -4px -4px 8px 10px;
-      }
-      .bottom-command-panel.component-hud .bottom-tab-panel[data-panel="resources"] { display: none !important; }
-      .bottom-command-panel.component-hud .bottom-tabs [data-tab="resources"] { display: none; }
-      .bottom-command-panel.component-hud .build-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
-      .bottom-command-panel.component-hud #log { height: auto; max-height: 48vh; overflow: auto; column-count: 1; }
-      .bottom-command-panel.component-hud .selected-info-inline { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-      .bottom-command-panel.component-hud .goals ul { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-
-      .ui-modal-scrim {
-        position: fixed;
-        inset: 0;
-        z-index: 990;
-        display: none;
-        background: rgba(0,0,0,.18);
-        pointer-events: auto;
-      }
-      .ui-modal-scrim.is-active { display: block; }
-
-      @media (max-width: 860px) {
-        .ui-top-bar { height: auto; min-height: 42px; flex-wrap: wrap; gap: 5px; padding: 5px 8px 10px; }
-        .ui-top-bar .res-item { font-size: 11px; padding: 4px 7px; }
-        .topbar.component-topbar { top: 68px; grid-template-columns: 1fr; }
-        .bottom-command-panel.component-hud { bottom: 10px; width: calc(100vw - 16px); }
-        .bottom-command-panel.component-hud .bottom-action-bar { border-radius: 18px; overflow-x: auto; justify-content: flex-start; }
-        .bottom-command-panel.component-hud .bottom-tabs { min-width: max-content; }
-        .bottom-command-panel.component-hud .bottom-tab-panel { width: calc(100vw - 18px); max-height: 78vh; }
-      }
-    `;
+    style.id = 'ui-clean-alpha-styles';
+    style.textContent = CLEAN_CSS;
     document.head.appendChild(style);
   }
 
-  function ensureResourceBar() {
-    if (document.getElementById('top-resource-bar')) return;
-    const gameScreen = document.getElementById('gameScreen');
-    const host = gameScreen?.querySelector('.hud-remake-layout') || gameScreen || document.body;
-    host.insertAdjacentHTML('afterbegin', TOP_RESOURCE_HTML);
-  }
-
-  function ensureScrim() {
-    let scrim = document.getElementById('ui-modal-scrim');
-    if (scrim) return scrim;
-    scrim = document.createElement('div');
-    scrim.id = 'ui-modal-scrim';
-    scrim.className = 'ui-modal-scrim';
-    scrim.addEventListener('mousedown', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      window.uiManager.closeCurrentModal();
-    });
-    document.body.appendChild(scrim);
-    return scrim;
-  }
-
-  function panelFor(tab) {
-    return document.querySelector(`[data-panel="${safeSelectorValue(tab)}"]`);
-  }
-
-  function buttonFor(tab) {
-    return document.querySelector(`[data-tab="${safeSelectorValue(tab)}"]`);
-  }
-
-  function closeButtons() {
-    document.querySelectorAll('.bottom-tab-panel').forEach(panel => {
-      if (panel.querySelector('.ui-popup-close')) return;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'secondary ui-popup-close';
-      button.textContent = 'Fechar';
-      button.addEventListener('click', event => {
+  function ensureBodyLayer() {
+    if (!document.getElementById('top-resource-bar')) document.body.insertAdjacentHTML('beforeend', RESOURCE_BAR_HTML);
+    if (!document.getElementById('bottom-navigation-dock')) document.body.insertAdjacentHTML('beforeend', DOCK_HTML);
+    if (!document.getElementById('ui-clean-scrim')) {
+      const scrim = document.createElement('div');
+      scrim.id = 'ui-clean-scrim';
+      scrim.className = 'ui-clean-scrim';
+      scrim.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         window.uiManager.closeCurrentModal();
       });
-      panel.prepend(button);
-    });
-  }
-
-  function preventUiLeak() {
-    if (window.HavenfallContext.uiLeakPrevented) return;
-    const block = event => {
-      if (event.target.closest?.('#hud, #topBar, #top-resource-bar, .bottom-tab-panel, .game-popup-modal, .game-modal-backdrop')) {
-        event.stopPropagation();
-      }
-    };
-    ['mousedown', 'mouseup', 'click', 'contextmenu', 'pointerdown'].forEach(type => document.addEventListener(type, block, true));
-    window.HavenfallContext.uiLeakPrevented = true;
-  }
-
-  function syncTopResources() {
-    if (!state?.resources) return;
-    const pairs = [
-      ['txt-food', state.resources.food],
-      ['txt-wood', state.resources.wood],
-      ['txt-stone', state.resources.stone],
-      ['txt-metal', state.resources.metal],
-      ['txt-meds', state.resources.medicine]
-    ];
-    for (const [id, value] of pairs) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = Math.floor(value || 0);
+      document.body.appendChild(scrim);
     }
   }
 
-  function markPanels() {
+  function movePanelsToBody() {
     document.querySelectorAll('[data-panel]').forEach(panel => {
-      const tab = panel.dataset.panel;
-      panel.dataset.modalTitle = PANEL_TITLES[tab] || tab;
+      if (panel.dataset.panel === 'resources') {
+        panel.hidden = true;
+        return;
+      }
       panel.classList.add('game-popup-modal');
+      panel.classList.remove('active', 'is-popup-active');
+      panel.dataset.modalTitle = PANEL_TITLES[panel.dataset.panel] || panel.dataset.panel;
+      panel.hidden = false;
+      if (panel.parentElement !== document.body) document.body.appendChild(panel);
+      if (!panel.querySelector(':scope > .ui-clean-close')) {
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'secondary ui-clean-close';
+        close.textContent = 'Fechar';
+        close.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          window.uiManager.closeCurrentModal();
+        });
+        panel.prepend(close);
+      }
     });
   }
 
-  function setTabButtonState(tab) {
-    document.querySelectorAll('[data-tab]').forEach(btn => {
-      btn.classList.toggle('active', !!tab && btn.dataset.tab === tab);
+  function clearLegacyDockState() {
+    const hud = document.getElementById('hud');
+    if (hud) {
+      hud.classList.add('legacy-hud-disabled');
+      hud.style.pointerEvents = 'none';
+    }
+    document.querySelectorAll('#hud [data-tab], #hud .bottom-tab-panel').forEach(el => el.classList.remove('active', 'is-popup-active'));
+  }
+
+  function setDockActive(tab) {
+    document.querySelectorAll('#bottom-navigation-dock [data-open-ui-modal]').forEach(btn => {
+      btn.classList.toggle('is-active', !!tab && btn.dataset.openUiModal === tab);
     });
   }
 
-  function installDockClickHandler() {
-    if (window.HavenfallContext.uiManagerDockClickInstalled) return;
-    document.addEventListener('click', event => {
-      const btn = event.target.closest?.('[data-tab]');
-      if (!btn || !btn.closest('#hud')) return;
+  function panelFor(tab) {
+    return document.querySelector(modalSelector(tab));
+  }
+
+  function syncResources() {
+    if (!state?.resources) return;
+    const values = {
+      'txt-food': state.resources.food,
+      'txt-wood': state.resources.wood,
+      'txt-stone': state.resources.stone,
+      'txt-metal': state.resources.metal,
+      'txt-meds': state.resources.medicine
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = Math.floor(value || 0);
+    });
+  }
+
+  function installEventGuards() {
+    if (window.HavenfallContext.uiCleanGuardsInstalled) return;
+    const stop = event => {
+      if (event.target.closest?.('#top-resource-bar, #bottom-navigation-dock, .game-popup-modal, #ui-clean-scrim')) {
+        event.stopPropagation();
+      }
+    };
+    ['pointerdown', 'mousedown', 'mouseup', 'click', 'contextmenu', 'wheel'].forEach(type => {
+      document.addEventListener(type, stop, true);
+    });
+    window.HavenfallContext.uiCleanGuardsInstalled = true;
+  }
+
+  function installDockEvents() {
+    const dock = document.getElementById('bottom-navigation-dock');
+    if (!dock || dock.dataset.ready === '1') return;
+    dock.dataset.ready = '1';
+    dock.addEventListener('click', event => {
+      const modalBtn = event.target.closest('[data-open-ui-modal]');
+      if (!modalBtn) return;
       event.preventDefault();
       event.stopPropagation();
-      event.stopImmediatePropagation?.();
-      window.uiManager.toggleModal(btn.dataset.tab);
-    }, true);
-    window.HavenfallContext.uiManagerDockClickInstalled = true;
+      window.uiManager.toggleModal(modalBtn.dataset.openUiModal);
+    });
   }
 
   window.uiManager = {
@@ -308,67 +387,56 @@
     nativeSetHudTab: null,
 
     init() {
-      injectFloatingUiStyles();
-      ensureResourceBar();
-      ensureScrim();
-      markPanels();
-      closeButtons();
-      installDockClickHandler();
-      preventUiLeak();
+      injectCleanStyles();
+      ensureBodyLayer();
+      movePanelsToBody();
+      clearLegacyDockState();
+      installDockEvents();
+      installEventGuards();
       this.patchHudTab();
       this.patchCraftingOpen();
       this.patchUpdateUI();
-      syncTopResources();
       this.closeCurrentModal({ silent: true });
+      this.syncResources();
     },
 
     patchHudTab() {
-      if (window.HavenfallContext.uiManagerHudPatched || typeof setHudTab !== 'function') return;
+      if (window.HavenfallContext.uiCleanHudPatched || typeof setHudTab !== 'function') return;
       this.nativeSetHudTab = setHudTab;
       setHudTab = tab => {
         const requested = tab || 'build';
-        this.nativeSetHudTab(requested);
-        if (!this.currentModalId) {
-          setTabButtonState(null);
-          document.querySelectorAll('.bottom-tab-panel').forEach(panel => panel.classList.remove('is-popup-active'));
-        } else {
-          setTabButtonState(this.currentModalId);
-        }
+        this.nativeSetHudTab(requested === 'resources' ? 'build' : requested);
+        clearLegacyDockState();
+        if (this.currentModalId) setDockActive(this.currentModalId);
       };
-      window.HavenfallContext.uiManagerHudPatched = true;
+      window.HavenfallContext.uiCleanHudPatched = true;
     },
 
     patchCraftingOpen() {
-      if (window.HavenfallContext.uiManagerCraftingPatched || typeof openCraftingForStation !== 'function') return;
+      if (window.HavenfallContext.uiCleanCraftingPatched || typeof openCraftingForStation !== 'function') return;
       const nativeOpenCraftingForStation = openCraftingForStation;
       openCraftingForStation = obj => {
         nativeOpenCraftingForStation(obj);
         this.openModal('crafting');
       };
-      window.HavenfallContext.uiManagerCraftingPatched = true;
+      window.HavenfallContext.uiCleanCraftingPatched = true;
     },
 
     patchUpdateUI() {
-      if (window.HavenfallContext.uiManagerUpdatePatched || typeof updateUI !== 'function') return;
+      if (window.HavenfallContext.uiCleanUpdatePatched || typeof updateUI !== 'function') return;
       const nativeUpdateUI = updateUI;
-      updateUI = function updateUIWithFloatingResources(force = false) {
+      updateUI = function updateUICleanOverlay(force = false) {
         nativeUpdateUI(force);
         window.uiManager.syncResources();
         window.uiManager.refreshOpenModal();
       };
-      window.HavenfallContext.uiManagerUpdatePatched = true;
+      window.HavenfallContext.uiCleanUpdatePatched = true;
     },
 
-    syncResources() {
-      ensureResourceBar();
-      syncTopResources();
-    },
+    syncResources,
 
     toggleModal(tab) {
-      if (!tab || tab === 'resources') {
-        this.closeCurrentModal();
-        return;
-      }
+      if (!tab) return;
       if (this.currentModalId === tab) this.closeCurrentModal();
       else this.openModal(tab);
     },
@@ -376,38 +444,34 @@
     openModal(tab) {
       if (!tab || tab === 'resources') return;
       const panel = panelFor(tab);
-      if (!panel || panel.hidden) return;
+      if (!panel) return;
       this.closeCurrentModal({ silent: true });
       if (this.nativeSetHudTab) this.nativeSetHudTab(tab);
-      panel.classList.add('is-popup-active');
-      panel.classList.add('active');
+      panel.hidden = false;
+      panel.classList.add('is-active');
       this.currentModalId = tab;
       activeHudTab = tab;
-      setTabButtonState(tab);
-      ensureScrim().classList.add('is-active');
-      document.body.classList.add('ui-modal-open');
+      document.body.classList.add('ui-clean-modal-open');
+      document.getElementById('ui-clean-scrim')?.classList.add('is-active');
+      setDockActive(tab);
+      clearLegacyDockState();
     },
 
     closeCurrentModal(options = {}) {
-      if (this.currentModalId) {
-        const panel = panelFor(this.currentModalId);
-        if (panel) panel.classList.remove('is-popup-active', 'active');
-        const btn = buttonFor(this.currentModalId);
-        if (btn) btn.classList.remove('active');
-      }
+      document.querySelectorAll('.game-popup-modal.is-active').forEach(panel => panel.classList.remove('is-active'));
       this.currentModalId = null;
-      document.querySelectorAll('.bottom-tab-panel').forEach(panel => panel.classList.remove('is-popup-active'));
-      setTabButtonState(null);
-      ensureScrim().classList.remove('is-active');
-      document.body.classList.remove('ui-modal-open');
+      document.body.classList.remove('ui-clean-modal-open');
+      document.getElementById('ui-clean-scrim')?.classList.remove('is-active');
+      setDockActive(null);
+      clearLegacyDockState();
       if (!options.silent) activeHudTab = null;
     },
 
     refreshOpenModal() {
       if (!this.currentModalId) return;
       const panel = panelFor(this.currentModalId);
-      if (!panel || panel.hidden) this.closeCurrentModal({ silent: true });
-      else panel.classList.add('is-popup-active');
+      if (!panel) this.closeCurrentModal({ silent: true });
+      else panel.classList.add('is-active');
     }
   };
 
