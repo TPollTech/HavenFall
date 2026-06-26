@@ -33,6 +33,15 @@ function sendJson(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function staticHeaders(contentType) {
+  return {
+    'Content-Type': contentType,
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+}
+
 function readJsonBody(req, limit = 2_500_000) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -233,13 +242,13 @@ const server = http.createServer(async (req, res) => {
           res.end('Not found');
           return;
         }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.writeHead(200, staticHeaders('text/html; charset=utf-8'));
         res.end(fallback);
       });
       return;
     }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    res.writeHead(200, staticHeaders(MIME[ext] || 'application/octet-stream'));
     res.end(data);
   });
 });
