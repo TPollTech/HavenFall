@@ -24,6 +24,11 @@ function installMultiplayerPlayersPatch() {
     return (localStorage.getItem('havenfall-player-nick') || defaultNick()).trim().slice(0, 22) || defaultNick();
   }
 
+  function chosenColonistId() {
+    const id = playerId();
+    return Number(localStorage.getItem(`havenfall-colonist-choice-${id}`) || sessionStorage.getItem(`havenfall-colonist-choice-${id}`) || 0);
+  }
+
   function setNick(value) {
     const cleaned = String(value || '').trim().slice(0, 22) || defaultNick();
     localStorage.setItem('havenfall-player-nick', cleaned);
@@ -78,6 +83,7 @@ function installMultiplayerPlayersPatch() {
         id: playerId(),
         nick: nick(),
         role: role(),
+        chosenColonistId: chosenColonistId(),
         worldSeed: state?.config?.seed || '',
         colonyName: state?.config?.colonyName || ''
       };
@@ -125,10 +131,11 @@ function installMultiplayerPlayersPatch() {
     list.innerHTML = players.map(p => {
       const me = p.id === myId;
       const age = Number.isFinite(p.ageSeconds) ? `${Math.round(p.ageSeconds)}s` : 'agora';
+      const colono = p.chosenColonistId ? ` · colono #${p.chosenColonistId}` : '';
       return `
         <div class="online-player-row ${me ? 'me' : ''}">
           <b>${escapeHtml(p.nick || 'Jogador')}</b>
-          <span>${escapeHtml(p.role || 'visitante')}${me ? ' · você' : ''}</span>
+          <span>${escapeHtml(p.role || 'visitante')}${me ? ' · você' : ''}${escapeHtml(colono)}</span>
           <small>${escapeHtml(p.colonyName || p.worldSeed || 'sem mundo')} · ${escapeHtml(age)}</small>
         </div>
       `;
@@ -249,7 +256,7 @@ function installMultiplayerPlayersPatch() {
   setNick(nick());
   sendHeartbeat();
   if (heartbeatTimer) clearInterval(heartbeatTimer);
-  heartbeatTimer = setInterval(sendHeartbeat, 3500);
+  heartbeatTimer = setInterval(sendHeartbeat, 1800);
 }
 
 if (typeof window !== 'undefined' && typeof setupEventListeners === 'function') {
