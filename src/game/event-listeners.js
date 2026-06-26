@@ -64,6 +64,7 @@
 
     cancelZoneToolForAction('construção selecionada');
     currentBuild = buildKey;
+    if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(buildKey);
     if (typeof updateUI === 'function') updateUI(true);
   }
 
@@ -186,6 +187,13 @@
     const zoomInKeys = ['Equal','NumpadAdd'];
     const zoomOutKeys = ['Minus','NumpadSubtract'];
     const resetZoomKeys = ['Digit0','Numpad0'];
+
+    if (state && appScreen === SCREEN.PLAYING && event.code === 'KeyR' && currentBuild) {
+      if (typeof rotateCurrentBuild === 'function' && rotateCurrentBuild()) {
+        event.preventDefault();
+        return;
+      }
+    }
 
     if (state && appScreen === SCREEN.PLAYING && event.code === 'KeyG') {
       event.preventDefault();
