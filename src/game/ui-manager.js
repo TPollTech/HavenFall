@@ -25,6 +25,8 @@
     </div>
   `;
 
+  const safeSelectorValue = value => String(value || '').replace(/"/g, '\\"');
+
   function injectFloatingUiStyles() {
     if (document.getElementById('floating-ui-remake-styles')) return;
     const style = document.createElement('style');
@@ -132,9 +134,7 @@
         border-left: 1px solid rgba(255,255,255,.10);
         padding-left: 10px;
       }
-      .bottom-command-panel.component-hud .bottom-panel-content {
-        display: contents;
-      }
+      .bottom-command-panel.component-hud .bottom-panel-content { display: contents; }
       .bottom-command-panel.component-hud .bottom-tab-panel {
         position: fixed;
         top: 50%;
@@ -152,6 +152,7 @@
         box-shadow: 0 28px 90px rgba(0,0,0,.72);
         backdrop-filter: blur(18px) saturate(1.15);
       }
+      .bottom-command-panel.component-hud .bottom-tab-panel.active { display: none; }
       .bottom-command-panel.component-hud .bottom-tab-panel.is-popup-active {
         display: block;
         transform: translate(-50%, -50%) scale(1);
@@ -226,11 +227,11 @@
   }
 
   function panelFor(tab) {
-    return document.querySelector(`[data-panel="${CSS.escape(tab)}"]`);
+    return document.querySelector(`[data-panel="${safeSelectorValue(tab)}"]`);
   }
 
   function buttonFor(tab) {
-    return document.querySelector(`[data-tab="${CSS.escape(tab)}"]`);
+    return document.querySelector(`[data-tab="${safeSelectorValue(tab)}"]`);
   }
 
   function closeButtons() {
@@ -289,8 +290,22 @@
     });
   }
 
+  function installDockClickHandler() {
+    if (window.HavenfallContext.uiManagerDockClickInstalled) return;
+    document.addEventListener('click', event => {
+      const btn = event.target.closest?.('[data-tab]');
+      if (!btn || !btn.closest('#hud')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      window.uiManager.toggleModal(btn.dataset.tab);
+    }, true);
+    window.HavenfallContext.uiManagerDockClickInstalled = true;
+  }
+
   window.uiManager = {
     currentModalId: null,
+    nativeSetHudTab: null,
 
     init() {
       injectFloatingUiStyles();
@@ -298,27 +313,39 @@
       ensureScrim();
       markPanels();
       closeButtons();
+      installDockClickHandler();
       preventUiLeak();
       this.patchHudTab();
+      this.patchCraftingOpen();
       this.patchUpdateUI();
       syncTopResources();
+      this.closeCurrentModal({ silent: true });
     },
 
     patchHudTab() {
       if (window.HavenfallContext.uiManagerHudPatched || typeof setHudTab !== 'function') return;
-      const nativeSetHudTab = setHudTab;
+      this.nativeSetHudTab = setHudTab;
       setHudTab = tab => {
         const requested = tab || 'build';
-        if (requested === 'resources') {
-          this.closeCurrentModal();
+        this.nativeSetHudTab(requested);
+        if (!this.currentModalId) {
           setTabButtonState(null);
-          return;
+          document.querySelectorAll('.bottom-tab-panel').forEach(panel => panel.classList.remove('is-popup-active'));
+        } else {
+          setTabButtonState(this.currentModalId);
         }
-        nativeSetHudTab(requested);
-        const panel = panelFor(activeHudTab || requested);
-        if (panel) this.openModal(activeHudTab || requested, { syncTab: false });
       };
       window.HavenfallContext.uiManagerHudPatched = true;
+    },
+
+    patchCraftingOpen() {
+      if (window.HavenfallContext.uiManagerCraftingPatched || typeof openCraftingForStation !== 'function') return;
+      const nativeOpenCraftingForStation = openCraftingForStation;
+      openCraftingForStation = obj => {
+        nativeOpenCraftingForStation(obj);
+        this.openModal('crafting');
+      };
+      window.HavenfallContext.uiManagerCraftingPatched = true;
     },
 
     patchUpdateUI() {
@@ -338,32 +365,39 @@
     },
 
     toggleModal(tab) {
+      if (!tab || tab === 'resources') {
+        this.closeCurrentModal();
+        return;
+      }
       if (this.currentModalId === tab) this.closeCurrentModal();
       else this.openModal(tab);
     },
 
-    openModal(tab, options = {}) {
+    openModal(tab) {
       if (!tab || tab === 'resources') return;
       const panel = panelFor(tab);
       if (!panel || panel.hidden) return;
       this.closeCurrentModal({ silent: true });
+      if (this.nativeSetHudTab) this.nativeSetHudTab(tab);
       panel.classList.add('is-popup-active');
       panel.classList.add('active');
       this.currentModalId = tab;
       activeHudTab = tab;
-      if (options.syncTab !== false) setTabButtonState(tab);
-      const scrim = ensureScrim();
-      scrim.classList.add('is-active');
+      setTabButtonState(tab);
+      ensureScrim().classList.add('is-active');
       document.body.classList.add('ui-modal-open');
     },
 
     closeCurrentModal(options = {}) {
-      if (!this.currentModalId) return;
-      const panel = panelFor(this.currentModalId);
-      if (panel) panel.classList.remove('is-popup-active', 'active');
-      const btn = buttonFor(this.currentModalId);
-      if (btn) btn.classList.remove('active');
+      if (this.currentModalId) {
+        const panel = panelFor(this.currentModalId);
+        if (panel) panel.classList.remove('is-popup-active', 'active');
+        const btn = buttonFor(this.currentModalId);
+        if (btn) btn.classList.remove('active');
+      }
       this.currentModalId = null;
+      document.querySelectorAll('.bottom-tab-panel').forEach(panel => panel.classList.remove('is-popup-active'));
+      setTabButtonState(null);
       ensureScrim().classList.remove('is-active');
       document.body.classList.remove('ui-modal-open');
       if (!options.silent) activeHudTab = null;
@@ -373,6 +407,7 @@
       if (!this.currentModalId) return;
       const panel = panelFor(this.currentModalId);
       if (!panel || panel.hidden) this.closeCurrentModal({ silent: true });
+      else panel.classList.add('is-popup-active');
     }
   };
 
