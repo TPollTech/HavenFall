@@ -1,17 +1,19 @@
 'use strict';
 
 let mouseTile = null;
-canvas.addEventListener('mousemove', e => {
-  const pos = tileFromEvent(e);
-  mouseTile = pos;
-});
-canvas.addEventListener('mouseleave', () => { mouseTile = null; });
 
+canvas.addEventListener('mousedown', handleCanvasMouseDown);
+canvas.addEventListener('mousemove', handleCanvasMouseMove);
+canvas.addEventListener('mouseleave', handleCanvasMouseLeave);
+canvas.addEventListener('mouseup', handleCanvasMouseUp);
+canvas.addEventListener('click', handleCanvasClick);
+canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 
-canvas.addEventListener('mousedown', e => {
+function handleCanvasMouseDown(e) {
   if (e.button !== 0 || appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
   const tile = tileFromEvent(e);
   if (!tile || !isInside(tile.x, tile.y)) return;
+
   gatherSelection = {
     start: tile,
     current: tile,
@@ -19,31 +21,46 @@ canvas.addEventListener('mousedown', e => {
     startClientY: e.clientY,
     active: false
   };
-});
+}
 
-canvas.addEventListener('mousemove', e => {
-  if (!gatherSelection) return;
+function handleCanvasMouseMove(e) {
   const tile = tileFromEvent(e);
-  if (!tile || !isInside(tile.x, tile.y)) return;
-  gatherSelection.current = tile;
-  const moved = Math.hypot(e.clientX - gatherSelection.startClientX, e.clientY - gatherSelection.startClientY);
-  if (moved > 10) gatherSelection.active = true;
-});
+  mouseTile = tile;
 
-canvas.addEventListener('mouseup', e => {
+  if (!gatherSelection || !tile || !isInside(tile.x, tile.y)) return;
+
+  gatherSelection.current = tile;
+  const scale = Math.max(0.35, viewTransform?.scale || 1);
+  const moved = Math.hypot(e.clientX - gatherSelection.startClientX, e.clientY - gatherSelection.startClientY);
+  if (moved > 10 * scale) gatherSelection.active = true;
+}
+
+function handleCanvasMouseLeave() {
+  mouseTile = null;
+}
+
+function handleCanvasMouseUp(e) {
   if (e.button !== 0 || !gatherSelection) return;
+
   const sel = gatherSelection;
   gatherSelection = null;
+
   if (!sel.active) return;
+
   suppressNextClick = true;
   markGatherObjectsInRect(sel.start, sel.current);
   updateUI(true);
-});
+}
 
-canvas.addEventListener('click', e => {
-  if (suppressNextClick) { suppressNextClick = false; return; }
-  hideContextMenu();
+function handleCanvasClick(e) {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
+
+  hideContextMenu?.();
   if (appScreen !== SCREEN.PLAYING || !state) return;
+
   const tile = tileFromEvent(e);
   if (!tile || !isInside(tile.x, tile.y)) return;
 
@@ -62,7 +79,10 @@ canvas.addEventListener('click', e => {
 
   const c = selectedColonist();
   const wolf = isTileVisible(tile.x, tile.y) ? getWolfAt(tile.x, tile.y) : null;
-  if (wolf) { assignScare(c, wolf); return; }
+  if (wolf) {
+    assignScare(c, wolf);
+    return;
+  }
 
   const obj = isTileDiscovered(tile.x, tile.y) ? getObjectAt(tile.x, tile.y) : null;
   if (obj) {
@@ -79,15 +99,17 @@ canvas.addEventListener('click', e => {
   selectedWorldObjectId = null;
   assignMove(c, tile.x, tile.y);
   updateUI(true);
-});
+}
 
-canvas.addEventListener('contextmenu', e => {
+function handleCanvasContextMenu(e) {
   e.preventDefault();
   if (appScreen !== SCREEN.PLAYING || !state) return;
+
   const tile = tileFromEvent(e);
   if (!tile || !isInside(tile.x, tile.y)) return;
+
   openContextMenuForTile(e, tile);
-});
+}
 
 function routePrimaryObjectAction(c, obj) {
   if (!c || !obj) return;
@@ -145,6 +167,7 @@ function makeContextActions(c, target, tile) {
     const obj = target.obj;
     const def = objectDefs[obj.type] || {};
     selectedWorldObjectId = obj.id;
+
     if (def.interactable) {
       actions.push({ label: obj.inspected ? 'Examinar novamente' : 'Investigar', hint: 'lore, pistas e contexto', run: () => assignInspect(c, obj) });
       actions.push({ label: obj.looted ? 'Já vasculhado' : 'Vasculhar / abrir', hint: obj.looted ? 'sem loot restante' : 'coleta suprimentos do local', disabled: !!obj.looted, run: () => assignLoot(c, obj) });
@@ -228,8 +251,10 @@ function hideContextMenu() {
 }
 
 function tileFromEvent(e) {
-  resizeGameCanvas();
+  if (!canvas || !viewTransform || !canvas.width || !canvas.height) return null;
   const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+
   const px = (e.clientX - rect.left) * (canvas.width / rect.width);
   const py = (e.clientY - rect.top) * (canvas.height / rect.height);
   const worldX = (px - viewTransform.offsetX) / viewTransform.scale;
