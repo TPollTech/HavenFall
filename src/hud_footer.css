@@ -27,6 +27,14 @@ body.ui-modern-panels .game-popup-modal.is-active:not(#eventModal):not(#pauseOve
 #ui-modal-backdrop{display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.18)}#ui-modal-backdrop.is-active{display:none!important}
 .game-popup-modal .modal-body>.bottom-tab-panel,.game-popup-modal .modal-body>.hud-block{display:none!important}
 
+/* New-game setup: compact sandbox controls. */
+#newGameSetupScreen .setup-sandbox-card{max-width:min(980px,calc(100vw - 28px))!important}
+#newGameSetupScreen .setup-form-grid{align-items:end!important}
+#newGameSetupScreen input[type="number"],#colonist-count{width:100%!important;background:rgba(255,255,255,.07)!important;color:#f4efe4!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:10px!important;padding:10px 11px!important;font-weight:800!important;box-sizing:border-box!important}
+#newGameSetupScreen input[type="number"]:focus,#colonist-count:focus{outline:2px solid rgba(96,165,250,.55)!important;border-color:rgba(96,165,250,.62)!important}
+.field-label-with-help{display:inline-flex!important;align-items:center!important;gap:6px!important}.setup-help{display:inline-grid!important;place-items:center!important;width:17px!important;height:17px!important;border-radius:999px!important;background:rgba(96,165,250,.14)!important;border:1px solid rgba(96,165,250,.48)!important;color:#cfe4ff!important;font-size:11px!important;font-weight:900!important;cursor:help!important}
+.setup-help:hover{background:rgba(96,165,250,.28)!important;color:#fff!important}
+
 /* New-game flow: selection card must never trap the continue button off-screen. */
 #colonistSelectScreen.screen.active{display:grid!important;place-items:center!important;height:100vh!important;min-height:100vh!important;padding:14px!important;overflow:hidden!important}
 #colonistSelectScreen .menu-card.max-card{width:min(1320px,calc(100vw - 28px))!important;height:min(900px,calc(100vh - 28px))!important;max-height:calc(100vh - 28px)!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:10px!important;overflow:hidden!important;padding:clamp(14px,2vh,22px)!important}
