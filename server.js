@@ -60,6 +60,10 @@ function readJsonBody(req, limit = 2_500_000) {
   });
 }
 
+function cleanPlayerId(raw) {
+  return String(raw || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+}
+
 function activePlayers() {
   const now = Date.now();
   const players = [];
@@ -74,6 +78,7 @@ function activePlayers() {
       id,
       nick: player.nick,
       role: player.role,
+      chosenColonistId: Number(player.chosenColonistId || 0),
       worldSeed: player.worldSeed,
       colonyName: player.colonyName,
       joinedAt: player.joinedAt,
@@ -121,10 +126,6 @@ function multiplayerStatus() {
   };
 }
 
-function cleanPlayerId(raw) {
-  return String(raw || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
-}
-
 function cleanKeys(keys = {}) {
   return {
     up: !!keys.up,
@@ -167,6 +168,7 @@ const server = http.createServer(async (req, res) => {
       multiplayerPlayers.set(id, {
         nick,
         role,
+        chosenColonistId: Number(body.chosenColonistId || current?.chosenColonistId || 0),
         worldSeed: String(body.worldSeed || multiplayerSnapshot?.config?.seed || '').slice(0, 64),
         colonyName: String(body.colonyName || multiplayerSnapshot?.config?.colonyName || '').slice(0, 64),
         joinedAt: current?.joinedAt || new Date().toISOString(),
