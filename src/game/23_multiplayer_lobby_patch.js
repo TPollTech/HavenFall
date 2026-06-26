@@ -6,6 +6,7 @@ function installMultiplayerLobbyPatch() {
 
   let statusTimer = null;
   let lastRevisionSeen = 0;
+  let craftToastTimer = null;
 
   function mpRole() {
     return sessionStorage.getItem('havenfall-online-mode') === 'join' || window.havenfallOnlineMode === 'join' ? 'visitante' : 'host';
@@ -88,6 +89,31 @@ function installMultiplayerLobbyPatch() {
     badge.innerHTML = `<b>${role}</b><span>${escapeHtml(data.colonyName || 'Colônia')} · Dia ${escapeHtml(data.day || '?')} · rev ${escapeHtml(data.revision || 0)}</span>`;
   }
 
+  function showCraftToast(message) {
+    const overlay = document.getElementById('stationOverlayClean');
+    if (!overlay || !overlay.classList.contains('show')) return;
+
+    let toast = document.getElementById('stationCraftToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'stationCraftToast';
+      toast.className = 'station-craft-toast';
+      overlay.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.add('show');
+    if (craftToastTimer) clearTimeout(craftToastTimer);
+    craftToastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function stationCraftFeedback(event) {
+    const btn = event.target?.closest?.('[data-station-craft]');
+    if (!btn || btn.disabled) return;
+    const label = btn.querySelector('b')?.textContent?.trim() || 'Receita';
+    setTimeout(() => showCraftToast(`Pedido enviado: ${label}`), 0);
+  }
+
   async function joinOnlyIfHostExists(event) {
     const btn = event.target?.closest?.('#onlineJoinCleanBtn, #joinHostWorldBtn');
     if (!btn) return;
@@ -154,6 +180,27 @@ function installMultiplayerLobbyPatch() {
         white-space: nowrap;
         text-overflow: ellipsis;
       }
+      .station-craft-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 26px;
+        transform: translateX(-50%) translateY(16px);
+        z-index: 170;
+        opacity: 0;
+        pointer-events: none;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(12, 18, 24, .94);
+        border: 1px solid rgba(155, 211, 106, .44);
+        color: #eaffd8;
+        font: 900 13px system-ui;
+        box-shadow: 0 12px 32px rgba(0,0,0,.38);
+        transition: opacity .16s ease, transform .16s ease;
+      }
+      .station-craft-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -163,6 +210,7 @@ function installMultiplayerLobbyPatch() {
     previousSetup();
     document.addEventListener('click', joinOnlyIfHostExists, true);
     document.addEventListener('click', hostWithVisibleStatus, true);
+    document.addEventListener('click', stationCraftFeedback, false);
   };
 
   const previousSetScreen = setScreen;
@@ -181,7 +229,17 @@ function installMultiplayerLobbyPatch() {
 
   const previousUpdateUI = updateUI;
   updateUI = function multiplayerLobbyUpdateUI(force = false) {
-    previousUpdateUI(force);
+    const stationOverlay = document.getElementById('stationOverlayClean');
+    const shouldGuardStationModal = !!stationOverlay?.classList.contains('show');
+    const originalStationOverlayId = stationOverlay?.id;
+
+    if (shouldGuardStationModal) stationOverlay.id = 'stationOverlayCleanStable';
+    try {
+      previousUpdateUI(force);
+    } finally {
+      if (shouldGuardStationModal && stationOverlay) stationOverlay.id = originalStationOverlayId;
+    }
+
     if (appScreen === SCREEN.PLAYING && Date.now() % 1500 < 80) refreshLobbyStatus();
   };
 
