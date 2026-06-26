@@ -1,17 +1,53 @@
 'use strict';
 
+function activeCraftStation() {
+  if (!state || !selectedCraftStationId) return null;
+  const station = state.objects.find(o => o.id === selectedCraftStationId);
+  return station && stationLabels[station.type] ? station : null;
+}
+
+function hasActiveCraftStation() {
+  return !!activeCraftStation();
+}
+
 function setHudTab(tab) {
-  activeHudTab = tab || 'build';
+  const stationOpen = hasActiveCraftStation();
+  const requested = tab || 'build';
+  activeHudTab = requested === 'crafting' && !stationOpen ? 'build' : requested;
+
   document.querySelectorAll('[data-tab]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === activeHudTab);
+    const isCraftingTab = btn.dataset.tab === 'crafting';
+    const shouldHide = isCraftingTab && !stationOpen;
+    btn.hidden = shouldHide;
+    btn.classList.toggle('hidden', shouldHide);
+    btn.classList.toggle('active', !shouldHide && btn.dataset.tab === activeHudTab);
   });
+
   document.querySelectorAll('[data-panel]').forEach(panel => {
-    panel.classList.toggle('active', panel.dataset.panel === activeHudTab);
+    const isCraftingPanel = panel.dataset.panel === 'crafting';
+    const shouldHide = isCraftingPanel && !stationOpen;
+    panel.hidden = shouldHide;
+    panel.classList.toggle('hidden', shouldHide);
+    panel.classList.toggle('active', !shouldHide && panel.dataset.panel === activeHudTab);
   });
 }
 
 function uiSpriteSrc(name) {
   return typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/sprites/${name}.png`;
+}
+
+function loadedIconSrc(name) {
+  const key = name || 'icon_warn';
+  if (typeof images === 'object' && images?.[key]?.src) return images[key].src;
+  return null;
+}
+
+function iconFrame(icon, label = '', extraClass = '') {
+  const src = loadedIconSrc(icon);
+  const title = escapeHtml(label || icon || 'Item');
+  const fallback = `<span class="ui-icon-fallback" aria-hidden="true" style="width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:rgba(58,58,58,.88);border:1px solid rgba(255,255,255,.12);color:#b8b0a0;font-size:16px;flex:0 0 40px;">▣</span>`;
+  if (!src) return fallback;
+  return `<span class="ui-icon-frame ${extraClass}" title="${title}" style="width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:rgba(8,11,16,.72);border:1px solid rgba(255,255,255,.10);overflow:hidden;flex:0 0 40px;"><img src="${escapeHtml(src)}" alt="" style="max-width:34px;max-height:34px;object-fit:contain;display:block;" onerror="this.parentElement.outerHTML='${fallback.replace(/'/g, '&#039;')}'"></span>`;
 }
 
 function refreshMenuSaveInfo() {
@@ -125,7 +161,6 @@ function selectedSummary(c) {
   `;
 }
 
-
 function worldObjectSummary(obj) {
   if (!obj) return '<span class="empty">Nenhum objeto selecionado.</span>';
   const def = objectDefs[obj.type] || {};
@@ -163,6 +198,7 @@ function updateUI(force = false) {
   updateResearchUI();
   updateCraftingUI();
   updateColonistPanel();
+  setHudTab(activeHudTab);
 
   const c = selectedColonist();
   if (c) {
@@ -255,7 +291,6 @@ function updateResearchUI() {
   `;
 }
 
-
 function equipmentLine(c) {
   ensureEquipment(c);
   const eq = c.equipment;
@@ -272,8 +307,8 @@ function equipmentButtons(c) {
   return `<div class="equipment-strip">${slots.map(slot => {
     const key = c.equipment[slot];
     if (!key) return `<span class="equipment-slot empty">${slotLabel(slot)} vazio</span>`;
-    const item = itemDefs[key];
-    return `<button class="equipment-slot" data-unequip-slot="${slot}"><img src="${uiSpriteSrc(item.icon)}" alt=""> ${escapeHtml(item.label)} ✕</button>`;
+    const item = itemDefs[key] || { label: key, icon: 'icon_warn' };
+    return `<button class="equipment-slot" data-unequip-slot="${slot}">${iconFrame(item.icon, item.label, 'small')} ${escapeHtml(item.label)} ✕</button>`;
   }).join('')}</div>`;
 }
 
@@ -287,37 +322,45 @@ function updateCraftingUI() {
   const inventory = document.getElementById('inventoryInfo');
   if (!recipeGrid || !info || !inventory || !state) return;
 
-  const station = selectedCraftStationId ? state.objects.find(o => o.id === selectedCraftStationId) : null;
-  const stationType = station?.type || null;
+  const station = activeCraftStation();
   const c = selectedColonist();
-  const stationTitle = station ? `${objectDefs[station.type]?.name || station.type} em ${station.x},${station.y}` : 'Nenhuma estação aberta';
+
+  if (!station) {
+    selectedCraftStationId = null;
+    if (activeHudTab === 'crafting') setHudTab('build');
+    info.innerHTML = '<div><b>Crafting fechado.</b></div><div class="empty">Clique com o botão direito em uma Bancada, Forja, Fogão ou Estação Médica para abrir as receitas.</div>';
+    recipeGrid.innerHTML = '';
+    inventory.innerHTML = '';
+    return;
+  }
+
+  const stationType = station.type;
+  const stationTitle = `${objectDefs[station.type]?.name || station.type} em ${station.x},${station.y}`;
 
   info.innerHTML = `
     <div><b>Estação:</b> ${escapeHtml(stationTitle)}</div>
-    <div class="empty">Botão direito em Bancada/Forja/Fogão/Estação Médica para filtrar receitas. Sem estação selecionada, mostra todas.</div>
+    <div class="empty">Receitas filtradas pela estação aberta. Selecione um colono para fabricar.</div>
   `;
 
-  const recipes = Object.entries(recipeDefs).filter(([, recipe]) => {
-    if (stationType) return recipe.station === stationType;
-    return true;
-  });
+  const recipes = Object.entries(recipeDefs).filter(([, recipe]) => recipe.station === stationType);
 
   recipeGrid.innerHTML = recipes.map(([key, recipe]) => {
     const unlocked = recipeUnlocked(key);
-    const built = recipeStationBuilt(recipe.station);
     const affordable = hasRecipeCost(recipe);
-    const disabled = !unlocked || !built || !affordable || !c;
+    const disabled = !unlocked || !affordable || !c;
     const output = outputText(recipe.output);
     const iconKey = Object.keys(recipe.output?.items || {})[0];
     const icon = itemDefs[iconKey]?.icon || (recipe.output?.resources?.food ? 'icon_food' : 'tool_hammer');
-    const reason = !unlocked ? `Pesquise ${researchDefs[recipe.unlock]?.label || recipe.unlock}` : !built ? `Construa ${stationLabels[recipe.station] || recipe.station}` : !affordable ? `Faltam: ${itemCostText(recipe.cost, recipe.itemCost)}` : recipe.desc;
+    const reason = !unlocked ? `Pesquise ${researchDefs[recipe.unlock]?.label || recipe.unlock}` : !affordable ? `Faltam: ${itemCostText(recipe.cost, recipe.itemCost)}` : recipe.desc;
     return `
-      <button class="recipe-card ${disabled ? 'locked' : ''}" data-craft="${key}" ${disabled ? 'disabled' : ''}>
-        <img src="${uiSpriteSrc(icon)}" alt="">
-        <b>${escapeHtml(recipe.label)}</b>
-        <small>${escapeHtml(itemCostText(recipe.cost, recipe.itemCost))}</small>
-        <small>Resultado: ${escapeHtml(output)}</small>
-        <em>${escapeHtml(reason || '')}</em>
+      <button class="recipe-card ${disabled ? 'locked' : ''}" data-craft="${key}" ${disabled ? 'disabled' : ''} style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;text-align:left;min-height:82px;overflow:hidden;">
+        ${iconFrame(icon, recipe.label)}
+        <span style="display:grid;gap:2px;min-width:0;">
+          <b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(recipe.label || 'Item desconhecido')}</b>
+          <small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(itemCostText(recipe.cost, recipe.itemCost))}</small>
+          <small style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Resultado: ${escapeHtml(output)}</small>
+          <em style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(reason || '')}</em>
+        </span>
       </button>
     `;
   }).join('');
@@ -330,9 +373,9 @@ function updateCraftingUI() {
         const item = itemDefs[key] || { label: key, icon: 'icon_warn' };
         const canEquip = !!item.slot && !!c;
         return `
-          <div class="item-pill">
-            <img src="${uiSpriteSrc(item.icon)}" alt="">
-            <span>${escapeHtml(item.label)} <b>x${qty}</b></span>
+          <div class="item-pill" style="display:inline-flex;align-items:center;gap:7px;min-width:0;">
+            ${iconFrame(item.icon, item.label, 'small')}
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.label)} <b>x${qty}</b></span>
             ${canEquip ? `<button class="mini" data-equip-item="${key}">Equipar</button>` : ''}
           </div>
         `;
