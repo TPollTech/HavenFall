@@ -5,7 +5,6 @@ function installMultiplayerLobbyPatch() {
   window.__havenfallMultiplayerLobbyInstalled = true;
 
   let statusTimer = null;
-  let lastRevisionSeen = 0;
   let craftToastTimer = null;
   let lastStatusHtml = '';
   let lastBadgeHtml = '';
@@ -20,7 +19,7 @@ function installMultiplayerLobbyPatch() {
   }
 
   function currentNick() {
-    return (localStorage.getItem('havenfall-player-nick') || `Jogador ${playerId().slice(-4).toUpperCase()}`).trim().slice(0, 22);
+    return (localStorage.getItem('havenfall-player-nick') || `Jogador ${playerId().slice(-4).toUpperCase()}`).trim().slice(0, 22) || 'Jogador';
   }
 
   function saveNick(value) {
@@ -74,7 +73,7 @@ function installMultiplayerLobbyPatch() {
 
   function sameWorldHint(data) {
     if (!data?.online) return 'Crie um mundo multiplayer primeiro ou peça para o host publicar a sessão.';
-    return 'Se nome, seed e revisão batem entre os jogadores, vocês estão no mesmo mundo.';
+    return 'Cada jogador ativo vira um colono próprio dentro desse mesmo mundo.';
   }
 
   async function fetchStatus() {
@@ -90,7 +89,6 @@ function installMultiplayerLobbyPatch() {
 
     try {
       const data = await fetchStatus();
-      lastRevisionSeen = data.revision || lastRevisionSeen;
       setOnlineStatus(`
         <b>Status:</b> ${data.online ? 'mundo online disponível neste link.' : 'nenhum mundo ativo neste link.'}
         <br><span><b>Mundo:</b> ${escapeHtml(worldLabel(data))}</span>
@@ -123,17 +121,29 @@ function installMultiplayerLobbyPatch() {
       return;
     }
     badge.classList.add('show');
-    let html;
-    if (!data?.online) {
-      html = `<b>${escapeHtml(mpRole().toUpperCase())}</b><span>sem mundo publicado neste link</span>`;
-    } else {
-      const role = mpRole() === 'visitante' ? 'VISITANTE' : 'HOST';
-      html = `<b>${role}</b><span>${escapeHtml(data.colonyName || 'Colônia')} · Dia ${escapeHtml(data.day || '?')} · rev ${escapeHtml(data.revision || 0)}</span>`;
-    }
+    const role = mpRole() === 'visitante' ? 'VISITANTE' : 'HOST';
+    const html = data?.online
+      ? `<b>${role}</b><span>${escapeHtml(data.colonyName || 'Colônia')} · Dia ${escapeHtml(data.day || '?')} · rev ${escapeHtml(data.revision || 0)}</span>`
+      : `<b>${role}</b><span>publicando mundo...</span>`;
     if (lastBadgeHtml !== html) {
       lastBadgeHtml = html;
       badge.innerHTML = html;
     }
+  }
+
+  function setTitleText(screenId, data) {
+    const screen = document.getElementById(screenId);
+    if (!screen) return;
+    const kicker = screen.querySelector('.kicker');
+    const h1 = screen.querySelector('h1');
+    const p = screen.querySelector('.screen-title-row p');
+    if (kicker && data.kicker) kicker.textContent = data.kicker;
+    if (h1 && data.title) h1.textContent = data.title;
+    if (p && data.text) p.textContent = data.text;
+  }
+
+  function colonistCountLabel() {
+    return document.getElementById('colonistCountSelect')?.closest('label') || null;
   }
 
   function ensureMpSetupNickBox() {
@@ -149,7 +159,7 @@ function installMultiplayerLobbyPatch() {
       box.innerHTML = `
         <div>
           <b>Identidade online</b>
-          <span>Esse nick aparece no lobby e em cima do colono que você escolher.</span>
+          <span>No multiplayer, cada jogador entra como um colono independente. O host começa com este nick e visitantes criam o próprio colono ao entrar.</span>
         </div>
         <label>Teu nick
           <input id="mpSetupNickInput" type="text" maxlength="22" placeholder="Teu nick">
@@ -163,23 +173,13 @@ function installMultiplayerLobbyPatch() {
     if (input && !input.value) input.value = currentNick();
   }
 
-  function setTitleText(screenId, data) {
-    const screen = document.getElementById(screenId);
-    if (!screen) return;
-    const kicker = screen.querySelector('.kicker');
-    const h1 = screen.querySelector('h1');
-    const p = screen.querySelector('.screen-title-row p');
-    if (kicker && data.kicker) kicker.textContent = data.kicker;
-    if (h1 && data.title) h1.textContent = data.title;
-    if (p && data.text) p.textContent = data.text;
-  }
-
   function applySetupMode() {
     const setupScreen = document.getElementById('newGameSetupScreen');
     if (!setupScreen) return;
     const next = document.getElementById('setupNextBtn');
     const back = document.getElementById('setupBackBtn');
     const box = document.getElementById('mpSetupNickBox');
+    const countLabel = colonistCountLabel();
 
     if (!isMpHostSetup()) {
       setupScreen.classList.remove('multiplayer-setup-mode');
@@ -191,6 +191,7 @@ function installMultiplayerLobbyPatch() {
       if (next) next.textContent = 'Continuar para Seleção de Colonos';
       if (back) back.textContent = 'Voltar';
       if (box) box.hidden = true;
+      if (countLabel) countLabel.hidden = false;
       updateSetupSummaryBase();
       return;
     }
@@ -198,39 +199,30 @@ function installMultiplayerLobbyPatch() {
     setupScreen.classList.add('multiplayer-setup-mode');
     ensureMpSetupNickBox();
     document.getElementById('mpSetupNickBox')?.removeAttribute('hidden');
+    if (countLabel) countLabel.hidden = true;
+    document.getElementById('colonistCountSelect').value = '1';
     setTitleText('newGameSetupScreen', {
       kicker: 'Multiplayer',
       title: 'Criar Mundo Online',
-      text: 'Configure o mundo que será publicado para seus amigos entrarem pelo mesmo link. Depois escolha os colonos iniciais e inicie como host.'
+      text: 'Configure o mundo online. A quantidade de colonos não é fixa: cada jogador que entrar terá seu próprio colono controlável.'
     });
-    if (next) next.textContent = 'Continuar para Colonos do Multiplayer';
+    if (next) next.textContent = 'Criar Mundo e Hostear';
     if (back) back.textContent = 'Voltar ao Online';
     updateSetupSummaryBase();
   }
 
   function applyColonistMode() {
+    if (isMpHostSetup()) return;
     const start = document.getElementById('startSelectedGameBtn');
     const back = document.getElementById('colonistBackBtn');
-    if (!isMpHostSetup()) {
-      setTitleText('colonistSelectScreen', {
-        kicker: 'Seleção de colonos',
-        title: 'Escolha quem vai começar',
-        text: 'Rerole colonos individuais, trave os que gostar e inicie a partida com a configuração escolhida.'
-      });
-      if (start) start.textContent = 'Iniciar Partida';
-      if (back) back.textContent = 'Voltar';
-      document.getElementById('colonistSelectScreen')?.classList.remove('multiplayer-setup-mode');
-      return;
-    }
-
-    document.getElementById('colonistSelectScreen')?.classList.add('multiplayer-setup-mode');
     setTitleText('colonistSelectScreen', {
-      kicker: 'Multiplayer',
-      title: 'Colonos do Mundo Online',
-      text: 'Escolha os colonos que existirão no mundo. Cada jogador poderá escolher qual deles controlar ao entrar.'
+      kicker: 'Seleção de colonos',
+      title: 'Escolha quem vai começar',
+      text: 'Rerole colonos individuais, trave os que gostar e inicie a partida com a configuração escolhida.'
     });
-    if (start) start.textContent = 'Criar Mundo e Hostear';
-    if (back) back.textContent = 'Voltar à Configuração Online';
+    if (start) start.textContent = 'Iniciar Partida';
+    if (back) back.textContent = 'Voltar';
+    document.getElementById('colonistSelectScreen')?.classList.remove('multiplayer-setup-mode');
   }
 
   const previousUpdateSetupSummary = updateSetupSummary;
@@ -239,11 +231,31 @@ function installMultiplayerLobbyPatch() {
     if (!isMpHostSetup() || !dom.setupSummary) return;
     const cfg = readNewGameConfigSafe();
     dom.setupSummary.innerHTML = `
-      <b>Resumo multiplayer:</b> ${escapeHtml(cfg.colonyName)} · Seed <b>${escapeHtml(cfg.seed || 'será gerada')}</b> · ${cfg.colonistCount} colonos · mapa ${labelMapSize(cfg.mapSize)} · eventos ${labelEventIntensity(cfg.eventIntensity)}.
-      <br><span class="muted-inline">Host: <b>${escapeHtml(currentNick())}</b>. Ao iniciar, o mundo será publicado neste servidor e os visitantes escolherão um colono pelo menu Online.</span>
+      <b>Resumo multiplayer:</b> ${escapeHtml(cfg.colonyName)} · Seed <b>${escapeHtml(cfg.seed || 'será gerada')}</b> · mapa ${labelMapSize(cfg.mapSize)} · eventos ${labelEventIntensity(cfg.eventIntensity)}.
+      <br><span class="muted-inline">Host: <b>${escapeHtml(currentNick())}</b>. Ao iniciar, você vira o primeiro colono. Cada visitante que entrar pelo mesmo link cria/assume um colono próprio.</span>
     `;
   }
   updateSetupSummary = updateSetupSummaryBase;
+
+  function makePlayerCandidate(config, nick, id) {
+    const candidate = createColonistCandidate(0, config, `${config.seed}-player-${id}`);
+    candidate.name = nick;
+    candidate.role = 'Faz-tudo';
+    candidate.workPreference = 'Coleta';
+    return candidate;
+  }
+
+  function bindHostColonist() {
+    if (!state?.colonists?.length) return;
+    const c = state.colonists[0];
+    c.name = currentNick();
+    c.playerId = playerId();
+    c.playerNick = currentNick();
+    c.onlineControlled = true;
+    selectedColonistId = c.id;
+    localStorage.setItem(`havenfall-colonist-choice-${playerId()}`, String(c.id));
+    sessionStorage.setItem(`havenfall-colonist-choice-${playerId()}`, String(c.id));
+  }
 
   function beginMultiplayerHostSetup() {
     setMpFlow('host-setup');
@@ -251,7 +263,7 @@ function installMultiplayerLobbyPatch() {
     window.havenfallOnlineMode = 'host';
     window.havenfallOnlineSessionActive = false;
     saveNick(currentNick());
-    writeNewGameConfig({ ...defaultNewGameConfig, colonyName: 'First Haven Online', seed: generateRandomSeed(), colonistCount: 3 });
+    writeNewGameConfig({ ...defaultNewGameConfig, colonyName: 'First Haven Online', seed: generateRandomSeed(), colonistCount: 1 });
     setScreen(SCREEN.NEW_GAME_SETUP);
     setTimeout(applySetupMode, 0);
   }
@@ -260,31 +272,28 @@ function installMultiplayerLobbyPatch() {
     if (!isMpHostSetup()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    saveNick(document.getElementById('mpSetupNickInput')?.value || currentNick());
-    newGameConfig = { ...readNewGameConfig(), multiplayer: true, onlineRole: 'host', hostNick: currentNick() };
-    generateColonistCandidates(newGameConfig);
-    setScreen(SCREEN.COLONIST_SELECT);
-    setTimeout(applyColonistMode, 0);
-  }
-
-  function handleStartMultiplayer(event) {
-    if (!isMpHostSetup()) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    if (!newGameConfig) newGameConfig = { ...readNewGameConfig(), multiplayer: true, onlineRole: 'host', hostNick: currentNick() };
-    saveNick(document.getElementById('mpSetupNickInput')?.value || currentNick());
-    startNewGame({ ...newGameConfig, multiplayer: true, onlineRole: 'host', hostNick: currentNick() }, colonistCandidates);
+    const nick = saveNick(document.getElementById('mpSetupNickInput')?.value || currentNick());
+    const config = { ...readNewGameConfig(), colonistCount: 1, multiplayer: true, onlineRole: 'host', hostNick: nick };
+    const hostCandidate = makePlayerCandidate(config, nick, playerId());
+    startNewGame(config, [hostCandidate]);
     state.config.multiplayer = true;
     state.config.onlineRole = 'host';
-    state.config.hostNick = currentNick();
+    state.config.hostNick = nick;
+    bindHostColonist();
     window.havenfallOnlineSessionActive = true;
     window.havenfallOnlineMode = 'host';
     sessionStorage.setItem('havenfall-online-mode', 'host');
     window.havenfallAllowManualHostStart?.();
     window.havenfallHostOnline?.();
     setMpFlow(null);
-    setTimeout(() => window.havenfallForcePublishWorld?.('multiplayer-setup-start'), 300);
-    setTimeout(() => window.havenfallForcePublishWorld?.('multiplayer-setup-start'), 1100);
+    setTimeout(() => window.havenfallForcePublishWorld?.('multiplayer-host-start'), 250);
+    setTimeout(() => window.havenfallForcePublishWorld?.('multiplayer-host-start'), 900);
+    updateUI(true);
+  }
+
+  function handleStartMultiplayer(event) {
+    if (!isMpHostSetup()) return;
+    handleSetupNext(event);
   }
 
   function handleSetupBack(event) {
@@ -306,7 +315,6 @@ function installMultiplayerLobbyPatch() {
   function showCraftToast(message) {
     const overlay = document.getElementById('stationOverlayClean');
     if (!overlay || !overlay.classList.contains('show')) return;
-
     let toast = document.getElementById('stationCraftToast');
     if (!toast) {
       toast = document.createElement('div');
@@ -314,7 +322,6 @@ function installMultiplayerLobbyPatch() {
       toast.className = 'station-craft-toast';
       overlay.appendChild(toast);
     }
-
     toast.textContent = message;
     toast.classList.add('show');
     if (craftToastTimer) clearTimeout(craftToastTimer);
@@ -358,6 +365,7 @@ function installMultiplayerLobbyPatch() {
     setOnlineStatus(`
       <b>Status:</b> entrando no mundo publicado.
       <br><span><b>Mundo:</b> ${escapeHtml(worldLabel(data))}</span>
+      <br><span>Seu colono será criado automaticamente com o nick escolhido.</span>
     `);
     window.havenfallJoinOnline?.();
   }
@@ -375,55 +383,15 @@ function installMultiplayerLobbyPatch() {
     const style = document.createElement('style');
     style.id = 'multiplayerLobbyPatchStyles';
     style.textContent = `
-      .online-world-badge {
-        position: fixed;
-        left: 14px;
-        top: 14px;
-        z-index: 85;
-        display: none;
-        max-width: min(440px, calc(100vw - 28px));
-        padding: 8px 11px;
-        border-radius: 14px;
-        background: rgba(7, 11, 17, .78);
-        border: 1px solid rgba(255,255,255,.12);
-        color: #eaf6ff;
-        font: 800 12px system-ui;
-        box-shadow: 0 12px 28px rgba(0,0,0,.24);
-      }
+      .online-world-badge { position: fixed; left: 14px; top: 14px; z-index: 85; display: none; max-width: min(440px, calc(100vw - 28px)); padding: 8px 11px; border-radius: 14px; background: rgba(7, 11, 17, .78); border: 1px solid rgba(255,255,255,.12); color: #eaf6ff; font: 800 12px system-ui; box-shadow: 0 12px 28px rgba(0,0,0,.24); }
       .online-world-badge.show { display: flex; align-items: center; gap: 9px; }
       .online-world-badge b { color: #9bd36a; letter-spacing: .08em; }
       .online-world-badge span { color: rgba(232,241,255,.78); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-      .mp-setup-box {
-        display: grid;
-        grid-template-columns: 1fr minmax(240px, 360px);
-        gap: 14px;
-        align-items: end;
-        margin: 16px 0 0;
-        padding: 13px;
-        border: 1px solid rgba(155, 211, 106, .22);
-        border-radius: 16px;
-        background: rgba(155, 211, 106, .055);
-      }
+      .mp-setup-box { display: grid; grid-template-columns: 1fr minmax(240px, 360px); gap: 14px; align-items: end; margin: 16px 0 0; padding: 13px; border: 1px solid rgba(155, 211, 106, .22); border-radius: 16px; background: rgba(155, 211, 106, .055); }
       .mp-setup-box b { display:block; margin-bottom: 4px; color:#eaffd8; }
       .mp-setup-box span { color: rgba(232,241,255,.68); }
       .multiplayer-setup-mode .menu-card { border-color: rgba(155, 211, 106, .28); }
-      .station-craft-toast {
-        position: fixed;
-        left: 50%;
-        bottom: 26px;
-        transform: translateX(-50%) translateY(16px);
-        z-index: 170;
-        opacity: 0;
-        pointer-events: none;
-        padding: 10px 14px;
-        border-radius: 999px;
-        background: rgba(12, 18, 24, .94);
-        border: 1px solid rgba(155, 211, 106, .44);
-        color: #eaffd8;
-        font: 900 13px system-ui;
-        box-shadow: 0 12px 32px rgba(0,0,0,.38);
-        transition: opacity .16s ease, transform .16s ease;
-      }
+      .station-craft-toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(16px); z-index: 170; opacity: 0; pointer-events: none; padding: 10px 14px; border-radius: 999px; background: rgba(12, 18, 24, .94); border: 1px solid rgba(155, 211, 106, .44); color: #eaffd8; font: 900 13px system-ui; box-shadow: 0 12px 32px rgba(0,0,0,.38); transition: opacity .16s ease, transform .16s ease; }
       .station-craft-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
       @media(max-width:720px){ .mp-setup-box{ grid-template-columns:1fr; } }
     `;
@@ -463,13 +431,9 @@ function installMultiplayerLobbyPatch() {
     const stationOverlay = document.getElementById('stationOverlayClean');
     const shouldGuardStationModal = !!stationOverlay?.classList.contains('show');
     const originalStationOverlayId = stationOverlay?.id;
-
     if (shouldGuardStationModal) stationOverlay.id = 'stationOverlayCleanStable';
-    try {
-      previousUpdateUI(force);
-    } finally {
-      if (shouldGuardStationModal && stationOverlay) stationOverlay.id = originalStationOverlayId;
-    }
+    try { previousUpdateUI(force); }
+    finally { if (shouldGuardStationModal && stationOverlay) stationOverlay.id = originalStationOverlayId; }
     if (appScreen === SCREEN.NEW_GAME_SETUP) applySetupMode();
     if (appScreen === SCREEN.COLONIST_SELECT) applyColonistMode();
   };
