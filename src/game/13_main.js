@@ -46,6 +46,9 @@ async function loadQolPatchesThenBoot() {
   await loadScript('src/game/17_ui_sprite_cleanup.js');
   if (typeof installUiSpriteCleanupPatch === 'function') installUiSpriteCleanupPatch();
 
+  await loadScript('src/game/18_combat_death_fix.js');
+  if (typeof installCombatDeathFixPatch === 'function') installCombatDeathFixPatch();
+
   bootGame();
 }
 
