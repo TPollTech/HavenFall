@@ -138,6 +138,15 @@ function installMobVisionPatch() {
     script.src = 'src/game/21_alpha_state_system.js';
     script.onload = () => {
       if (typeof installAlphaStateSystemPatch === 'function') installAlphaStateSystemPatch();
+      if (!window.__havenfallAlphaDoorSystemLoaderInstalled) {
+        window.__havenfallAlphaDoorSystemLoaderInstalled = true;
+        const doorScript = document.createElement('script');
+        doorScript.src = 'src/game/23_alpha_base_doors.js';
+        doorScript.onload = () => {
+          if (typeof installAlphaDoorSystemPatch === 'function') installAlphaDoorSystemPatch();
+        };
+        document.body.appendChild(doorScript);
+      }
     };
     document.body.appendChild(script);
   }
