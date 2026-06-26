@@ -10,7 +10,7 @@
     const style = document.createElement('style');
     style.id = 'hf-pause-menu-style';
     style.textContent = [
-      '#pauseOverlay{display:none!important;visibility:hidden!important;pointer-events:none!important;overflow:hidden!important}',
+      '#pauseOverlay,#pauseOverlay.game-popup-modal,#pauseOverlay.game-popup-modal.show,#pauseOverlay.game-popup-modal.is-active{display:none!important;visibility:hidden!important;pointer-events:none!important;overflow:hidden!important}',
       '.hf-pause-overlay{position:fixed;inset:0;width:100vw;height:100vh;z-index:9999;display:none;place-items:center;overflow:hidden;background:rgba(0,0,0,.80);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}',
       '.hf-pause-overlay.is-active{display:grid}',
       '.hf-pause-card{width:min(520px,calc(100vw - 48px));max-height:calc(100vh - 64px);overflow:hidden;display:grid;gap:18px;padding:clamp(22px,4vh,34px);border-radius:26px;border:1px solid rgba(227,169,63,.40);background:linear-gradient(180deg,rgba(16,20,31,.98),rgba(7,10,17,.97));box-shadow:0 34px 120px rgba(0,0,0,.72);color:#fff4df}',
