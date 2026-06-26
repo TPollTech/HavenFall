@@ -4,6 +4,18 @@ function installBuildingRoofAiFixPatch() {
   const transparentSpriteUrl = new Map();
   let roofTick = 0;
 
+  // V1.9 performance hotfix:
+  // O lag vinha principalmente de paredes/telhados usando state.objects.find(...)
+  // muitas vezes por frame e durante o flood fill do telhado. Agora tudo usa índice por tile.
+  let wallIndex = new Map();
+  let solidWallIndex = new Map();
+  let doorIndex = new Map();
+  let wallIndexDirty = true;
+  let lastWallObjectCount = -1;
+  let roofSet = new Set();
+  let roofArrayRef = null;
+  let lastSpriteCleanupAt = 0;
+
   function installStyles() {
     if (document.getElementById('buildingRoofAiFixStyles')) return;
     const style = document.createElement('style');
@@ -17,12 +29,8 @@ function installBuildingRoofAiFixPatch() {
       #buildStatus {
         min-height: 0;
       }
-      body.clean-terrain canvas#game {
-        background: #101821;
-      }
     `;
     document.head.appendChild(style);
-    document.body.classList.add('clean-terrain');
   }
 
   function ensureBuildingDefs() {
@@ -46,55 +54,69 @@ function installBuildingRoofAiFixPatch() {
     }
   }
 
-  function terrainColor(type) {
-    return ({
-      grass: '#25351f',
-      dirt: '#473421',
-      sand: '#5c5231',
-      stone: '#343a3e'
-    })[type] || '#25351f';
+  function tileKey(x, y) {
+    return `${Math.round(x)},${Math.round(y)}`;
   }
-
-  const previousDrawTile = drawTile;
-  drawTile = function cleanDrawTile(x, y, type) {
-    const base = terrainColor(type);
-    const px = x * TILE;
-    const py = y * TILE;
-    ctx.save();
-    ctx.fillStyle = base;
-    ctx.fillRect(px - 0.5, py - 0.5, TILE + 1, TILE + 1);
-    const hash = Math.abs(Math.sin((x * 127.1 + y * 311.7) * 12.9898) * 43758.5453) % 1;
-    ctx.globalAlpha = 0.08 + hash * 0.05;
-    ctx.fillStyle = hash > 0.5 ? '#ffffff' : '#000000';
-    ctx.fillRect(px + 5 + (hash * 13) % 21, py + 6 + (hash * 19) % 19, 9, 5);
-    ctx.globalAlpha = 0.06;
-    ctx.fillRect(px + 28, py + 31, 13, 7);
-    ctx.restore();
-  };
 
   function isWallLike(obj) {
     return !!obj && (obj.type === 'wall' || obj.type === 'door' || (obj.type === 'blueprint' && (obj.buildType === 'wall' || obj.buildType === 'door')));
   }
 
+  function isSolidWallLike(obj) {
+    return !!obj && (obj.type === 'wall' || (obj.type === 'blueprint' && obj.buildType === 'wall'));
+  }
+
+  function isDoorLike(obj) {
+    return !!obj && (obj.type === 'door' || (obj.type === 'blueprint' && obj.buildType === 'door'));
+  }
+
+  function rebuildWallIndex(force = false) {
+    const objects = state?.objects || [];
+    if (!force && !wallIndexDirty && lastWallObjectCount === objects.length) return;
+
+    wallIndex = new Map();
+    solidWallIndex = new Map();
+    doorIndex = new Map();
+
+    for (const obj of objects) {
+      if (!isWallLike(obj)) continue;
+      const key = tileKey(obj.x, obj.y);
+      wallIndex.set(key, obj);
+      if (isSolidWallLike(obj)) solidWallIndex.set(key, obj);
+      if (isDoorLike(obj)) doorIndex.set(key, obj);
+    }
+
+    lastWallObjectCount = objects.length;
+    wallIndexDirty = false;
+  }
+
+  function markStructureDirty() {
+    wallIndexDirty = true;
+  }
+
   function wallAt(x, y) {
-    return state?.objects?.find(o => o.x === x && o.y === y && isWallLike(o));
+    rebuildWallIndex();
+    return wallIndex.get(tileKey(x, y));
   }
 
   function solidWallAt(x, y) {
-    return state?.objects?.find(o => o.x === x && o.y === y && (o.type === 'wall' || (o.type === 'blueprint' && o.buildType === 'wall')));
+    rebuildWallIndex();
+    return solidWallIndex.get(tileKey(x, y));
   }
 
   function doorAt(x, y) {
-    return state?.objects?.find(o => o.x === x && o.y === y && (o.type === 'door' || (o.type === 'blueprint' && o.buildType === 'door')));
+    rebuildWallIndex();
+    return doorIndex.get(tileKey(x, y));
   }
 
   function drawConnectedWall(cx, cy, obj, alpha = 1) {
+    rebuildWallIndex();
     const x = obj.x;
     const y = obj.y;
-    const north = !!wallAt(x, y - 1);
-    const south = !!wallAt(x, y + 1);
-    const west = !!wallAt(x - 1, y);
-    const east = !!wallAt(x + 1, y);
+    const north = !!wallIndex.get(tileKey(x, y - 1));
+    const south = !!wallIndex.get(tileKey(x, y + 1));
+    const west = !!wallIndex.get(tileKey(x - 1, y));
+    const east = !!wallIndex.get(tileKey(x + 1, y));
     const hasConnection = north || south || west || east;
     const orientation = obj.orientation === 'vertical' || obj.rotation === 90 ? 'vertical' : 'horizontal';
 
@@ -121,18 +143,15 @@ function installBuildingRoofAiFixPatch() {
     if (west) arm(cx - TILE / 2, cy - 8, TILE / 2, 16);
     if (east) arm(cx, cy - 8, TILE / 2, 16);
 
-    if (!hasConnection && orientation === 'vertical') {
-      arm(cx - 8, cy - 21, 16, 42);
-    }
-    if (!hasConnection && orientation === 'horizontal') {
-      arm(cx - 21, cy - 8, 42, 16);
-    }
+    if (!hasConnection && orientation === 'vertical') arm(cx - 8, cy - 21, 16, 42);
+    if (!hasConnection && orientation === 'horizontal') arm(cx - 21, cy - 8, 42, 16);
 
     ctx.restore();
   }
 
   function drawDoor(cx, cy, obj, alpha = 1) {
-    const vertical = !!(wallAt(obj.x, obj.y - 1) || wallAt(obj.x, obj.y + 1)) && !(wallAt(obj.x - 1, obj.y) || wallAt(obj.x + 1, obj.y));
+    rebuildWallIndex();
+    const vertical = !!(wallIndex.get(tileKey(obj.x, obj.y - 1)) || wallIndex.get(tileKey(obj.x, obj.y + 1))) && !(wallIndex.get(tileKey(obj.x - 1, obj.y)) || wallIndex.get(tileKey(obj.x + 1, obj.y)));
     ctx.save();
     ctx.globalAlpha *= alpha;
     ctx.fillStyle = '#6b4424';
@@ -166,6 +185,7 @@ function installBuildingRoofAiFixPatch() {
   drawBuildPreview = function connectedWallDrawBuildPreview() {
     if (currentBuild !== 'wall' && currentBuild !== 'door') return previousDrawBuildPreview();
     if (!mouseTile || !isInside(mouseTile.x, mouseTile.y)) return;
+    rebuildWallIndex();
     const can = canPlace(currentBuild, mouseTile.x, mouseTile.y);
     const fake = { type: 'blueprint', buildType: currentBuild, x: mouseTile.x, y: mouseTile.y, orientation: window.havenfallWallOrientation || 'horizontal' };
     const cx = mouseTile.x * TILE + TILE / 2;
@@ -188,6 +208,7 @@ function installBuildingRoofAiFixPatch() {
         placed.orientation = inferDoorOrientation(x, y);
         placed.rotation = placed.orientation === 'vertical' ? 90 : 0;
       }
+      markStructureDirty();
       updateRoofMap(true);
     }
   };
@@ -200,64 +221,84 @@ function installBuildingRoofAiFixPatch() {
   }
 
   function isRoofBoundary(x, y) {
-    const obj = wallAt(x, y);
+    rebuildWallIndex();
+    const obj = wallIndex.get(tileKey(x, y));
     if (!obj) return false;
     const type = obj.type === 'blueprint' ? obj.buildType : obj.type;
     return type === 'wall' || type === 'door';
   }
 
+  function setRoofedTiles(roofed) {
+    state.roofs = roofed;
+    roofArrayRef = roofed;
+    roofSet = new Set(roofed);
+    state.roofCount = roofed.length;
+  }
+
+  function syncRoofSetFromState() {
+    if (!state?.roofs) {
+      roofArrayRef = null;
+      roofSet = new Set();
+      return;
+    }
+    if (roofArrayRef !== state.roofs) {
+      roofArrayRef = state.roofs;
+      roofSet = new Set(state.roofs);
+    }
+  }
+
   function updateRoofMap(force = false) {
     if (!state?.objects || !state?.world) return;
     roofTick++;
-    if (!force && roofTick % 35 !== 0) return;
+    if (!force && roofTick % 60 !== 0) return;
+
+    rebuildWallIndex(force || wallIndexDirty);
 
     const cols = getWorldCols();
     const rows = getWorldRows();
-    const outside = Array.from({ length: rows }, () => Array(cols).fill(false));
-    const queue = [];
+    const outside = Array.from({ length: rows }, () => new Uint8Array(cols));
+    const queueX = [];
+    const queueY = [];
 
     function push(x, y) {
-      if (!isInside(x, y) || outside[y][x] || isRoofBoundary(x, y)) return;
-      outside[y][x] = true;
-      queue.push([x, y]);
+      if (!isInside(x, y) || outside[y][x] || wallIndex.has(tileKey(x, y))) return;
+      outside[y][x] = 1;
+      queueX.push(x);
+      queueY.push(y);
     }
 
     for (let x = 0; x < cols; x++) { push(x, 0); push(x, rows - 1); }
     for (let y = 0; y < rows; y++) { push(0, y); push(cols - 1, y); }
 
-    for (let i = 0; i < queue.length; i++) {
-      const [x, y] = queue[i];
+    for (let i = 0; i < queueX.length; i++) {
+      const x = queueX[i];
+      const y = queueY[i];
       push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
     }
 
     const roofed = [];
-    let count = 0;
     for (let y = 1; y < rows - 1; y++) {
       for (let x = 1; x < cols - 1; x++) {
-        if (!outside[y][x] && !isRoofBoundary(x, y)) {
-          roofed.push(`${x},${y}`);
-          count++;
-        }
+        if (!outside[y][x] && !wallIndex.has(tileKey(x, y))) roofed.push(`${x},${y}`);
       }
     }
-    state.roofs = roofed;
-    state.roofCount = count;
+    setRoofedTiles(roofed);
   }
 
   function isRoofedTile(x, y) {
-    if (!state?.roofs) return false;
-    return state.roofs.includes(`${Math.round(x)},${Math.round(y)}`);
+    syncRoofSetFromState();
+    return roofSet.has(tileKey(x, y));
   }
 
   function drawRoofShade() {
-    if (!state?.roofs?.length) return;
+    syncRoofSetFromState();
+    if (!roofSet.size) return;
     const bounds = visibleTileBounds(1);
-    const set = new Set(state.roofs);
     ctx.save();
     ctx.fillStyle = 'rgba(22, 32, 38, .22)';
     for (let y = bounds.startY; y <= bounds.endY; y++) {
       for (let x = bounds.startX; x <= bounds.endX; x++) {
-        if (set.has(`${x},${y}`)) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        if (roofSet.has(tileKey(x, y))) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
     }
     ctx.restore();
@@ -272,6 +313,7 @@ function installBuildingRoofAiFixPatch() {
   const previousUpdateWorld = updateWorld;
   updateWorld = function buildingUpdateWorld(dt) {
     previousUpdateWorld(dt);
+    if (wallIndexDirty || lastWallObjectCount !== (state?.objects?.length || 0)) rebuildWallIndex(true);
     updateRoofMap(false);
   };
 
@@ -389,6 +431,12 @@ function installBuildingRoofAiFixPatch() {
   }
 
   function cleanCraftingDomImages() {
+    const craftingIsVisible = activeHudTab === 'crafting' || !!document.querySelector('#craftingPanel.active');
+    if (!craftingIsVisible) return;
+    const now = performance.now();
+    if (now - lastSpriteCleanupAt < 1200) return;
+    lastSpriteCleanupAt = now;
+
     document.querySelectorAll('img[src*="weapon_"], img[src*="tool_"], img[src*="toolkit"], img[src*="res_"]').forEach(img => {
       const match = img.getAttribute('src')?.match(/\/([^\/]+)\.png$/);
       const name = match?.[1];
@@ -414,6 +462,8 @@ function installBuildingRoofAiFixPatch() {
   startNewGame = function buildingStartNewGame(config, selectedColonists) {
     const result = previousStartNewGame(config, selectedColonists);
     ensureBuildingDefs();
+    markStructureDirty();
+    rebuildWallIndex(true);
     updateRoofMap(true);
     return result;
   };
@@ -422,6 +472,8 @@ function installBuildingRoofAiFixPatch() {
   loadGame = function buildingLoadGame() {
     const result = previousLoadGame();
     ensureBuildingDefs();
+    markStructureDirty();
+    rebuildWallIndex(true);
     updateRoofMap(true);
     return result;
   };
@@ -439,4 +491,5 @@ function installBuildingRoofAiFixPatch() {
 
   installStyles();
   ensureBuildingDefs();
+  rebuildWallIndex(true);
 }
