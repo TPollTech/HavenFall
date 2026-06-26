@@ -56,6 +56,12 @@
     }
   }
 
+  function refreshVisibility() {
+    const playing = typeof SCREEN !== 'undefined' && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED);
+    document.body.classList.toggle('ui-gameplay-active', !!playing);
+    if (!playing) closeModal();
+  }
+
   function movePanels() {
     for (const key of Object.keys(MODALS)) {
       const panel = document.querySelector(`[data-panel="${key}"]`);
@@ -94,6 +100,8 @@
   }
 
   function openModal(key) {
+    refreshVisibility();
+    if (!document.body.classList.contains('ui-gameplay-active')) return;
     closeModal();
     const modal = document.getElementById(`modal-${key}`);
     if (!modal) return;
@@ -114,6 +122,7 @@
   }
 
   function installEvents() {
+    if (window.HavenfallContext.cleanUiEventsInstalled) return;
     document.getElementById('bottom-navigation-dock')?.addEventListener('click', event => {
       const btn = event.target.closest('[data-ui-modal]');
       if (!btn) return;
@@ -131,27 +140,46 @@
         closeModal();
       }
     }, true);
+    window.HavenfallContext.cleanUiEventsInstalled = true;
   }
 
   function patchUi() {
     if (typeof setHudTab === 'function') setHudTab = tab => { activeHudTab = tab || activeHudTab || 'build'; };
-    if (typeof updateUI === 'function') {
+    if (typeof setScreen === 'function' && !window.HavenfallContext.cleanUiScreenPatched) {
+      const originalSetScreen = setScreen;
+      setScreen = screen => {
+        originalSetScreen(screen);
+        refreshVisibility();
+      };
+      window.HavenfallContext.cleanUiScreenPatched = true;
+    }
+    if (typeof updateUI === 'function' && !window.HavenfallContext.cleanUiUpdatePatched) {
       const originalUpdateUI = updateUI;
       updateUI = force => {
         originalUpdateUI(force);
         syncResources();
+        refreshVisibility();
       };
+      window.HavenfallContext.cleanUiUpdatePatched = true;
     }
-    if (typeof openCraftingForStation === 'function') {
+    if (typeof openCraftingForStation === 'function' && !window.HavenfallContext.cleanUiCraftingPatched) {
       const originalOpenCrafting = openCraftingForStation;
       openCraftingForStation = station => {
         originalOpenCrafting(station);
         openModal('crafting');
       };
+      window.HavenfallContext.cleanUiCraftingPatched = true;
     }
   }
 
-  window.uiManager = { openModal, closeCurrentModal: closeModal, toggleModal: key => document.getElementById(`modal-${key}`)?.classList.contains('is-active') ? closeModal() : openModal(key), syncResources };
+  window.uiManager = {
+    openModal,
+    closeCurrentModal: closeModal,
+    toggleModal: key => document.getElementById(`modal-${key}`)?.classList.contains('is-active') ? closeModal() : openModal(key),
+    syncResources,
+    refreshVisibility,
+    refreshOpenModal: refreshVisibility
+  };
 
   ensureShell();
   movePanels();
@@ -159,4 +187,5 @@
   patchUi();
   closeModal();
   syncResources();
+  refreshVisibility();
 })();
