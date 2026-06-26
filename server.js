@@ -19,6 +19,7 @@ const MIME = {
 let multiplayerSnapshot = null;
 let multiplayerRevision = 0;
 let multiplayerUpdatedAt = null;
+const multiplayerPlayers = new Map();
 
 function sendJson(res, status, payload) {
   res.writeHead(status, {
@@ -49,11 +50,35 @@ function readJsonBody(req, limit = 2_500_000) {
   });
 }
 
+function activePlayers() {
+  const now = Date.now();
+  const players = [];
+  for (const [id, player] of multiplayerPlayers.entries()) {
+    const ageSeconds = Math.max(0, (now - player.lastSeen) / 1000);
+    if (ageSeconds > 12) {
+      multiplayerPlayers.delete(id);
+      continue;
+    }
+    players.push({
+      id,
+      nick: player.nick,
+      role: player.role,
+      worldSeed: player.worldSeed,
+      colonyName: player.colonyName,
+      joinedAt: player.joinedAt,
+      lastSeen: new Date(player.lastSeen).toISOString(),
+      ageSeconds
+    });
+  }
+  return players.sort((a, b) => (a.role === 'host' ? -1 : 1) - (b.role === 'host' ? -1 : 1) || a.nick.localeCompare(b.nick));
+}
+
 function multiplayerStatus() {
   const updated = multiplayerUpdatedAt ? new Date(multiplayerUpdatedAt).getTime() : 0;
   const ageSeconds = updated ? Math.max(0, (Date.now() - updated) / 1000) : null;
   const online = !!multiplayerSnapshot && ageSeconds !== null && ageSeconds < 8;
   const cfg = multiplayerSnapshot?.config || {};
+  const players = activePlayers();
   return {
     ok: true,
     online,
@@ -65,7 +90,9 @@ function multiplayerStatus() {
     day: multiplayerSnapshot?.day || null,
     hour: multiplayerSnapshot?.hour || null,
     colonists: Array.isArray(multiplayerSnapshot?.colonists) ? multiplayerSnapshot.colonists.length : 0,
-    wolves: Array.isArray(multiplayerSnapshot?.wolves) ? multiplayerSnapshot.wolves.length : 0
+    wolves: Array.isArray(multiplayerSnapshot?.wolves) ? multiplayerSnapshot.wolves.length : 0,
+    players,
+    playerCount: players.length
   };
 }
 
@@ -79,6 +106,37 @@ const server = http.createServer(async (req, res) => {
 
   if (safeUrl === '/api/multiplayer/status' && req.method === 'GET') {
     sendJson(res, 200, multiplayerStatus());
+    return;
+  }
+
+  if (safeUrl === '/api/multiplayer/players' && req.method === 'GET') {
+    sendJson(res, 200, { ok: true, players: activePlayers(), status: multiplayerStatus() });
+    return;
+  }
+
+  if (safeUrl === '/api/multiplayer/players' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req, 32_000);
+      const id = String(body.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+      if (!id) {
+        sendJson(res, 400, { ok: false, error: 'player id ausente' });
+        return;
+      }
+      const nick = String(body.nick || 'Jogador').trim().slice(0, 22) || 'Jogador';
+      const role = body.role === 'host' ? 'host' : 'visitante';
+      const current = multiplayerPlayers.get(id);
+      multiplayerPlayers.set(id, {
+        nick,
+        role,
+        worldSeed: String(body.worldSeed || multiplayerSnapshot?.config?.seed || '').slice(0, 64),
+        colonyName: String(body.colonyName || multiplayerSnapshot?.config?.colonyName || '').slice(0, 64),
+        joinedAt: current?.joinedAt || new Date().toISOString(),
+        lastSeen: Date.now()
+      });
+      sendJson(res, 200, { ok: true, players: activePlayers(), status: multiplayerStatus() });
+    } catch (err) {
+      sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
+    }
     return;
   }
 
