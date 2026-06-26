@@ -32,6 +32,8 @@ function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   updateWorld(dt);
+  if (typeof updateEnvironmentTick === 'function') updateEnvironmentTick(dt);
+  if (typeof updateZonesTick === 'function') updateZonesTick(dt);
   if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt);
   updateCamera(dt);
   if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) draw();
