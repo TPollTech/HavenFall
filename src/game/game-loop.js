@@ -36,6 +36,8 @@ function gameLoop(now) {
   if (typeof updateClimateAdvancedTick === 'function') updateClimateAdvancedTick(dt);
   if (typeof updateDefenseTick === 'function') updateDefenseTick(dt);
   if (typeof updateHaulingAdvTick === 'function') updateHaulingAdvTick(dt);
+  if (typeof updateWorkbenchToolsTick === 'function') updateWorkbenchToolsTick(dt);
+  if (typeof updateMobsTick === 'function') updateMobsTick(dt);
   if (typeof updateZonesTick === 'function') updateZonesTick(dt);
   if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt);
   updateCamera(dt);
