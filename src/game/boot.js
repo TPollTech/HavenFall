@@ -21,7 +21,8 @@
   ]);
 
   const PATCH_BLUEPRINTS = Object.freeze([
-    { id: 'asset_pack_clean', file: 'src/game/patches/asset_pack_clean.js', optional: true }
+    { id: 'asset_pack_clean', file: 'src/game/patches/asset_pack_clean.js', optional: true },
+    { id: 'ui_icon_safety', file: 'src/game/patches/ui_icon_safety.js', optional: true }
   ]);
 
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
