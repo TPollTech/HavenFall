@@ -53,8 +53,17 @@ function getHaulAmountForColonist(c, resource = 'wood') {
   return Math.max(1, Math.floor(max / 2));
 }
 
+function getHaulingPriority(c) {
+  if (typeof getColonistTaskPriority === 'function') return getColonistTaskPriority(c, 'handle');
+  return 2;
+}
+
+function canColonistAutoHandle(c) {
+  return getHaulingPriority(c) > 0;
+}
+
 function equipAvailableHandcart(c) {
-  if (!c || !isResearched('heavy_hauling')) return false;
+  if (!c || !canColonistAutoHandle(c) || !isResearched('heavy_hauling')) return false;
   if ((state.items?.handcart || 0) <= 0) return false;
   return equipItem(c, 'handcart');
 }
@@ -63,7 +72,7 @@ function installHaulingZonePatch() {
   if (window.HavenfallContext?.haulingZonePatchInstalled || typeof assignHaulTask !== 'function' || typeof processHaulTask !== 'function') return;
 
   assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile) {
-    if (!c || !obj || !storageTile) return false;
+    if (!c || !obj || !storageTile || !canColonistAutoHandle(c)) return false;
     const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
     obj.reservedBy = c.id;
     c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y, zoneType: 'storage', zoneX: storageTile.x, zoneY: storageTile.y };
@@ -117,6 +126,7 @@ function updateHaulingAdvTick() {
 
   for (const c of state.colonists || []) {
     ensureEquipment(c);
+    if (!canColonistAutoHandle(c)) continue;
     if (!c.equipment.offhand && (state.items?.handcart || 0) > 0 && !c.task) {
       equipAvailableHandcart(c);
     }
@@ -130,6 +140,7 @@ window.getColonoCurrentLoadCount = getColonistCurrentLoadCount;
 window.getColonistFreeCapacity = getColonistFreeCapacity;
 window.getHaulAmountForColonist = getHaulAmountForColonist;
 window.equipAvailableHandcart = equipAvailableHandcart;
+window.canColonistAutoHandle = canColonistAutoHandle;
 
 installHaulingDefinitions();
 installHaulingZonePatch();
