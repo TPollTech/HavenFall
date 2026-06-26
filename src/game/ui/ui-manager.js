@@ -25,6 +25,39 @@
     return typeof SCREEN !== 'undefined' && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED);
   }
 
+  function closeAllOldModals() {
+    document.getElementById('ui-modal-backdrop')?.classList.remove('is-active', 'show');
+    document.querySelectorAll('[id^="modal-"]').forEach(modal => {
+      modal.classList.remove('is-active', 'show', 'active');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.hidden = true;
+    });
+    document.querySelectorAll('.game-popup-modal:not(#eventModal):not(#pauseOverlay)').forEach(modal => {
+      modal.classList.remove('is-active', 'show', 'active');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.hidden = true;
+    });
+    document.querySelectorAll('#bottomActionBar .active, #hud .active, [data-tab].active, [data-ui-modal].is-active').forEach(el => {
+      el.classList.remove('active', 'is-active');
+    });
+  }
+
+  function disableLegacyHud() {
+    document.body.classList.add('ui-modern-panels');
+    ['hud', 'bottomActionBar'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+      el.classList.remove('active', 'is-active', 'show');
+    });
+    document.querySelectorAll('#hud [data-panel], #bottomActionBar [data-tab]').forEach(el => {
+      el.classList.remove('active', 'is-active', 'show');
+      el.setAttribute('aria-hidden', 'true');
+    });
+    closeAllOldModals();
+  }
+
   function ensureResourceBar() {
     let bar = document.getElementById('top-resource-bar');
     const topBar = document.getElementById('topBar');
@@ -74,7 +107,7 @@
   }
 
   function stopUiPointerPropagation() {
-    ['bottom-navigation-dock', 'anchored-ui-panel', 'topBar', 'top-resource-bar'].forEach(id => {
+    ['bottom-navigation-dock', 'anchored-ui-panel', 'topBar', 'top-resource-bar', 'research-tree-overlay'].forEach(id => {
       const el = document.getElementById(id);
       if (!el || el.dataset.uiStopPropagation === '1') return;
       el.dataset.uiStopPropagation = '1';
@@ -105,11 +138,13 @@
   function updateVisibility() {
     const visible = isGameplayScreen();
     document.body.classList.toggle('ui-gameplay-active', visible);
+    document.body.classList.add('ui-modern-panels');
     const dock = document.getElementById('bottom-navigation-dock');
     const panel = document.getElementById('anchored-ui-panel');
     const top = document.getElementById('top-resource-bar');
     if (dock) dock.hidden = !visible;
     if (top) top.hidden = !visible;
+    disableLegacyHud();
     if (!visible && panel) closePanel();
   }
 
@@ -119,18 +154,9 @@
     });
   }
 
-  function renderBuildPanel() {
-    const activeGroup = window.HavenfallUI.activeBuildGroup || 'structure';
-    const tabs = Object.entries(BUILD_GROUPS).map(([key, group]) => `<button type="button" class="${key === activeGroup ? 'is-active' : ''}" data-build-group="${key}">${group.label}</button>`).join('');
-    const group = BUILD_GROUPS[activeGroup] || BUILD_GROUPS.structure;
-    const cards = (group.items || []).map(key => {
-      const def = buildDefs?.[key];
-      if (!def) return '';
-      const cost = Object.entries(def.cost || {}).map(([resource, value]) => `<span class="cost-badge">${resourceIcon(resource)} ${resourceLabel?.(resource) || resource} x${value}</span>`).join('') || '<span class="cost-badge">sem custo</span>';
-      const locked = typeof isBuildUnlocked === 'function' && !isBuildUnlocked(key);
-      return `<button type="button" class="anchored-build-card ${locked ? 'locked' : ''}" data-build="${key}"><strong>${escapeHtml(def.label || key)}</strong><small>${escapeHtml(buildDescription(key))}</small><span>${cost}</span></button>`;
-    }).join('');
-    return `<div class="anchored-subtabs">${tabs}</div><div class="anchored-build-grid">${cards}</div>`;
+  function resourceName(resource) {
+    if (typeof resourceLabel === 'function') return resourceLabel(resource);
+    return ({ food: 'comida', wood: 'madeira', stone: 'pedra', metal: 'metal', medicine: 'remédio' })[resource] || resource;
   }
 
   function resourceIcon(resource) {
@@ -153,22 +179,39 @@
     })[key] || 'Construção disponível para a colônia.';
   }
 
-  function moveLegacyPanelIntoAnchor(key) {
-    const legacy = document.querySelector(`[data-panel="${key}"]`);
+  function renderBuildPanel() {
+    const activeGroup = window.HavenfallUI.activeBuildGroup || 'structure';
+    const tabs = Object.entries(BUILD_GROUPS).map(([key, group]) => `<button type="button" class="${key === activeGroup ? 'is-active' : ''}" data-build-group="${key}">${group.label}</button>`).join('');
+    const group = BUILD_GROUPS[activeGroup] || BUILD_GROUPS.structure;
+    const cards = (group.items || []).map(key => {
+      const def = buildDefs?.[key];
+      if (!def) return '';
+      const cost = Object.entries(def.cost || {}).map(([resource, value]) => `<span class="cost-badge">${resourceIcon(resource)} ${resourceName(resource)} x${value}</span>`).join('') || '<span class="cost-badge">sem custo</span>';
+      const locked = typeof isBuildUnlocked === 'function' && !isBuildUnlocked(key);
+      return `<button type="button" class="anchored-build-card ${locked ? 'locked' : ''}" data-build="${key}"><strong>${escapeHtml(def.label || key)}</strong><small>${escapeHtml(buildDescription(key))}</small><span>${cost}</span></button>`;
+    }).join('');
+    return `<div class="anchored-subtabs">${tabs}</div><div class="anchored-build-grid">${cards}</div>`;
+  }
+
+  function sanitizeLegacyPanelForAnchor(key) {
+    const legacy = document.querySelector(`#hud [data-panel="${key}"], .bottom-panel-content [data-panel="${key}"]`);
     if (!legacy) return null;
-    legacy.classList.remove('active', 'is-active', 'game-popup-modal');
+    legacy.classList.remove('active', 'is-active', 'game-popup-modal', 'modal', 'modal-box');
     legacy.hidden = false;
+    legacy.removeAttribute('aria-hidden');
     return legacy;
   }
 
   function panelHtml(key) {
     if (key === 'build') return renderBuildPanel();
-    const legacy = moveLegacyPanelIntoAnchor(key);
+    const legacy = sanitizeLegacyPanelForAnchor(key);
     if (legacy) return legacy;
     return `<p class="empty">Painel ${escapeHtml(PANELS[key] || key)} em preparação.</p>`;
   }
 
   function openPanel(key) {
+    closeAllOldModals();
+    disableLegacyHud();
     if (key === 'research') {
       closePanel();
       if (window.HavenfallUI?.openResearchOverlay) window.HavenfallUI.openResearchOverlay();
@@ -185,10 +228,12 @@
     body.innerHTML = '';
     if (typeof content === 'string') body.innerHTML = content;
     else body.appendChild(content);
+    closeAllOldModals();
     panel.classList.add('is-active');
     panel.setAttribute('aria-hidden', 'false');
     activeHudTab = key;
     activeButton(key);
+    stopUiPointerPropagation();
   }
 
   function closePanel() {
@@ -197,6 +242,7 @@
       panel.classList.remove('is-active');
       panel.setAttribute('aria-hidden', 'true');
     }
+    closeAllOldModals();
     activeButton(null);
   }
 
@@ -205,6 +251,7 @@
     if (!button) return;
     event.preventDefault();
     event.stopPropagation();
+    event.stopImmediatePropagation();
     const key = button.dataset.uiPanel;
     const panel = document.getElementById('anchored-ui-panel');
     if (key !== 'research' && panel?.classList.contains('is-active') && activeHudTab === key) closePanel();
@@ -213,6 +260,7 @@
 
   function handlePanelClick(event) {
     event.stopPropagation();
+    event.stopImmediatePropagation();
     if (event.target.closest('[data-close-ui-panel]')) {
       event.preventDefault();
       closePanel();
@@ -235,10 +283,21 @@
         return;
       }
       currentBuild = key;
+      if (typeof clearZoneTool === 'function') clearZoneTool('construção selecionada');
       if (typeof log === 'function') log(`Construção selecionada: ${buildDefs?.[key]?.label || key}. Clique no mapa para posicionar.`);
       closePanel();
       if (typeof updateUI === 'function') updateUI(true);
     }
+  }
+
+  function blockLegacyUiEvents(event) {
+    const target = event.target?.closest?.('[data-ui-modal], #ui-modal-backdrop, [id^="modal-"], #bottomActionBar [data-tab], #hud [data-tab], #hud [data-build]');
+    if (!target) return;
+    if (target.closest('#eventModal, #pauseOverlay, #anchored-ui-panel, #bottom-navigation-dock, .research-tree-overlay')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    closeAllOldModals();
   }
 
   function installEvents() {
@@ -251,6 +310,11 @@
     if (panel && panel.dataset.uiManagerEvents !== '1') {
       panel.dataset.uiManagerEvents = '1';
       panel.addEventListener('click', handlePanelClick);
+    }
+    if (!window.HavenfallUI.legacyEventBlockerInstalled) {
+      document.addEventListener('click', blockLegacyUiEvents, true);
+      document.addEventListener('pointerdown', blockLegacyUiEvents, true);
+      window.HavenfallUI.legacyEventBlockerInstalled = true;
     }
   }
 
@@ -272,6 +336,7 @@
         syncResources();
         updateVisibility();
         stopUiPointerPropagation();
+        closeAllOldModals();
       };
       window.HavenfallUI.updateHooked = true;
     }
@@ -288,6 +353,7 @@
   function initUiManager() {
     ensureResourceBar();
     ensureDock();
+    disableLegacyHud();
     installEvents();
     patchGameUiHooks();
     syncResources();
@@ -299,6 +365,7 @@
     openPanel,
     closeCurrentPanel: closePanel,
     closeCurrentModal: closePanel,
+    closeAllOldModals,
     togglePanel: key => document.getElementById('anchored-ui-panel')?.classList.contains('is-active') && activeHudTab === key ? closePanel() : openPanel(key),
     syncResources,
     refreshVisibility: updateVisibility,
