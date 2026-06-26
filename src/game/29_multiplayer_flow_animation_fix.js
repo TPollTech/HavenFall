@@ -24,10 +24,6 @@ function installMultiplayerFlowAnimationFixPatch() {
     return isOnlineActive() && (window.havenfallOnlineMode === 'join' || sessionStorage.getItem('havenfall-online-mode') === 'join');
   }
 
-  function isHost() {
-    return isOnlineActive() && !isVisitor();
-  }
-
   function currentNick() {
     return (localStorage.getItem('havenfall-player-nick') || 'Jogador').trim().slice(0, 22) || 'Jogador';
   }
@@ -62,31 +58,67 @@ function installMultiplayerFlowAnimationFixPatch() {
 
   function ensureMultiplayerSetupUi() {
     const screen = document.getElementById('onlineScreenClean') || document.getElementById('onlineScreen');
-    if (!screen || document.getElementById('onlineWorldSetupCard')) return;
+    if (!screen) return;
 
-    const card = document.createElement('div');
-    card.id = 'onlineWorldSetupCard';
-    card.className = 'online-players-card online-world-setup-card';
-    card.innerHTML = `
-      <h3>Mundo multiplayer</h3>
-      <p>Use essa área para preparar o host ou entrar escolhendo teu sobrevivente.</p>
-      <div class="online-flow-grid">
-        <button id="mpCreateWorldBtn" type="button">Criar/Hostear mundo</button>
-        <button id="mpJoinWorldBtn" type="button" class="secondary">Entrar no mundo ativo</button>
-      </div>
-      <div id="mpColonistPicker" class="mp-colonist-picker"><span class="empty">Entre em um mundo para escolher o colono.</span></div>
-    `;
+    let card = document.getElementById('onlineWorldSetupCard');
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'onlineWorldSetupCard';
+      card.className = 'online-players-card online-world-setup-card';
+      card.innerHTML = `
+        <h3>Mundo multiplayer</h3>
+        <p>Prepare a sessão, escolha o nick e selecione o colono que você vai controlar.</p>
+        <div class="online-flow-grid">
+          <button id="mpCreateWorldBtn" type="button">Criar / Hostear mundo</button>
+          <button id="mpJoinWorldBtn" type="button" class="secondary">Entrar no mundo ativo</button>
+        </div>
+        <div id="mpColonistPicker" class="mp-colonist-picker"><span class="empty">Entre em um mundo para escolher o colono.</span></div>
+      `;
 
-    const grid = screen.querySelector('.online-grid') || screen.querySelector('.menu-card');
-    grid?.insertAdjacentElement('afterend', card);
+      const status = document.getElementById('onlineStatusClean') || document.getElementById('onlineStatusBox');
+      status?.insertAdjacentElement('afterend', card);
 
-    document.getElementById('mpCreateWorldBtn')?.addEventListener('click', () => {
-      document.getElementById('onlineHostCleanBtn')?.click();
-    });
-    document.getElementById('mpJoinWorldBtn')?.addEventListener('click', () => {
-      document.getElementById('onlineJoinCleanBtn')?.click();
-      setTimeout(renderColonistPicker, 900);
-    });
+      document.getElementById('mpCreateWorldBtn')?.addEventListener('click', () => {
+        document.getElementById('onlineHostCleanBtn')?.click();
+      });
+      document.getElementById('mpJoinWorldBtn')?.addEventListener('click', () => {
+        document.getElementById('onlineJoinCleanBtn')?.click();
+        setTimeout(renderColonistPicker, 900);
+      });
+    }
+
+    normalizeOnlineLayout();
+  }
+
+  function normalizeOnlineLayout() {
+    const screen = document.getElementById('onlineScreenClean') || document.getElementById('onlineScreen');
+    const card = screen?.querySelector('.online-card, .menu-card');
+    if (!screen || !card) return;
+
+    screen.classList.add('online-compact-screen');
+    card.classList.add('online-compact-card');
+
+    const oldGrid = screen.querySelector('.online-grid');
+    if (oldGrid) oldGrid.classList.add('online-hidden-legacy-actions');
+
+    const status = document.getElementById('onlineStatusClean') || document.getElementById('onlineStatusBox');
+    const world = document.getElementById('onlineWorldSetupCard');
+    const nick = document.getElementById('onlineNickCard');
+    const players = document.getElementById('onlinePlayersCard');
+    const share = screen.querySelector('.online-share-box');
+
+    if (status && world && world.previousElementSibling !== status) status.insertAdjacentElement('afterend', world);
+    if (world && nick && nick.previousElementSibling !== world) world.insertAdjacentElement('afterend', nick);
+    if (nick && players && players.previousElementSibling !== nick) nick.insertAdjacentElement('afterend', players);
+    if (players && share && share.previousElementSibling !== players) players.insertAdjacentElement('afterend', share);
+
+    const nickTitle = nick?.querySelector('h3');
+    const playersTitle = players?.querySelector('h3');
+    if (nickTitle) nickTitle.textContent = 'Nick';
+    if (playersTitle) playersTitle.textContent = 'Jogadores';
+
+    const nickText = nick?.querySelector('p');
+    if (nickText) nickText.textContent = 'Nome que aparece acima do teu colono.';
   }
 
   function renderColonistPicker() {
@@ -161,6 +193,7 @@ function installMultiplayerFlowAnimationFixPatch() {
     if (screen === 'ONLINE') {
       ensureMultiplayerSetupUi();
       renderColonistPicker();
+      normalizeOnlineLayout();
     }
   };
 
@@ -168,7 +201,10 @@ function installMultiplayerFlowAnimationFixPatch() {
   updateUI = function flowFixUpdateUI(force = false) {
     previousUpdateUI(force);
     ensureMultiplayerSetupUi();
-    if (appScreen === 'ONLINE') renderColonistPicker();
+    if (appScreen === 'ONLINE') {
+      renderColonistPicker();
+      normalizeOnlineLayout();
+    }
   };
 
   async function syncPickerFromWorld() {
@@ -180,6 +216,7 @@ function installMultiplayerFlowAnimationFixPatch() {
       if ((data.revision || 0) !== lastWorldRev) {
         lastWorldRev = data.revision || 0;
         renderColonistPicker();
+        normalizeOnlineLayout();
       }
     } catch (_) {}
   }
@@ -189,14 +226,57 @@ function installMultiplayerFlowAnimationFixPatch() {
     const style = document.createElement('style');
     style.id = 'multiplayerFlowAnimationStyles';
     style.textContent = `
-      .online-flow-grid { display:grid; grid-template-columns:repeat(2,minmax(180px,1fr)); gap:10px; margin-top:10px; }
-      .mp-colonist-picker { margin-top:12px; }
+      .online-compact-screen {
+        overflow: hidden !important;
+        padding: 12px !important;
+      }
+      .online-compact-card {
+        width: min(980px, 96vw) !important;
+        max-height: 88vh !important;
+        overflow: auto !important;
+        padding: 16px !important;
+        scrollbar-gutter: stable;
+      }
+      .online-compact-card .screen-title-row {
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .online-compact-card h1 { margin: 2px 0 4px !important; font-size: clamp(26px, 4vw, 42px) !important; }
+      .online-compact-card h2,
+      .online-compact-card h3,
+      .online-compact-card h4 { margin: 0 0 7px !important; }
+      .online-compact-card p { margin: 0 0 8px !important; line-height: 1.35 !important; }
+      .online-hidden-legacy-actions { display: none !important; }
+      .online-players-card,
+      .online-status-box,
+      .online-share-box {
+        margin: 9px 0 !important;
+        padding: 11px !important;
+      }
+      .online-share-box p { display: none !important; }
+      .online-flow-grid { display:grid; grid-template-columns:repeat(2,minmax(180px,1fr)); gap:10px; margin-top:8px; }
+      .mp-colonist-picker { margin-top:10px; }
       .mp-colonist-picker h4 { margin: 0 0 8px; }
-      .mp-colonist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:8px; }
-      .mp-colonist-choice { text-align:left; min-height:62px; }
+      .mp-colonist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; max-height: 178px; overflow:auto; padding-right: 3px; }
+      .mp-colonist-choice { text-align:left; min-height:56px; padding: 9px !important; }
       .mp-colonist-choice.active { border-color:rgba(155,211,106,.72); box-shadow:0 0 0 2px rgba(155,211,106,.15) inset; }
       .mp-colonist-choice small { display:block; color:rgba(232,241,255,.65); margin-top:4px; }
-      @media(max-width:720px){ .online-flow-grid{ grid-template-columns:1fr; } }
+      #onlinePlayersList.online-players-list,
+      .online-players-list { max-height: 150px; overflow:auto; padding-right: 3px; }
+      .online-player-row { padding: 7px 9px !important; }
+      .online-player-row small { display: none !important; }
+      #onlineNickCard .inline-field,
+      .online-share-box .inline-field { gap: 8px; }
+      #onlineNickInput,
+      #onlineShareCleanInput,
+      #onlineShareLink { min-height: 36px !important; }
+      @media(max-width:720px){
+        .online-flow-grid{ grid-template-columns:1fr; }
+        .online-compact-card { max-height: 90vh !important; padding: 12px !important; }
+        .online-compact-card .screen-title-row { flex-direction: column; }
+        .online-compact-card .screen-title-row button { width: 100%; }
+      }
     `;
     document.head.appendChild(style);
   }
