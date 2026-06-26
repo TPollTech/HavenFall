@@ -59,7 +59,7 @@
 
   function renderCell(c, key) {
     const value = Number(priorityFor(c, key));
-    return `<td class="task-priority-cell" aria-label="${escapeHtml(TASK_LABELS[key])}"><div class="priority-dots compact" data-priority-colonist="${c.id}" data-priority-task="${key}">${[0,1,2,3,4].map(n => `<button title="${escapeHtml(TASK_LABELS[key])}: prioridade ${n}" class="${value === n ? 'is-active' : ''}" data-priority-value="${n}">${n}</button>`).join('')}</div></td>`;
+    return `<td class="task-priority-cell" aria-label="${escapeHtml(TASK_LABELS[key])}"><div class="priority-dots compact" data-priority-colonist="${c.id}" data-priority-task="${key}">${[0,1,2,3,4].map(n => `<button type="button" title="${escapeHtml(TASK_LABELS[key])}: prioridade ${n}" class="${value === n ? 'is-active' : ''}" data-priority-value="${n}">${n}</button>`).join('')}</div></td>`;
   }
 
   function renderRow(c) {
@@ -80,43 +80,33 @@
     return ensureTaskPriorities()?.[c.id]?.[taskKey] ?? 2;
   }
 
-  function installAutoTaskPriorityHook() {
-    if (window.HavenfallUI.taskPriorityHooked || typeof assignAutoTask !== 'function') return;
-    const nativeAssignAutoTask = assignAutoTask;
-    assignAutoTask = function assignAutoTaskByMatrix(c) {
-      const matrix = ensureTaskPriorities()?.[c.id];
-      if (matrix) {
-        const ranked = TASKS.map(([key]) => [key, matrix[key] ?? 0]).sort((a, b) => b[1] - a[1]);
-        const top = ranked.find(([, value]) => value > 0);
-        if (top) {
-          if (top[0] === 'gather') c.priority = 'gather';
-          if (top[0] === 'build') c.priority = 'build';
-          if (top[0] === 'research' && state?.objects?.some(o => o.type === 'research_desk')) {
-            const desk = state.objects.find(o => o.type === 'research_desk');
-            if (desk && typeof assignResearch === 'function') { assignResearch(c, desk); return true; }
-          }
-        }
-      }
-      return nativeAssignAutoTask(c);
-    };
-    window.HavenfallUI.taskPriorityHooked = true;
-  }
-
-  document.addEventListener('click', event => {
+  function onPriorityClick(event) {
     const btn = event.target.closest?.('[data-priority-value]');
-    if (!btn) return;
+    if (!btn || !btn.closest('#anchored-ui-panel')) return;
     const box = btn.closest('[data-priority-colonist][data-priority-task]');
     if (!box || !state) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
     const id = Number(box.dataset.priorityColonist);
     const task = box.dataset.priorityTask;
+    const value = Number(btn.dataset.priorityValue);
     ensureTaskPriorities();
-    state.taskPriorities[id][task] = Number(btn.dataset.priorityValue);
-    if (typeof gameLog === 'function') gameLog(`Prioridade: ${TASK_LABELS[task] || task} = ${state.taskPriorities[id][task]}.`, 'info');
+    state.taskPriorities[id][task] = value;
+
+    const colonist = state.colonists?.find(c => c.id === id);
+    if (colonist && !colonist.task) colonist.note = `Prioridade ${TASK_LABELS[task] || task}: ${value}`;
+    if (typeof gameLog === 'function') gameLog(`Prioridade: ${colonist?.name || 'colono'} · ${TASK_LABELS[task] || task} = ${value}.`, 'info');
+
     updateUI?.(true);
     window.HavenfallUI.refreshDockPanel?.('tasks');
-  });
+  }
 
-  installAutoTaskPriorityHook();
+  document.addEventListener('click', onPriorityClick, true);
+
   window.getColonistTaskPriority = getColonistTaskPriority;
+  window.HavenfallUI.ensureTaskPriorities = ensureTaskPriorities;
   window.HavenfallUI.tabViews.tasks = { render, onOpen: ensureTaskPriorities };
 })();
