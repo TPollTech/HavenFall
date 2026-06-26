@@ -417,8 +417,17 @@ function findLooseHaulTarget() {
   return best;
 }
 
+function handlePriorityValue(c) {
+  if (typeof getColonistTaskPriority === 'function') return getColonistTaskPriority(c, 'handle');
+  return 2;
+}
+
+function canAutoHandleZoneTask(c) {
+  return handlePriorityValue(c) > 0;
+}
+
 function assignHaulTask(c, obj, storageTile) {
-  if (!c || !obj || !storageTile) return false;
+  if (!c || !obj || !storageTile || !canAutoHandleZoneTask(c)) return false;
   const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
   obj.reservedBy = c.id;
   c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y, zoneType: 'storage', zoneX: storageTile.x, zoneY: storageTile.y };
@@ -483,7 +492,7 @@ function updateZoneBehaviors() {
 
     if ((c.health < 38 || c.statuses?.includes('gripe') || c.statuses?.includes('hipotermia')) && assignMoveToZone(c, 'safe', 'Buscando área segura')) continue;
 
-    const target = zoneSystem.count('storage') ? findLooseHaulTarget() : null;
+    const target = canAutoHandleZoneTask(c) && zoneSystem.count('storage') ? findLooseHaulTarget() : null;
     if (target) {
       const storageTile = zoneSystem.findFreeStorageTile();
       if (storageTile && assignHaulTask(c, target, storageTile)) continue;
