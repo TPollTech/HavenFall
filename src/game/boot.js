@@ -23,7 +23,7 @@
     { id: 'asset_pack_clean', file: 'src/game/patches/asset_pack_clean.js', optional: true }
   ]);
 
-  const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/13_main.js' });
+  const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
 
   function loadScript(blueprint) {
     return new Promise((resolve, reject) => {
