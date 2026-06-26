@@ -18,7 +18,7 @@
     { id: 'world_systems', file: 'src/game/world-systems.js' },
     { id: 'renderer', file: 'src/game/renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
-    { id: 'hud_ui', file: 'src/game/hud-ui.js' },
+    { id: 'hud_ui', file: 'src/game/ui/hud-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
