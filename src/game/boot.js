@@ -20,6 +20,7 @@
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/hud-ui.js' },
     { id: 'ui_manager', file: 'src/game/ui-manager.js' },
+    { id: 'ui_clean_controller', file: 'src/game/ui-clean-controller.js' },
     { id: 'modal_compat', file: 'src/game/modal-compat.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
@@ -75,12 +76,7 @@
   }
 
   async function bootFromManifest() {
-    window.HavenfallBootManifest = Object.freeze({
-      core: CORE_BLUEPRINTS,
-      patches: PATCH_BLUEPRINTS,
-      entry: ENTRY_BLUEPRINT
-    });
-
+    window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, patches: PATCH_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
       await loadBlueprintsInOrder(CORE_BLUEPRINTS);
       await loadBlueprintsInOrder(PATCH_BLUEPRINTS);
