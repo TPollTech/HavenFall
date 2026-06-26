@@ -136,7 +136,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`HavenFall rodando em http://localhost:${PORT}`);
-  console.log(`Online local: http://localhost:${PORT}/?join=1`);
-  console.log(`Para amigo fora da rede, use: cloudflared tunnel --url http://localhost:${PORT}`);
+  console.log(`HavenFall online em http://localhost:${PORT}`);
+  console.log('Abra o mesmo endereço público nos dois navegadores e use o menu Online para Hostear ou Entrar.');
 });
