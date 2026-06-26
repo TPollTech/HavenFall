@@ -2,6 +2,7 @@
 
 const GAME_HOUR_SECONDS_1X = 40;
 const TIME_SPEED = 1 / GAME_HOUR_SECONDS_1X;
+const loopErrorState = new Set();
 
 function newGame() {
   writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
@@ -11,6 +12,7 @@ function newGame() {
 }
 
 function showModal(title, text, button) {
+  if (!dom.modal) return;
   dom.modal.querySelector('h1').textContent = title;
   dom.modal.querySelector('p').innerHTML = text;
   dom.modal.querySelector('button').textContent = button;
@@ -29,6 +31,19 @@ function roundRect(x, y, w, h, r, fill, stroke) {
   ctx.closePath();
   if (fill) ctx.fill();
   if (stroke) ctx.stroke();
+}
+
+function safeSystemTick(label, fn) {
+  if (typeof fn !== 'function') return;
+  try {
+    fn();
+  } catch (err) {
+    if (!loopErrorState.has(label)) {
+      loopErrorState.add(label);
+      console.error(`[GameLoop:${label}]`, err);
+      if (typeof log === 'function') log(`Sistema ${label} falhou e foi isolado para manter o jogo rodando.`);
+    }
+  }
 }
 
 function updateWorld(dt) {
@@ -73,7 +88,17 @@ function updateWorld(dt) {
     }
   }
 
-  for (const c of state.colonists || []) updateColonist(c, dt);
+  for (const c of state.colonists || []) {
+    try {
+      updateColonist(c, dt);
+    } catch (err) {
+      console.error('[Colonist Update Error]', { colonist: c, task: c?.task, error: err });
+      c.task = null;
+      c.path = [];
+      c.work = 0;
+      c.note = 'Tarefa cancelada por erro de IA';
+    }
+  }
   checkGoals();
 }
 
@@ -108,9 +133,9 @@ function randomEvent() {
   if (event === 'berries') {
     for (let i = 0; i < 2; i++) {
       const tile = freeRandomTile();
-      if (tile) state.objects.push({ id: uid(), type: 'berry', x: tile.x, y: tile.y });
+      if (tile) state.objects.push({ id: uid('obj'), type: 'berry', x: tile.x, y: tile.y });
     }
-    invalidateSpatialGrid?.();
+    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     log('Frutas silvestres brotaram perto da base.');
     return;
   }
@@ -118,8 +143,8 @@ function randomEvent() {
   if (event === 'ore') {
     const tile = freeRandomStoneTile() || freeRandomTile();
     if (tile) {
-      state.objects.push({ id: uid(), type: 'ore', x: tile.x, y: tile.y });
-      invalidateSpatialGrid?.();
+      state.objects.push({ id: uid('obj'), type: 'ore', x: tile.x, y: tile.y });
+      if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
       log('Um veio de metal foi encontrado em uma área rochosa.');
     }
   }
@@ -147,7 +172,7 @@ function freeRandomStoneTile() {
 
 function checkGoals() {
   if (!state) return;
-  ensureResearchState?.();
+  if (typeof ensureResearchState === 'function') ensureResearchState();
   const beds = state.objects.filter(o => o.type === 'bed').length;
   const campfire = state.objects.some(o => o.type === 'campfire');
   const researchDesk = state.objects.some(o => o.type === 'research_desk');
@@ -174,22 +199,22 @@ function setGoal(key, done) {
 function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
-  if (typeof updateScheduleManagerTick === 'function') updateScheduleManagerTick(dt);
-  updateWorld(dt);
-  if (typeof updateEnvironmentTick === 'function') updateEnvironmentTick(dt);
-  if (typeof updateClimateAdvancedTick === 'function') updateClimateAdvancedTick(dt);
-  if (typeof updateDefenseTick === 'function') updateDefenseTick(dt);
-  if (typeof updateHaulingAdvTick === 'function') updateHaulingAdvTick(dt);
-  if (typeof updateWorkbenchToolsTick === 'function') updateWorkbenchToolsTick(dt);
-  if (typeof updateMobsTick === 'function') updateMobsTick(dt);
-  if (typeof updateZonesTick === 'function') updateZonesTick(dt);
-  if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt);
-  updateCamera(dt);
-  if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) draw();
+  safeSystemTick('schedule', () => { if (typeof updateScheduleManagerTick === 'function') updateScheduleManagerTick(dt); });
+  safeSystemTick('world', () => updateWorld(dt));
+  safeSystemTick('environment', () => { if (typeof updateEnvironmentTick === 'function') updateEnvironmentTick(dt); });
+  safeSystemTick('climate', () => { if (typeof updateClimateAdvancedTick === 'function') updateClimateAdvancedTick(dt); });
+  safeSystemTick('defense', () => { if (typeof updateDefenseTick === 'function') updateDefenseTick(dt); });
+  safeSystemTick('hauling', () => { if (typeof updateHaulingAdvTick === 'function') updateHaulingAdvTick(dt); });
+  safeSystemTick('workstations', () => { if (typeof updateWorkbenchToolsTick === 'function') updateWorkbenchToolsTick(dt); });
+  safeSystemTick('mobs', () => { if (typeof updateMobsTick === 'function') updateMobsTick(dt); });
+  safeSystemTick('zones', () => { if (typeof updateZonesTick === 'function') updateZonesTick(dt); });
+  safeSystemTick('roof', () => { if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt); });
+  safeSystemTick('camera', () => updateCamera(dt));
+  safeSystemTick('draw', () => { if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) draw(); });
   uiTimer += dt;
   autosaveTimer += dt;
-  if (state && uiTimer > 0.25) { uiTimer = 0; updateUI(); }
-  if (state && settings.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) { autosaveTimer = 0; saveGame(false); }
+  if (state && uiTimer > 0.25) { uiTimer = 0; safeSystemTick('ui', () => updateUI()); }
+  if (state && settings.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) { autosaveTimer = 0; safeSystemTick('save', () => saveGame(false)); }
   requestAnimationFrame(gameLoop);
 }
 
