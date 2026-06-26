@@ -1,40 +1,46 @@
 'use strict';
 
+function on(el, eventName, handler, options) {
+  if (el) el.addEventListener(eventName, handler, options);
+}
+
 function setupEventListeners() {
-  document.getElementById('continueBtn').addEventListener('click', continueFromMenu);
-  document.getElementById('newGameBtn').addEventListener('click', () => {
+  on(dom.buttons.continue, 'click', continueFromMenu);
+  on(dom.buttons.newGame, 'click', () => {
     writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
     setScreen(SCREEN.NEW_GAME_SETUP);
   });
-  document.getElementById('openLoadBtn').addEventListener('click', () => setScreen(SCREEN.LOAD_GAME));
-  document.getElementById('openSettingsBtn').addEventListener('click', () => setScreen(SCREEN.SETTINGS));
-  document.getElementById('exitBtn').addEventListener('click', () => refreshMenuSaveInfo());
-  document.getElementById('setupBackBtn').addEventListener('click', () => setScreen(SCREEN.MAIN_MENU));
-  document.getElementById('setupNextBtn').addEventListener('click', () => {
+  on(dom.buttons.openLoad, 'click', () => setScreen(SCREEN.LOAD_GAME));
+  on(dom.buttons.openSettings, 'click', () => setScreen(SCREEN.SETTINGS));
+  on(dom.buttons.exit, 'click', () => refreshMenuSaveInfo());
+  on(dom.buttons.setupBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
+  on(dom.buttons.setupNext, 'click', () => {
     newGameConfig = readNewGameConfig();
     generateColonistCandidates(newGameConfig);
     setScreen(SCREEN.COLONIST_SELECT);
   });
-  document.getElementById('randomSeedBtn').addEventListener('click', () => {
-    document.getElementById('worldSeedInput').value = generateRandomSeed();
+  on(dom.buttons.randomSeed, 'click', () => {
+    if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
     updateSetupSummary();
   });
-  ['colonyNameInput','worldSeedInput','difficultySelect','colonistCountSelect','resourcesPresetSelect','eventIntensitySelect','mapSizeSelect'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updateSetupSummary);
-    document.getElementById(id).addEventListener('change', updateSetupSummary);
-  });
-  document.getElementById('colonistBackBtn').addEventListener('click', () => setScreen(SCREEN.NEW_GAME_SETUP));
-  document.getElementById('rerollAllBtn').addEventListener('click', () => {
-    colonistCandidates = colonistCandidates.map((c, i) => c.locked ? c : createColonistCandidate(i, newGameConfig, `${newGameConfig.seed}-reroll-all-${Date.now()}-${i}-${Math.random()}`));
-    renderColonistSelection();
-  });
-  document.getElementById('startSelectedGameBtn').addEventListener('click', () => {
+
+  Object.values(dom.inputs)
+    .filter(Boolean)
+    .filter(el => ['colonyNameInput','worldSeedInput','difficultySelect','colonistCountSelect','resourcesPresetSelect','eventIntensitySelect','mapSizeSelect'].includes(el.id))
+    .forEach(el => {
+      on(el, 'input', updateSetupSummary);
+      on(el, 'change', updateSetupSummary);
+    });
+
+  on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
+  on(dom.buttons.rerollAll, 'click', rerollUnlockedColonists);
+  on(dom.buttons.startSelectedGame, 'click', () => {
     if (!newGameConfig) newGameConfig = readNewGameConfig();
     startNewGame(newGameConfig, colonistCandidates);
   });
-  document.getElementById('loadBackBtn').addEventListener('click', () => setScreen(SCREEN.MAIN_MENU));
-  document.getElementById('loadSlotBtn').addEventListener('click', loadAndPlay);
-  document.getElementById('deleteSaveBtn').addEventListener('click', () => {
+  on(dom.buttons.loadBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
+  on(dom.buttons.loadSlot, 'click', loadAndPlay);
+  on(dom.buttons.deleteSave, 'click', () => {
     if (confirm('Apagar o save local?')) {
       localStorage.removeItem(SAVE_KEY);
       activeSession = false;
@@ -42,11 +48,11 @@ function setupEventListeners() {
       refreshLoadScreen();
     }
   });
-  document.getElementById('settingsBackBtn').addEventListener('click', goBackFromSettings);
-  document.getElementById('uiScaleSelect').value = settings.uiScale || 'normal';
-  document.getElementById('autosaveSelect').value = settings.autosave || 'on';
-  document.getElementById('uiScaleSelect').addEventListener('change', e => { settings.uiScale = e.target.value; saveSettings(); });
-  document.getElementById('autosaveSelect').addEventListener('change', e => { settings.autosave = e.target.value; saveSettings(); });
+  on(dom.buttons.settingsBack, 'click', goBackFromSettings);
+  if (dom.inputs.uiScale) dom.inputs.uiScale.value = settings.uiScale || 'normal';
+  if (dom.inputs.autosave) dom.inputs.autosave.value = settings.autosave || 'on';
+  on(dom.inputs.uiScale, 'change', e => { settings.uiScale = e.target.value; saveSettings(); });
+  on(dom.inputs.autosave, 'change', e => { settings.autosave = e.target.value; saveSettings(); });
 
   document.addEventListener('click', e => {
     const reroll = e.target.closest('[data-reroll-colonist]');
@@ -125,15 +131,15 @@ function setupEventListeners() {
     state.speed = Number(btn.dataset.speed);
     setScreen(SCREEN.PLAYING);
   }));
-  document.getElementById('cancelBuild').addEventListener('click', () => { currentBuild = null; updateUI(true); });
-  document.getElementById('pauseBtn').addEventListener('click', () => setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING));
-  document.getElementById('menuPauseBtn').addEventListener('click', () => setScreen(SCREEN.PAUSED));
-  document.getElementById('resumeBtn').addEventListener('click', () => setScreen(SCREEN.PLAYING));
-  document.getElementById('pauseSaveBtn').addEventListener('click', () => { saveGame(true); updateUI(true); });
-  document.getElementById('pauseLoadBtn').addEventListener('click', loadAndPlay);
-  document.getElementById('pauseSettingsBtn').addEventListener('click', () => setScreen(SCREEN.SETTINGS));
-  document.getElementById('pauseMainMenuBtn').addEventListener('click', () => setScreen(SCREEN.MAIN_MENU));
-  document.getElementById('startBtn').addEventListener('click', () => { dom.modal.classList.remove('show'); setScreen(SCREEN.PLAYING); });
+  on(dom.buttons.cancelBuild, 'click', () => { currentBuild = null; updateUI(true); });
+  on(dom.buttons.pause, 'click', () => setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING));
+  on(dom.buttons.pauseMenu, 'click', () => setScreen(SCREEN.PAUSED));
+  on(dom.buttons.resume, 'click', () => setScreen(SCREEN.PLAYING));
+  on(dom.buttons.pauseSave, 'click', () => { saveGame(true); updateUI(true); });
+  on(dom.buttons.pauseLoad, 'click', loadAndPlay);
+  on(dom.buttons.pauseSettings, 'click', () => setScreen(SCREEN.SETTINGS));
+  on(dom.buttons.pauseMainMenu, 'click', () => setScreen(SCREEN.MAIN_MENU));
+  on(dom.buttons.modalStart, 'click', () => { dom.modal.classList.remove('show'); setScreen(SCREEN.PLAYING); });
 
   canvas.addEventListener('wheel', e => {
     if (appScreen !== SCREEN.PLAYING) return;
