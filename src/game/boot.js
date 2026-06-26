@@ -19,7 +19,6 @@
     { id: 'renderer', file: 'src/game/renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/hud-ui.js' },
-    { id: 'ui_manager', file: 'src/game/ui-manager.js' },
     { id: 'ui_clean_controller', file: 'src/game/ui-clean-controller.js' },
     { id: 'modal_compat', file: 'src/game/modal-compat.js' },
     { id: 'zones', file: 'src/game/zones.js' },
@@ -61,9 +60,7 @@
 
   async function loadBlueprintsInOrder(blueprints) {
     const loaded = [];
-    for (const blueprint of blueprints) {
-      loaded.push(await loadScript(blueprint));
-    }
+    for (const blueprint of blueprints) loaded.push(await loadScript(blueprint));
     return loaded;
   }
 
