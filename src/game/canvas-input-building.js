@@ -1,6 +1,7 @@
 'use strict';
 
 let mouseTile = null;
+let currentBuildRotation = 0;
 
 canvas.addEventListener('mousedown', handleCanvasMouseDown);
 canvas.addEventListener('mousemove', handleCanvasMouseMove);
@@ -10,6 +11,36 @@ canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 
 const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse'];
+const ROTATABLE_BUILD_TYPES = new Set(['wall', 'door']);
+
+function normalizeBuildRotation(rotation) {
+  return ((Number(rotation) || 0) % 4 + 4) % 4;
+}
+
+function buildTypeForRotation(buildKey = currentBuild) {
+  return buildDefs?.[buildKey]?.type || null;
+}
+
+function isBuildRotatable(buildKey = currentBuild) {
+  const type = buildTypeForRotation(buildKey);
+  return ROTATABLE_BUILD_TYPES.has(type);
+}
+
+function buildRotationLabel(rotation = currentBuildRotation) {
+  return ['0°', '90°', '180°', '270°'][normalizeBuildRotation(rotation)] || '0°';
+}
+
+function rotateCurrentBuild() {
+  if (!currentBuild || !isBuildRotatable(currentBuild)) return false;
+  currentBuildRotation = normalizeBuildRotation(currentBuildRotation + 1);
+  if (typeof log === 'function') log(`${buildDefs[currentBuild]?.label || 'Construção'} rotacionada para ${buildRotationLabel()}.`);
+  if (typeof updateUI === 'function') updateUI(true);
+  return true;
+}
+
+function resetBuildRotationIfNeeded(buildKey = currentBuild) {
+  if (!isBuildRotatable(buildKey)) currentBuildRotation = 0;
+}
 
 function handleCanvasMouseDown(e) {
   if (e.button !== 0 || appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
@@ -293,9 +324,10 @@ function placeBlueprint(buildKey, x, y) {
   if (!hasCost(def.cost || {}) || !hasItems(def.itemCost || {})) { log(`Recursos insuficientes para essa construção. Precisa de ${itemCostText(def.cost, def.itemCost)}.`); return; }
   payCost(def.cost || {});
   payItems(def.itemCost || {});
-  state.objects.push({ id: uid(), type: 'blueprint', buildType: buildKey, x, y, progress: 0 });
+  const rotation = isBuildRotatable(buildKey) ? normalizeBuildRotation(currentBuildRotation) : 0;
+  state.objects.push({ id: uid(), type: 'blueprint', buildType: buildKey, x, y, progress: 0, rotation });
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-  log(`Planta de ${def.label} posicionada.`);
+  log(`Planta de ${def.label} posicionada${rotation ? ` (${buildRotationLabel(rotation)})` : ''}.`);
   const c = selectedColonist();
   const bp = getObjectAt(x, y);
   if (c && bp) assignBuild(c, bp);
