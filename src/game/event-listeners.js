@@ -26,6 +26,10 @@
     });
   }
 
+  function cancelZoneToolForAction(reason = 'outra ação selecionada') {
+    if (typeof clearZoneTool === 'function') clearZoneTool(reason);
+  }
+
   function toggleColonistLock(idx) {
     if (!colonistCandidates || !colonistCandidates[idx]) return;
     colonistCandidates[idx].locked = !colonistCandidates[idx].locked;
@@ -52,6 +56,7 @@
       return;
     }
 
+    cancelZoneToolForAction('construção selecionada');
     currentBuild = buildKey;
     if (typeof setHudTab === 'function') setHudTab('build');
     if (typeof updateUI === 'function') updateUI(true);
@@ -102,6 +107,7 @@
 
     const craft = target.closest('[data-craft]');
     if (craft && state && typeof selectedColonist === 'function') {
+      cancelZoneToolForAction();
       const c = selectedColonist();
       const station = selectedCraftStationId ? state.objects.find(o => o.id === selectedCraftStationId) : null;
       if (c) assignCraft(c, craft.dataset.craft, station);
@@ -111,6 +117,7 @@
 
     const equip = target.closest('[data-equip-item]');
     if (equip && state && typeof selectedColonist === 'function') {
+      cancelZoneToolForAction();
       const c = selectedColonist();
       if (c) equipItem(c, equip.dataset.equipItem);
       return;
@@ -118,6 +125,7 @@
 
     const unequip = target.closest('[data-unequip-slot]');
     if (unequip && state && typeof selectedColonist === 'function') {
+      cancelZoneToolForAction();
       const c = selectedColonist();
       if (c) unequipSlot(c, unequip.dataset.unequipSlot);
       return;
@@ -125,6 +133,7 @@
 
     const tab = target.closest('[data-tab]');
     if (tab) {
+      if (tab.dataset.tab !== 'zones') cancelZoneToolForAction('aba trocada');
       setHudTab(tab.dataset.tab);
       return;
     }
@@ -208,6 +217,7 @@
       else if (appScreen === SCREEN.PAUSED) setScreen(SCREEN.PLAYING);
       else if (appScreen !== SCREEN.MAIN_MENU) setScreen(SCREEN.MAIN_MENU);
       currentBuild = null;
+      cancelZoneToolForAction('ESC');
       hideContextMenu?.();
       syncSpeedButtons();
       return;
