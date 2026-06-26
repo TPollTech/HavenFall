@@ -4,6 +4,11 @@ function installMultiplayerControlPatch() {
   if (window.__havenfallMultiplayerControlInstalled) return;
   window.__havenfallMultiplayerControlInstalled = true;
 
+  if (window.havenfallOnlineSessionActive !== true && !new URLSearchParams(window.location.search).has('join')) {
+    sessionStorage.removeItem('havenfall-online-mode');
+    window.havenfallOnlineMode = null;
+  }
+
   const localKeys = new Set();
   let remoteInputs = new Map();
   let playersCache = [];
@@ -54,6 +59,9 @@ function installMultiplayerControlPatch() {
   }
 
   function chosenColonistIdFor(id) {
+    const p = playersCache.find(row => row.id === id);
+    const chosenFromServer = Number(p?.chosenColonistId || 0);
+    if (chosenFromServer && state?.colonists?.some(c => c.id === chosenFromServer && !c.dead && !c.downed)) return chosenFromServer;
     const saved = sessionStorage.getItem(`havenfall-colonist-choice-${id}`) || localStorage.getItem(`havenfall-colonist-choice-${id}`);
     const numeric = Number(saved);
     if (numeric && state?.colonists?.some(c => c.id === numeric && !c.dead && !c.downed)) return numeric;
@@ -184,6 +192,14 @@ function installMultiplayerControlPatch() {
     badge.innerHTML = `<b>${isVisitor() ? 'VISITANTE' : 'HOST'}</b><span>Teu colono: ${escapeHtml(c?.name || 'aguardando escolha')}</span>`;
   }
 
+  function loadFlowAnimationPatch() {
+    if (window.__havenfallFlowAnimationFixInstalled) return;
+    if (document.querySelector('script[src="src/game/29_multiplayer_flow_animation_fix.js"]')) return;
+    const script = document.createElement('script');
+    script.src = 'src/game/29_multiplayer_flow_animation_fix.js';
+    document.body.appendChild(script);
+  }
+
   function installStyles() {
     if (document.getElementById('multiplayerControlStyles')) return;
     const style = document.createElement('style');
@@ -298,6 +314,7 @@ function installMultiplayerControlPatch() {
   };
 
   installStyles();
+  loadFlowAnimationPatch();
   refreshPlayersCache();
   if (inputTimer) clearInterval(inputTimer);
   inputTimer = setInterval(sendInput, 90);
