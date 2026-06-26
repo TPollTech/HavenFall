@@ -4,12 +4,6 @@ const ctx = canvas.getContext('2d');
 
 const TILE = 48;
 
-// Fallbacks legados. A partir da V1.8 o tamanho real do mundo vem de state.world.
-const COLS = 22;
-const ROWS = 14;
-const WORLD_W = COLS * TILE;
-const WORLD_H = ROWS * TILE;
-
 const MAP_SIZES = Object.freeze({
   small: { label: 'pequeno', cols: 42, rows: 30, resourceMultiplier: 0.75, poiCount: 3 },
   standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 },
@@ -21,8 +15,8 @@ const MAP_SIZES = Object.freeze({
 let viewTransform = { scale: 1, offsetX: 0, offsetY: 0 };
 
 const camera = {
-  x: WORLD_W / 2,
-  y: WORLD_H / 2,
+  x: 0,
+  y: 0,
   speed: 720,
   zoom: 1.12,
   minZoom: 0.72,
@@ -31,8 +25,8 @@ const camera = {
 };
 const cameraInput = new Set();
 
-function getWorldCols() { return state?.world?.cols || state?.terrain?.[0]?.length || COLS; }
-function getWorldRows() { return state?.world?.rows || state?.terrain?.length || ROWS; }
+function getWorldCols() { return state?.world?.cols || state?.terrain?.[0]?.length || MAP_SIZES.standard.cols; }
+function getWorldRows() { return state?.world?.rows || state?.terrain?.length || MAP_SIZES.standard.rows; }
 function getTileSize() { return state?.world?.tileSize || TILE; }
 function getWorldWidth() { return getWorldCols() * getTileSize(); }
 function getWorldHeight() { return getWorldRows() * getTileSize(); }
@@ -143,7 +137,8 @@ const objectDefs = {
   cache: { name: 'baú abandonado', img: 'chest_large', blocks: true, interactable: true, unknown: true, work: 2.6 },
   supply_crate: { name: 'caixa de suprimentos', img: 'crate_wood', blocks: true, interactable: true, unknown: true, work: 2.2 },
   wall: { name: 'parede', img: 'wall_stone', blocks: true },
-  bench: { name: 'bancada', img: 'crafting_bench', blocks: true, craft: 1 }
+  bench: { name: 'bancada', img: 'crafting_bench', blocks: true, craft: 1 },
+  door: { name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true }
 };
 
 const buildDefs = {
@@ -151,6 +146,7 @@ const buildDefs = {
   campfire: { label: 'Fogueira', type: 'campfire', cost: { wood: 6, stone: 2 }, work: 4 },
   crate: { label: 'Depósito', type: 'crate', cost: { wood: 10 }, work: 4 },
   wall: { label: 'Parede', type: 'wall', cost: { wood: 4 }, work: 3 },
+  door: { label: 'Porta', type: 'door', cost: { wood: 6 }, work: 4 },
   crop: { label: 'Plantação', type: 'crop', cost: { food: 2 }, work: 3 },
   bench: { label: 'Bancada', type: 'bench', cost: { wood: 18, stone: 8 }, work: 7 },
   research_desk: { label: 'Mesa de Pesquisa', type: 'research_desk', cost: { wood: 20, stone: 6 }, work: 7 },
@@ -226,6 +222,16 @@ let selectedWorldObjectId = null;
 let selectedCraftStationId = null;
 let gatherSelection = null;
 let suppressNextClick = false;
+let wallIndex = new Map();
+let solidWallIndex = new Map();
+let doorIndex = new Map();
+let wallIndexDirty = true;
+let lastWallObjectCount = -1;
+let roofSet = new Set();
+let roofArrayRef = null;
+let roofTick = 0;
+let lastSpriteCleanupAt = 0;
+const transparentSpriteUrl = new Map();
 
 const defaultNewGameConfig = {
   colonyName: 'First Haven',
