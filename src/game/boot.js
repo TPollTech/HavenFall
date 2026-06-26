@@ -4,6 +4,7 @@
   const CORE_BLUEPRINTS = Object.freeze([
     { id: 'state', file: 'src/game/state.js' },
     { id: 'asset_audit', file: 'src/game/asset-audit.js' },
+    { id: 'creature_sprite_sheet', file: 'src/game/creature-sprite-sheet.js' },
     { id: 'game_setup', file: 'src/game/game-setup.js' },
     { id: 'colonist_generation', file: 'src/game/colonist-generation.js' },
     { id: 'research_system', file: 'src/game/research-system.js' },
