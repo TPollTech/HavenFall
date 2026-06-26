@@ -20,6 +20,7 @@ let multiplayerSnapshot = null;
 let multiplayerRevision = 0;
 let multiplayerUpdatedAt = null;
 const multiplayerPlayers = new Map();
+const multiplayerInputs = new Map();
 
 function sendJson(res, status, payload) {
   res.writeHead(status, {
@@ -57,6 +58,7 @@ function activePlayers() {
     const ageSeconds = Math.max(0, (now - player.lastSeen) / 1000);
     if (ageSeconds > 12) {
       multiplayerPlayers.delete(id);
+      multiplayerInputs.delete(id);
       continue;
     }
     players.push({
@@ -71,6 +73,20 @@ function activePlayers() {
     });
   }
   return players.sort((a, b) => (a.role === 'host' ? -1 : 1) - (b.role === 'host' ? -1 : 1) || a.nick.localeCompare(b.nick));
+}
+
+function activeInputs() {
+  const now = Date.now();
+  const inputs = [];
+  for (const [id, input] of multiplayerInputs.entries()) {
+    const ageSeconds = Math.max(0, (now - input.lastSeen) / 1000);
+    if (ageSeconds > 2) {
+      multiplayerInputs.delete(id);
+      continue;
+    }
+    inputs.push({ id, keys: input.keys || {}, lastSeen: new Date(input.lastSeen).toISOString(), ageSeconds });
+  }
+  return inputs;
 }
 
 function multiplayerStatus() {
@@ -96,6 +112,20 @@ function multiplayerStatus() {
   };
 }
 
+function cleanPlayerId(raw) {
+  return String(raw || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+}
+
+function cleanKeys(keys = {}) {
+  return {
+    up: !!keys.up,
+    down: !!keys.down,
+    left: !!keys.left,
+    right: !!keys.right,
+    action: !!keys.action
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const safeUrl = decodeURIComponent(req.url.split('?')[0]);
 
@@ -117,7 +147,7 @@ const server = http.createServer(async (req, res) => {
   if (safeUrl === '/api/multiplayer/players' && req.method === 'POST') {
     try {
       const body = await readJsonBody(req, 32_000);
-      const id = String(body.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
+      const id = cleanPlayerId(body.id);
       if (!id) {
         sendJson(res, 400, { ok: false, error: 'player id ausente' });
         return;
@@ -134,6 +164,27 @@ const server = http.createServer(async (req, res) => {
         lastSeen: Date.now()
       });
       sendJson(res, 200, { ok: true, players: activePlayers(), status: multiplayerStatus() });
+    } catch (err) {
+      sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
+    }
+    return;
+  }
+
+  if (safeUrl === '/api/multiplayer/inputs' && req.method === 'GET') {
+    sendJson(res, 200, { ok: true, inputs: activeInputs(), players: activePlayers() });
+    return;
+  }
+
+  if (safeUrl === '/api/multiplayer/inputs' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req, 32_000);
+      const id = cleanPlayerId(body.id);
+      if (!id) {
+        sendJson(res, 400, { ok: false, error: 'player id ausente' });
+        return;
+      }
+      multiplayerInputs.set(id, { keys: cleanKeys(body.keys), lastSeen: Date.now() });
+      sendJson(res, 200, { ok: true, inputs: activeInputs() });
     } catch (err) {
       sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
     }
