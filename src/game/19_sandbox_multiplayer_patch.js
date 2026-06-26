@@ -2,10 +2,24 @@
 
 function installSandboxMultiplayerPatch() {
   const controlKeys = new Set();
-  const joinMode = new URLSearchParams(window.location.search).has('join');
   let multiplayerRevision = 0;
   let pulling = false;
   let publishing = false;
+  let pullTimer = null;
+  let publishTimer = null;
+
+  function isJoinMode() {
+    return window.havenfallOnlineMode === 'join'
+      || sessionStorage.getItem('havenfall-online-mode') === 'join'
+      || new URLSearchParams(window.location.search).has('join');
+  }
+
+  function setOnlineMode(mode) {
+    window.havenfallOnlineMode = mode === 'join' ? 'join' : 'host';
+    sessionStorage.setItem('havenfall-online-mode', window.havenfallOnlineMode);
+    document.body.classList.toggle('online-join-mode', window.havenfallOnlineMode === 'join');
+    document.body.classList.toggle('online-host-mode', window.havenfallOnlineMode !== 'join');
+  }
 
   function alive(c) {
     return !!c && !c.dead && (c.health ?? 100) > 0;
@@ -49,6 +63,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   window.demolishObject = function demolishObject(obj) {
+    if (isJoinMode()) { log('Visitante online: demolição fica bloqueada neste protótipo.'); return false; }
     if (!obj || !state) return false;
     if (!canDemolish(obj)) {
       log('Esse objeto não é uma construção demolível.');
@@ -87,8 +102,9 @@ function installSandboxMultiplayerPatch() {
     if (target?.kind === 'object' && canDemolish(target.obj)) {
       const moveIndex = actions.findIndex(a => a.label === 'Mover até perto');
       const demolish = {
-        label: 'Demolir construção',
-        hint: 'remove do mapa e recupera parte dos recursos',
+        label: isJoinMode() ? 'Demolir construção (host)' : 'Demolir construção',
+        hint: isJoinMode() ? 'visitante não altera o mundo ainda' : 'remove do mapa e recupera parte dos recursos',
+        disabled: isJoinMode(),
         run: () => window.demolishObject(target.obj)
       };
       if (moveIndex >= 0) actions.splice(moveIndex, 0, demolish);
@@ -98,6 +114,7 @@ function installSandboxMultiplayerPatch() {
   };
 
   function setDemolishMode(enabled) {
+    if (isJoinMode()) { log('Visitante online: modo demolir fica bloqueado.'); return; }
     window.havenfallDemolishMode = !!enabled;
     document.body.classList.toggle('demolish-mode', !!enabled);
     if (enabled) {
@@ -114,6 +131,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   function setDirectControl(enabled) {
+    if (isJoinMode()) { log('Visitante online: controle direto fica bloqueado neste protótipo.'); return; }
     const c = selectedColonist();
     if (enabled && (!c || !alive(c))) {
       log('Selecione um colono vivo para tomar controle.');
@@ -136,7 +154,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   function controlledColonist() {
-    if (!window.havenfallDirectControl) return null;
+    if (!window.havenfallDirectControl || isJoinMode()) return null;
     const c = state?.colonists?.find(col => col.id === window.havenfallDirectControl);
     return alive(c) ? c : null;
   }
@@ -216,12 +234,16 @@ function installSandboxMultiplayerPatch() {
     const controlBtn = document.getElementById('directControlBtn');
     if (controlBtn) {
       const active = window.havenfallDirectControl === selectedColonistId;
-      controlBtn.textContent = active ? 'Soltar controle' : 'Tomar controle';
+      controlBtn.textContent = isJoinMode() ? 'Visitante' : (active ? 'Soltar controle' : 'Tomar controle');
+      controlBtn.disabled = isJoinMode();
       controlBtn.classList.toggle('active', active);
     }
 
     const demolishBtn = document.getElementById('demolishModeBtn');
-    if (demolishBtn) demolishBtn.classList.toggle('active', !!window.havenfallDemolishMode);
+    if (demolishBtn) {
+      demolishBtn.classList.toggle('active', !!window.havenfallDemolishMode);
+      demolishBtn.disabled = isJoinMode();
+    }
   }
 
   canvas.addEventListener('click', event => {
@@ -307,7 +329,7 @@ function installSandboxMultiplayerPatch() {
   }
 
   async function publishState() {
-    if (publishing || joinMode || !state || appScreen !== SCREEN.PLAYING) return;
+    if (publishing || isJoinMode() || !state || appScreen !== SCREEN.PLAYING) return;
     publishing = true;
     try {
       const res = await fetch('/api/multiplayer/state', {
@@ -342,17 +364,51 @@ function installSandboxMultiplayerPatch() {
         setScreen(SCREEN.PLAYING);
         updateUI(true);
       }
-      setMpStatus(`Multiplayer LAN: conectado · rev ${data.revision || 0}`);
+      setMpStatus(`Online: conectado ao host · rev ${data.revision || 0}`);
     } catch (_) {
-      setMpStatus('Multiplayer LAN: aguardando host');
+      setMpStatus('Online: aguardando host ativo');
     } finally {
       pulling = false;
     }
   }
 
+  function startPublishLoop() {
+    if (publishTimer) return;
+    publishTimer = setInterval(publishState, 900);
+  }
+
+  function startPullLoop() {
+    if (pullTimer) return;
+    pullTimer = setInterval(pullState, 650);
+  }
+
+  function stopPullLoop() {
+    if (pullTimer) clearInterval(pullTimer);
+    pullTimer = null;
+  }
+
+  window.havenfallHostOnline = function havenfallHostOnline() {
+    setOnlineMode('host');
+    stopPullLoop();
+    setMpStatus('Host online: jogue normalmente; visitantes entram pelo menu Online.');
+    startPublishLoop();
+    publishState();
+  };
+
+  window.havenfallJoinOnline = function havenfallJoinOnline() {
+    setOnlineMode('join');
+    window.havenfallDirectControl = null;
+    window.havenfallDemolishMode = false;
+    document.body.classList.remove('direct-control-mode', 'demolish-mode');
+    currentBuild = null;
+    setMpStatus('Online: entrando no mundo do host...');
+    startPullLoop();
+    pullState();
+  };
+
   const previousUpdateWorld = updateWorld;
   updateWorld = function sandboxMultiplayerUpdateWorld(dt) {
-    if (joinMode) return;
+    if (isJoinMode()) return;
     previousUpdateWorld(dt);
   };
 
@@ -368,13 +424,10 @@ function installSandboxMultiplayerPatch() {
     setTimeout(() => {
       installStyles();
       ensureSandboxButtons();
-      if (joinMode) {
-        setMpStatus('Multiplayer LAN: entrando...');
-        setInterval(pullState, 650);
-        pullState();
+      if (isJoinMode()) {
+        window.havenfallJoinOnline();
       } else {
-        setMpStatus('Host local: teu amigo entra por /?join=1');
-        setInterval(publishState, 900);
+        window.havenfallHostOnline();
       }
     }, 800);
   };
