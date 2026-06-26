@@ -403,3 +403,97 @@
     column-count: 1 !important;
   }
 }
+
+/* Mobile Pages / menu scroll guard.
+   Body is locked for gameplay, so non-game screens need their own fixed scroll container. */
+html,
+body,
+#app.app-shell {
+  width: 100%;
+  min-height: 100%;
+  overscroll-behavior: none;
+}
+
+.screen:not(.game-screen) {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: max(18px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)) !important;
+}
+
+.screen.active:not(.game-screen) {
+  display: flex !important;
+}
+
+.screen:not(.game-screen) > .menu-card,
+.screen:not(.game-screen) > .classic-title-wrap,
+.screen:not(.game-screen) > .classic-menu-list,
+.screen:not(.game-screen) > .main-menu-save-info {
+  flex: 0 0 auto;
+}
+
+.screen:not(.game-screen) .menu-card {
+  margin: auto 0;
+  max-height: none !important;
+}
+
+.setup-screen.active,
+.colonist-select-screen.active,
+.load-screen.active,
+.settings-screen.active,
+#onlineScreenClean.active {
+  align-items: flex-start !important;
+}
+
+.setup-screen.active .menu-card,
+.colonist-select-screen.active .menu-card,
+.load-screen.active .menu-card,
+.settings-screen.active .menu-card,
+#onlineScreenClean.active .menu-card {
+  margin: 0 auto max(28px, env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 720px) {
+  .screen:not(.game-screen) {
+    justify-content: flex-start !important;
+  }
+  .screen-title-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .screen-title-row button {
+    width: 100% !important;
+  }
+  .form-grid,
+  .inline-field,
+  .card-actions,
+  .menu-actions.row,
+  .menu-actions.spread {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .menu-actions.row button,
+  .menu-actions.spread button {
+    width: 100% !important;
+  }
+  .menu-card {
+    width: min(100%, 680px) !important;
+    padding: 18px !important;
+    border-radius: 20px !important;
+  }
+  .wide-card,
+  .max-card {
+    width: 100% !important;
+  }
+}
