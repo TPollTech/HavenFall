@@ -16,9 +16,17 @@ function calculateExternalTemperature() {
   return clamp(22 - rainPenalty - nightPenalty, 6, 28);
 }
 
+function tileHasThermalRoof(x, y) {
+  if (typeof hasNaturalRoofAt === 'function' && hasNaturalRoofAt(x, y)) return true;
+  if (typeof hasRoofAt === 'function') return !!hasRoofAt(x, y);
+  return false;
+}
+
 function insulationFactorAt(x, y) {
+  const naturalRoof = tileHasThermalRoof(x, y);
+  if (naturalRoof) return isResearched('thermal_comfort') ? 0.92 : 0.68;
   if (!isResearched('thermal_comfort')) return 0.3;
-  return hasRoofAt?.(x, y) ? 0.82 : 0.45;
+  return 0.45;
 }
 
 function roomTemperatureAt(x, y) {
@@ -63,7 +71,7 @@ function installClimatePatches() {
       const medical = isResearched('medicine') ? 0.028 : 0;
       c.immunity = clamp(c.immunity + tick * (comfort + medical), 0, 100);
       if (c.immunity >= 100) {
-        removeColonistStatus?.(c, 'gripe');
+        if (typeof removeColonistStatus === 'function') removeColonistStatus(c, 'gripe');
         c.immunity = 45;
         log(`${c.name} desenvolveu imunidade e se recuperou da gripe.`);
       }
@@ -77,6 +85,7 @@ function installClimatePatches() {
 
 function updateClimateAdvancedTick() {
   if (!state || appScreen !== SCREEN.PLAYING) return;
+  if (typeof ensureGeologyState === 'function') ensureGeologyState();
   ensureEnvironmentState();
   updateRoomTemperatureMap();
   installClimatePatches();
@@ -93,3 +102,4 @@ window.updateRoomTemperature = function updateRoomTemperature(room) {
 
 window.roomTemperatureAt = roomTemperatureAt;
 window.ensureEnvironmentState = ensureEnvironmentState;
+window.tileHasThermalRoof = tileHasThermalRoof;
