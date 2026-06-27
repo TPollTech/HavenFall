@@ -51,6 +51,7 @@
       isRoof: true,
       mineable: true,
       solid: true,
+      markedForMining: false,
       resource: def.resource,
       yield: Math.max(1, Math.round(def.yield * resourceMultiplier)),
       biomeId,
@@ -86,7 +87,7 @@
     if (!Array.isArray(world.roofLayer) || world.roofLayer.length !== rows || world.roofLayer[0]?.length !== cols) {
       world.roofLayer = createRoofLayer(world);
     }
-    world.geologyVersion = '1.0';
+    world.geologyVersion = '1.1';
     return world.geologyLayer;
   }
 
@@ -103,6 +104,43 @@
   function isMountainBlocked(x, y) {
     const rock = getRockAt(x, y);
     return !!rock?.solid;
+  }
+
+  function markRockForMining(x, y, marked = true) {
+    const rock = getRockAt(x, y);
+    if (!rock?.mineable || !rock.solid) return false;
+    rock.markedForMining = !!marked;
+    return true;
+  }
+
+  function toggleRockMiningMark(x, y) {
+    const rock = getRockAt(x, y);
+    if (!rock?.mineable || !rock.solid) return false;
+    rock.markedForMining = !rock.markedForMining;
+    return rock.markedForMining;
+  }
+
+  function nearestMarkedMine(c) {
+    if (!c || !state?.world) return null;
+    ensureGeologyState();
+    let best = null;
+    let bestDist = Infinity;
+    const layer = state.world.geologyLayer || [];
+    for (let y = 0; y < layer.length; y++) {
+      for (let x = 0; x < (layer[y]?.length || 0); x++) {
+        const rock = layer[y][x];
+        if (!rock?.solid || !rock.mineable || !rock.markedForMining) continue;
+        if (typeof isTileDiscovered === 'function' && !isTileDiscovered(x, y)) continue;
+        const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(x, y, c.x, c.y) : null;
+        if (!adj) continue;
+        const d = Math.abs(c.x - x) + Math.abs(c.y - y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { x, y, rock, adj };
+        }
+      }
+    }
+    return best;
   }
 
   function recalculateRoofLayer(world = state?.world, center = null, radius = 7) {
@@ -189,6 +227,14 @@
           ctx.globalAlpha = 0.22;
           ctx.fillStyle = '#000';
           ctx.fillRect(x * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6);
+          if (rock.markedForMining) {
+            ctx.globalAlpha = 0.85;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(x * TILE + 5, y * TILE + 5, TILE - 10, TILE - 10);
+            ctx.setLineDash([]);
+          }
           ctx.globalAlpha = 0.55;
           ctx.fillStyle = '#e5e7eb';
           ctx.fillRect(x * TILE + 7, y * TILE + TILE - 9, (TILE - 14) * hpPct, 3);
@@ -213,6 +259,9 @@
     getRockAt,
     hasNaturalRoofAt,
     isMountainBlocked,
+    markRockForMining,
+    toggleRockMiningMark,
+    nearestMarkedMine,
     mineRockAt,
     recalculateRoofLayer,
     geologyLabelAt,
@@ -225,6 +274,9 @@
   window.getRockAt = getRockAt;
   window.hasNaturalRoofAt = hasNaturalRoofAt;
   window.isMountainBlocked = isMountainBlocked;
+  window.markRockForMining = markRockForMining;
+  window.toggleRockMiningMark = toggleRockMiningMark;
+  window.nearestMarkedMine = nearestMarkedMine;
   window.mineRockAt = mineRockAt;
   window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
