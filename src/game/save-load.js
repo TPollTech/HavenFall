@@ -1,11 +1,12 @@
 'use strict';
 
 function serialize() {
-  return JSON.stringify({ state, selectedColonistId, version: '1.9C'  });
+  return JSON.stringify({ state, selectedColonistId, version: '1.9D'  });
 }
 
 function saveGame(manual = false) {
   if (!state) return false;
+  if (typeof ensureGeologyState === 'function') ensureGeologyState();
   localStorage.setItem(SAVE_KEY, serialize());
   if (manual) log('Jogo salvo no navegador.');
   refreshMenuSaveInfo();
@@ -48,32 +49,39 @@ function migrateLoadedState() {
   for (const key of ['rope','nails','cloth','leather','arrows']) state.items[key] = state.items[key] || 0;
   state.config = { ...defaultNewGameConfig, colonyName: 'Colônia antiga', seed: 'save-antigo', ...(state.config || {}) };
 
-  const cols = state.world?.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
-  const rows = state.world?.rows || state.terrain?.length || MAP_SIZES.standard.rows;
+  const existingWorld = state.world || {};
+  const cols = existingWorld.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
+  const rows = existingWorld.rows || state.terrain?.length || MAP_SIZES.standard.rows;
   state.world = {
     seed: state.config.seed,
     mapSize: state.config.mapSize,
     difficulty: state.config.difficulty,
-    chunkMode: !!state.world?.chunkMode,
-    biomeIntent: state.world?.biomeIntent || getMapSizeDef(state.config.mapSize)?.biomeIntent || 'classic',
+    chunkMode: !!existingWorld.chunkMode,
+    biomeIntent: existingWorld.biomeIntent || getMapSizeDef(state.config.mapSize)?.biomeIntent || 'classic',
     cols,
     rows,
     tileSize: TILE,
     width: cols * TILE,
     height: rows * TILE,
-    spawn: state.world?.spawn || state.worldMeta?.spawnPoints?.[0] || { x: Math.floor(cols / 2), y: Math.floor(rows / 2) },
-    spawnPoints: state.world?.spawnPoints || state.worldMeta?.spawnPoints || [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }],
-    pointsOfInterest: state.world?.pointsOfInterest || [],
-    weatherPattern: state.world?.weatherPattern || state.worldMeta?.weatherPattern || [],
-    exploration: state.world?.exploration,
-    visibleTiles: state.world?.visibleTiles || [],
-    biomes: state.world?.biomes || null,
-    generationVersion: state.world?.generationVersion || 'migrated'
+    terrain: existingWorld.terrain || state.terrain,
+    spawn: existingWorld.spawn || state.worldMeta?.spawnPoints?.[0] || { x: Math.floor(cols / 2), y: Math.floor(rows / 2) },
+    spawnPoints: existingWorld.spawnPoints || state.worldMeta?.spawnPoints || [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }],
+    pointsOfInterest: existingWorld.pointsOfInterest || [],
+    weatherPattern: existingWorld.weatherPattern || state.worldMeta?.weatherPattern || [],
+    exploration: existingWorld.exploration,
+    visibleTiles: existingWorld.visibleTiles || [],
+    biomes: existingWorld.biomes || null,
+    geologyLayer: existingWorld.geologyLayer || null,
+    roofLayer: existingWorld.roofLayer || null,
+    geologyVersion: existingWorld.geologyVersion,
+    generationVersion: existingWorld.generationVersion || 'migrated'
   };
+  state.terrain = state.world.terrain || state.terrain;
 
   if (!state.world.biomes && window.BiomeEngine?.createBiomeMap) {
     state.world.biomes = window.BiomeEngine.createBiomeMap(cols, rows, state.config.seed, state.config);
   }
+  if (typeof ensureGeologyState === 'function') ensureGeologyState(state.world);
 
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
   state.objects = ensureLoadedEntityIds(state.objects || [], 'obj');
