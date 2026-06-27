@@ -19,6 +19,26 @@ function assignGather(c, obj) {
   c.note = `Coletando ${objectDefs[obj.type].name}`;
 }
 
+function assignMine(c, x, y, mark = false) {
+  if (!c || typeof getRockAt !== 'function') return false;
+  const rock = getRockAt(x, y);
+  if (!rock?.mineable || !rock.solid) {
+    log('Não há rocha mineável nesse tile.');
+    return false;
+  }
+  const adj = nearestFreeAdjacent(x, y, c.x, c.y);
+  if (!adj) {
+    log(`${c.name} não conseguiu chegar até a rocha.`);
+    return false;
+  }
+  if (mark && typeof markRockForMining === 'function') markRockForMining(x, y, true);
+  c.task = { type: 'mine', mineX: x, mineY: y, x: adj.x, y: adj.y };
+  c.path = findPath(c.x, c.y, adj.x, adj.y);
+  c.work = 0;
+  c.note = `Minerando ${typeof geologyLabelAt === 'function' ? geologyLabelAt(x, y) : 'rocha'}`;
+  return true;
+}
+
 function assignBuild(c, bp) {
   const adj = nearestFreeAdjacent(bp.x, bp.y, c.x, c.y) || { x: bp.x, y: bp.y };
   c.task = { type: 'build', objId: bp.id, x: adj.x, y: adj.y };
@@ -209,7 +229,7 @@ function taskPriorityOrder(c) {
 
 function canDoPriorityTask(c, key) {
   if (taskPriorityValue(c, key) <= 0) return false;
-  if (key === 'gather') return !!(nearestGatherable(c, true) || nearestGatherable(c));
+  if (key === 'gather') return !!(nearestMarkedMine?.(c) || nearestGatherable(c, true) || nearestGatherable(c));
   if (key === 'build') return !!nearestBlueprint(c);
   if (key === 'research') {
     ensureResearchState();
@@ -224,6 +244,8 @@ function canDoPriorityTask(c, key) {
 
 function assignPriorityTask(c, key) {
   if (key === 'gather') {
+    const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
+    if (mine && assignMine(c, mine.x, mine.y)) return true;
     const resource = nearestGatherable(c, true) || nearestGatherable(c);
     if (resource) { assignGather(c, resource); return true; }
   }
@@ -253,6 +275,8 @@ function assignPriorityTask(c, key) {
 function assignMarkedGatherTasks() {
   const idle = state.colonists.filter(c => !c.task && c.energy > 14 && c.health > 15 && taskPriorityValue(c, 'gather') > 0);
   for (const c of idle) {
+    const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
+    if (mine && assignMine(c, mine.x, mine.y)) continue;
     const target = nearestGatherable(c, true);
     if (!target) break;
     assignGather(c, target);
@@ -398,6 +422,23 @@ function handleTaskAtTarget(c, tick) {
     return;
   }
 
+  if (task.type === 'mine') {
+    const rock = typeof getRockAt === 'function' ? getRockAt(task.mineX, task.mineY) : null;
+    if (!rock?.solid) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
+    const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(task.mineX, task.mineY) : 'rocha';
+    c.work += tick * workRate(c, 'gather');
+    c.note = `Minerando ${label}`;
+    const result = typeof mineRockAt === 'function' ? mineRockAt(task.mineX, task.mineY, tick * 12 * workRate(c, 'gather')) : null;
+    if (result?.removed) {
+      const gainText = Object.entries(result.gain || {}).map(([k, v]) => `+${v} ${resourceLabel(k)}`).join(', ');
+      log(`${c.name} minerou ${label}. ${gainText || 'Rocha removida'}.`);
+      c.task = null;
+      c.note = 'Ocioso';
+      c.work = 0;
+    }
+    return;
+  }
+
   if (task.type === 'gather') {
     const obj = state.objects.find(o => o.id === task.objId);
     if (!obj) { c.task = null; c.note = 'Ocioso'; return; }
@@ -407,8 +448,8 @@ function handleTaskAtTarget(c, tick) {
     if (c.work >= def.work) {
       addResources(def.gather);
       state.objects = state.objects.filter(o => o.id !== obj.id);
-      if (obj.type === 'tree') state.objects.push({ id: uid(), type: 'logs', x: obj.x, y: obj.y });
-      if (obj.type === 'crop') state.objects.push({ id: uid(), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
+      if (obj.type === 'tree') state.objects.push({ id: uid('obj'), type: 'logs', x: obj.x, y: obj.y });
+      if (obj.type === 'crop') state.objects.push({ id: uid('obj'), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
       log(`${c.name} coletou ${def.name}.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }
@@ -548,7 +589,8 @@ function handleTaskAtTarget(c, tick) {
 
 function ensureWolfState(wolf) {
   if (!wolf) return;
-  wolf.id ??= uid();
+  wolf.id ??= uid('wolf');
+  wolf.uid ??= wolf.id;
   wolf.hp = wolf.hp === undefined ? 100 : wolf.hp;
   wolf.morale = wolf.morale === undefined ? 65 : wolf.morale;
   wolf.attackCooldown = wolf.attackCooldown || 0;
