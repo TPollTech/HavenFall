@@ -211,7 +211,12 @@ function gameLoop(now) {
   safeSystemTick('zones', () => { if (typeof updateZonesTick === 'function') updateZonesTick(dt); });
   safeSystemTick('roof', () => { if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt); });
   safeSystemTick('camera', () => updateCamera(dt));
-  safeSystemTick('draw', () => { if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) draw(); });
+  safeSystemTick('draw', () => {
+    if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
+      draw();
+      if (typeof drawGeologyOverlay === 'function') drawGeologyOverlay();
+    }
+  });
   uiTimer += dt;
   autosaveTimer += dt;
   if (state && uiTimer > 0.25) { uiTimer = 0; safeSystemTick('ui', () => updateUI()); }
