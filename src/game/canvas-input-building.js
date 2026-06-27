@@ -44,6 +44,7 @@ function resetBuildRotationIfNeeded(buildKey = currentBuild) {
 
 function handleCanvasMouseDown(e) {
   if (e.button !== 0 || appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
+  if (typeof isOrderToolActive === 'function' && isOrderToolActive('mine')) return;
   const tile = tileFromEvent(e);
   if (!tile || !isInside(tile.x, tile.y)) return;
 
@@ -91,7 +92,7 @@ function handleCanvasClick(e) {
     return;
   }
 
-  hideContextMenu?.();
+  hideContextMenu();
   if (appScreen !== SCREEN.PLAYING || !state) return;
 
   const tile = tileFromEvent(e);
@@ -111,6 +112,27 @@ function handleCanvasClick(e) {
   }
 
   const c = selectedColonist();
+  const mineOrderActive = typeof isOrderToolActive === 'function' && isOrderToolActive('mine');
+  if (mineOrderActive) {
+    const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
+    if (rock?.solid) {
+      selectedWorldObjectId = null;
+      if (e.shiftKey && typeof markRockForMining === 'function') {
+        markRockForMining(tile.x, tile.y, true);
+        const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
+        log(`${label} marcada para mineração.`);
+        if (typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
+      } else {
+        assignMine(c, tile.x, tile.y, true);
+      }
+    } else {
+      log('Ordem Minerar ativa: clique em uma rocha ou montanha mineável.');
+    }
+    updateUI(true);
+    window.HavenfallUI?.refreshDockPanel?.('orders');
+    return;
+  }
+
   const wolf = isTileVisible(tile.x, tile.y) ? getWolfAt(tile.x, tile.y) : null;
   if (wolf) {
     assignScare(c, wolf);
@@ -134,8 +156,9 @@ function handleCanvasClick(e) {
     selectedWorldObjectId = null;
     if (e.shiftKey && typeof markRockForMining === 'function') {
       markRockForMining(tile.x, tile.y, true);
-      log(`${geologyLabelAt?.(tile.x, tile.y) || 'Rocha'} marcada para mineração.`);
-      assignMarkedGatherTasks?.();
+      const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
+      log(`${label} marcada para mineração.`);
+      if (typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
     } else {
       assignMine(c, tile.x, tile.y, true);
     }
@@ -211,9 +234,9 @@ function makeContextActions(c, target, tile) {
     const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'rocha';
     actions.push({ label: 'Minerar agora', hint: label, run: () => assignMine(c, tile.x, tile.y, true) });
     actions.push({ label: target.rock.markedForMining ? 'Desmarcar mineração' : 'Marcar para mineração', hint: 'entra na fila automática de coleta', run: () => {
-      const marked = toggleRockMiningMark?.(tile.x, tile.y);
+      const marked = typeof toggleRockMiningMark === 'function' ? toggleRockMiningMark(tile.x, tile.y) : false;
       log(`${label} ${marked ? 'marcada' : 'desmarcada'} para mineração.`);
-      if (marked) assignMarkedGatherTasks?.();
+      if (marked && typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
     } });
     actions.push({ label: 'Mover até perto', hint: `${tile.x},${tile.y}`, run: () => assignMoveNearTarget(c, tile) });
     return actions;
