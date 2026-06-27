@@ -2,10 +2,10 @@
 
 (() => {
   const ROCK_DEFS = Object.freeze({
-    granite: { label: 'Granito', hp: 180, resource: 'stone', yield: 9, mineSpeed: 0.82, insulation: 0.72 },
-    sandstone: { label: 'Arenito', hp: 105, resource: 'stone', yield: 5, mineSpeed: 1.2, insulation: 0.38 },
-    slate: { label: 'Ardósia', hp: 145, resource: 'stone', yield: 7, mineSpeed: 1.0, insulation: 0.55 },
-    iron: { label: 'Veio de ferro', hp: 165, resource: 'metal', yield: 5, mineSpeed: 0.9, insulation: 0.48 }
+    granite: { label: 'Granito', hp: 180, resource: 'stone', yield: 9, mineSpeed: 0.82, insulation: 0.72, color: '#4b5563' },
+    sandstone: { label: 'Arenito', hp: 105, resource: 'stone', yield: 5, mineSpeed: 1.2, insulation: 0.38, color: '#a16207' },
+    slate: { label: 'Ardósia', hp: 145, resource: 'stone', yield: 7, mineSpeed: 1.0, insulation: 0.55, color: '#334155' },
+    iron: { label: 'Veio de ferro', hp: 165, resource: 'metal', yield: 5, mineSpeed: 0.9, insulation: 0.48, color: '#7f1d1d' }
   });
 
   function rockTypeForBiome(biomeId, x, y, seed) {
@@ -166,6 +166,43 @@
     return `${def.label} ${Math.ceil(rock.hp)}/${rock.maxHp}`;
   }
 
+  function rockFillColor(rock) {
+    return (ROCK_DEFS[rock?.type] || ROCK_DEFS.granite).color || '#4b5563';
+  }
+
+  function drawGeologyOverlay(bounds = null) {
+    if (!state?.world || appScreen !== SCREEN.PLAYING) return;
+    ensureGeologyState();
+    const b = bounds || (typeof visibleTileBounds === 'function' ? visibleTileBounds(2) : { startX: 0, startY: 0, endX: getWorldCols() - 1, endY: getWorldRows() - 1 });
+    ctx.save();
+    ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
+    ctx.scale(viewTransform.scale, viewTransform.scale);
+    for (let y = b.startY; y <= b.endY; y++) {
+      for (let x = b.startX; x <= b.endX; x++) {
+        const rock = state.world.geologyLayer?.[y]?.[x];
+        const roof = state.world.roofLayer?.[y]?.[x];
+        if (rock?.solid) {
+          const hpPct = Math.max(0.15, Math.min(1, Number(rock.hp || 0) / Math.max(1, Number(rock.maxHp || 1))));
+          ctx.fillStyle = rockFillColor(rock);
+          ctx.globalAlpha = 0.72;
+          ctx.fillRect(x * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6);
+          ctx.globalAlpha = 0.22;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(x * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6);
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = '#e5e7eb';
+          ctx.fillRect(x * TILE + 7, y * TILE + TILE - 9, (TILE - 14) * hpPct, 3);
+        } else if (roof) {
+          ctx.globalAlpha = 0.12;
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(x * TILE + 5, y * TILE + 5, TILE - 10, TILE - 10);
+        }
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   function updateGeologyTick() {
     ensureGeologyState();
   }
@@ -180,7 +217,8 @@
     recalculateRoofLayer,
     geologyLabelAt,
     createGeologyLayer,
-    createRoofLayer
+    createRoofLayer,
+    drawGeologyOverlay
   };
 
   window.ensureGeologyState = ensureGeologyState;
@@ -188,5 +226,6 @@
   window.hasNaturalRoofAt = hasNaturalRoofAt;
   window.isMountainBlocked = isMountainBlocked;
   window.mineRockAt = mineRockAt;
+  window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
 })();
