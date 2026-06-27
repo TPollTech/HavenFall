@@ -199,6 +199,7 @@ function setGoal(key, done) {
 function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+  safeSystemTick('geology', () => { if (typeof updateGeologyTick === 'function') updateGeologyTick(dt); });
   safeSystemTick('schedule', () => { if (typeof updateScheduleManagerTick === 'function') updateScheduleManagerTick(dt); });
   safeSystemTick('world', () => updateWorld(dt));
   safeSystemTick('environment', () => { if (typeof updateEnvironmentTick === 'function') updateEnvironmentTick(dt); });
