@@ -129,6 +129,20 @@ function handleCanvasClick(e) {
     return;
   }
 
+  const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
+  if (rock?.solid) {
+    selectedWorldObjectId = null;
+    if (e.shiftKey && typeof markRockForMining === 'function') {
+      markRockForMining(tile.x, tile.y, true);
+      log(`${geologyLabelAt?.(tile.x, tile.y) || 'Rocha'} marcada para mineração.`);
+      assignMarkedGatherTasks?.();
+    } else {
+      assignMine(c, tile.x, tile.y, true);
+    }
+    updateUI(true);
+    return;
+  }
+
   selectedWorldObjectId = null;
   assignMove(c, tile.x, tile.y);
   updateUI(true);
@@ -170,6 +184,9 @@ function getContextTarget(tile) {
   const obj = isTileDiscovered(tile.x, tile.y) ? getObjectAt(tile.x, tile.y) : null;
   if (obj) return { kind: 'object', obj, label: objectDefs[obj.type]?.name || 'Objeto' };
 
+  const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
+  if (rock?.solid) return { kind: 'rock', rock, tile, label: typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha' };
+
   const poi = getPoiAt(tile.x, tile.y);
   if (poi) return { kind: 'poi', poi, label: poi.name || 'Ponto desconhecido' };
 
@@ -187,6 +204,18 @@ function makeContextActions(c, target, tile) {
 
   if (target.kind === 'wolf') {
     actions.push({ label: 'Enfrentar ameaça', hint: 'combate narrado; arma faz diferença', run: () => assignScare(c, target.wolf) });
+    return actions;
+  }
+
+  if (target.kind === 'rock') {
+    const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'rocha';
+    actions.push({ label: 'Minerar agora', hint: label, run: () => assignMine(c, tile.x, tile.y, true) });
+    actions.push({ label: target.rock.markedForMining ? 'Desmarcar mineração' : 'Marcar para mineração', hint: 'entra na fila automática de coleta', run: () => {
+      const marked = toggleRockMiningMark?.(tile.x, tile.y);
+      log(`${label} ${marked ? 'marcada' : 'desmarcada'} para mineração.`);
+      if (marked) assignMarkedGatherTasks?.();
+    } });
+    actions.push({ label: 'Mover até perto', hint: `${tile.x},${tile.y}`, run: () => assignMoveNearTarget(c, tile) });
     return actions;
   }
 
@@ -309,6 +338,7 @@ function hasAdjacentWallForDoor(x, y) {
 function canPlace(type, x, y) {
   if (!isInside(x, y) || x < 1 || y < 1 || x > getWorldCols() - 2 || y > getWorldRows() - 2) return false;
   if (!isTileDiscovered(x, y)) return false;
+  if (typeof isMountainBlocked === 'function' && isMountainBlocked(x, y)) return false;
   if (getObjectAt(x, y)) return false;
   if (state.colonists.some(c => Math.round(c.x) === x && Math.round(c.y) === y)) return false;
   if (type === 'door' && !hasAdjacentWallForDoor(x, y)) return false;
@@ -325,7 +355,7 @@ function placeBlueprint(buildKey, x, y) {
   payCost(def.cost || {});
   payItems(def.itemCost || {});
   const rotation = isBuildRotatable(buildKey) ? normalizeBuildRotation(currentBuildRotation) : 0;
-  state.objects.push({ id: uid(), type: 'blueprint', buildType: buildKey, x, y, progress: 0, rotation });
+  state.objects.push({ id: uid('obj'), type: 'blueprint', buildType: buildKey, x, y, progress: 0, rotation });
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   log(`Planta de ${def.label} posicionada${rotation ? ` (${buildRotationLabel(rotation)})` : ''}.`);
   const c = selectedColonist();
