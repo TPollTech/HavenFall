@@ -6,25 +6,87 @@
     const style = document.createElement('style');
     style.id = 'recruitment-dossier-layout-style';
     style.textContent = `
+      .colonist-select-screen.active {
+        display: block !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        width: 100vw;
+        height: 100vh;
+        min-height: 100vh;
+        align-items: stretch !important;
+        justify-content: stretch !important;
+      }
+
+      .colonist-select-screen .menu-card.max-card {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+        padding: 22px 28px 16px !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 14px;
+        overflow: hidden !important;
+        background:
+          radial-gradient(circle at 14% 12%, rgba(34, 211, 238, .10), transparent 32%),
+          radial-gradient(circle at 86% 8%, rgba(16, 185, 129, .075), transparent 30%),
+          linear-gradient(135deg, rgba(3, 7, 18, .97), rgba(7, 13, 25, .98) 56%, rgba(2, 6, 23, .99)) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+      }
+
+      .colonist-select-screen .screen-title-row {
+        margin: 0 !important;
+        min-height: 82px;
+        align-items: start;
+      }
+
+      .colonist-select-screen .screen-title-row h1 {
+        font-size: clamp(30px, 3vw, 52px);
+        line-height: .98;
+      }
+
+      .colonist-select-screen .screen-title-row p {
+        margin: 6px 0 0;
+      }
+
+      .colonist-select-screen .menu-actions.row.spread {
+        margin: 0 !important;
+        padding-top: 12px;
+        border-top: 1px solid rgba(125, 211, 252, .12);
+        align-items: center;
+      }
+
       .colonist-select-screen .colonist-cards {
         display: grid !important;
-        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-columns: minmax(270px, 360px) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) auto;
         grid-template-areas:
           'files dossier'
           'coverage coverage';
-        align-items: start;
+        align-items: stretch;
         gap: 14px;
-        max-height: min(70vh, 780px);
-        overflow: auto;
-        padding: 0 6px 4px 0;
+        height: 100%;
+        max-height: none !important;
+        min-height: 0;
+        overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
 
       .personnel-files-column {
         grid-area: files;
         display: grid;
+        grid-auto-rows: max-content;
         gap: 10px;
         min-width: 0;
-        align-self: start;
+        min-height: 0;
+        align-self: stretch;
+        overflow: auto;
+        padding-right: 4px;
       }
 
       .personnel-files-title {
@@ -36,6 +98,10 @@
         justify-content: space-between;
         align-items: center;
         gap: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        backdrop-filter: blur(8px);
       }
 
       .personnel-files-title span {
@@ -53,10 +119,13 @@
       .dossier-stage {
         grid-area: dossier;
         min-width: 0;
+        min-height: 0;
+        overflow: hidden;
       }
 
       .dossier-stage .bio-dossier-card {
         width: 100%;
+        height: 100%;
         margin: 0;
       }
 
@@ -69,11 +138,41 @@
 
       .bio-dossier-card.bio-dossier-active {
         min-height: 0;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: hidden;
+      }
+
+      .bio-dossier-active .bio-dossier-header {
+        margin-bottom: 10px;
       }
 
       .bio-dossier-active .bio-dossier-body {
-        grid-template-columns: minmax(150px, 180px) minmax(250px, .9fr) minmax(320px, 1.1fr);
+        min-height: 0;
+        overflow: hidden;
+        grid-template-columns: minmax(140px, 180px) minmax(220px, .75fr) minmax(280px, 1.15fr);
         align-items: stretch;
+      }
+
+      .bio-dossier-active .bio-candidate-file,
+      .bio-dossier-active .bio-chart-panel,
+      .bio-dossier-active .bio-controls-panel {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .bio-dossier-active .bio-controls-panel {
+        overflow: auto;
+      }
+
+      .bio-dossier-active .bio-spider-wrap {
+        min-height: 180px;
+      }
+
+      .bio-dossier-active .bio-spider-chart {
+        width: min(220px, 100%);
+        max-height: 220px;
       }
 
       .personnel-file-card {
@@ -237,8 +336,12 @@
       }
 
       @media (max-width: 1180px) {
+        .colonist-select-screen .colonist-cards {
+          grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+        }
+
         .bio-dossier-active .bio-dossier-body {
-          grid-template-columns: 170px minmax(250px, 1fr);
+          grid-template-columns: minmax(140px, 170px) minmax(250px, 1fr);
         }
 
         .bio-dossier-active .bio-controls-panel {
@@ -246,25 +349,40 @@
         }
       }
 
-      @media (max-width: 980px) {
+      @media (max-width: 900px) {
+        .colonist-select-screen .menu-card.max-card {
+          padding: 16px !important;
+        }
+
         .colonist-select-screen .colonist-cards {
           grid-template-columns: 1fr !important;
+          grid-template-rows: auto auto auto;
           grid-template-areas:
             'files'
             'dossier'
             'coverage';
+          overflow: auto !important;
         }
 
         .personnel-files-column {
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          overflow: visible;
         }
 
         .personnel-files-title {
           grid-column: 1 / -1;
+          position: static;
         }
 
         .bio-dossier-active .bio-dossier-body {
           grid-template-columns: 1fr;
+          overflow: visible;
+        }
+
+        .bio-dossier-card.bio-dossier-active,
+        .dossier-stage {
+          height: auto;
+          overflow: visible;
         }
       }
     `;
