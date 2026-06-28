@@ -83,7 +83,8 @@
     { id: 'game_loop', file: 'src/game/game-loop.js' },
     { id: 'event_listeners', file: 'src/game/event-listeners.js' },
     { id: 'alpha_construction_system', file: 'src/game/alpha-construction-system.js' },
-    { id: 'alpha_render_collision_system', file: 'src/game/alpha-render-collision-system.js' }
+    { id: 'alpha_render_collision_system', file: 'src/game/alpha-render-collision-system.js' },
+    { id: 'alpha_colonist_pathing_hotfix', file: 'src/game/alpha-colonist-pathing-hotfix.js' }
   ]);
 
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
