@@ -76,6 +76,18 @@
     syncSpeedButtons();
   }
 
+  function openPlanetScanFromSetup() {
+    newGameConfig = readNewGameConfig();
+    if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
+    setScreen(SCREEN.PLANET_SCAN);
+  }
+
+  function continueFromPlanetScan() {
+    if (!newGameConfig) newGameConfig = readNewGameConfig();
+    generateColonistCandidates(newGameConfig);
+    setScreen(SCREEN.COLONIST_SELECT);
+  }
+
   function handleDelegatedClick(event) {
     const target = eventTargetElement(event);
     if (!target) return;
@@ -251,6 +263,8 @@
       if (window.uiManager?.closeCurrentPanel) window.uiManager.closeCurrentPanel();
       if (appScreen === SCREEN.PLAYING) setScreen(SCREEN.PAUSED);
       else if (appScreen === SCREEN.PAUSED) setScreen(SCREEN.PLAYING);
+      else if (appScreen === SCREEN.COLONIST_SELECT) setScreen(SCREEN.PLANET_SCAN);
+      else if (appScreen === SCREEN.PLANET_SCAN) setScreen(SCREEN.NEW_GAME_SETUP);
       else if (appScreen !== SCREEN.MAIN_MENU) setScreen(SCREEN.MAIN_MENU);
       currentBuild = null;
       cancelZoneToolForAction('ESC');
@@ -298,11 +312,13 @@
     on(dom.buttons.openSettings, 'click', () => setScreen(SCREEN.SETTINGS));
     on(dom.buttons.exit, 'click', () => refreshMenuSaveInfo());
     on(dom.buttons.setupBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
-    on(dom.buttons.setupNext, 'click', () => {
+    on(dom.buttons.setupNext, 'click', openPlanetScanFromSetup);
+    on(dom.buttons.scanBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
+    on(dom.buttons.scanRefresh, 'click', () => {
       newGameConfig = readNewGameConfig();
-      generateColonistCandidates(newGameConfig);
-      setScreen(SCREEN.COLONIST_SELECT);
+      if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
     });
+    on(dom.buttons.scanProceed, 'click', continueFromPlanetScan);
     on(dom.buttons.randomSeed, 'click', () => {
       if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
       updateSetupSummary();
@@ -310,13 +326,13 @@
 
     Object.values(dom.inputs)
       .filter(Boolean)
-      .filter(el => ['colonyNameInput','worldSeedInput','difficultySelect','colonistCountSelect','resourcesPresetSelect','eventIntensitySelect','mapSizeSelect'].includes(el.id))
+      .filter(el => ['colonyNameInput','worldSeedInput','difficultySelect','colonist-count','colonistCountSelect','resourcesPresetSelect','eventIntensitySelect','mapSizeSelect'].includes(el.id))
       .forEach(el => {
         on(el, 'input', updateSetupSummary);
         on(el, 'change', updateSetupSummary);
       });
 
-    on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
+    on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.PLANET_SCAN));
     if (dom.buttons.rerollAll) dom.buttons.rerollAll.hidden = true;
     on(dom.buttons.startSelectedGame, 'click', () => {
       if (!newGameConfig) newGameConfig = readNewGameConfig();
