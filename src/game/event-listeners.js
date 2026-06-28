@@ -104,6 +104,13 @@
       return;
     }
 
+    const personnelFile = target.closest('[data-recruitment-candidate]');
+    if (personnelFile && typeof selectRecruitmentCandidate === 'function') {
+      event.preventDefault();
+      selectRecruitmentCandidate(Number(personnelFile.dataset.recruitmentCandidate));
+      return;
+    }
+
     const skill = target.closest('[data-builder-skill][data-builder-index][data-builder-delta]');
     if (skill) {
       event.preventDefault();
