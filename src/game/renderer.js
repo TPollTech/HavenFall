@@ -230,8 +230,9 @@ function draw() {
   drawPoiMarkers();
   drawBuildPreview();
   drawGatherSelection();
-  drawFogOfWar(bounds);
   drawNightOverlay();
+  window.GameSystems?.drawWorldOverlays(bounds);
+  drawFogOfWar(bounds);
   drawRain();
   ctx.restore();
   window.GameSystems?.drawRegisteredOverlays();
@@ -240,6 +241,7 @@ function draw() {
 function drawTile(x, y, type) {
   const img = images[`tile_${type}`] || images.tile_grass;
   ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
+  window.GameSystems?.drawTileRenderers(x, y, type);
 }
 
 function drawGrid(bounds = visibleTileBounds(2)) {
@@ -261,6 +263,7 @@ function objectRotationTurns(obj, type) {
 }
 
 function drawObject(obj) {
+  if (window.GameSystems?.drawObject(obj)) return;
   const cx = obj.x * TILE + TILE / 2;
   const cy = obj.y * TILE + TILE / 2;
   if (obj.type === 'blueprint') {

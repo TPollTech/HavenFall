@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T11:41:31.260Z",
+  "generatedAt": "2026-06-28T15:50:52.479Z",
   "roots": {
     "mobs": "assets/mobs",
     "tiles": "assets/tiles",
@@ -324,6 +324,42 @@
       "path": "assets/tiles/edificios_tile_stone_2.png",
       "category": "tiles"
     },
+    "mountain_corner_ne": {
+      "path": "assets/tiles/mountain_corner_ne.svg",
+      "category": "tiles"
+    },
+    "mountain_corner_nw": {
+      "path": "assets/tiles/mountain_corner_nw.svg",
+      "category": "tiles"
+    },
+    "mountain_corner_se": {
+      "path": "assets/tiles/mountain_corner_se.svg",
+      "category": "tiles"
+    },
+    "mountain_corner_sw": {
+      "path": "assets/tiles/mountain_corner_sw.svg",
+      "category": "tiles"
+    },
+    "mountain_edge_e": {
+      "path": "assets/tiles/mountain_edge_e.svg",
+      "category": "tiles"
+    },
+    "mountain_edge_n": {
+      "path": "assets/tiles/mountain_edge_n.svg",
+      "category": "tiles"
+    },
+    "mountain_edge_s": {
+      "path": "assets/tiles/mountain_edge_s.svg",
+      "category": "tiles"
+    },
+    "mountain_edge_w": {
+      "path": "assets/tiles/mountain_edge_w.svg",
+      "category": "tiles"
+    },
+    "mountain_inner": {
+      "path": "assets/tiles/mountain_inner.svg",
+      "category": "tiles"
+    },
     "tile_dirt": {
       "path": "assets/tiles/tile_dirt.png",
       "category": "tiles"
@@ -342,6 +378,10 @@
     },
     "campfire": {
       "path": "assets/vfx/campfire.png",
+      "category": "vfx"
+    },
+    "campfire_fire_sheet": {
+      "path": "assets/vfx/campfire_fire_sheet.svg",
       "category": "vfx"
     },
     "edificios_campfire": {
@@ -370,6 +410,10 @@
     },
     "stove": {
       "path": "assets/vfx/stove.png",
+      "category": "vfx"
+    },
+    "torch_fire_sheet": {
+      "path": "assets/vfx/torch_fire_sheet.svg",
       "category": "vfx"
     },
     "weapon_torch": {
@@ -412,8 +456,32 @@
       "path": "assets/ui/crop_patch.png",
       "category": "ui"
     },
+    "door_metal_closed": {
+      "path": "assets/ui/door_metal_closed.svg",
+      "category": "ui"
+    },
+    "door_metal_open": {
+      "path": "assets/ui/door_metal_open.svg",
+      "category": "ui"
+    },
+    "door_stone_closed": {
+      "path": "assets/ui/door_stone_closed.svg",
+      "category": "ui"
+    },
+    "door_stone_open": {
+      "path": "assets/ui/door_stone_open.svg",
+      "category": "ui"
+    },
     "door_wood": {
       "path": "assets/ui/door_wood.png",
+      "category": "ui"
+    },
+    "door_wood_closed": {
+      "path": "assets/ui/door_wood_closed.svg",
+      "category": "ui"
+    },
+    "door_wood_open": {
+      "path": "assets/ui/door_wood_open.svg",
       "category": "ui"
     },
     "edificios_bed": {
@@ -884,8 +952,188 @@
       "path": "assets/ui/wall_corner.png",
       "category": "ui"
     },
+    "wall_metal_corner_ne": {
+      "path": "assets/ui/wall_metal_corner_ne.svg",
+      "category": "ui"
+    },
+    "wall_metal_corner_nw": {
+      "path": "assets/ui/wall_metal_corner_nw.svg",
+      "category": "ui"
+    },
+    "wall_metal_corner_se": {
+      "path": "assets/ui/wall_metal_corner_se.svg",
+      "category": "ui"
+    },
+    "wall_metal_corner_sw": {
+      "path": "assets/ui/wall_metal_corner_sw.svg",
+      "category": "ui"
+    },
+    "wall_metal_cross": {
+      "path": "assets/ui/wall_metal_cross.svg",
+      "category": "ui"
+    },
+    "wall_metal_end_e": {
+      "path": "assets/ui/wall_metal_end_e.svg",
+      "category": "ui"
+    },
+    "wall_metal_end_n": {
+      "path": "assets/ui/wall_metal_end_n.svg",
+      "category": "ui"
+    },
+    "wall_metal_end_s": {
+      "path": "assets/ui/wall_metal_end_s.svg",
+      "category": "ui"
+    },
+    "wall_metal_end_w": {
+      "path": "assets/ui/wall_metal_end_w.svg",
+      "category": "ui"
+    },
+    "wall_metal_straight_horizontal": {
+      "path": "assets/ui/wall_metal_straight_horizontal.svg",
+      "category": "ui"
+    },
+    "wall_metal_straight_vertical": {
+      "path": "assets/ui/wall_metal_straight_vertical.svg",
+      "category": "ui"
+    },
+    "wall_metal_t_e": {
+      "path": "assets/ui/wall_metal_t_e.svg",
+      "category": "ui"
+    },
+    "wall_metal_t_n": {
+      "path": "assets/ui/wall_metal_t_n.svg",
+      "category": "ui"
+    },
+    "wall_metal_t_s": {
+      "path": "assets/ui/wall_metal_t_s.svg",
+      "category": "ui"
+    },
+    "wall_metal_t_w": {
+      "path": "assets/ui/wall_metal_t_w.svg",
+      "category": "ui"
+    },
     "wall_stone": {
       "path": "assets/ui/wall_stone.png",
+      "category": "ui"
+    },
+    "wall_stone_corner_ne": {
+      "path": "assets/ui/wall_stone_corner_ne.svg",
+      "category": "ui"
+    },
+    "wall_stone_corner_nw": {
+      "path": "assets/ui/wall_stone_corner_nw.svg",
+      "category": "ui"
+    },
+    "wall_stone_corner_se": {
+      "path": "assets/ui/wall_stone_corner_se.svg",
+      "category": "ui"
+    },
+    "wall_stone_corner_sw": {
+      "path": "assets/ui/wall_stone_corner_sw.svg",
+      "category": "ui"
+    },
+    "wall_stone_cross": {
+      "path": "assets/ui/wall_stone_cross.svg",
+      "category": "ui"
+    },
+    "wall_stone_end_e": {
+      "path": "assets/ui/wall_stone_end_e.svg",
+      "category": "ui"
+    },
+    "wall_stone_end_n": {
+      "path": "assets/ui/wall_stone_end_n.svg",
+      "category": "ui"
+    },
+    "wall_stone_end_s": {
+      "path": "assets/ui/wall_stone_end_s.svg",
+      "category": "ui"
+    },
+    "wall_stone_end_w": {
+      "path": "assets/ui/wall_stone_end_w.svg",
+      "category": "ui"
+    },
+    "wall_stone_straight_horizontal": {
+      "path": "assets/ui/wall_stone_straight_horizontal.svg",
+      "category": "ui"
+    },
+    "wall_stone_straight_vertical": {
+      "path": "assets/ui/wall_stone_straight_vertical.svg",
+      "category": "ui"
+    },
+    "wall_stone_t_e": {
+      "path": "assets/ui/wall_stone_t_e.svg",
+      "category": "ui"
+    },
+    "wall_stone_t_n": {
+      "path": "assets/ui/wall_stone_t_n.svg",
+      "category": "ui"
+    },
+    "wall_stone_t_s": {
+      "path": "assets/ui/wall_stone_t_s.svg",
+      "category": "ui"
+    },
+    "wall_stone_t_w": {
+      "path": "assets/ui/wall_stone_t_w.svg",
+      "category": "ui"
+    },
+    "wall_wood_corner_ne": {
+      "path": "assets/ui/wall_wood_corner_ne.svg",
+      "category": "ui"
+    },
+    "wall_wood_corner_nw": {
+      "path": "assets/ui/wall_wood_corner_nw.svg",
+      "category": "ui"
+    },
+    "wall_wood_corner_se": {
+      "path": "assets/ui/wall_wood_corner_se.svg",
+      "category": "ui"
+    },
+    "wall_wood_corner_sw": {
+      "path": "assets/ui/wall_wood_corner_sw.svg",
+      "category": "ui"
+    },
+    "wall_wood_cross": {
+      "path": "assets/ui/wall_wood_cross.svg",
+      "category": "ui"
+    },
+    "wall_wood_end_e": {
+      "path": "assets/ui/wall_wood_end_e.svg",
+      "category": "ui"
+    },
+    "wall_wood_end_n": {
+      "path": "assets/ui/wall_wood_end_n.svg",
+      "category": "ui"
+    },
+    "wall_wood_end_s": {
+      "path": "assets/ui/wall_wood_end_s.svg",
+      "category": "ui"
+    },
+    "wall_wood_end_w": {
+      "path": "assets/ui/wall_wood_end_w.svg",
+      "category": "ui"
+    },
+    "wall_wood_straight_horizontal": {
+      "path": "assets/ui/wall_wood_straight_horizontal.svg",
+      "category": "ui"
+    },
+    "wall_wood_straight_vertical": {
+      "path": "assets/ui/wall_wood_straight_vertical.svg",
+      "category": "ui"
+    },
+    "wall_wood_t_e": {
+      "path": "assets/ui/wall_wood_t_e.svg",
+      "category": "ui"
+    },
+    "wall_wood_t_n": {
+      "path": "assets/ui/wall_wood_t_n.svg",
+      "category": "ui"
+    },
+    "wall_wood_t_s": {
+      "path": "assets/ui/wall_wood_t_s.svg",
+      "category": "ui"
+    },
+    "wall_wood_t_w": {
+      "path": "assets/ui/wall_wood_t_w.svg",
       "category": "ui"
     },
     "weapon_arrows": {

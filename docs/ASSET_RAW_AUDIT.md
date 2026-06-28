@@ -4,11 +4,11 @@ Gerado por `node assets/audit-raw-assets.cjs`.
 
 ## Resumo
 
-- RAW encontrados: **21**
-- Sprites finais em assets/{mobs,tiles,vfx,ui}: **231**
+- RAW encontrados: **39**
+- Sprites finais em assets/{mobs,tiles,vfx,ui}: **293**
 - Assets declarados em assetNames: **101**
 - assetNames sem PNG/SVG correspondente: **0**
-- RAW provavelmente ainda pendentes: **21**
+- RAW provavelmente ainda pendentes: **35**
 
 ## AssetNames sem arquivo final correspondente
 
@@ -16,7 +16,21 @@ Gerado por `node assets/audit-raw-assets.cjs`.
 
 ## RAW provavelmente pendentes de separar/implementar
 
+- `assets/raw/10.png` — raw não classificado
+- `assets/raw/11.png` — raw não classificado
+- `assets/raw/12.png` — raw não classificado
+- `assets/raw/13.png` — raw não classificado
+- `assets/raw/14.png` — raw não classificado
+- `assets/raw/15.png` — raw não classificado
+- `assets/raw/16.png` — raw não classificado
+- `assets/raw/17.png` — raw não classificado
+- `assets/raw/18.png` — raw não classificado
 - `assets/raw/2d_rpg_sprite_sheet_and_assets.png` — spritesheet / pack bruto
+- `assets/raw/5.png` — raw não classificado
+- `assets/raw/6.png` — raw não classificado
+- `assets/raw/7.png` — raw não classificado
+- `assets/raw/8.png` — raw não classificado
+- `assets/raw/9.png` — raw não classificado
 - `assets/raw/cartoon_rpg_character_sprite_sheet.png` — spritesheet / pack bruto
 - `assets/raw/ChatGPT Image 24 de jun. de 2026, 22_20_24 (1).png` — raw não classificado
 - `assets/raw/ChatGPT Image 24 de jun. de 2026, 22_20_24 (2).png` — raw não classificado
@@ -40,7 +54,10 @@ Gerado por `node assets/audit-raw-assets.cjs`.
 
 ## RAW provavelmente já cobertos por sprites finais
 
-- Nenhum detectado.
+- `assets/raw/1.png` — raw não classificado
+- `assets/raw/2.png` — raw não classificado
+- `assets/raw/3.png` — raw não classificado
+- `assets/raw/4.png` — raw não classificado
 
 ## Próximo passo recomendado
 

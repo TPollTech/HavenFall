@@ -229,7 +229,10 @@ function taskPriorityOrder(c) {
 
 function canDoPriorityTask(c, key) {
   if (taskPriorityValue(c, key) <= 0) return false;
-  if (key === 'gather') return !!(nearestMarkedMine?.(c) || nearestGatherable(c, true) || nearestGatherable(c));
+  if (key === 'gather') {
+    const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
+    return !!(mine || nearestGatherable(c, true));
+  }
   if (key === 'build') return !!nearestBlueprint(c);
   if (key === 'research') {
     ensureResearchState();
@@ -246,7 +249,7 @@ function assignPriorityTask(c, key) {
   if (key === 'gather') {
     const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
     if (mine && assignMine(c, mine.x, mine.y)) return true;
-    const resource = nearestGatherable(c, true) || nearestGatherable(c);
+    const resource = nearestGatherable(c, true);
     if (resource) { assignGather(c, resource); return true; }
   }
 

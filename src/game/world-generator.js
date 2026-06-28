@@ -34,7 +34,9 @@ function loadAndPlay() {
 }
 
 function loadImages() {
-  const spriteLoads = assetNames.map(name => new Promise((resolve, reject) => {
+  const manifestAssetNames = Object.keys(window.HavenfallAssets?.assets || {});
+  const runtimeAssetNames = [...new Set([...assetNames, ...manifestAssetNames])];
+  const spriteLoads = runtimeAssetNames.map(name => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { images[name] = img; resolve(); };
     img.onerror = reject;

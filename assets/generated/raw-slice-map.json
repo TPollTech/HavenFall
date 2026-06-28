@@ -1,8 +1,503 @@
 {
-  "generatedAt": "2026-06-28T11:41:31.256Z",
+  "generatedAt": "2026-06-28T15:50:52.477Z",
   "note": "Configure assets/raw/slices.json para cortes automaticos. Este arquivo mostra dimensoes e grids candidatos.",
   "configuredSlices": [],
   "sheets": [
+    {
+      "file": "assets/raw/1.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/10.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/11.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/12.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/13.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/14.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/15.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/16.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/17.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/18.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/2.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
     {
       "file": "assets/raw/2d_rpg_sprite_sheet_and_assets.png",
       "configured": false,
@@ -45,6 +540,321 @@
           "columns": 9,
           "rows": 9,
           "frames": 81
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/3.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/4.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/5.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/6.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/7.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/8.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/9.png",
+      "configured": false,
+      "width": 1563,
+      "height": 1563,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 48,
+          "rows": 48,
+          "frames": 2304
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 32,
+          "rows": 32,
+          "frames": 1024
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 24,
+          "rows": 24,
+          "frames": 576
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 16,
+          "rows": 16,
+          "frames": 256
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 12,
+          "rows": 12,
+          "frames": 144
         }
       ]
     },

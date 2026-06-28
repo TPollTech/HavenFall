@@ -19,6 +19,16 @@ declare global {
       handleTask(colonist: unknown, task: unknown, tick: number): boolean;
       registerDrawOverlay(id: string, fn: () => void, options?: { order?: number; enabled?: boolean }): boolean;
       drawRegisteredOverlays(): void;
+      registerTileRenderer(id: string, fn: (x: number, y: number, type: string) => void, options?: { order?: number; enabled?: boolean }): boolean;
+      drawTileRenderers(x: number, y: number, type: string): void;
+      registerObjectRenderer(id: string, fn: (obj: unknown) => boolean, options?: { order?: number; enabled?: boolean }): boolean;
+      drawObject(obj: unknown): boolean;
+      registerWorldOverlay(id: string, fn: (bounds?: unknown) => void, options?: { order?: number; enabled?: boolean }): boolean;
+      drawWorldOverlays(bounds?: unknown): void;
+      registerCollisionProvider(id: string, fn: (x: number, y: number, target?: unknown) => unknown, options?: { order?: number; enabled?: boolean }): boolean;
+      collisionAt(x: number, y: number, target?: unknown): unknown | null;
+      isCollisionBlocked(collision: unknown): boolean;
+      pathBlocked(x: number, y: number, target?: unknown): boolean | null;
       registerMovementModifier(id: string, fn: (colonist: unknown, multiplier: number) => number, options?: { order?: number; enabled?: boolean }): boolean;
       movementMultiplier(colonist: unknown): number;
       registerWorkRateModifier(id: string, fn: (rate: number, colonist: unknown, kind: string, target?: unknown) => number, options?: { order?: number; enabled?: boolean }): boolean;

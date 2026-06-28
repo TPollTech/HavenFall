@@ -7,7 +7,11 @@
   const afterColonistUpdate = new Map();
   const autoTaskProviders = new Map();
   const taskHandlers = new Map();
+  const tileRenderers = new Map();
+  const objectRenderers = new Map();
+  const worldOverlays = new Map();
   const drawOverlays = new Map();
+  const collisionProviders = new Map();
   const movementModifiers = new Map();
   const workRateModifiers = new Map();
   const installedHooks = new Set();
@@ -110,6 +114,53 @@
     run(drawOverlays);
   }
 
+  function registerTileRenderer(id, fn, options = {}) {
+    return register(tileRenderers, id, fn, options);
+  }
+
+  function drawTileRenderers(x, y, type) {
+    run(tileRenderers, x, y, type);
+  }
+
+  function registerObjectRenderer(id, fn, options = {}) {
+    return register(objectRenderers, id, fn, options);
+  }
+
+  function drawObject(obj) {
+    return runFirst(objectRenderers, obj);
+  }
+
+  function registerWorldOverlay(id, fn, options = {}) {
+    return register(worldOverlays, id, fn, options);
+  }
+
+  function drawWorldOverlays(bounds = null) {
+    run(worldOverlays, bounds);
+  }
+
+  function registerCollisionProvider(id, fn, options = {}) {
+    return register(collisionProviders, id, fn, options);
+  }
+
+  function collisionAt(x, y, target = null) {
+    for (const [, entry] of orderedEntries(collisionProviders)) {
+      const result = entry.fn(x, y, target);
+      if (result !== undefined && result !== null) return result;
+    }
+    return null;
+  }
+
+  function isCollisionBlocked(collision) {
+    if (collision === null || collision === undefined) return false;
+    if (typeof collision === 'object') return !!collision.blocks;
+    return collision === 1 || collision === 3 || collision === 4 || collision === 5;
+  }
+
+  function pathBlocked(x, y, target = null) {
+    const collision = collisionAt(x, y, target);
+    return collision === null ? null : isCollisionBlocked(collision);
+  }
+
   function registerMovementModifier(id, fn, options = {}) {
     return register(movementModifiers, id, fn, options);
   }
@@ -160,6 +211,16 @@
     handleTask,
     registerDrawOverlay,
     drawRegisteredOverlays,
+    registerTileRenderer,
+    drawTileRenderers,
+    registerObjectRenderer,
+    drawObject,
+    registerWorldOverlay,
+    drawWorldOverlays,
+    registerCollisionProvider,
+    collisionAt,
+    isCollisionBlocked,
+    pathBlocked,
     registerMovementModifier,
     movementMultiplier,
     registerWorkRateModifier,

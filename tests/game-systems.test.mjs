@@ -79,6 +79,69 @@ test('GameSystems colonist guards can stop base update flow', () => {
   assert.deepEqual(calls, ['pass', 'stop']);
 });
 
+test('Gather priority only auto-assigns marked resources', () => {
+  const resource = { id: 'tree-1', type: 'tree', x: 3, y: 2 };
+  const context = createContext({
+    state: {
+      objects: [resource],
+      taskPriorities: {
+        1: { gather: 2, build: 0, research: 0, handle: 0 }
+      }
+    },
+    objectDefs: {
+      tree: { name: 'arvore', gather: { wood: 8 }, work: 3 }
+    },
+    isTileDiscovered: () => true,
+    dist: (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by),
+    nearestFreeAdjacent: (x, y) => ({ x: x - 1, y }),
+    findPath: (fromX, fromY, toX, toY) => [{ x: toX, y: toY }],
+    log: () => {},
+    nearestMarkedMine: () => null
+  });
+  runBrowserScript('src/game/world-systems.js', context);
+
+  const colonist = { id: 1, name: 'Ana', x: 0, y: 0 };
+  assert.equal(context.canDoPriorityTask(colonist, 'gather'), false);
+  assert.equal(context.assignPriorityTask(colonist, 'gather'), false);
+  assert.equal(colonist.task, undefined);
+
+  resource.markedForGather = true;
+  assert.equal(context.canDoPriorityTask(colonist, 'gather'), true);
+  assert.equal(context.assignPriorityTask(colonist, 'gather'), true);
+  assert.equal(colonist.task.type, 'gather');
+  assert.equal(colonist.task.objId, 'tree-1');
+  assert.equal(colonist.task.x, 2);
+  assert.equal(colonist.task.y, 2);
+});
+
+test('GameSystems composes render and collision extension points', () => {
+  const context = createContext();
+  runBrowserScript('src/game/core/game-systems.js', context);
+
+  const calls = [];
+  context.GameSystems.registerTileRenderer('late', (x, y, type) => calls.push(`late:${type}:${x},${y}`), { order: 20 });
+  context.GameSystems.registerTileRenderer('early', (x, y, type) => calls.push(`early:${type}:${x},${y}`), { order: 10 });
+  context.GameSystems.drawTileRenderers(2, 3, 'grass');
+  assert.deepEqual(calls, ['early:grass:2,3', 'late:grass:2,3']);
+
+  context.GameSystems.registerObjectRenderer('miss', () => false, { order: 10 });
+  context.GameSystems.registerObjectRenderer('hit', obj => {
+    obj.rendered = true;
+    return true;
+  }, { order: 20 });
+  const obj = {};
+  assert.equal(context.GameSystems.drawObject(obj), true);
+  assert.equal(obj.rendered, true);
+
+  context.GameSystems.registerCollisionProvider('walkable', () => 0, { order: 10 });
+  assert.equal(context.GameSystems.collisionAt(1, 1), 0);
+  assert.equal(context.GameSystems.pathBlocked(1, 1), false);
+
+  context.GameSystems.registerCollisionProvider('wall', () => 5, { order: 1 });
+  assert.equal(context.GameSystems.collisionAt(1, 1), 5);
+  assert.equal(context.GameSystems.pathBlocked(1, 1), true);
+});
+
 test('GameState manages resources, items and object indexes', () => {
   let invalidations = 0;
   const context = createContext({

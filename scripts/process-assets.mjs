@@ -18,6 +18,7 @@ const manifestJsPath = path.join(assetsDir, 'manifest.js');
 const rawSliceMapPath = path.join(generatedDir, 'raw-slice-map.json');
 
 const imageExtensions = new Set(['.png']);
+const manifestExtensions = new Set(['.png', '.svg']);
 const gifExtensions = new Set(['.gif']);
 
 function toPosix(filePath) {
@@ -89,6 +90,109 @@ function categorize(filePath) {
   ) return 'vfx';
 
   return 'ui';
+}
+
+function svgWall(material, shape, colors) {
+  const dirs = {
+    end_n: ['M48 48 L48 8'],
+    end_e: ['M48 48 L88 48'],
+    end_s: ['M48 48 L48 88'],
+    end_w: ['M48 48 L8 48'],
+    straight_horizontal: ['M8 48 L88 48'],
+    straight_vertical: ['M48 8 L48 88'],
+    corner_ne: ['M48 48 L48 8', 'M48 48 L88 48'],
+    corner_nw: ['M48 48 L48 8', 'M48 48 L8 48'],
+    corner_se: ['M48 48 L48 88', 'M48 48 L88 48'],
+    corner_sw: ['M48 48 L48 88', 'M48 48 L8 48'],
+    t_n: ['M8 48 L88 48', 'M48 48 L48 88'],
+    t_e: ['M48 8 L48 88', 'M48 48 L8 48'],
+    t_s: ['M8 48 L88 48', 'M48 48 L48 8'],
+    t_w: ['M48 8 L48 88', 'M48 48 L88 48'],
+    cross: ['M8 48 L88 48', 'M48 8 L48 88']
+  };
+  const paths = dirs[shape] || dirs.cross;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect width="96" height="96" fill="none"/>
+  <g stroke="${colors.stroke}" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">${paths.map(d => `<path d="${d}"/>`).join('')}</g>
+  <g stroke="${colors.fill}" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">${paths.map(d => `<path d="${d}"/>`).join('')}</g>
+  <g stroke="${colors.light}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".72">${paths.map(d => `<path d="${d}"/>`).join('')}</g>
+  <circle cx="48" cy="48" r="11" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="3"/>
+  <text x="48" y="88" text-anchor="middle" font-family="monospace" font-size="7" fill="${colors.stroke}" opacity=".42">${material}</text>
+</svg>
+`;
+}
+
+function svgDoor(material, open, colors) {
+  const door = open
+    ? '<path d="M24 50 L69 23" stroke-linecap="round"/><path d="M24 50 A38 38 0 0 1 62 12" fill="none" stroke-width="4" opacity=".55"/>'
+    : '<path d="M18 48 L78 48" stroke-linecap="round"/><circle cx="61" cy="44" r="3" fill="#fff2b8" stroke="none"/>';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect width="96" height="96" fill="none"/>
+  <g stroke="${colors.stroke}" stroke-width="24" stroke-linejoin="round">${door}</g>
+  <g stroke="${colors.fill}" stroke-width="18" stroke-linejoin="round">${door}</g>
+  <path d="M12 48 L25 48 M71 48 L84 48" stroke="${colors.stroke}" stroke-width="10" stroke-linecap="round"/>
+  <text x="48" y="88" text-anchor="middle" font-family="monospace" font-size="7" fill="${colors.stroke}" opacity=".42">${material}</text>
+</svg>
+`;
+}
+
+function svgMountain(shape) {
+  const notch = {
+    mountain_edge_n: 'M6 18 L30 8 L55 15 L90 9 L90 90 L6 90 Z',
+    mountain_edge_e: 'M6 6 L72 6 L90 30 L82 58 L90 88 L6 90 Z',
+    mountain_edge_s: 'M6 6 L90 6 L90 72 L65 89 L36 80 L7 90 Z',
+    mountain_edge_w: 'M24 6 L90 6 L90 90 L24 90 L7 61 L15 35 L6 12 Z',
+    mountain_corner_ne: 'M6 18 L32 6 L72 8 L90 28 L90 90 L6 90 Z',
+    mountain_corner_nw: 'M8 29 L27 8 L90 8 L90 90 L7 90 Z',
+    mountain_corner_se: 'M6 6 L90 6 L90 70 L69 90 L6 90 Z',
+    mountain_corner_sw: 'M6 6 L90 6 L90 90 L27 89 L7 69 Z',
+    mountain_inner: 'M5 5 L91 5 L91 91 L5 91 Z'
+  }[shape] || 'M5 5 L91 5 L91 91 L5 91 Z';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect width="96" height="96" fill="none"/>
+  <path d="${notch}" fill="#4b5563" stroke="#111827" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M14 68 C30 60 47 72 64 63 C74 58 83 62 90 66 L90 91 L6 91 L6 73 C9 71 11 70 14 68 Z" fill="#111827" opacity=".28"/>
+  <path d="M18 22 L42 15 M50 22 L78 16 M24 44 L66 38" stroke="#9ca3af" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+</svg>
+`;
+}
+
+async function ensureProceduralRoadmapAssets() {
+  const materialColors = {
+    wood: { fill: '#9a6439', stroke: '#3f2414', light: '#d9a465' },
+    stone: { fill: '#747b84', stroke: '#303740', light: '#b8c0c9' },
+    metal: { fill: '#607080', stroke: '#1f2933', light: '#a8c7dd' }
+  };
+  const wallShapes = ['end_n', 'end_e', 'end_s', 'end_w', 'straight_horizontal', 'straight_vertical', 'corner_ne', 'corner_nw', 'corner_se', 'corner_sw', 't_n', 't_e', 't_s', 't_w', 'cross'];
+  const mountainShapes = ['mountain_edge_n', 'mountain_edge_e', 'mountain_edge_s', 'mountain_edge_w', 'mountain_corner_ne', 'mountain_corner_nw', 'mountain_corner_se', 'mountain_corner_sw', 'mountain_inner'];
+  const written = [];
+
+  for (const [material, colors] of Object.entries(materialColors)) {
+    for (const shape of wallShapes) {
+      const file = path.join(categoryDirs.ui, `wall_${material}_${shape}.svg`);
+      if (!existsSync(file)) {
+        await writeFile(file, svgWall(material, shape, colors));
+        written.push(relativeAssetPath(file));
+      }
+    }
+    for (const state of ['closed', 'open']) {
+      const file = path.join(categoryDirs.ui, `door_${material}_${state}.svg`);
+      if (!existsSync(file)) {
+        await writeFile(file, svgDoor(material, state === 'open', colors));
+        written.push(relativeAssetPath(file));
+      }
+    }
+  }
+
+  for (const shape of mountainShapes) {
+    const file = path.join(categoryDirs.tiles, `${shape}.svg`);
+    if (!existsSync(file)) {
+      await writeFile(file, svgMountain(shape));
+      written.push(relativeAssetPath(file));
+    }
+  }
+
+  return written;
 }
 
 async function ensureDirs() {
@@ -345,7 +449,7 @@ async function collectManifest(animations) {
 
   for (const category of categories) {
     const files = (await walkFiles(categoryDirs[category]))
-      .filter(file => imageExtensions.has(path.extname(file).toLowerCase()));
+      .filter(file => manifestExtensions.has(path.extname(file).toLowerCase()));
     for (const file of files) {
       const key = runtimeKeyFromFile(file);
       const rel = relativeAssetPath(file);
@@ -372,6 +476,7 @@ async function main() {
   await ensureDirs();
   const moved = await moveExistingSprites();
   const movedMetadata = await moveLegacySpriteMetadata();
+  const procedural = await ensureProceduralRoadmapAssets();
   const sliceConfig = await loadSliceConfig();
   const sliced = await sliceConfiguredRaw(sliceConfig);
   const animations = await processRawGifs();
@@ -380,7 +485,7 @@ async function main() {
   await writeManifest(manifest);
   await cleanLegacySpritesDir();
 
-  console.info(`assets:process moved=${moved.length} metadata=${movedMetadata.length} sliced=${sliced.length} animations=${animations.length} assets=${Object.keys(manifest.assets).length}`);
+  console.info(`assets:process moved=${moved.length} metadata=${movedMetadata.length} procedural=${procedural.length} sliced=${sliced.length} animations=${animations.length} assets=${Object.keys(manifest.assets).length}`);
   console.info(`manifest: ${relativeAssetPath(manifestJsonPath)}`);
   console.info(`raw map: ${relativeAssetPath(rawSliceMapPath)}`);
 }

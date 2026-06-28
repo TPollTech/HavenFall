@@ -19,16 +19,4 @@
     ctx.restore();
   };
 
-  if (typeof draw !== 'function') return;
-  const nativeDraw = draw;
-
-  draw = function drawWithFinalFogMask() {
-    nativeDraw();
-    if (!state || appScreen !== SCREEN.PLAYING || !state.world?.exploration) return;
-    ctx.save();
-    ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
-    ctx.scale(viewTransform.scale, viewTransform.scale);
-    drawFogOfWar(visibleTileBounds(2));
-    ctx.restore();
-  };
 })();

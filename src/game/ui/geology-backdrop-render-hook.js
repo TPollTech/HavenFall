@@ -5,9 +5,6 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.geologyBackdropTileHooked = true;
 
-  if (typeof drawTile !== 'function') return;
-  const nativeDrawTile = drawTile;
-
   function rockColor(rock) {
     const defs = window.GeologySystem?.ROCK_DEFS || {};
     return (defs[rock?.type] || defs.granite)?.color || '#4b5563';
@@ -27,8 +24,5 @@
     ctx.restore();
   }
 
-  drawTile = function drawTileWithMountainBackdrop(x, y, type) {
-    nativeDrawTile(x, y, type);
-    drawRockBackdropAt(x, y);
-  };
+  window.GameSystems?.registerTileRenderer('geology.backdrop', drawRockBackdropAt, { order: 5 });
 })();

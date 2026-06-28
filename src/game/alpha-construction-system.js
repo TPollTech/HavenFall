@@ -410,6 +410,10 @@
     if (!state) return true;
     if (typeof isInside === 'function' && !isInside(x, y)) return true;
     if (target && target.x === x && target.y === y) return false;
+
+    const registeredBlock = window.GameSystems?.pathBlocked?.(x, y, target);
+    if (registeredBlock !== null && registeredBlock !== undefined) return registeredBlock;
+
     if (typeof isMountainBlocked === 'function' && isMountainBlocked(x, y)) return true;
 
     const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null;
@@ -658,6 +662,7 @@
 
   function drawObjectAlpha(obj) {
     if (!obj) return;
+    if (window.GameSystems?.drawObject(obj)) return;
     const def = obj.type === 'blueprint' ? buildDefs?.[obj.buildType] : objectDefs?.[obj.type];
     const type = obj.type === 'blueprint' ? def?.type : obj.type;
 
@@ -817,8 +822,12 @@
     try { canPlace = canPlaceAlpha; } catch (_) {}
     try { placeBlueprint = placeBlueprintAlpha; } catch (_) {}
     try { routePrimaryObjectAction = routePrimaryObjectActionAlpha; } catch (_) {}
-    try { isBlocked = isBlockedAlpha; } catch (_) {}
-    try { drawObject = drawObjectAlpha; } catch (_) {}
+    if (!window.GameSystems?.registerCollisionProvider) {
+      try { isBlocked = isBlockedAlpha; } catch (_) {}
+    }
+    if (!window.GameSystems?.registerObjectRenderer) {
+      try { drawObject = drawObjectAlpha; } catch (_) {}
+    }
     try { drawBuildPreview = drawBuildPreviewAlpha; } catch (_) {}
     try { updateUI = updateUIAlpha; } catch (_) {}
   }

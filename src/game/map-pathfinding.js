@@ -238,6 +238,9 @@ function isBlocked(x, y, target = null) {
   if (!isInside(x, y)) return true;
   if (target && target.x === x && target.y === y) return false;
 
+  const registeredBlock = window.GameSystems?.pathBlocked?.(x, y, target);
+  if (registeredBlock !== null && registeredBlock !== undefined) return registeredBlock;
+
   if (typeof isMountainBlocked === 'function' && isMountainBlocked(x, y)) return true;
 
   const obj = getObjectAt(x, y);
