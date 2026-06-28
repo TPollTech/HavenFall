@@ -3,6 +3,7 @@
 const SCREEN_DOM_MAP = Object.freeze({
   [SCREEN.MAIN_MENU]: 'main',
   [SCREEN.NEW_GAME_SETUP]: 'setup',
+  [SCREEN.PLANET_SCAN]: 'scan',
   [SCREEN.COLONIST_SELECT]: 'colonists',
   [SCREEN.LOAD_GAME]: 'load',
   [SCREEN.SETTINGS]: 'settings',
@@ -27,6 +28,7 @@ function triggerScreenSideEffects() {
   if (typeof refreshMenuSaveInfo === 'function') refreshMenuSaveInfo();
   if (typeof refreshLoadScreen === 'function') refreshLoadScreen();
   if (typeof updateSetupSummary === 'function') updateSetupSummary();
+  if (appScreen === SCREEN.PLANET_SCAN && typeof refreshPlanetScan === 'function') refreshPlanetScan();
   if (appScreen === SCREEN.COLONIST_SELECT && typeof renderColonistSelection === 'function') renderColonistSelection();
   if (state && typeof updateUI === 'function') updateUI(true);
 }
