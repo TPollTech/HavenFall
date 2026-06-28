@@ -90,13 +90,26 @@
     return Object.keys(window.HavenfallAssets?.assets || {}).map(classify);
   }
 
+  function installGlobalBindings() {
+    try { isProceduralRuntimeAsset = isProceduralRuntimeAsset; } catch (_) {}
+    try { window.isProceduralRuntimeAsset = isProceduralRuntimeAsset; } catch (_) {}
+    window.HavenfallContext = window.HavenfallContext || {};
+    window.HavenfallContext.assetPolicy = {
+      rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI e objetos modulares ficam em JS.',
+      loadedNatureKeys: [...NATURE_KEYS]
+    };
+  }
+
   window.HavenfallAssetPolicy = Object.freeze({
     isNatureRuntimeAsset,
     isProceduralRuntimeAsset,
     shouldLoadRuntimeSprite,
     classify,
     report,
+    installGlobalBindings,
     natureKeys: [...NATURE_KEYS],
     rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI e objetos modulares ficam em JS.'
   });
+
+  installGlobalBindings();
 })();
