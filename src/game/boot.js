@@ -54,6 +54,8 @@
     { id: 'recruitment_polish_ui', file: 'src/game/ui/recruitment-polish-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'advanced_zones', file: 'src/game/systems/advanced-zones.js' },
+    { id: 'advanced_zone_labels', file: 'src/game/systems/advanced-zones-labels.js' },
+    { id: 'deconstruct_dumping_hook', file: 'src/game/systems/deconstruct-dumping-hook.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
     { id: 'defense', file: 'src/game/defense.js' },
