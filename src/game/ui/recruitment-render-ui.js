@@ -10,9 +10,26 @@ function renderColonistSelection() {
       dom.buttons.startSelectedGame.title = validation.ok ? 'Iniciar com estes colonos.' : 'Corrija a distribuição de pontos antes de iniciar.';
     }
     if (dom.buttons?.rerollAll) dom.buttons.rerollAll.hidden = true;
-    const cards = colonistCandidates.map((c, i) => characterBuilderCard(c, i)).join('');
+
+    if (!colonistCandidates.length) {
+      dom.colonistCards.innerHTML = '<div class="empty">Nenhum candidato disponível.</div>';
+      return;
+    }
+
+    if (typeof activeRecruitmentCandidateIndex === 'number') {
+      activeRecruitmentCandidateIndex = Math.max(0, Math.min(colonistCandidates.length - 1, activeRecruitmentCandidateIndex));
+    }
+    const activeIndex = typeof activeRecruitmentCandidateIndex === 'number' ? activeRecruitmentCandidateIndex : 0;
+    const activeCandidate = colonistCandidates[activeIndex];
+    const files = colonistCandidates.map((c, i) => {
+      const remaining = Number(c.pointsRemaining ?? CharacterBuilder.remainingPointsFor(c.skills));
+      const valid = remaining >= 0;
+      return personnelFileCard(c, i, valid, remaining).replace('personnel-file-card', `personnel-file-card ${i === activeIndex ? 'active' : ''}`);
+    }).join('');
+    const dossier = characterBuilderCard(activeCandidate, activeIndex);
     const coverage = typeof renderRecruitmentCoveragePanel === 'function' ? renderRecruitmentCoveragePanel() : '';
-    dom.colonistCards.innerHTML = `${cards}${coverage}`;
+
+    dom.colonistCards.innerHTML = `<div class="personnel-files-column"><div class="personnel-files-title"><span>ARQUIVOS DE PESSOAL</span><b>${colonistCandidates.length} registros</b></div>${files}</div><div class="dossier-stage">${dossier}</div>${coverage}`;
     return;
   }
 
