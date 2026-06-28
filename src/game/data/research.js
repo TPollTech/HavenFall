@@ -12,5 +12,7 @@ const baseResearchDefs = {
   thermal_comfort: { label: 'Isolamento Térmico', unlocks: ['shelter'], cost: 30 },
   preservation: { label: 'Preservação de Alimentos', unlocks: ['smokehouse'], cost: 30 },
   light_hauling: { label: 'Carga Léve', unlocks: ['cart'], cost: 20 },
+  farm: { label: 'Fazenda', unlocks: ['crop'], cost: 30 },
+  cart: { label: 'Carrinho de mão', unlocks: ['handcart'], cost: 20 },
 };
-const baseResearchOrder = ['metalworking', 'cooking', 'medicine', 'heavy_hauling', 'carpentry', 'agriculture', 'storage', 'basic_defense', 'thermal_comfort', 'preservation', 'light_hauling'];
+const baseResearchOrder = ['metalworking', 'cooking', 'medicine', 'heavy_hauling', 'carpentry', 'agriculture', 'storage', 'basic_defense', 'thermal_comfort', 'preservation', 'light_hauling', 'farm', 'cart'];
