@@ -1,6 +1,22 @@
 'use strict';
 
 (() => {
+  const BIOME_COLORS = Object.freeze({
+    forest: [34, 151, 118],
+    desert: [205, 141, 47],
+    snow: [160, 215, 232],
+    rock: [117, 132, 148],
+    water: [24, 88, 122]
+  });
+
+  const BIOME_LABELS = Object.freeze({
+    forest: 'Floresta temperada',
+    desert: 'Deserto seco',
+    snow: 'Neve profunda',
+    rock: 'Cordilheira rochosa',
+    water: 'Bacia hídrica'
+  });
+
   function injectPlanetScanStyle() {
     if (document.getElementById('planet-scan-ui-style')) return;
     const style = document.createElement('style');
@@ -112,12 +128,10 @@
         width: min(430px, 56vw);
         aspect-ratio: 1;
         position: relative;
+        isolation: isolate;
         border-radius: 50%;
         background:
-          radial-gradient(circle at 48% 42%, rgba(255,255,255,.24) 0 2px, transparent 3px),
-          radial-gradient(circle at 35% 58%, rgba(251, 191, 36, .55) 0 3px, transparent 4px),
-          radial-gradient(circle at 64% 35%, rgba(56, 189, 248, .55) 0 2px, transparent 4px),
-          radial-gradient(circle at 50% 50%, rgba(34, 211, 238, .20) 0 28%, rgba(15, 23, 42, .42) 42%, rgba(3,7,18,.88) 70%),
+          radial-gradient(circle at 50% 50%, rgba(34, 211, 238, .18) 0 28%, rgba(15, 23, 42, .42) 42%, rgba(3,7,18,.88) 70%),
           conic-gradient(from 140deg, rgba(56,189,248,.20), rgba(251,191,36,.16), rgba(56,189,248,.10), rgba(14,165,233,.24));
         box-shadow:
           0 0 0 1px rgba(125,211,252,.35),
@@ -126,10 +140,21 @@
         overflow: hidden;
       }
 
+      .scan-planet-canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+        opacity: .95;
+        filter: saturate(1.18) contrast(1.08);
+      }
+
       .scan-radar::before {
         content: '';
         position: absolute;
         inset: 7%;
+        z-index: 2;
         border-radius: 50%;
         border: 1px solid rgba(125,211,252,.28);
         background:
@@ -143,6 +168,7 @@
         content: '';
         position: absolute;
         inset: -30%;
+        z-index: 3;
         background: conic-gradient(from 0deg, transparent 0deg, rgba(125,211,252,.36) 22deg, transparent 48deg);
         animation: scanSweep 5.2s linear infinite;
         mix-blend-mode: screen;
@@ -150,6 +176,7 @@
 
       .scan-sector-label {
         position: absolute;
+        z-index: 4;
         left: 18px;
         bottom: 16px;
         display: grid;
@@ -162,6 +189,37 @@
 
       .scan-sector-label b {
         color: #e0f2fe;
+      }
+
+      .scan-biome-legend {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        gap: 7px;
+        z-index: 2;
+      }
+
+      .scan-biome-chip {
+        border: 1px solid rgba(125, 211, 252, .15);
+        background: rgba(2, 6, 23, .48);
+        border-radius: 999px;
+        padding: 5px 8px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        color: rgba(226, 232, 240, .78);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      .scan-biome-chip i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
       }
 
       .scan-data-list,
@@ -265,19 +323,154 @@
           overflow-y: auto;
         }
         .scan-hologram-panel {
-          min-height: 360px;
+          min-height: 390px;
         }
         .scan-radar {
           width: min(330px, 78vw);
+        }
+        .scan-biome-legend {
+          position: relative;
+          left: auto;
+          right: auto;
+          bottom: auto;
+          margin-top: 12px;
         }
       }
     `;
     document.head.appendChild(style);
   }
 
-  function scanRandom(config) {
-    const seed = `${config?.seed || 'scan'}|${config?.difficulty || 'normal'}|${config?.mapSize || 'giant'}|sector-preview-v1`;
-    return typeof seededRandom === 'function' ? seededRandom(seed) : Math.random;
+  function stableHash(text) {
+    if (typeof hashSeed === 'function') return hashSeed(String(text));
+    let h = 2166136261;
+    const str = String(text || 'scan');
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function seededUnit(seed, x, y, salt = 'n') {
+    return (stableHash(`${seed}|${salt}|${x}|${y}`) % 100000) / 100000;
+  }
+
+  function scanRandom(config, salt = 'sector-preview-v2') {
+    const seed = `${config?.seed || 'scan'}|${config?.difficulty || 'normal'}|${config?.mapSize || 'giant'}|${salt}`;
+    return typeof seededRandom === 'function' ? seededRandom(seed) : (() => seededUnit(seed, 1, 1));
+  }
+
+  function smooth(t) {
+    return t * t * (3 - 2 * t);
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function valueNoise(x, y, seed, scale, salt) {
+    const gx = Math.floor(x / scale);
+    const gy = Math.floor(y / scale);
+    const tx = smooth((x / scale) - gx);
+    const ty = smooth((y / scale) - gy);
+    const a = seededUnit(seed, gx, gy, salt);
+    const b = seededUnit(seed, gx + 1, gy, salt);
+    const c = seededUnit(seed, gx, gy + 1, salt);
+    const d = seededUnit(seed, gx + 1, gy + 1, salt);
+    return lerp(lerp(a, b, tx), lerp(c, d, tx), ty);
+  }
+
+  function fractalNoise(x, y, seed, baseScale, salt) {
+    let value = 0;
+    let amp = 0.5;
+    let total = 0;
+    for (let octave = 0; octave < 4; octave++) {
+      value += valueNoise(x, y, seed, Math.max(2, baseScale / (2 ** octave)), `${salt}-${octave}`) * amp;
+      total += amp;
+      amp *= 0.5;
+    }
+    return value / total;
+  }
+
+  function classifyBiome(nx, ny, height, moisture, temp, config) {
+    const mapBias = ({ large: -0.04, huge: 0.01, giant: 0.05, infinite_chunks: 0.08 })[config.mapSize] || 0;
+    if (height < 0.26) return 'water';
+    if (height > 0.72 - mapBias) return 'rock';
+    if (temp < 0.34 && moisture > 0.28) return 'snow';
+    if (moisture < 0.35 && temp > 0.42) return 'desert';
+    if (Math.abs(ny) > 0.68 && temp < 0.48) return 'snow';
+    return 'forest';
+  }
+
+  function buildScanModel(config) {
+    const seed = `${config?.seed || 'scan'}|planet-preview`;
+    const rand = scanRandom(config, 'signatures');
+    const size = 120;
+    const counts = { forest: 0, desert: 0, snow: 0, rock: 0, water: 0 };
+    const samples = [];
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const nx = (x / (size - 1)) * 2 - 1;
+        const ny = (y / (size - 1)) * 2 - 1;
+        const radius = Math.sqrt(nx * nx + ny * ny);
+        if (radius > 1) continue;
+        const warp = fractalNoise(x + 100, y + 100, seed, 36, 'warp') - 0.5;
+        const height = fractalNoise(x + warp * 18, y - warp * 18, seed, 42, 'height');
+        const moisture = fractalNoise(x + 300, y + 40, seed, 58, 'moisture');
+        const temp = Math.max(0, Math.min(1, 1 - Math.abs(ny) * 0.82 + (fractalNoise(x, y + 450, seed, 70, 'temp') - 0.5) * 0.34));
+        const biome = classifyBiome(nx, ny, height, moisture, temp, config);
+        counts[biome] += 1;
+        samples.push({ x, y, nx, ny, height, moisture, temp, biome });
+      }
+    }
+
+    const total = Math.max(1, samples.length);
+    const biomeStats = Object.fromEntries(Object.entries(counts).map(([key, value]) => [key, Math.round((value / total) * 100)]));
+    const dominantBiome = Object.entries(biomeStats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'forest';
+    const eventCount = ({ low: 2, normal: 3, high: 4 })[config.eventIntensity] || 3;
+    const difficultyBonus = ({ easy: -1, normal: 0, hard: 1, hardcore: 2 })[config.difficulty] || 0;
+    const signatureCount = Math.max(2, eventCount + difficultyBonus);
+    const signatures = [];
+    const namesByBiome = {
+      forest: ['Movimento orgânico', 'Agrupamento de fauna', 'Eco de vegetação densa'],
+      desert: ['Eco térmico irregular', 'Poeira eletrostática', 'Baixa umidade crítica'],
+      snow: ['Frente fria anômala', 'Gelo estrutural', 'Baixa assinatura térmica'],
+      rock: ['Sinal metálico soterrado', 'Anomalia de teto natural', 'Falha geológica'],
+      water: ['Bacia hídrica detectada', 'Reflexo orbital', 'Condensação instável']
+    };
+
+    for (let i = 0; i < signatureCount; i++) {
+      const sample = samples[Math.floor(rand() * samples.length)] || samples[0];
+      const pool = namesByBiome[sample?.biome || dominantBiome] || namesByBiome.forest;
+      const name = pool[Math.floor(rand() * pool.length)] || pool[0];
+      const range = Math.floor(12 + rand() * 78);
+      const riskRoll = rand() + difficultyBonus * 0.12;
+      const risk = riskRoll > 0.78 ? 'elevado' : riskRoll > 0.42 ? 'moderado' : 'baixo';
+      signatures.push({
+        name,
+        range,
+        risk,
+        biome: sample?.biome || dominantBiome,
+        nx: sample?.nx || 0,
+        ny: sample?.ny || 0
+      });
+    }
+
+    const geology = Math.min(98, Math.max(4, biomeStats.rock + biomeStats.desert * 0.45 + biomeStats.snow * 0.25 + 24));
+    const biology = Math.min(98, Math.max(4, biomeStats.forest * 0.9 + biomeStats.water * 0.25 + 18));
+    const climate = Math.min(98, Math.max(4, biomeStats.snow * 0.75 + biomeStats.desert * 0.65 + (({ low: 8, normal: 18, high: 32 })[config.eventIntensity] || 18)));
+    const noise = Math.min(98, Math.max(4, 22 + difficultyBonus * 11 + signatureCount * 5 + rand() * 16));
+    const landing = Math.min(98, Math.max(4, 86 - climate * 0.24 - noise * 0.18 - difficultyBonus * 5));
+
+    return {
+      seed,
+      samples,
+      biomeStats,
+      dominantBiome,
+      signatures,
+      metrics: { geology, biology, climate, noise, landing }
+    };
   }
 
   function segmentBar(value, amber = false) {
@@ -285,38 +478,173 @@
     return `<div class="scan-segments ${amber ? 'amber' : ''}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < lit ? 'on' : ''}"></i>`).join('')}</div>`;
   }
 
-  function metricRows(config, rand) {
-    const difficultyBoost = ({ easy: -8, normal: 0, hard: 10, hardcore: 18 })[config.difficulty] || 0;
-    const eventBoost = ({ low: -12, normal: 0, high: 14 })[config.eventIntensity] || 0;
-    const mapBoost = ({ large: -6, huge: 2, giant: 10, infinite_chunks: 16 })[config.mapSize] || 0;
-    return [
-      ['Densidade geológica', 45 + mapBoost + rand() * 26, false],
-      ['Atividade biológica', 38 + eventBoost + rand() * 30, false],
-      ['Instabilidade climática', 34 + eventBoost + rand() * 32, true],
-      ['Ruído atmosférico', 28 + difficultyBoost + rand() * 38, true],
-      ['Integridade do pouso', 82 - difficultyBoost - rand() * 18, false]
-    ].map(([label, value, amber]) => {
+  function metricRows(model) {
+    const rows = [
+      ['Densidade geológica', model.metrics.geology, false],
+      ['Atividade biológica', model.metrics.biology, false],
+      ['Instabilidade climática', model.metrics.climate, true],
+      ['Ruído atmosférico', model.metrics.noise, true],
+      ['Integridade do pouso', model.metrics.landing, false]
+    ];
+    return rows.map(([label, value, amber]) => {
       const clamped = Math.max(4, Math.min(98, Math.round(value)));
       return `<div class="scan-data-row"><span>${escapeHtml(label)}</span>${segmentBar(clamped, amber)}<b>${clamped}%</b></div>`;
     }).join('');
   }
 
-  function signatureCards(config, rand) {
-    const count = ({ low: 2, normal: 3, high: 4 })[config.eventIntensity] || 3;
-    const names = ['Eco térmico irregular', 'Ruína estrutural', 'Movimento orgânico', 'Sinal metálico soterrado', 'Anomalia de teto natural', 'Agrupamento de fauna'];
-    return Array.from({ length: count }, (_, i) => {
-      const name = names[Math.floor(rand() * names.length)] || names[i];
-      const range = Math.floor(12 + rand() * 78);
-      const risk = ['baixo', 'moderado', 'elevado'][Math.floor(rand() * 3)] || 'moderado';
-      return `<div class="scan-signature-card"><b>${escapeHtml(name)}</b><small>Assinatura ${String(i + 1).padStart(2, '0')} · distância estimada ${range}km · risco ${risk}</small></div>`;
+  function signatureCards(model) {
+    return model.signatures.map((sig, i) => {
+      const biome = BIOME_LABELS[sig.biome] || sig.biome;
+      return `<div class="scan-signature-card"><b>${escapeHtml(sig.name)}</b><small>Assinatura ${String(i + 1).padStart(2, '0')} · ${escapeHtml(biome)} · ${sig.range}km · risco ${sig.risk}</small></div>`;
     }).join('');
+  }
+
+  function biomeLegend(model) {
+    return Object.entries(model.biomeStats)
+      .filter(([, pct]) => pct > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([key, pct]) => {
+        const rgb = BIOME_COLORS[key] || [125, 211, 252];
+        return `<span class="scan-biome-chip" style="color:rgb(${rgb.join(',')})"><i style="background:currentColor"></i>${escapeHtml(BIOME_LABELS[key] || key)} ${pct}%</span>`;
+      }).join('');
+  }
+
+  function ensurePlanetCanvas() {
+    const radar = document.querySelector('.scan-radar');
+    if (!radar) return null;
+    let canvas = document.getElementById('scanPlanetCanvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'scanPlanetCanvas';
+      canvas.className = 'scan-planet-canvas';
+      canvas.width = 420;
+      canvas.height = 420;
+      radar.prepend(canvas);
+    }
+    return canvas;
+  }
+
+  function ensureBiomeLegend() {
+    const panel = document.querySelector('.scan-hologram-panel');
+    if (!panel) return null;
+    let legend = document.getElementById('scanBiomeLegend');
+    if (!legend) {
+      legend = document.createElement('div');
+      legend.id = 'scanBiomeLegend';
+      legend.className = 'scan-biome-legend';
+      panel.appendChild(legend);
+    }
+    return legend;
+  }
+
+  function renderPlanetPreview(model) {
+    const canvas = ensurePlanetCanvas();
+    if (!canvas) return;
+    const ctx2 = canvas.getContext('2d');
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = size * 0.43;
+    ctx2.clearRect(0, 0, size, size);
+
+    const imageSize = 180;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = imageSize;
+    offscreen.height = imageSize;
+    const off = offscreen.getContext('2d');
+    const img = off.createImageData(imageSize, imageSize);
+    const seed = model.seed;
+
+    for (let y = 0; y < imageSize; y++) {
+      for (let x = 0; x < imageSize; x++) {
+        const nx = (x / (imageSize - 1)) * 2 - 1;
+        const ny = (y / (imageSize - 1)) * 2 - 1;
+        const r = Math.sqrt(nx * nx + ny * ny);
+        const idx = (y * imageSize + x) * 4;
+        if (r > 1) {
+          img.data[idx + 3] = 0;
+          continue;
+        }
+        const warp = fractalNoise(x + 100, y + 100, seed, 54, 'warp') - 0.5;
+        const height = fractalNoise(x + warp * 18, y - warp * 18, seed, 64, 'height');
+        const moisture = fractalNoise(x + 300, y + 40, seed, 88, 'moisture');
+        const temp = Math.max(0, Math.min(1, 1 - Math.abs(ny) * 0.82 + (fractalNoise(x, y + 450, seed, 90, 'temp') - 0.5) * 0.34));
+        const biome = classifyBiome(nx, ny, height, moisture, temp, readNewGameConfigSafe?.() || defaultNewGameConfig);
+        const rgb = BIOME_COLORS[biome] || BIOME_COLORS.forest;
+        const light = 0.68 + height * 0.45 + (1 - r) * 0.16;
+        const edge = Math.max(0, Math.min(1, (1 - r) * 5));
+        img.data[idx] = Math.min(255, rgb[0] * light);
+        img.data[idx + 1] = Math.min(255, rgb[1] * light);
+        img.data[idx + 2] = Math.min(255, rgb[2] * light + 16);
+        img.data[idx + 3] = Math.round(235 * edge);
+      }
+    }
+    off.putImageData(img, 0, 0);
+
+    ctx2.save();
+    ctx2.beginPath();
+    ctx2.arc(center, center, radius, 0, Math.PI * 2);
+    ctx2.clip();
+    ctx2.drawImage(offscreen, center - radius, center - radius, radius * 2, radius * 2);
+
+    const glow = ctx2.createRadialGradient(center * 0.82, center * 0.72, radius * 0.04, center, center, radius);
+    glow.addColorStop(0, 'rgba(255,255,255,.22)');
+    glow.addColorStop(0.42, 'rgba(125,211,252,.06)');
+    glow.addColorStop(1, 'rgba(2,6,23,.62)');
+    ctx2.fillStyle = glow;
+    ctx2.fillRect(center - radius, center - radius, radius * 2, radius * 2);
+    ctx2.restore();
+
+    ctx2.save();
+    ctx2.strokeStyle = 'rgba(125,211,252,.32)';
+    ctx2.lineWidth = 1;
+    for (let i = -3; i <= 3; i++) {
+      const y = center + i * radius * 0.24;
+      ctx2.beginPath();
+      ctx2.ellipse(center, y, radius * Math.sqrt(Math.max(0.04, 1 - (i * 0.24) ** 2)), radius * 0.06, 0, 0, Math.PI * 2);
+      ctx2.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      ctx2.beginPath();
+      ctx2.ellipse(center, center, radius * Math.cos(i * Math.PI / 12), radius, 0, 0, Math.PI * 2);
+      ctx2.stroke();
+    }
+
+    model.signatures.forEach((sig, i) => {
+      const x = center + sig.nx * radius;
+      const y = center + sig.ny * radius;
+      const color = sig.risk === 'elevado' ? 'rgba(251,191,36,.95)' : sig.risk === 'moderado' ? 'rgba(125,211,252,.85)' : 'rgba(134,239,172,.75)';
+      ctx2.strokeStyle = color;
+      ctx2.fillStyle = color;
+      ctx2.lineWidth = 1.5;
+      ctx2.beginPath();
+      ctx2.arc(x, y, 4 + (i % 3), 0, Math.PI * 2);
+      ctx2.stroke();
+      ctx2.beginPath();
+      ctx2.arc(x, y, 1.5, 0, Math.PI * 2);
+      ctx2.fill();
+    });
+
+    ctx2.beginPath();
+    ctx2.arc(center, center, radius, 0, Math.PI * 2);
+    ctx2.strokeStyle = 'rgba(224,242,254,.42)';
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    ctx2.restore();
+  }
+
+  function safeLabelMapSize(value) {
+    return typeof labelMapSize === 'function' ? labelMapSize(value) : value;
+  }
+
+  function safeLabelEventIntensity(value) {
+    return typeof labelEventIntensity === 'function' ? labelEventIntensity(value) : value;
   }
 
   function refreshPlanetScan(config = null) {
     injectPlanetScanStyle();
     const activeConfig = config || (typeof readNewGameConfigSafe === 'function' ? readNewGameConfigSafe() : defaultNewGameConfig);
-    const rand = scanRandom(activeConfig);
-    const sector = `HV-${String(hashSeed?.(activeConfig.seed || 'scan') || 0).slice(0, 5).toUpperCase()}`;
+    const model = buildScanModel(activeConfig);
+    const sector = `HV-${String(stableHash(activeConfig.seed || 'scan')).slice(0, 5).toUpperCase()}`;
 
     const title = document.getElementById('scanSectorTitle');
     const meta = document.getElementById('scanSectorMeta');
@@ -324,21 +652,26 @@
     const signatures = document.getElementById('scanSignatures');
     const log = document.getElementById('scanProcessingLog');
     const label = document.getElementById('scanRadarLabel');
+    const legend = ensureBiomeLegend();
+
+    renderPlanetPreview(model);
 
     if (title) title.textContent = activeConfig.colonyName || 'First Haven';
     if (meta) {
-      meta.textContent = `Seed ${activeConfig.seed || 'sem seed'} · ${labelMapSize?.(activeConfig.mapSize || 'giant') || activeConfig.mapSize} · eventos ${labelEventIntensity?.(activeConfig.eventIntensity || 'normal') || activeConfig.eventIntensity}`;
+      const dominant = BIOME_LABELS[model.dominantBiome] || model.dominantBiome;
+      meta.textContent = `Seed ${activeConfig.seed || 'sem seed'} · ${safeLabelMapSize(activeConfig.mapSize || 'giant')} · eventos ${safeLabelEventIntensity(activeConfig.eventIntensity || 'normal')} · dominante: ${dominant}`;
     }
-    if (metrics) metrics.innerHTML = metricRows(activeConfig, rand);
-    if (signatures) signatures.innerHTML = signatureCards(activeConfig, rand);
+    if (metrics) metrics.innerHTML = metricRows(model);
+    if (signatures) signatures.innerHTML = signatureCards(model);
     if (label) label.innerHTML = `<span>SETOR</span><b>${escapeHtml(sector)}</b>`;
+    if (legend) legend.innerHTML = biomeLegend(model);
     if (log) {
       log.innerHTML = [
         'Sincronizando telemetria orbital...',
-        'Calibrando grade de coordenadas...',
-        'Detectando biomas dominantes...',
-        'Mapeando assinaturas hostis...',
-        'Prévia visual pronta. Motor real será acoplado na próxima passada.'
+        `Seed confirmado: ${activeConfig.seed || 'sem seed'}`,
+        `Bioma dominante: ${BIOME_LABELS[model.dominantBiome] || model.dominantBiome}`,
+        `${model.signatures.length} assinatura${model.signatures.length === 1 ? '' : 's'} detectada${model.signatures.length === 1 ? '' : 's'}.`,
+        'Prévia procedural pronta. Motor real segue isolado para a próxima passada.'
       ].map(line => `<span>${escapeHtml(line)}</span>`).join('');
     }
   }
