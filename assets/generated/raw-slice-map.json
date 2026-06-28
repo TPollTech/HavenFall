@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T15:50:52.477Z",
+  "generatedAt": "2026-06-28T20:43:36.391Z",
   "note": "Configure assets/raw/slices.json para cortes automaticos. Este arquivo mostra dimensoes e grids candidatos.",
   "configuredSlices": [],
   "sheets": [
@@ -859,51 +859,6 @@
       ]
     },
     {
-      "file": "assets/raw/cartoon_rpg_character_sprite_sheet.png",
-      "configured": false,
-      "width": 1254,
-      "height": 1254,
-      "format": "png",
-      "suggestedCategory": "ui",
-      "suggestions": [
-        {
-          "frameWidth": 32,
-          "frameHeight": 32,
-          "columns": 39,
-          "rows": 39,
-          "frames": 1521
-        },
-        {
-          "frameWidth": 48,
-          "frameHeight": 48,
-          "columns": 26,
-          "rows": 26,
-          "frames": 676
-        },
-        {
-          "frameWidth": 64,
-          "frameHeight": 64,
-          "columns": 19,
-          "rows": 19,
-          "frames": 361
-        },
-        {
-          "frameWidth": 96,
-          "frameHeight": 96,
-          "columns": 13,
-          "rows": 13,
-          "frames": 169
-        },
-        {
-          "frameWidth": 128,
-          "frameHeight": 128,
-          "columns": 9,
-          "rows": 9,
-          "frames": 81
-        }
-      ]
-    },
-    {
       "file": "assets/raw/ChatGPT Image 24 de jun. de 2026, 22_20_24 (1).png",
       "configured": false,
       "width": 1254,
@@ -1260,6 +1215,51 @@
           "columns": 11,
           "rows": 8,
           "frames": 88
+        }
+      ]
+    },
+    {
+      "file": "assets/raw/cartoon_rpg_character_sprite_sheet.png",
+      "configured": false,
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "suggestedCategory": "ui",
+      "suggestions": [
+        {
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 39,
+          "rows": 39,
+          "frames": 1521
+        },
+        {
+          "frameWidth": 48,
+          "frameHeight": 48,
+          "columns": 26,
+          "rows": 26,
+          "frames": 676
+        },
+        {
+          "frameWidth": 64,
+          "frameHeight": 64,
+          "columns": 19,
+          "rows": 19,
+          "frames": 361
+        },
+        {
+          "frameWidth": 96,
+          "frameHeight": 96,
+          "columns": 13,
+          "rows": 13,
+          "frames": 169
+        },
+        {
+          "frameWidth": 128,
+          "frameHeight": 128,
+          "columns": 9,
+          "rows": 9,
+          "frames": 81
         }
       ]
     },

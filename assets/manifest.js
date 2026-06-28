@@ -2,7 +2,7 @@
 
 (() => {
   const manifest = {
-  "generatedAt": "2026-06-28T15:50:52.479Z",
+  "generatedAt": "2026-06-28T20:43:36.393Z",
   "roots": {
     "mobs": "assets/mobs",
     "tiles": "assets/tiles",
@@ -267,6 +267,462 @@
       "path": "assets/mobs/personagens_work_sickle.png",
       "category": "mobs"
     },
+    "cartoon_rpg_character_sprite_sheet_cut_001": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_001.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_002": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_002.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_003": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_003.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_004": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_004.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_005": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_005.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_006": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_006.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_007": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_007.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_008": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_008.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_009": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_009.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_010": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_010.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_011": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_011.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_012": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_012.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_013": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_013.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_014": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_014.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_015": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_015.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_016": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_016.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_017": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_017.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_018": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_018.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_019": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_019.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_020": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_020.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_021": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_021.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_022": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_022.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_023": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_023.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_024": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_024.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_025": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_025.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_026": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_026.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_027": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_027.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_028": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_028.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_029": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_029.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_030": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_030.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_031": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_031.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_032": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_032.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_033": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_033.png",
+      "category": "mobs"
+    },
+    "cartoon_rpg_character_sprite_sheet_cut_034": {
+      "path": "assets/mobs/recortes/cartoon_rpg_character_sprite_sheet/cartoon_rpg_character_sprite_sheet_cut_034.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_001": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_001.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_002": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_002.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_003": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_003.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_004": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_004.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_005": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_005.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_006": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_006.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_007": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_007.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_008": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_008.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_009": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_009.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_010": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_010.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_011": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_011.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_012": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_012.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_013": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_013.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_014": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_014.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_015": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_015.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_016": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_016.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_017": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_017.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_018": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_018.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_019": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_019.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_020": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_020.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_021": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_021.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_022": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_022.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_023": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_023.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_024": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_024.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_025": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_025.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_026": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_026.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_027": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_027.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_028": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_028.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_029": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_029.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_030": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_030.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_031": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_031.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_032": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_032.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_033": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_033.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_034": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_034.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_035": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_035.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_036": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_036.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_037": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_037.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_038": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_038.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_039": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_039.png",
+      "category": "mobs"
+    },
+    "colonist_equipped_raw_v19b_cut_040": {
+      "path": "assets/mobs/recortes/colonist_equipped_raw_v19b/colonist_equipped_raw_v19b_cut_040.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_001": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_001.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_002": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_002.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_003": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_003.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_004": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_004.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_005": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_005.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_006": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_006.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_007": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_007.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_008": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_008.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_009": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_009.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_010": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_010.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_011": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_011.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_012": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_012.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_013": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_013.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_014": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_014.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_015": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_015.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_016": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_016.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_017": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_017.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_018": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_018.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_019": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_019.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_020": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_020.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_021": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_021.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_022": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_022.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_023": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_023.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_024": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_024.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_025": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_025.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_026": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_026.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_027": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_027.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_028": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_028.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_029": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_029.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_030": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_030.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_031": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_031.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_032": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_032.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_033": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_033.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_034": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_034.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_035": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_035.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_036": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_036.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_037": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_037.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_038": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_038.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_039": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_039.png",
+      "category": "mobs"
+    },
+    "creature_sprite_sheet_with_various_animals_cut_040": {
+      "path": "assets/mobs/recortes/creature_sprite_sheet_with_various_animals/creature_sprite_sheet_with_various_animals_cut_040.png",
+      "category": "mobs"
+    },
     "wolf_0": {
       "path": "assets/mobs/wolf_0.png",
       "category": "mobs"
@@ -361,6 +817,762 @@
     },
     "mountain_inner": {
       "path": "assets/tiles/mountain_inner.svg",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_001": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_001.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_002": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_002.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_003": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_003.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_004": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_004.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_005": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_005.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_006": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_006.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_007": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_007.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_008": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_008.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_009": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_009.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_010": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_010.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_011": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_011.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_012": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_012.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_013": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_013.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_014": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_014.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_015": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_015.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_016": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_016.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_017": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_017.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_018": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_018.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_019": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_019.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_020": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_020.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_021": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_021.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_022": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_022.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_023": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_023.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_024": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_024.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_025": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_025.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_026": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_026.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_027": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_027.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_028": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_028.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_029": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_029.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_030": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_030.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_031": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_031.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_032": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_032.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_033": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_033.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_034": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_034.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_035": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_035.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_036": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_036.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_037": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_037.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_038": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_038.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_039": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_039.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_040": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_040.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_041": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_041.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_042": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_042.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_043": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_043.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_044": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_044.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_045": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_045.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_046": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_046.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_047": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_047.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_048": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_048.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_049": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_049.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_050": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_050.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_051": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_051.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_052": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_052.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_053": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_053.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_054": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_054.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_055": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_055.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_056": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_056.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_057": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_057.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_058": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_058.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_059": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_059.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_060": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_060.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_061": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_061.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_062": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_062.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_063": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_063.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_064": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_064.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_065": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_065.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_066": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_066.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_067": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_067.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_068": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_068.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_069": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_069.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_070": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_070.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_071": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_071.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_072": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_072.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_073": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_073.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_074": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_074.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_075": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_075.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_076": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_076.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_077": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_077.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_078": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_078.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_079": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_079.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_080": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_080.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_081": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_081.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_082": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_082.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_083": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_083.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_084": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_084.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_085": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_085.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_086": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_086.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_087": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_087.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_088": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_088.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_089": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_089.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_090": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_090.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_091": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_091.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_092": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_092.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_093": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_093.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_094": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_094.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_095": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_095.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_096": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_096.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_097": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_097.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_098": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_098.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_099": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_099.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_100": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_100.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_101": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_101.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_102": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_102.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_103": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_103.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_104": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_104.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_105": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_105.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_106": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_106.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_107": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_107.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_108": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_108.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_109": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_109.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_110": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_110.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_111": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_111.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_112": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_112.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_113": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_113.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_114": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_114.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_115": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_115.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_116": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_116.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_117": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_117.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_118": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_118.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_119": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_119.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_120": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_120.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_121": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_121.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_122": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_122.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_123": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_123.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_124": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_124.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_125": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_125.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_126": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_126.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_127": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_127.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_128": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_128.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_129": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_129.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_130": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_130.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_131": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_131.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_132": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_132.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_133": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_133.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_134": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_134.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_135": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_135.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_136": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_136.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_137": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_137.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_138": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_138.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_139": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_139.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_140": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_140.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_141": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_141.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_142": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_142.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_143": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_143.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_144": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_144.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_145": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_145.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_146": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_146.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_147": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_147.png",
+      "category": "tiles"
+    },
+    "hand_painted_game_terrain_tileset_cut_148": {
+      "path": "assets/tiles/recortes/hand_painted_game_terrain_tileset/hand_painted_game_terrain_tileset_cut_148.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_001": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_001.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_002": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_002.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_003": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_003.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_004": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_004.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_005": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_005.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_006": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_006.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_007": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_007.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_008": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_008.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_009": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_009.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_010": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_010.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_011": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_011.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_012": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_012.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_013": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_013.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_014": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_014.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_015": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_015.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_016": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_016.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_017": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_017.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_018": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_018.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_019": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_019.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_020": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_020.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_021": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_021.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_022": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_022.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_023": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_023.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_024": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_024.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_025": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_025.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_026": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_026.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_027": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_027.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_028": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_028.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_029": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_029.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_030": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_030.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_031": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_031.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_032": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_032.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_033": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_033.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_034": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_034.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_035": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_035.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_036": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_036.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_037": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_037.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_038": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_038.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_039": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_039.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_040": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_040.png",
+      "category": "tiles"
+    },
+    "modular_medieval_building_tiles_sprite_sheet_cut_041": {
+      "path": "assets/tiles/recortes/modular_medieval_building_tiles_sprite_sheet/modular_medieval_building_tiles_sprite_sheet_cut_041.png",
       "category": "tiles"
     },
     "tile_dirt": {
@@ -599,12 +1811,12 @@
       "path": "assets/ui/ferramentas_sword.png",
       "category": "ui"
     },
-    "ferramentas_toolbox": {
-      "path": "assets/ui/ferramentas_toolbox.png",
-      "category": "ui"
-    },
     "ferramentas_tool_rack": {
       "path": "assets/ui/ferramentas_tool_rack.png",
+      "category": "ui"
+    },
+    "ferramentas_toolbox": {
+      "path": "assets/ui/ferramentas_toolbox.png",
       "category": "ui"
     },
     "ferramentas_weapon_rack": {
@@ -661,6 +1873,1666 @@
     },
     "med_station": {
       "path": "assets/ui/med_station.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_001": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_001.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_002": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_002.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_003": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_003.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_004": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_004.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_005": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_005.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_006": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_006.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_007": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_007.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_008": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_008.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_009": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_009.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_010": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_010.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_011": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_011.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_012": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_012.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_013": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_013.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_014": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_014.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_015": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_015.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_016": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_016.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_017": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_017.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_018": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_018.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_019": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_019.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_020": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_020.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_021": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_021.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_022": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_022.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_023": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_023.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_024": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_024.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_025": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_025.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_026": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_026.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_027": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_027.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_028": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_028.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_029": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_029.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_030": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_030.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_031": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_031.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_032": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_032.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_033": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_033.png",
+      "category": "ui"
+    },
+    "2d_rpg_sprite_sheet_and_assets_cut_034": {
+      "path": "assets/ui/recortes/2d_rpg_sprite_sheet_and_assets/2d_rpg_sprite_sheet_and_assets_cut_034.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_1/chatgpt_image_24_de_jun_de_2026_22_20_24_1_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_2/chatgpt_image_24_de_jun_de_2026_22_20_24_2_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_023": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_023.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_024": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_3/chatgpt_image_24_de_jun_de_2026_22_20_24_3_cut_024.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_023": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_023.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_024": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_024.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_025": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_025.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_026": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_026.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_027": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_027.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_028": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_028.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_029": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_029.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_030": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_030.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_031": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_031.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_032": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_032.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_033": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_033.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_034": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_034.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_035": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_035.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_036": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_036.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_037": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_037.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_038": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_038.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_039": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_039.png",
+      "category": "ui"
+    },
+    "chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_040": {
+      "path": "assets/ui/recortes/chatgpt_image_24_de_jun_de_2026_22_20_24_4/chatgpt_image_24_de_jun_de_2026_22_20_24_4_cut_040.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_023": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_023.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_024": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_44_1/chatgpt_image_25_de_jun_de_2026_22_13_44_1_cut_024.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_023": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_023.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_024": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_2/chatgpt_image_25_de_jun_de_2026_22_13_45_2_cut_024.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_3/chatgpt_image_25_de_jun_de_2026_22_13_45_3_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_001": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_001.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_002": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_002.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_003": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_003.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_004": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_004.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_005": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_005.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_006": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_006.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_007": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_007.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_008": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_008.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_009": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_009.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_010": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_010.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_011": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_011.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_012": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_012.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_013": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_013.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_014": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_014.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_015": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_015.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_016": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_016.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_017": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_017.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_018": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_018.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_019": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_019.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_020": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_020.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_021": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_021.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_022": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_022.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_023": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_023.png",
+      "category": "ui"
+    },
+    "chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_024": {
+      "path": "assets/ui/recortes/chatgpt_image_25_de_jun_de_2026_22_13_45_4/chatgpt_image_25_de_jun_de_2026_22_13_45_4_cut_024.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_001": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_001.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_002": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_002.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_003": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_003.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_004": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_004.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_005": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_005.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_006": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_006.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_007": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_007.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_008": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_008.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_009": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_009.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_010": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_010.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_011": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_011.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_012": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_012.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_013": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_013.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_014": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_014.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_015": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_015.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_016": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_016.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_017": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_017.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_018": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_018.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_019": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_019.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_020": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_020.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_021": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_021.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_022": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_022.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_023": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_023.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_024": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_024.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_025": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_025.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_026": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_026.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_027": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_027.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_028": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_028.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_029": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_029.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_030": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_030.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_031": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_031.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_032": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_032.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_033": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_033.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_034": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_034.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_035": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_035.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_036": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_036.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_037": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_037.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_038": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_038.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_039": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_039.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_040": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_040.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_041": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_041.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_042": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_042.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_043": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_043.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_044": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_044.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_045": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_045.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_046": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_046.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_047": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_047.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_048": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_048.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_049": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_049.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_050": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_050.png",
+      "category": "ui"
+    },
+    "colorful_hand_painted_game_icon_collection_cut_051": {
+      "path": "assets/ui/recortes/colorful_hand_painted_game_icon_collection/colorful_hand_painted_game_icon_collection_cut_051.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_001": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_001.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_002": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_002.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_003": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_003.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_004": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_004.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_005": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_005.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_006": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_006.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_007": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_007.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_008": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_008.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_009": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_009.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_010": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_010.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_011": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_011.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_012": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_012.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_013": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_013.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_014": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_014.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_015": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_015.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_016": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_016.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_017": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_017.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_018": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_018.png",
+      "category": "ui"
+    },
+    "medieval_fantasy_interior_furniture_icons_cut_019": {
+      "path": "assets/ui/recortes/medieval_fantasy_interior_furniture_icons/medieval_fantasy_interior_furniture_icons_cut_019.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_001": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_001.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_002": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_002.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_003": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_003.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_004": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_004.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_005": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_005.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_006": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_006.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_007": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_007.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_008": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_008.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_009": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_009.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_010": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_010.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_011": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_011.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_012": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_012.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_013": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_013.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_014": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_014.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_015": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_015.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_016": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_016.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_017": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_017.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_018": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_018.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_019": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_019.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_020": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_020.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_021": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_021.png",
+      "category": "ui"
+    },
+    "nature_and_survival_resource_icons_1_cut_022": {
+      "path": "assets/ui/recortes/nature_and_survival_resource_icons_1/nature_and_survival_resource_icons_1_cut_022.png",
+      "category": "ui"
+    },
+    "raw_1_cut_001": {
+      "path": "assets/ui/recortes/raw_1/raw_1_cut_001.png",
+      "category": "ui"
+    },
+    "raw_10_cut_001": {
+      "path": "assets/ui/recortes/raw_10/raw_10_cut_001.png",
+      "category": "ui"
+    },
+    "raw_11_cut_001": {
+      "path": "assets/ui/recortes/raw_11/raw_11_cut_001.png",
+      "category": "ui"
+    },
+    "raw_12_cut_001": {
+      "path": "assets/ui/recortes/raw_12/raw_12_cut_001.png",
+      "category": "ui"
+    },
+    "raw_13_cut_001": {
+      "path": "assets/ui/recortes/raw_13/raw_13_cut_001.png",
+      "category": "ui"
+    },
+    "raw_14_cut_001": {
+      "path": "assets/ui/recortes/raw_14/raw_14_cut_001.png",
+      "category": "ui"
+    },
+    "raw_15_cut_001": {
+      "path": "assets/ui/recortes/raw_15/raw_15_cut_001.png",
+      "category": "ui"
+    },
+    "raw_16_cut_001": {
+      "path": "assets/ui/recortes/raw_16/raw_16_cut_001.png",
+      "category": "ui"
+    },
+    "raw_17_cut_001": {
+      "path": "assets/ui/recortes/raw_17/raw_17_cut_001.png",
+      "category": "ui"
+    },
+    "raw_18_cut_001": {
+      "path": "assets/ui/recortes/raw_18/raw_18_cut_001.png",
+      "category": "ui"
+    },
+    "raw_2_cut_001": {
+      "path": "assets/ui/recortes/raw_2/raw_2_cut_001.png",
+      "category": "ui"
+    },
+    "raw_3_cut_001": {
+      "path": "assets/ui/recortes/raw_3/raw_3_cut_001.png",
+      "category": "ui"
+    },
+    "raw_4_cut_001": {
+      "path": "assets/ui/recortes/raw_4/raw_4_cut_001.png",
+      "category": "ui"
+    },
+    "raw_5_cut_001": {
+      "path": "assets/ui/recortes/raw_5/raw_5_cut_001.png",
+      "category": "ui"
+    },
+    "raw_6_cut_001": {
+      "path": "assets/ui/recortes/raw_6/raw_6_cut_001.png",
+      "category": "ui"
+    },
+    "raw_7_cut_001": {
+      "path": "assets/ui/recortes/raw_7/raw_7_cut_001.png",
+      "category": "ui"
+    },
+    "raw_8_cut_001": {
+      "path": "assets/ui/recortes/raw_8/raw_8_cut_001.png",
+      "category": "ui"
+    },
+    "raw_9_cut_001": {
+      "path": "assets/ui/recortes/raw_9/raw_9_cut_001.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_001": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_001.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_002": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_002.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_003": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_003.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_004": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_004.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_005": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_005.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_006": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_006.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_007": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_007.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_008": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_008.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_009": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_009.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_010": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_010.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_011": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_011.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_012": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_012.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_013": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_013.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_014": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_014.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_015": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_015.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_016": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_016.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_017": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_017.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_018": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_018.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_019": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_019.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_020": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_020.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_021": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_021.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_022": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_022.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_023": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_023.png",
+      "category": "ui"
+    },
+    "resources_raw_v19b_cut_024": {
+      "path": "assets/ui/recortes/resources_raw_v19b/resources_raw_v19b_cut_024.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_001": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_001.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_002": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_002.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_003": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_003.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_004": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_004.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_005": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_005.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_006": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_006.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_007": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_007.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_008": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_008.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_009": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_009.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_010": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_010.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_011": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_011.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_012": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_012.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_013": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_013.png",
+      "category": "ui"
+    },
+    "stations_raw_v19b_cut_014": {
+      "path": "assets/ui/recortes/stations_raw_v19b/stations_raw_v19b_cut_014.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_001": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_001.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_002": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_002.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_003": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_003.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_004": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_004.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_005": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_005.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_006": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_006.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_007": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_007.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_008": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_008.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_009": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_009.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_010": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_010.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_011": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_011.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_012": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_012.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_013": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_013.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_014": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_014.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_015": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_015.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_016": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_016.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_017": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_017.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_018": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_018.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_019": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_019.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_020": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_020.png",
+      "category": "ui"
+    },
+    "survival_crafting_game_asset_collection_cut_021": {
+      "path": "assets/ui/recortes/survival_crafting_game_asset_collection/survival_crafting_game_asset_collection_cut_021.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_001": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_001.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_002": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_002.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_003": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_003.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_004": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_004.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_005": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_005.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_006": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_006.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_007": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_007.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_008": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_008.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_009": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_009.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_010": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_010.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_011": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_011.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_012": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_012.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_013": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_013.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_014": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_014.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_015": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_015.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_016": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_016.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_017": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_017.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_018": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_018.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_019": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_019.png",
+      "category": "ui"
+    },
+    "tools_weapons_raw_v19b_cut_020": {
+      "path": "assets/ui/recortes/tools_weapons_raw_v19b/tools_weapons_raw_v19b_cut_020.png",
       "category": "ui"
     },
     "recursos_arrow_bundle": {
@@ -759,10 +3631,6 @@
       "path": "assets/ui/recursos_water_bottle.png",
       "category": "ui"
     },
-    "research_desk": {
-      "path": "assets/ui/research_desk.png",
-      "category": "ui"
-    },
     "res_arrows": {
       "path": "assets/ui/res_arrows.png",
       "category": "ui"
@@ -859,6 +3727,10 @@
       "path": "assets/ui/res_water_bottle.png",
       "category": "ui"
     },
+    "research_desk": {
+      "path": "assets/ui/research_desk.png",
+      "category": "ui"
+    },
     "rock": {
       "path": "assets/ui/rock.png",
       "category": "ui"
@@ -903,10 +3775,6 @@
       "path": "assets/ui/table_wood.png",
       "category": "ui"
     },
-    "toolkit": {
-      "path": "assets/ui/toolkit.png",
-      "category": "ui"
-    },
     "tool_chisel": {
       "path": "assets/ui/tool_chisel.png",
       "category": "ui"
@@ -945,6 +3813,10 @@
     },
     "tool_wrench": {
       "path": "assets/ui/tool_wrench.png",
+      "category": "ui"
+    },
+    "toolkit": {
+      "path": "assets/ui/toolkit.png",
       "category": "ui"
     },
     "tree": {

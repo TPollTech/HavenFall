@@ -10,6 +10,7 @@ const FINAL_DIRS = ['mobs', 'tiles', 'vfx', 'ui'].map(dir => path.join(ROOT, 'as
 const GLOBALS_FILE = path.join(ROOT, 'src', 'game', 'state.js');
 const OUT_DIR = path.join(ROOT, 'docs');
 const OUT_FILE = path.join(OUT_DIR, 'ASSET_RAW_AUDIT.md');
+const RAW_CUTOUT_MAP = path.join(ROOT, 'assets', 'generated', 'raw-cutouts.json');
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg']);
 
@@ -48,6 +49,20 @@ function readAssetNames() {
   return [...new Set(names)].sort();
 }
 
+function readRawCutouts() {
+  if (!fs.existsSync(RAW_CUTOUT_MAP)) return new Map();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(RAW_CUTOUT_MAP, 'utf8'));
+    const map = new Map();
+    for (const entry of parsed.entries || []) {
+      map.set(entry.source, Number(entry.count || 0));
+    }
+    return map;
+  } catch (_) {
+    return new Map();
+  }
+}
+
 function classifyRaw(file) {
   const name = stem(file).toLowerCase();
   const lowerPath = rel(file).toLowerCase();
@@ -81,6 +96,7 @@ function main() {
   const rawImages = imageFiles(RAW_DIR);
   const spriteImages = FINAL_DIRS.flatMap(dir => imageFiles(dir));
   const assetNames = readAssetNames();
+  const rawCutouts = readRawCutouts();
 
   const spriteNames = new Set(spriteImages.map(file => normalizeName(stem(file))));
   const assetNameSet = new Set(assetNames.map(normalizeName));
@@ -98,7 +114,8 @@ function main() {
       path: rel(file),
       name: rawStem,
       type: classifyRaw(file),
-      probablyImplemented: likelyImplemented(rawStem, spriteNames, assetNameSet)
+      cutouts: rawCutouts.get(rel(file)) || 0,
+      probablyImplemented: likelyImplemented(rawStem, spriteNames, assetNameSet) || (rawCutouts.get(rel(file)) || 0) > 0
     };
   });
 
@@ -118,6 +135,8 @@ function main() {
   lines.push(`- Sprites finais em assets/{mobs,tiles,vfx,ui}: **${spriteImages.length}**`);
   lines.push(`- Assets declarados em assetNames: **${assetNames.length}**`);
   lines.push(`- assetNames sem PNG/SVG correspondente: **${missingImplementedSprites.length}**`);
+  lines.push(`- RAW com recorte automático registrado: **${rawRows.filter(row => row.cutouts > 0).length}**`);
+  lines.push(`- Recortes automáticos exportados: **${rawRows.reduce((sum, row) => sum + row.cutouts, 0)}**`);
   lines.push(`- RAW provavelmente ainda pendentes: **${rawPending.length}**`);
   lines.push('');
 
@@ -136,16 +155,22 @@ function main() {
   lines.push('## RAW provavelmente já cobertos por sprites finais');
   lines.push('');
   if (!rawProbablyDone.length) lines.push('- Nenhum detectado.');
-  else rawProbablyDone.forEach(row => lines.push(`- \`${row.path}\` — ${row.type}`));
+  else rawProbablyDone.forEach(row => lines.push(`- \`${row.path}\` — ${row.type}${row.cutouts ? ` — ${row.cutouts} recorte(s)` : ''}`));
   lines.push('');
 
   lines.push('## Próximo passo recomendado');
   lines.push('');
-  lines.push('1. Abrir cada RAW pendente.');
-  lines.push('2. Recortar/exportar cada sprite individual em `assets/mobs`, `assets/tiles`, `assets/vfx` ou `assets/ui`.');
-  lines.push('3. Nomear exatamente igual ao `assetNames` quando o sprite for usado pelo jogo.');
-  lines.push('4. Para spritesheets de personagem, exportar no padrão `colonistX_down_0`, `colonistX_down_1`, etc.');
-  lines.push('5. Rodar este auditor de novo até zerar os pendentes importantes.');
+  if (!rawPending.length) {
+    lines.push('1. Usar os recortes em `assets/{mobs,tiles,vfx,ui}/recortes/` conforme forem integrados no jogo.');
+    lines.push('2. Quando um recorte virar asset oficial, renomear para uma chave clara e mover para a pasta final principal da categoria.');
+    lines.push('3. Rodar `npm run assets:process` para atualizar o manifest.');
+  } else {
+    lines.push('1. Abrir cada RAW pendente.');
+    lines.push('2. Recortar/exportar cada sprite individual em `assets/mobs`, `assets/tiles`, `assets/vfx` ou `assets/ui`.');
+    lines.push('3. Nomear exatamente igual ao `assetNames` quando o sprite for usado pelo jogo.');
+    lines.push('4. Para spritesheets de personagem, exportar no padrão `colonistX_down_0`, `colonistX_down_1`, etc.');
+    lines.push('5. Rodar este auditor de novo até zerar os pendentes importantes.');
+  }
   lines.push('');
 
   fs.writeFileSync(OUT_FILE, lines.join('\n'), 'utf8');
@@ -154,6 +179,8 @@ function main() {
   console.log(`RAW: ${rawImages.length}`);
   console.log(`Sprites finais: ${spriteImages.length}`);
   console.log(`assetNames sem arquivo final: ${missingImplementedSprites.length}`);
+  console.log(`RAW com recorte automático: ${rawRows.filter(row => row.cutouts > 0).length}`);
+  console.log(`Recortes automáticos exportados: ${rawRows.reduce((sum, row) => sum + row.cutouts, 0)}`);
   console.log(`RAW pendentes prováveis: ${rawPending.length}`);
 }
 
