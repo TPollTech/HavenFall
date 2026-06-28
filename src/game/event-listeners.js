@@ -84,6 +84,11 @@
 
   function continueFromPlanetScan() {
     if (!newGameConfig) newGameConfig = readNewGameConfig();
+    if (typeof attachPlanetScanToConfig === 'function') {
+      newGameConfig = attachPlanetScanToConfig(newGameConfig);
+    } else if (typeof buildPlanetScanWorldgenProfile === 'function') {
+      newGameConfig = { ...newGameConfig, planetScan: buildPlanetScanWorldgenProfile(newGameConfig) };
+    }
     generateColonistCandidates(newGameConfig);
     setScreen(SCREEN.COLONIST_SELECT);
   }
