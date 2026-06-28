@@ -43,6 +43,7 @@
     { id: 'fire_vfx_render_hooks', file: 'src/game/ui/fire-vfx-render-hooks.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/ui/hud-ui.js' },
+    { id: 'planet_scan_ui', file: 'src/game/ui/planet-scan-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
