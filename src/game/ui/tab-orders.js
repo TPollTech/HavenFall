@@ -38,7 +38,7 @@
 
       <div class="dock-chip-row">
         <button type="button" class="dock-chip ${activeMine ? 'is-active' : ''}" data-order-tool="mine">⛏️ Minerar</button>
-        <button type="button" class="dock-chip ${activeDeconstruct ? 'is-active' : ''}" data-order-tool="deconstruct">拆 Desconstruir</button>
+        <button type="button" class="dock-chip ${activeDeconstruct ? 'is-active' : ''}" data-order-tool="deconstruct">⌫ Desconstruir</button>
         <button type="button" class="dock-chip ${activeCancel ? 'is-active' : ''}" data-order-tool="cancel">✕ Cancelar</button>
         <button type="button" class="dock-chip" data-auto-mine>Mineração automática</button>
         <button type="button" class="dock-chip" data-mark-nearby-mine>Marcar rochas próximas</button>
