@@ -53,6 +53,7 @@
     { id: 'recruitment_render_ui', file: 'src/game/ui/recruitment-render-ui.js' },
     { id: 'recruitment_polish_ui', file: 'src/game/ui/recruitment-polish-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
+    { id: 'advanced_zones', file: 'src/game/systems/advanced-zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
     { id: 'defense', file: 'src/game/defense.js' },
