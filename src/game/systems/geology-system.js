@@ -44,20 +44,7 @@
     const hpMultiplier = biomeId === 'desert' ? 0.78 : biomeId === 'snow' ? 1.18 : 1;
     const resourceMultiplier = biomeId === 'desert' ? 0.72 : biomeId === 'snow' ? 1.05 : 1;
     const maxHp = Math.max(40, Math.round(def.hp * hpMultiplier));
-    return {
-      type,
-      hp: maxHp,
-      maxHp,
-      isRoof: true,
-      mineable: true,
-      solid: true,
-      markedForMining: false,
-      resource: def.resource,
-      yield: Math.max(1, Math.round(def.yield * resourceMultiplier)),
-      biomeId,
-      insulation: def.insulation,
-      collapseRisk: 0
-    };
+    return { type, hp: maxHp, maxHp, isRoof: true, mineable: true, solid: true, markedForMining: false, resource: def.resource, yield: Math.max(1, Math.round(def.yield * resourceMultiplier)), biomeId, insulation: def.insulation, collapseRisk: 0 };
   }
 
   function createGeologyLayer(world) {
@@ -81,44 +68,18 @@
     world.rows = world.rows || rows;
     world.cols = world.cols || cols;
     if (!world.terrain && state?.terrain) world.terrain = state.terrain;
-    if (!Array.isArray(world.geologyLayer) || world.geologyLayer.length !== rows || world.geologyLayer[0]?.length !== cols) {
-      world.geologyLayer = createGeologyLayer(world);
-    }
-    if (!Array.isArray(world.roofLayer) || world.roofLayer.length !== rows || world.roofLayer[0]?.length !== cols) {
-      world.roofLayer = createRoofLayer(world);
-    }
-    world.geologyVersion = '1.1';
+    if (!Array.isArray(world.geologyLayer) || world.geologyLayer.length !== rows || world.geologyLayer[0]?.length !== cols) world.geologyLayer = createGeologyLayer(world);
+    if (!Array.isArray(world.roofLayer) || world.roofLayer.length !== rows || world.roofLayer[0]?.length !== cols) world.roofLayer = createRoofLayer(world);
+    world.geologyVersion = '1.2-backdrop';
     return world.geologyLayer;
   }
 
-  function getRockAt(x, y, world = state?.world) {
-    ensureGeologyState(world);
-    return world?.geologyLayer?.[Math.round(y)]?.[Math.round(x)] || null;
-  }
+  function getRockAt(x, y, world = state?.world) { ensureGeologyState(world); return world?.geologyLayer?.[Math.round(y)]?.[Math.round(x)] || null; }
+  function hasNaturalRoofAt(x, y, world = state?.world) { ensureGeologyState(world); return !!world?.roofLayer?.[Math.round(y)]?.[Math.round(x)]; }
+  function isMountainBlocked(x, y) { return !!getRockAt(x, y)?.solid; }
 
-  function hasNaturalRoofAt(x, y, world = state?.world) {
-    ensureGeologyState(world);
-    return !!world?.roofLayer?.[Math.round(y)]?.[Math.round(x)];
-  }
-
-  function isMountainBlocked(x, y) {
-    const rock = getRockAt(x, y);
-    return !!rock?.solid;
-  }
-
-  function markRockForMining(x, y, marked = true) {
-    const rock = getRockAt(x, y);
-    if (!rock?.mineable || !rock.solid) return false;
-    rock.markedForMining = !!marked;
-    return true;
-  }
-
-  function toggleRockMiningMark(x, y) {
-    const rock = getRockAt(x, y);
-    if (!rock?.mineable || !rock.solid) return false;
-    rock.markedForMining = !rock.markedForMining;
-    return rock.markedForMining;
-  }
+  function markRockForMining(x, y, marked = true) { const rock = getRockAt(x, y); if (!rock?.mineable || !rock.solid) return false; rock.markedForMining = !!marked; return true; }
+  function toggleRockMiningMark(x, y) { const rock = getRockAt(x, y); if (!rock?.mineable || !rock.solid) return false; rock.markedForMining = !rock.markedForMining; return rock.markedForMining; }
 
   function nearestMarkedMine(c) {
     if (!c || !state?.world) return null;
@@ -134,10 +95,7 @@
         const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(x, y, c.x, c.y) : null;
         if (!adj) continue;
         const d = Math.abs(c.x - x) + Math.abs(c.y - y);
-        if (d < bestDist) {
-          bestDist = d;
-          best = { x, y, rock, adj };
-        }
+        if (d < bestDist) { bestDist = d; best = { x, y, rock, adj }; }
       }
     }
     return best;
@@ -152,16 +110,10 @@
     const endX = center ? Math.min(cols - 1, Math.ceil(center.x + radius)) : cols - 1;
     const startY = center ? Math.max(0, Math.floor(center.y - radius)) : 0;
     const endY = center ? Math.min(rows - 1, Math.ceil(center.y + radius)) : rows - 1;
-
     for (let y = startY; y <= endY; y++) {
       for (let x = startX; x <= endX; x++) {
         const rock = world.geologyLayer[y]?.[x];
-        if (rock?.solid) {
-          world.roofLayer[y][x] = true;
-          rock.isRoof = true;
-          rock.collapseRisk = 0;
-          continue;
-        }
+        if (rock?.solid) { world.roofLayer[y][x] = true; rock.isRoof = true; rock.collapseRisk = 0; continue; }
         const supported = countNearbySolidRock(world, x, y, 2) >= 2;
         const deep = countNearbySolidRock(world, x, y, 4) >= 7;
         world.roofLayer[y][x] = !!(supported && deep);
@@ -172,12 +124,7 @@
 
   function countNearbySolidRock(world, x, y, radius) {
     let count = 0;
-    for (let yy = y - radius; yy <= y + radius; yy++) {
-      for (let xx = x - radius; xx <= x + radius; xx++) {
-        if (xx === x && yy === y) continue;
-        if (world.geologyLayer?.[yy]?.[xx]?.solid) count++;
-      }
-    }
+    for (let yy = y - radius; yy <= y + radius; yy++) for (let xx = x - radius; xx <= x + radius; xx++) if (!(xx === x && yy === y) && world.geologyLayer?.[yy]?.[xx]?.solid) count++;
     return count;
   }
 
@@ -187,7 +134,6 @@
     const def = ROCK_DEFS[rock.type] || ROCK_DEFS.granite;
     rock.hp = Math.max(0, Number(rock.hp || 0) - Math.max(1, Number(power || 1)) * def.mineSpeed);
     if (rock.hp > 0) return { done: true, removed: false, hp: rock.hp, maxHp: rock.maxHp };
-
     const gain = { [rock.resource || 'stone']: rock.yield || 1 };
     if (typeof addResources === 'function') addResources(gain);
     world.geologyLayer[y][x] = null;
@@ -204,8 +150,27 @@
     return `${def.label} ${Math.ceil(rock.hp)}/${rock.maxHp}`;
   }
 
-  function rockFillColor(rock) {
-    return (ROCK_DEFS[rock?.type] || ROCK_DEFS.granite).color || '#4b5563';
+  function rockFillColor(rock) { return (ROCK_DEFS[rock?.type] || ROCK_DEFS.granite).color || '#4b5563'; }
+
+  function drawGeologyBackdrop(bounds = null) {
+    if (!state?.world || appScreen !== SCREEN.PLAYING) return;
+    ensureGeologyState();
+    const b = bounds || (typeof visibleTileBounds === 'function' ? visibleTileBounds(2) : { startX: 0, startY: 0, endX: getWorldCols() - 1, endY: getWorldRows() - 1 });
+    ctx.save();
+    for (let y = b.startY; y <= b.endY; y++) {
+      for (let x = b.startX; x <= b.endX; x++) {
+        const rock = state.world.geologyLayer?.[y]?.[x];
+        if (!rock?.solid) continue;
+        ctx.globalAlpha = 0.78;
+        ctx.fillStyle = rockFillColor(rock);
+        ctx.fillRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(x * TILE + 2, y * TILE + TILE * 0.55, TILE - 4, TILE * 0.38);
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   function drawGeologyOverlay(bounds = null) {
@@ -220,26 +185,22 @@
         const rock = state.world.geologyLayer?.[y]?.[x];
         const roof = state.world.roofLayer?.[y]?.[x];
         if (rock?.solid) {
-          const hpPct = Math.max(0.15, Math.min(1, Number(rock.hp || 0) / Math.max(1, Number(rock.maxHp || 1))));
-          ctx.fillStyle = rockFillColor(rock);
-          ctx.globalAlpha = 0.72;
-          ctx.fillRect(x * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6);
-          ctx.globalAlpha = 0.22;
-          ctx.fillStyle = '#000';
-          ctx.fillRect(x * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6);
           if (rock.markedForMining) {
-            ctx.globalAlpha = 0.85;
+            ctx.globalAlpha = 0.9;
             ctx.strokeStyle = '#fbbf24';
             ctx.lineWidth = 2;
             ctx.setLineDash([6, 4]);
             ctx.strokeRect(x * TILE + 5, y * TILE + 5, TILE - 10, TILE - 10);
             ctx.setLineDash([]);
           }
-          ctx.globalAlpha = 0.55;
-          ctx.fillStyle = '#e5e7eb';
-          ctx.fillRect(x * TILE + 7, y * TILE + TILE - 9, (TILE - 14) * hpPct, 3);
+          if (rock.hp < rock.maxHp) {
+            const hpPct = Math.max(0.15, Math.min(1, Number(rock.hp || 0) / Math.max(1, Number(rock.maxHp || 1))));
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = '#e5e7eb';
+            ctx.fillRect(x * TILE + 7, y * TILE + TILE - 9, (TILE - 14) * hpPct, 3);
+          }
         } else if (roof) {
-          ctx.globalAlpha = 0.12;
+          ctx.globalAlpha = 0.10;
           ctx.fillStyle = '#94a3b8';
           ctx.fillRect(x * TILE + 5, y * TILE + 5, TILE - 10, TILE - 10);
         }
@@ -249,27 +210,9 @@
     ctx.globalAlpha = 1;
   }
 
-  function updateGeologyTick() {
-    ensureGeologyState();
-  }
+  function updateGeologyTick() { ensureGeologyState(); }
 
-  window.GeologySystem = {
-    ROCK_DEFS,
-    ensureGeologyState,
-    getRockAt,
-    hasNaturalRoofAt,
-    isMountainBlocked,
-    markRockForMining,
-    toggleRockMiningMark,
-    nearestMarkedMine,
-    mineRockAt,
-    recalculateRoofLayer,
-    geologyLabelAt,
-    createGeologyLayer,
-    createRoofLayer,
-    drawGeologyOverlay
-  };
-
+  window.GeologySystem = { ROCK_DEFS, ensureGeologyState, getRockAt, hasNaturalRoofAt, isMountainBlocked, markRockForMining, toggleRockMiningMark, nearestMarkedMine, mineRockAt, recalculateRoofLayer, geologyLabelAt, createGeologyLayer, createRoofLayer, drawGeologyBackdrop, drawGeologyOverlay };
   window.ensureGeologyState = ensureGeologyState;
   window.getRockAt = getRockAt;
   window.hasNaturalRoofAt = hasNaturalRoofAt;
@@ -278,6 +221,7 @@
   window.toggleRockMiningMark = toggleRockMiningMark;
   window.nearestMarkedMine = nearestMarkedMine;
   window.mineRockAt = mineRockAt;
+  window.drawGeologyBackdrop = drawGeologyBackdrop;
   window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
   window.GameSystems?.registerTick('geology', updateGeologyTick, { order: 10 });
