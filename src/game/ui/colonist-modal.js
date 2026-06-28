@@ -154,10 +154,10 @@ function useItemFromInventory(colonistId, itemKey) {
   openColonistDetailsModal(c.id);
 }
 
-function installColonistModalCanvasClick() {
-  if (!canvas || canvas.dataset.colonistModalReady === '1') return;
-  canvas.dataset.colonistModalReady = '1';
-  canvas.addEventListener('click', event => {
+function installColonistModalCanvasDoubleClick() {
+  if (!canvas || canvas.dataset.colonistDetailsDblclickReady === '1') return;
+  canvas.dataset.colonistDetailsDblclickReady = '1';
+  canvas.addEventListener('dblclick', event => {
     if (appScreen !== SCREEN.PLAYING || !state || currentBuild || currentZoneTool) return;
     if (typeof tileFromEvent !== 'function') return;
     const tile = tileFromEvent(event);
@@ -167,5 +167,5 @@ function installColonistModalCanvasClick() {
   });
 }
 
-installColonistModalCanvasClick();
+installColonistModalCanvasDoubleClick();
 ensureColonistModalElement();
