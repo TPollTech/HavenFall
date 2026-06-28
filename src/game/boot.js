@@ -81,7 +81,8 @@
     { id: 'dock_tab_router', file: 'src/game/ui/dock-tab-router.js' },
     { id: 'save_load', file: 'src/game/save-load.js' },
     { id: 'game_loop', file: 'src/game/game-loop.js' },
-    { id: 'event_listeners', file: 'src/game/event-listeners.js' }
+    { id: 'event_listeners', file: 'src/game/event-listeners.js' },
+    { id: 'alpha_construction_system', file: 'src/game/alpha-construction-system.js' }
   ]);
 
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
