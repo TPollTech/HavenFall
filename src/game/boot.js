@@ -40,6 +40,7 @@
     { id: 'mining_task_handler', file: 'src/game/systems/mining-task-handler.js' },
     { id: 'mining_orders', file: 'src/game/systems/mining-orders.js' },
     { id: 'renderer', file: 'src/game/renderer.js' },
+    { id: 'fire_vfx_render_hooks', file: 'src/game/ui/fire-vfx-render-hooks.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
     { id: 'hud_ui', file: 'src/game/ui/hud-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
