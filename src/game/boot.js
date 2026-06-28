@@ -49,6 +49,7 @@
     { id: 'recruitment_dossier_layout_ui', file: 'src/game/ui/recruitment-dossier-layout-ui.js' },
     { id: 'recruitment_coverage_ui', file: 'src/game/ui/recruitment-coverage-ui.js' },
     { id: 'recruitment_render_ui', file: 'src/game/ui/recruitment-render-ui.js' },
+    { id: 'recruitment_polish_ui', file: 'src/game/ui/recruitment-polish-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
