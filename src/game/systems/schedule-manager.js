@@ -131,23 +131,11 @@
   function installScheduleHooks() {
     if (window.HavenfallContext?.scheduleHooksInstalled) return;
     window.HavenfallContext = window.HavenfallContext || {};
-
-    if (typeof updateColonist === 'function') {
-      const nativeUpdateColonist = updateColonist;
-      updateColonist = function updateColonistWithSchedule(c, dt) {
-        ensureColonistSchedule(c);
-        applyScheduleBeforeColonistUpdate(c);
-        return nativeUpdateColonist(c, dt);
-      };
-    }
-
-    if (typeof handleTaskAtTarget === 'function') {
-      const nativeHandleTaskAtTarget = handleTaskAtTarget;
-      handleTaskAtTarget = function handleTaskAtTargetWithSchedule(c, tick) {
-        if (c?.task?.type === 'leisure') return handleLeisureAtTarget(c, tick);
-        return nativeHandleTaskAtTarget(c, tick);
-      };
-    }
+    window.GameSystems?.registerBeforeColonistUpdate('schedule.mode', c => {
+      ensureColonistSchedule(c);
+      applyScheduleBeforeColonistUpdate(c);
+    }, { order: 10 });
+    window.GameSystems?.registerTaskHandler('leisure', 'schedule.leisure', handleLeisureAtTarget, { order: 10 });
 
     window.HavenfallContext.scheduleHooksInstalled = true;
   }
@@ -171,4 +159,5 @@
   };
 
   window.updateScheduleManagerTick = updateScheduleManagerTick;
+  window.GameSystems?.registerTick('schedule', updateScheduleManagerTick, { order: 20 });
 })();

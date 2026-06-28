@@ -280,4 +280,6 @@
   window.mineRockAt = mineRockAt;
   window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
+  window.GameSystems?.registerTick('geology', updateGeologyTick, { order: 10 });
+  window.GameSystems?.registerDrawOverlay('geology', drawGeologyOverlay, { order: 10 });
 })();

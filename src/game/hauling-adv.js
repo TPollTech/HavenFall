@@ -144,3 +144,4 @@ window.canColonistAutoHandle = canColonistAutoHandle;
 
 installHaulingDefinitions();
 installHaulingZonePatch();
+window.GameSystems?.registerTick('hauling', updateHaulingAdvTick, { order: 60 });

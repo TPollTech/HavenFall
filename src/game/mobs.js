@@ -169,51 +169,31 @@ function installMobRuntimeHooks() {
     window.spawnWolf = spawnWolf;
   }
 
-  if (typeof moveAlongPath === 'function') {
-    const nativeMoveAlongPath = moveAlongPath;
-    moveAlongPath = function moveAlongPathWithSlow(c, tick) {
-      const slow = c?.slowTimer > 0 ? 0.62 : 1;
-      return nativeMoveAlongPath(c, tick * slow);
-    };
-  }
+  window.GameSystems?.registerMovementModifier('mobs.slow', (c, multiplier) => multiplier * (c?.slowTimer > 0 ? 0.62 : 1), { order: 20 });
 
-  if (typeof handleTaskAtTarget === 'function') {
-    const nativeHandleTaskAtTarget = handleTaskAtTarget;
-    handleTaskAtTarget = function handleTaskAtTargetWithMobTasks(c, tick) {
-      if (c?.task?.type === 'huntMob') return handleHuntMobTask(c, c.task, tick);
-      if (c?.task?.type === 'rescueAlly') return handleRescueAllyTask(c, c.task, tick);
-      return nativeHandleTaskAtTarget(c, tick);
-    };
-  }
+  window.GameSystems?.registerTaskHandler('huntMob', 'mobs.hunt', handleHuntMobTask, { order: 20 });
+  window.GameSystems?.registerTaskHandler('rescueAlly', 'mobs.rescue', handleRescueAllyTask, { order: 20 });
 
-  if (typeof assignAutoTask === 'function') {
-    const nativeAssignAutoTask = assignAutoTask;
-    assignAutoTask = function assignAutoTaskWithMedicalRescue(c) {
-      if (!c || c.isUnconscious) return false;
-      const patient = nearestUnconsciousColonist(c);
-      if (patient && assignRescueAlly(c, patient)) return true;
-      return nativeAssignAutoTask(c);
-    };
-  }
+  window.GameSystems?.registerAutoTaskProvider('mobs.medicalRescue', c => {
+    if (!c || c.isUnconscious) return false;
+    const patient = nearestUnconsciousColonist(c);
+    return !!(patient && assignRescueAlly(c, patient));
+  }, { order: 20 });
 
-  if (typeof updateColonist === 'function') {
-    const nativeUpdateColonist = updateColonist;
-    updateColonist = function updateColonistWithUnconsciousState(c, dt) {
-      if (!c) return;
-      if (c.isUnconscious) {
-        c.task = null;
-        c.path = [];
-        c.work = 0;
-        c.note = c.note || 'Inconsciente — aguardando resgate';
-        c.x = Math.round((c.px - TILE / 2) / TILE);
-        c.y = Math.round((c.py - TILE / 2) / TILE);
-        decayImpactTimers(c, dt * (state?.speed || 1));
-        return;
-      }
-      nativeUpdateColonist(c, dt);
-      if ((c.health || 0) <= 1) makeColonistUnconscious(c, 'Ferimento grave');
-    };
-  }
+  window.GameSystems?.registerColonistUpdateGuard('mobs.unconscious', (c, dt) => {
+    if (!c?.isUnconscious) return false;
+    c.task = null;
+    c.path = [];
+    c.work = 0;
+    c.note = c.note || 'Inconsciente - aguardando resgate';
+    c.x = Math.round((c.px - TILE / 2) / TILE);
+    c.y = Math.round((c.py - TILE / 2) / TILE);
+    decayImpactTimers(c, dt * (state?.speed || 1));
+    return true;
+  }, { order: 20 });
+  window.GameSystems?.registerAfterColonistUpdate('mobs.downing', c => {
+    if ((c?.health || 0) <= 1) makeColonistUnconscious(c, 'Ferimento grave');
+  }, { order: 20 });
 
   if (typeof updateWolves === 'function') {
     const nativeUpdateWolves = updateWolves;
@@ -233,13 +213,7 @@ function installMobRuntimeHooks() {
     };
   }
 
-  if (typeof draw === 'function') {
-    const nativeDraw = draw;
-    draw = function drawWithBloodParticles() {
-      nativeDraw();
-      drawBloodParticlesOverlay();
-    };
-  }
+  window.GameSystems?.registerDrawOverlay('mobs.bloodParticles', drawBloodParticlesOverlay, { order: 80 });
 
   if (typeof drawColonist === 'function') {
     const nativeDrawColonist = drawColonist;
@@ -712,12 +686,8 @@ function mobName(type) {
 }
 
 function installMobRendererHook() {
-  if (window.HavenfallContext?.mobRendererHooked || typeof draw !== 'function') return;
-  const nativeDraw = draw;
-  draw = function drawWithMobs() {
-    nativeDraw();
-    drawMobsOverlay();
-  };
+  if (window.HavenfallContext?.mobRendererHooked) return;
+  window.GameSystems?.registerDrawOverlay('mobs.entities', drawMobsOverlay, { order: 70 });
   window.HavenfallContext.mobRendererHooked = true;
 }
 
@@ -762,3 +732,4 @@ window.makeColonistUnconscious = makeColonistUnconscious;
 
 installMobRuntimeHooks();
 installMobRendererHook();
+window.GameSystems?.registerTick('mobs', updateMobsTick, { order: 80 });

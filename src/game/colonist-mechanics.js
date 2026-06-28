@@ -41,7 +41,7 @@ function workRate(c, kind, target = null) {
     if (gather.stone && tool.gatherBonus.stone) rate += tool.gatherBonus.stone;
     if (gather.metal && tool.gatherBonus.metal) rate += tool.gatherBonus.metal;
   }
-  return rate;
+  return window.GameSystems?.applyWorkRateModifiers(rate, c, kind, target) ?? rate;
 }
 
 function ensureColonistMeta(c) {

@@ -93,6 +93,7 @@
       nativeUpdateMobsTick(dt);
       maybeSpawnBloodWolf(dt);
     };
+    window.GameSystems?.registerTick('mobs', updateMobsTick, { order: 80 });
     window.HavenfallContext.bloodWolfTickInstalled = true;
   }
 

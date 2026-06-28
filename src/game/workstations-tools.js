@@ -52,9 +52,7 @@ function installWorkbenchBuildButtons() {
 
 function installToolWorkRatePatch() {
   if (window.HavenfallContext?.toolWorkRatePatchInstalled || typeof workRate !== 'function') return;
-  const nativeWorkRate = workRate;
-  workRate = function workRateWithUtilityTools(c, kind, target = null) {
-    let rate = nativeWorkRate(c, kind, target);
+  window.GameSystems?.registerWorkRateModifier('workstations.utilityTools', (rate, c, kind, target = null) => {
     ensureEquipment(c);
     const tool = itemDefs[c.equipment?.tool];
     if (kind === 'gather' && tool?.gatherBonus && target) {
@@ -65,7 +63,7 @@ function installToolWorkRatePatch() {
     }
     if (c.equipment?.offhand === 'thermalClothes' && c.statuses?.includes('molhado')) rate *= 1.08;
     return rate;
-  };
+  }, { order: 30 });
   window.HavenfallContext.toolWorkRatePatchInstalled = true;
 }
 
@@ -85,3 +83,4 @@ window.updateWorkbenchToolsTick = updateWorkbenchToolsTick;
 installWorkbenchExpansionDefs();
 installWorkbenchBuildButtons();
 installToolWorkRatePatch();
+window.GameSystems?.registerTick('workstations', updateWorkbenchToolsTick, { order: 70 });

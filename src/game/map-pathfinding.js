@@ -41,28 +41,46 @@ function formatHour(hour) {
 }
 
 function hasCost(cost) {
+  if (window.GameState) return window.GameState.hasResources(cost);
   return Object.entries(cost).every(([k, v]) => state.resources[k] >= v);
 }
 
 function payCost(cost) {
+  if (window.GameState) {
+    window.GameState.payResources(cost);
+    return;
+  }
   for (const [k, v] of Object.entries(cost)) state.resources[k] -= v;
 }
 
 function addResources(gain) {
+  if (window.GameState) {
+    window.GameState.addResources(gain);
+    return;
+  }
   for (const [k, v] of Object.entries(gain)) state.resources[k] = (state.resources[k] || 0) + v;
 }
 
 function addItems(gain = {}) {
+  if (window.GameState) {
+    window.GameState.addItems(gain);
+    return;
+  }
   state.items = state.items || {};
   for (const [k, v] of Object.entries(gain)) state.items[k] = (state.items[k] || 0) + v;
 }
 
 function hasItems(cost = {}) {
+  if (window.GameState) return window.GameState.hasItems(cost);
   state.items = state.items || {};
   return Object.entries(cost || {}).every(([k, v]) => (state.items[k] || 0) >= v);
 }
 
 function payItems(cost = {}) {
+  if (window.GameState) {
+    window.GameState.payItems(cost);
+    return;
+  }
   state.items = state.items || {};
   for (const [k, v] of Object.entries(cost || {})) state.items[k] = Math.max(0, (state.items[k] || 0) - v);
 }
@@ -77,6 +95,10 @@ function payRecipeCost(recipe) {
 }
 
 function addRecipeOutput(output = {}) {
+  if (window.GameState) {
+    window.GameState.addRecipeOutput(output);
+    return;
+  }
   if (output.resources) addResources(output.resources);
   if (output.items) addItems(output.items);
 }
@@ -93,16 +115,6 @@ function recipeUnlocked(key) {
   const recipe = recipeDefs[key];
   if (!recipe) return false;
   return !recipe.unlock || !!state.research?.unlocked?.[recipe.unlock];
-}
-
-function recipeStationBuilt(station) {
-  if (!station) return true;
-  ensureSpatialGrid();
-  const objects = spatialObjectsRef || [];
-  for (let i = 0; i < objects.length; i++) {
-    if (objects[i]?.type === station) return true;
-  }
-  return false;
 }
 
 function getStationObject(station, nearColonist = null) {
@@ -123,14 +135,6 @@ function getStationObject(station, nearColonist = null) {
   }
 
   return best;
-}
-
-function ensureEquipment(c) {
-  c.equipment = c.equipment || { tool: null, weapon: null, offhand: null };
-  if (!('tool' in c.equipment)) c.equipment.tool = null;
-  if (!('weapon' in c.equipment)) c.equipment.weapon = null;
-  if (!('offhand' in c.equipment)) c.equipment.offhand = null;
-  return c.equipment;
 }
 
 function equipItem(c, itemKey) {

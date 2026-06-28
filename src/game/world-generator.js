@@ -307,10 +307,6 @@ function placeStartingCamp({ objects, spawn, add }) {
   add('logs', spawn.x - 2, spawn.y + 1);
 }
 
-function makeExplorationMatrix(cols, rows) {
-  return Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
-}
-
 function makeSpawnPoints(spawn, cols, rows) {
   return [
     { x: Math.max(2, spawn.x - 8), y: Math.max(2, spawn.y - 5), kind: 'northwest' },

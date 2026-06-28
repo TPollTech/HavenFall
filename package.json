@@ -5,7 +5,10 @@
   "description": "Protótipo 2D survival/colônia com UI fullscreen e código refatorado em módulos menores.",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:logic": "node --test tests/*.test.mjs",
+    "test:smoke": "node tests/smoke.mjs",
+    "check:types": "tsc --noEmit"
   },
   "keywords": [
     "2d",
@@ -17,5 +20,9 @@
     "seed"
   ],
   "author": "Enzo + ChatGPT",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "playwright": "^1.61.1",
+    "typescript": "^6.0.3"
+  }
 }

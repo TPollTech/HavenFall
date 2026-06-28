@@ -103,3 +103,4 @@ window.updateRoomTemperature = function updateRoomTemperature(room) {
 window.roomTemperatureAt = roomTemperatureAt;
 window.ensureEnvironmentState = ensureEnvironmentState;
 window.tileHasThermalRoof = tileHasThermalRoof;
+window.GameSystems?.registerTick('climate', updateClimateAdvancedTick, { order: 45 });

@@ -234,6 +234,7 @@ function draw() {
   drawNightOverlay();
   drawRain();
   ctx.restore();
+  window.GameSystems?.drawRegisteredOverlays();
 }
 
 function drawTile(x, y, type) {

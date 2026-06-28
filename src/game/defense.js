@@ -90,3 +90,4 @@ window.defenseSystem.update = updateDefenseTick;
 
 installDefenseDefinitions();
 installDefenseBuildButton();
+window.GameSystems?.registerTick('defense', updateDefenseTick, { order: 50 });

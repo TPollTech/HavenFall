@@ -394,13 +394,9 @@ function drawZonesOverlay() {
 }
 
 function installZoneRendererHook() {
-  if (window.HavenfallContext?.zoneRendererHooked || typeof draw !== 'function') return;
+  if (window.HavenfallContext?.zoneRendererHooked) return;
   window.HavenfallContext = window.HavenfallContext || {};
-  const nativeDraw = draw;
-  draw = function drawWithZones() {
-    nativeDraw();
-    drawZonesOverlay();
-  };
+  window.GameSystems?.registerDrawOverlay('zones', drawZonesOverlay, { order: 20 });
   window.HavenfallContext.zoneRendererHooked = true;
 }
 
@@ -514,3 +510,4 @@ installZoneButtons();
 installZoneInput();
 installZoneRendererHook();
 ensureZonesModalElement();
+window.GameSystems?.registerTick('zones', updateZonesTick, { order: 90 });

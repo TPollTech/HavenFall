@@ -199,22 +199,12 @@ function setGoal(key, done) {
 function gameLoop(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
-  safeSystemTick('geology', () => { if (typeof updateGeologyTick === 'function') updateGeologyTick(dt); });
-  safeSystemTick('schedule', () => { if (typeof updateScheduleManagerTick === 'function') updateScheduleManagerTick(dt); });
-  safeSystemTick('world', () => updateWorld(dt));
-  safeSystemTick('environment', () => { if (typeof updateEnvironmentTick === 'function') updateEnvironmentTick(dt); });
-  safeSystemTick('climate', () => { if (typeof updateClimateAdvancedTick === 'function') updateClimateAdvancedTick(dt); });
-  safeSystemTick('defense', () => { if (typeof updateDefenseTick === 'function') updateDefenseTick(dt); });
-  safeSystemTick('hauling', () => { if (typeof updateHaulingAdvTick === 'function') updateHaulingAdvTick(dt); });
-  safeSystemTick('workstations', () => { if (typeof updateWorkbenchToolsTick === 'function') updateWorkbenchToolsTick(dt); });
-  safeSystemTick('mobs', () => { if (typeof updateMobsTick === 'function') updateMobsTick(dt); });
-  safeSystemTick('zones', () => { if (typeof updateZonesTick === 'function') updateZonesTick(dt); });
-  safeSystemTick('roof', () => { if (window.BuildingRoofSystem?.update) window.BuildingRoofSystem.update(dt); });
+  if (window.GameSystems) GameSystems.tick(dt, safeSystemTick);
+  else safeSystemTick('world', () => updateWorld(dt));
   safeSystemTick('camera', () => updateCamera(dt));
   safeSystemTick('draw', () => {
     if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
       draw();
-      if (typeof drawGeologyOverlay === 'function') drawGeologyOverlay();
     }
   });
   uiTimer += dt;
@@ -224,5 +214,6 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
+window.GameSystems?.registerTick('world', updateWorld, { order: 30 });
 window.TIME_SPEED = TIME_SPEED;
 window.GAME_HOUR_SECONDS_1X = GAME_HOUR_SECONDS_1X;

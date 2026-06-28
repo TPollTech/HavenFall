@@ -292,6 +292,8 @@ function nearestThreat(c) {
 function assignAutoTask(c) {
   ensureColonistMeta(c);
 
+  if (window.GameSystems?.assignAutoTask(c)) return true;
+
   if (c.priority === 'defense') {
     const threat = nearestThreat(c);
     if (threat) { assignScare(c, threat); return true; }
@@ -321,6 +323,9 @@ function nearestBed(c) {
 }
 
 function updateColonist(c, dt) {
+  if (window.GameSystems?.runColonistUpdateGuards(c, dt)) return;
+  window.GameSystems?.runBeforeColonistUpdate(c, dt);
+
   const tick = dt * state.speed;
   c.anim += tick;
   c.hunger = clamp(c.hunger - tick * 0.18, 0, 100);
@@ -353,6 +358,7 @@ function updateColonist(c, dt) {
 
   c.x = Math.round((c.px - TILE / 2) / TILE);
   c.y = Math.round((c.py - TILE / 2) / TILE);
+  window.GameSystems?.runAfterColonistUpdate(c, dt);
 }
 
 function startSleep(c) {
@@ -389,7 +395,8 @@ function moveAlongPath(c, tick) {
   const dy = ty - c.py;
   const len = Math.hypot(dx, dy) || 1;
   const speed = 62 * (c.energy < 20 ? 0.65 : 1) * (c.mood < 20 ? 0.75 : 1);
-  const step = speed * tick;
+  const movementMultiplier = window.GameSystems?.movementMultiplier(c) ?? 1;
+  const step = speed * movementMultiplier * tick;
 
   if (Math.abs(dx) > Math.abs(dy)) c.dir = dx > 0 ? 'right' : 'left';
   else if (Math.abs(dy) > 1) c.dir = dy > 0 ? 'down' : 'up';
@@ -404,6 +411,8 @@ function moveAlongPath(c, tick) {
 
 function handleTaskAtTarget(c, tick) {
   const task = c.task;
+  if (window.GameSystems?.handleTask(c, task, tick)) return;
+
   if (task.type === 'move') {
     c.task = null; c.note = 'Ocioso'; return;
   }

@@ -137,16 +137,8 @@ function statusMoveMultiplier(c) {
 
 function installEnvironmentPatches() {
   if (window.HavenfallContext.environmentPatchesInstalled) return;
-
-  const nativeWorkRate = workRate;
-  workRate = function workRateWithEnvironment(c, kind, target = null) {
-    return nativeWorkRate(c, kind, target) * statusWorkMultiplier(c);
-  };
-
-  const nativeMoveAlongPath = moveAlongPath;
-  moveAlongPath = function moveAlongPathWithEnvironment(c, tick) {
-    return nativeMoveAlongPath(c, tick * statusMoveMultiplier(c));
-  };
+  window.GameSystems?.registerWorkRateModifier('environment.status', (rate, c) => rate * statusWorkMultiplier(c), { order: 10 });
+  window.GameSystems?.registerMovementModifier('environment.status', (c, multiplier) => multiplier * statusMoveMultiplier(c), { order: 10 });
 
   window.HavenfallContext.environmentPatchesInstalled = true;
 }
@@ -211,3 +203,4 @@ function updateEnvironmentTick(dt) {
 
 installEnvironmentDefinitions();
 installTorchBuildButton();
+window.GameSystems?.registerTick('environment', updateEnvironmentTick, { order: 40 });
