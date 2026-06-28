@@ -68,7 +68,8 @@
     style.id = 'recruitment-coverage-ui-style';
     style.textContent = `
       .squad-sync-panel {
-        grid-column: 1 / -1;
+        grid-area: coverage;
+        grid-column: auto;
         border: 1px solid rgba(125, 211, 252, .16);
         border-radius: 18px;
         background:
@@ -78,6 +79,7 @@
         display: grid;
         gap: 12px;
         box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+        min-width: 0;
       }
 
       .squad-sync-head {
