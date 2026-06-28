@@ -7,6 +7,7 @@ const baseObjectDefs = {
   rock: { name: 'rocha', img: 'rock', blocks: true, gather: { stone: 7 }, work: 3.4 },
   ore: { name: 'veio de metal', img: 'icon_metal', blocks: true, gather: { stone: 2, metal: 4 }, work: 4.0 },
   logs: { name: 'toras', img: 'logs', blocks: false, gather: { wood: 5 }, work: 1.4 },
+  rubble: { name: 'entulho', img: 'rock', blocks: false, work: 1.0, debris: true },
   crop: { name: 'plantação', img: 'crop_patch', blocks: false, gather: { food: 10 }, work: 2.4 },
   bed: { name: 'cama', img: 'bed_single', blocks: true, comfort: 1.25 },
   campfire: { name: 'fogueira', img: 'campfire', blocks: true, warmth: 1 },
