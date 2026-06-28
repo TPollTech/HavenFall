@@ -277,7 +277,12 @@ function drawObject(obj) {
   const def = objectDefs[obj.type];
   if (!def) return;
   const _img = images[def.img];
-  drawAsset(_img, cx, (obj.y + 1) * TILE, objectScale(obj.type, _img), 0.5, 1, false, objectRotationTurns(obj, obj.type));
+  const animation = typeof vfxAnimation === 'function' ? (vfxAnimation(obj.type) || vfxAnimation(def.img)) : null;
+  if (animation && images[`vfx:${animation.key}`]) {
+    drawAnimatedAsset(animation, cx, (obj.y + 1) * TILE, objectScaleFromHeight(obj.type, animation.frameHeight), 0.5, 1, objectRotationTurns(obj, obj.type));
+  } else {
+    drawAsset(_img, cx, (obj.y + 1) * TILE, objectScale(obj.type, _img), 0.5, 1, false, objectRotationTurns(obj, obj.type));
+  }
   if (obj.type === 'crop') {
     drawProgress(cx, obj.y * TILE + 7, (obj.growth || 0) / 100, '#80c96c');
   }
@@ -330,10 +335,14 @@ const OBJECT_TARGET_H = {
 };
 
 function objectScale(type, img) {
-  const targetH = OBJECT_TARGET_H[type] || TILE;
   const imgH = img?.naturalHeight || img?.height || 0;
-  if (imgH > 0) return targetH / imgH;
+  if (imgH > 0) return objectScaleFromHeight(type, imgH);
   return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, door:0.31, bench:0.20, stool:0.45 })[type] || 0.35;
+}
+
+function objectScaleFromHeight(type, imgH) {
+  const targetH = OBJECT_TARGET_H[type] || TILE;
+  return imgH > 0 ? targetH / imgH : 1;
 }
 
 function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false, rotationTurns = 0) {
@@ -352,6 +361,30 @@ function drawAsset(img, x, y, scale = 1, ax = 0.5, ay = 0.5, flip = false, rotat
   }
   ctx.restore();
 }
+
+function drawAnimatedAsset(animation, x, y, scale = 1, ax = 0.5, ay = 0.5, rotationTurns = 0) {
+  const img = images[`vfx:${animation.key}`];
+  if (!img || !animation.frames || !animation.frameWidth || !animation.frameHeight) return;
+  const frameMs = animation.frameDelaysMs?.length ? animation.frameDelaysMs[0] : 120;
+  const frame = Math.floor(performance.now() / Math.max(40, frameMs)) % animation.frames;
+  const sx = frame * animation.frameWidth;
+  const sw = animation.frameWidth;
+  const sh = animation.frameHeight;
+  const w = sw * scale;
+  const h = sh * scale;
+  const rotation = ((Number(rotationTurns) || 0) % 4 + 4) % 4;
+
+  ctx.save();
+  if (rotation) {
+    ctx.translate(x, y);
+    ctx.rotate(rotation * Math.PI / 2);
+    ctx.drawImage(img, sx, 0, sw, sh, -w * ax, -h * ay, w, h);
+  } else {
+    ctx.drawImage(img, sx, 0, sw, sh, x - w * ax, y - h * ay, w, h);
+  }
+  ctx.restore();
+}
+
 
 function drawColonist(c) {
   const selected = c.id === selectedColonistId;

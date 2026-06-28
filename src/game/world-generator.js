@@ -33,12 +33,21 @@ function loadAndPlay() {
 }
 
 function loadImages() {
-  return Promise.all(assetNames.map(name => new Promise((resolve, reject) => {
+  const spriteLoads = assetNames.map(name => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { images[name] = img; resolve(); };
     img.onerror = reject;
-    img.src = `assets/sprites/${name}.png`;
-  })));
+    img.src = typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
+  }));
+
+  const animationLoads = Object.entries(window.HavenfallAssets?.animations || {}).map(([key, animation]) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => { images[`vfx:${key}`] = img; resolve(); };
+    img.onerror = reject;
+    img.src = animation.path;
+  }));
+
+  return Promise.all([...spriteLoads, ...animationLoads]);
 }
 
 function generateWorldFromSeed(config) {

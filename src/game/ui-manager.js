@@ -2,6 +2,7 @@
 
 (() => {
   window.HavenfallContext = window.HavenfallContext || {};
+  const cleanSpriteSrc = name => typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
 
   const PANEL_TITLES = Object.freeze({
     build: 'Construção',
@@ -16,11 +17,11 @@
 
   const RESOURCE_BAR_HTML = `
     <div id="top-resource-bar" class="ui-clean-top-bar" aria-label="Recursos da colônia">
-      <div class="ui-clean-res"><img src="assets/sprites/icon_food.png" alt="">Comida <b id="txt-food">0</b></div>
-      <div class="ui-clean-res"><img src="assets/sprites/icon_wood.png" alt="">Madeira <b id="txt-wood">0</b></div>
-      <div class="ui-clean-res"><img src="assets/sprites/icon_stone.png" alt="">Pedra <b id="txt-stone">0</b></div>
-      <div class="ui-clean-res"><img src="assets/sprites/icon_metal.png" alt="">Metal <b id="txt-metal">0</b></div>
-      <div class="ui-clean-res"><img src="assets/sprites/icon_health.png" alt="">Remédios <b id="txt-meds">0</b></div>
+      <div class="ui-clean-res"><img src="${cleanSpriteSrc('icon_food')}" alt="">Comida <b id="txt-food">0</b></div>
+      <div class="ui-clean-res"><img src="${cleanSpriteSrc('icon_wood')}" alt="">Madeira <b id="txt-wood">0</b></div>
+      <div class="ui-clean-res"><img src="${cleanSpriteSrc('icon_stone')}" alt="">Pedra <b id="txt-stone">0</b></div>
+      <div class="ui-clean-res"><img src="${cleanSpriteSrc('icon_metal')}" alt="">Metal <b id="txt-metal">0</b></div>
+      <div class="ui-clean-res"><img src="${cleanSpriteSrc('icon_health')}" alt="">Remédios <b id="txt-meds">0</b></div>
     </div>
   `;
 

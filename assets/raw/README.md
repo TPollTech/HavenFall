@@ -1,30 +1,41 @@
-# Assets brutos
+# Assets raw
 
-Esta pasta guarda artes brutas ainda não recortadas.
+Esta pasta guarda spritesheets e artes brutas que ainda nao devem ser carregadas diretamente pelo jogo.
 
-O jogo **não deve carregar estes arquivos diretamente** no runtime.
+## Fluxo atual
 
-## Fluxo correto
+1. Adicione o arquivo bruto em `assets/raw`.
+2. Se for GIF animado, rode `npm run assets:process`; ele sera convertido para spritesheet horizontal em `assets/vfx`.
+3. Se for PNG em grid fixo, configure `assets/raw/slices.json` usando `slices.example.json` como base.
+4. Rode `npm run assets:process`.
+5. O script atualiza `assets/manifest.js` e `assets/manifest.json`.
 
-1. Separar/recortar o asset bruto em sprites individuais.
-2. Exportar cada sprite final para a pasta carregada pelo jogo, normalmente `assets/sprites`.
-3. Nomear em kebab/código consistente com o motor, por exemplo:
-   - `rabbit`
-   - `spider`
-   - `oak_tree`
-   - `pine_tree`
-   - `sewing_table`
-   - `handcart`
-4. Adicionar o nome no `assetNames`, em `src/game/state.js`.
-5. Atualizar o mapeamento em `src/game/asset-audit.js`, caso o nome final seja diferente.
+O runtime carrega sprites por chave via `spriteSrc(name)`, usando estes destinos:
 
-## Importante
+- `assets/mobs`
+- `assets/tiles`
+- `assets/vfx`
+- `assets/ui`
 
-Enquanto o sprite não for recortado/exportado, o motor usa fallback visual seguro para não quebrar a renderização.
+## Quando nao houver config de corte
 
-Exemplo:
+O script gera `assets/generated/raw-slice-map.json` com dimensoes e sugestoes de grid para cada PNG raw. Use esse arquivo como apoio para preencher `slices.json`.
 
-```txt
-rabbit ainda não recortado -> fallback temporário
-rabbit recortado e adicionado em assetNames -> sprite real passa a carregar
+## Exemplo rapido
+
+```json
+{
+  "sheets": [
+    {
+      "file": "meu_lobo.png",
+      "category": "mobs",
+      "prefix": "lobo_walk",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 4,
+      "rows": 1,
+      "frames": 4
+    }
+  ]
+}
 ```

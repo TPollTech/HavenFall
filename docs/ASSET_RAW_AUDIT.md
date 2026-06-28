@@ -1,11 +1,11 @@
 # Auditoria de Assets RAW — HavenFall
 
-Gerado por `node tools/audit-raw-assets.cjs`.
+Gerado por `node assets/audit-raw-assets.cjs`.
 
 ## Resumo
 
 - RAW encontrados: **21**
-- Sprites finais em assets/sprites: **137**
+- Sprites finais em assets/{mobs,tiles,vfx,ui}: **231**
 - Assets declarados em assetNames: **101**
 - assetNames sem PNG/SVG correspondente: **0**
 - RAW provavelmente ainda pendentes: **21**
@@ -32,7 +32,7 @@ Gerado por `node tools/audit-raw-assets.cjs`.
 - `assets/raw/hand_painted_game_terrain_tileset.png` — terreno/tile
 - `assets/raw/medieval_fantasy_interior_furniture_icons.png` — construção/estação
 - `assets/raw/modular_medieval_building_tiles_sprite_sheet.png` — spritesheet / pack bruto
-- `assets/raw/nature_and_survival_resource_icons.png` — raw não classificado
+- `assets/raw/nature_and_survival_resource_icons (1).png` — raw não classificado
 - `assets/raw/resources_raw_v19b.png` — spritesheet / pack bruto
 - `assets/raw/stations_raw_v19b.png` — spritesheet / pack bruto
 - `assets/raw/survival_crafting_game_asset_collection.png` — raw não classificado
@@ -45,7 +45,7 @@ Gerado por `node tools/audit-raw-assets.cjs`.
 ## Próximo passo recomendado
 
 1. Abrir cada RAW pendente.
-2. Recortar/exportar cada sprite individual em `assets/sprites/`.
+2. Recortar/exportar cada sprite individual em `assets/mobs`, `assets/tiles`, `assets/vfx` ou `assets/ui`.
 3. Nomear exatamente igual ao `assetNames` quando o sprite for usado pelo jogo.
 4. Para spritesheets de personagem, exportar no padrão `colonistX_down_0`, `colonistX_down_1`, etc.
 5. Rodar este auditor de novo até zerar os pendentes importantes.

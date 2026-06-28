@@ -33,7 +33,7 @@ function setHudTab(tab) {
 }
 
 function uiSpriteSrc(name) {
-  return typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/sprites/${name}.png`;
+  return typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
 }
 
 function loadedIconSrc(name) {

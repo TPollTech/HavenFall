@@ -6,8 +6,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const RAW_DIR = path.join(ROOT, 'assets', 'raw');
-const SPRITES_DIR = path.join(ROOT, 'assets', 'sprites');
-const GLOBALS_FILE = path.join(ROOT, 'src', 'game', '00_globals.js');
+const FINAL_DIRS = ['mobs', 'tiles', 'vfx', 'ui'].map(dir => path.join(ROOT, 'assets', dir));
+const GLOBALS_FILE = path.join(ROOT, 'src', 'game', 'state.js');
 const OUT_DIR = path.join(ROOT, 'docs');
 const OUT_FILE = path.join(OUT_DIR, 'ASSET_RAW_AUDIT.md');
 
@@ -79,7 +79,7 @@ function likelyImplemented(rawStem, spriteNames, assetNames) {
 
 function main() {
   const rawImages = imageFiles(RAW_DIR);
-  const spriteImages = imageFiles(SPRITES_DIR);
+  const spriteImages = FINAL_DIRS.flatMap(dir => imageFiles(dir));
   const assetNames = readAssetNames();
 
   const spriteNames = new Set(spriteImages.map(file => normalizeName(stem(file))));
@@ -110,12 +110,12 @@ function main() {
   const lines = [];
   lines.push('# Auditoria de Assets RAW — HavenFall');
   lines.push('');
-  lines.push('Gerado por `node tools/audit-raw-assets.cjs`.');
+  lines.push('Gerado por `node assets/audit-raw-assets.cjs`.');
   lines.push('');
   lines.push('## Resumo');
   lines.push('');
   lines.push(`- RAW encontrados: **${rawImages.length}**`);
-  lines.push(`- Sprites finais em assets/sprites: **${spriteImages.length}**`);
+  lines.push(`- Sprites finais em assets/{mobs,tiles,vfx,ui}: **${spriteImages.length}**`);
   lines.push(`- Assets declarados em assetNames: **${assetNames.length}**`);
   lines.push(`- assetNames sem PNG/SVG correspondente: **${missingImplementedSprites.length}**`);
   lines.push(`- RAW provavelmente ainda pendentes: **${rawPending.length}**`);
@@ -124,7 +124,7 @@ function main() {
   lines.push('## AssetNames sem arquivo final correspondente');
   lines.push('');
   if (!missingImplementedSprites.length) lines.push('- Nenhum.');
-  else missingImplementedSprites.forEach(row => lines.push(`- \`${row.name}\` → esperado em \`assets/sprites/${row.name}.png\` ou equivalente`));
+  else missingImplementedSprites.forEach(row => lines.push(`- \`${row.name}\` -> esperado no manifest gerado por \`npm run assets:process\``));
   lines.push('');
 
   lines.push('## RAW provavelmente pendentes de separar/implementar');
@@ -142,7 +142,7 @@ function main() {
   lines.push('## Próximo passo recomendado');
   lines.push('');
   lines.push('1. Abrir cada RAW pendente.');
-  lines.push('2. Recortar/exportar cada sprite individual em `assets/sprites/`.');
+  lines.push('2. Recortar/exportar cada sprite individual em `assets/mobs`, `assets/tiles`, `assets/vfx` ou `assets/ui`.');
   lines.push('3. Nomear exatamente igual ao `assetNames` quando o sprite for usado pelo jogo.');
   lines.push('4. Para spritesheets de personagem, exportar no padrão `colonistX_down_0`, `colonistX_down_1`, etc.');
   lines.push('5. Rodar este auditor de novo até zerar os pendentes importantes.');

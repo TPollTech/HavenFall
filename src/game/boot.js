@@ -14,6 +14,7 @@
     { id: 'definitions', file: 'src/game/data/definitions.js' },
     { id: 'game_state', file: 'src/game/core/game-state.js' },
     { id: 'module_boundary', file: 'src/game/core/module-boundary.js' },
+    { id: 'asset_manifest', file: 'assets/manifest.js' },
     { id: 'asset_audit', file: 'src/game/asset-audit.js' },
     { id: 'creature_sprite_sheet', file: 'src/game/creature-sprite-sheet.js' },
     { id: 'game_setup', file: 'src/game/game-setup.js' },

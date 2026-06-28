@@ -1,6 +1,6 @@
 'use strict';
 
-const RAW_ASSET_PIPELINE_NOTE = 'Assets brutos em assets/raw são fonte de produção. O runtime carrega apenas sprites exportados em assets/sprites e registrados em assetNames.';
+const RAW_ASSET_PIPELINE_NOTE = 'Assets brutos em assets/raw são fonte de produção. O runtime carrega sprites organizados em assets/mobs, assets/tiles, assets/vfx e assets/ui via assets/manifest.js.';
 
 const assetAudit = {
   available: new Set(assetNames),

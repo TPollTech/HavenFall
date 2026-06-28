@@ -1,0 +1,937 @@
+{
+  "generatedAt": "2026-06-28T11:41:31.260Z",
+  "roots": {
+    "mobs": "assets/mobs",
+    "tiles": "assets/tiles",
+    "vfx": "assets/vfx",
+    "ui": "assets/ui",
+    "raw": "assets/raw"
+  },
+  "assets": {
+    "colonistA_down_0": {
+      "path": "assets/mobs/colonistA_down_0.png",
+      "category": "mobs"
+    },
+    "colonistA_down_1": {
+      "path": "assets/mobs/colonistA_down_1.png",
+      "category": "mobs"
+    },
+    "colonistA_down_2": {
+      "path": "assets/mobs/colonistA_down_2.png",
+      "category": "mobs"
+    },
+    "colonistA_down_3": {
+      "path": "assets/mobs/colonistA_down_3.png",
+      "category": "mobs"
+    },
+    "colonistA_left_0": {
+      "path": "assets/mobs/colonistA_left_0.png",
+      "category": "mobs"
+    },
+    "colonistA_left_1": {
+      "path": "assets/mobs/colonistA_left_1.png",
+      "category": "mobs"
+    },
+    "colonistA_left_2": {
+      "path": "assets/mobs/colonistA_left_2.png",
+      "category": "mobs"
+    },
+    "colonistA_left_3": {
+      "path": "assets/mobs/colonistA_left_3.png",
+      "category": "mobs"
+    },
+    "colonistA_right_0": {
+      "path": "assets/mobs/colonistA_right_0.png",
+      "category": "mobs"
+    },
+    "colonistA_right_1": {
+      "path": "assets/mobs/colonistA_right_1.png",
+      "category": "mobs"
+    },
+    "colonistA_right_2": {
+      "path": "assets/mobs/colonistA_right_2.png",
+      "category": "mobs"
+    },
+    "colonistA_right_3": {
+      "path": "assets/mobs/colonistA_right_3.png",
+      "category": "mobs"
+    },
+    "colonistA_up_0": {
+      "path": "assets/mobs/colonistA_up_0.png",
+      "category": "mobs"
+    },
+    "colonistA_up_1": {
+      "path": "assets/mobs/colonistA_up_1.png",
+      "category": "mobs"
+    },
+    "colonistA_up_2": {
+      "path": "assets/mobs/colonistA_up_2.png",
+      "category": "mobs"
+    },
+    "colonistA_up_3": {
+      "path": "assets/mobs/colonistA_up_3.png",
+      "category": "mobs"
+    },
+    "colonistB_down_0": {
+      "path": "assets/mobs/colonistB_down_0.png",
+      "category": "mobs"
+    },
+    "colonistB_down_1": {
+      "path": "assets/mobs/colonistB_down_1.png",
+      "category": "mobs"
+    },
+    "colonistB_down_2": {
+      "path": "assets/mobs/colonistB_down_2.png",
+      "category": "mobs"
+    },
+    "colonistB_down_3": {
+      "path": "assets/mobs/colonistB_down_3.png",
+      "category": "mobs"
+    },
+    "colonistB_right_0": {
+      "path": "assets/mobs/colonistB_right_0.png",
+      "category": "mobs"
+    },
+    "colonistB_right_1": {
+      "path": "assets/mobs/colonistB_right_1.png",
+      "category": "mobs"
+    },
+    "colonistB_right_2": {
+      "path": "assets/mobs/colonistB_right_2.png",
+      "category": "mobs"
+    },
+    "colonistB_right_3": {
+      "path": "assets/mobs/colonistB_right_3.png",
+      "category": "mobs"
+    },
+    "colonistB_up_0": {
+      "path": "assets/mobs/colonistB_up_0.png",
+      "category": "mobs"
+    },
+    "colonistB_up_1": {
+      "path": "assets/mobs/colonistB_up_1.png",
+      "category": "mobs"
+    },
+    "colonistB_up_2": {
+      "path": "assets/mobs/colonistB_up_2.png",
+      "category": "mobs"
+    },
+    "colonistB_up_3": {
+      "path": "assets/mobs/colonistB_up_3.png",
+      "category": "mobs"
+    },
+    "colonistC_down_0": {
+      "path": "assets/mobs/colonistC_down_0.png",
+      "category": "mobs"
+    },
+    "colonistC_down_1": {
+      "path": "assets/mobs/colonistC_down_1.png",
+      "category": "mobs"
+    },
+    "colonistC_down_2": {
+      "path": "assets/mobs/colonistC_down_2.png",
+      "category": "mobs"
+    },
+    "colonistC_down_3": {
+      "path": "assets/mobs/colonistC_down_3.png",
+      "category": "mobs"
+    },
+    "colonistC_right_0": {
+      "path": "assets/mobs/colonistC_right_0.png",
+      "category": "mobs"
+    },
+    "colonistC_right_1": {
+      "path": "assets/mobs/colonistC_right_1.png",
+      "category": "mobs"
+    },
+    "colonistC_right_2": {
+      "path": "assets/mobs/colonistC_right_2.png",
+      "category": "mobs"
+    },
+    "colonistC_right_3": {
+      "path": "assets/mobs/colonistC_right_3.png",
+      "category": "mobs"
+    },
+    "colonistC_up_0": {
+      "path": "assets/mobs/colonistC_up_0.png",
+      "category": "mobs"
+    },
+    "colonistC_up_1": {
+      "path": "assets/mobs/colonistC_up_1.png",
+      "category": "mobs"
+    },
+    "colonistC_up_2": {
+      "path": "assets/mobs/colonistC_up_2.png",
+      "category": "mobs"
+    },
+    "colonistC_up_3": {
+      "path": "assets/mobs/colonistC_up_3.png",
+      "category": "mobs"
+    },
+    "personagens_combat_bow": {
+      "path": "assets/mobs/personagens_combat_bow.png",
+      "category": "mobs"
+    },
+    "personagens_combat_club": {
+      "path": "assets/mobs/personagens_combat_club.png",
+      "category": "mobs"
+    },
+    "personagens_combat_spear": {
+      "path": "assets/mobs/personagens_combat_spear.png",
+      "category": "mobs"
+    },
+    "personagens_combat_torch": {
+      "path": "assets/mobs/personagens_combat_torch.png",
+      "category": "mobs"
+    },
+    "personagens_walk_e_1": {
+      "path": "assets/mobs/personagens_walk_e_1.png",
+      "category": "mobs"
+    },
+    "personagens_walk_e_2": {
+      "path": "assets/mobs/personagens_walk_e_2.png",
+      "category": "mobs"
+    },
+    "personagens_walk_e_3": {
+      "path": "assets/mobs/personagens_walk_e_3.png",
+      "category": "mobs"
+    },
+    "personagens_walk_e_4": {
+      "path": "assets/mobs/personagens_walk_e_4.png",
+      "category": "mobs"
+    },
+    "personagens_walk_n_1": {
+      "path": "assets/mobs/personagens_walk_n_1.png",
+      "category": "mobs"
+    },
+    "personagens_walk_n_2": {
+      "path": "assets/mobs/personagens_walk_n_2.png",
+      "category": "mobs"
+    },
+    "personagens_walk_n_3": {
+      "path": "assets/mobs/personagens_walk_n_3.png",
+      "category": "mobs"
+    },
+    "personagens_walk_n_4": {
+      "path": "assets/mobs/personagens_walk_n_4.png",
+      "category": "mobs"
+    },
+    "personagens_walk_s_1": {
+      "path": "assets/mobs/personagens_walk_s_1.png",
+      "category": "mobs"
+    },
+    "personagens_walk_s_2": {
+      "path": "assets/mobs/personagens_walk_s_2.png",
+      "category": "mobs"
+    },
+    "personagens_walk_s_3": {
+      "path": "assets/mobs/personagens_walk_s_3.png",
+      "category": "mobs"
+    },
+    "personagens_walk_s_4": {
+      "path": "assets/mobs/personagens_walk_s_4.png",
+      "category": "mobs"
+    },
+    "personagens_walk_w_1": {
+      "path": "assets/mobs/personagens_walk_w_1.png",
+      "category": "mobs"
+    },
+    "personagens_walk_w_2": {
+      "path": "assets/mobs/personagens_walk_w_2.png",
+      "category": "mobs"
+    },
+    "personagens_walk_w_3": {
+      "path": "assets/mobs/personagens_walk_w_3.png",
+      "category": "mobs"
+    },
+    "personagens_walk_w_4": {
+      "path": "assets/mobs/personagens_walk_w_4.png",
+      "category": "mobs"
+    },
+    "personagens_work_hammer": {
+      "path": "assets/mobs/personagens_work_hammer.png",
+      "category": "mobs"
+    },
+    "personagens_work_pickaxe": {
+      "path": "assets/mobs/personagens_work_pickaxe.png",
+      "category": "mobs"
+    },
+    "personagens_work_shovel": {
+      "path": "assets/mobs/personagens_work_shovel.png",
+      "category": "mobs"
+    },
+    "personagens_work_sickle": {
+      "path": "assets/mobs/personagens_work_sickle.png",
+      "category": "mobs"
+    },
+    "wolf_0": {
+      "path": "assets/mobs/wolf_0.png",
+      "category": "mobs"
+    },
+    "wolf_1": {
+      "path": "assets/mobs/wolf_1.png",
+      "category": "mobs"
+    },
+    "wolf_2": {
+      "path": "assets/mobs/wolf_2.png",
+      "category": "mobs"
+    },
+    "wolf_3": {
+      "path": "assets/mobs/wolf_3.png",
+      "category": "mobs"
+    },
+    "wolf_4": {
+      "path": "assets/mobs/wolf_4.png",
+      "category": "mobs"
+    },
+    "edificios_tile_dirt_1": {
+      "path": "assets/tiles/edificios_tile_dirt_1.png",
+      "category": "tiles"
+    },
+    "edificios_tile_dirt_2": {
+      "path": "assets/tiles/edificios_tile_dirt_2.png",
+      "category": "tiles"
+    },
+    "edificios_tile_grass_1": {
+      "path": "assets/tiles/edificios_tile_grass_1.png",
+      "category": "tiles"
+    },
+    "edificios_tile_grass_2": {
+      "path": "assets/tiles/edificios_tile_grass_2.png",
+      "category": "tiles"
+    },
+    "edificios_tile_rocky_1": {
+      "path": "assets/tiles/edificios_tile_rocky_1.png",
+      "category": "tiles"
+    },
+    "edificios_tile_rocky_2": {
+      "path": "assets/tiles/edificios_tile_rocky_2.png",
+      "category": "tiles"
+    },
+    "edificios_tile_sand_1": {
+      "path": "assets/tiles/edificios_tile_sand_1.png",
+      "category": "tiles"
+    },
+    "edificios_tile_sand_2": {
+      "path": "assets/tiles/edificios_tile_sand_2.png",
+      "category": "tiles"
+    },
+    "edificios_tile_stone_1": {
+      "path": "assets/tiles/edificios_tile_stone_1.png",
+      "category": "tiles"
+    },
+    "edificios_tile_stone_2": {
+      "path": "assets/tiles/edificios_tile_stone_2.png",
+      "category": "tiles"
+    },
+    "tile_dirt": {
+      "path": "assets/tiles/tile_dirt.png",
+      "category": "tiles"
+    },
+    "tile_grass": {
+      "path": "assets/tiles/tile_grass.png",
+      "category": "tiles"
+    },
+    "tile_sand": {
+      "path": "assets/tiles/tile_sand.png",
+      "category": "tiles"
+    },
+    "tile_stone": {
+      "path": "assets/tiles/tile_stone.png",
+      "category": "tiles"
+    },
+    "campfire": {
+      "path": "assets/vfx/campfire.png",
+      "category": "vfx"
+    },
+    "edificios_campfire": {
+      "path": "assets/vfx/edificios_campfire.png",
+      "category": "vfx"
+    },
+    "edificios_fire_cauldron": {
+      "path": "assets/vfx/edificios_fire_cauldron.png",
+      "category": "vfx"
+    },
+    "edificios_stove": {
+      "path": "assets/vfx/edificios_stove.png",
+      "category": "vfx"
+    },
+    "ferramentas_torch": {
+      "path": "assets/vfx/ferramentas_torch.png",
+      "category": "vfx"
+    },
+    "station_brazier": {
+      "path": "assets/vfx/station_brazier.png",
+      "category": "vfx"
+    },
+    "station_stove_alt": {
+      "path": "assets/vfx/station_stove_alt.png",
+      "category": "vfx"
+    },
+    "stove": {
+      "path": "assets/vfx/stove.png",
+      "category": "vfx"
+    },
+    "weapon_torch": {
+      "path": "assets/vfx/weapon_torch.png",
+      "category": "vfx"
+    },
+    "bed_single": {
+      "path": "assets/ui/bed_single.png",
+      "category": "ui"
+    },
+    "berry": {
+      "path": "assets/ui/berry.png",
+      "category": "ui"
+    },
+    "bush": {
+      "path": "assets/ui/bush.png",
+      "category": "ui"
+    },
+    "chest_large": {
+      "path": "assets/ui/chest_large.png",
+      "category": "ui"
+    },
+    "container_chest_large_alt": {
+      "path": "assets/ui/container_chest_large_alt.png",
+      "category": "ui"
+    },
+    "container_crate_large": {
+      "path": "assets/ui/container_crate_large.png",
+      "category": "ui"
+    },
+    "crafting_bench": {
+      "path": "assets/ui/crafting_bench.png",
+      "category": "ui"
+    },
+    "crate_wood": {
+      "path": "assets/ui/crate_wood.png",
+      "category": "ui"
+    },
+    "crop_patch": {
+      "path": "assets/ui/crop_patch.png",
+      "category": "ui"
+    },
+    "door_wood": {
+      "path": "assets/ui/door_wood.png",
+      "category": "ui"
+    },
+    "edificios_bed": {
+      "path": "assets/ui/edificios_bed.png",
+      "category": "ui"
+    },
+    "edificios_chest_metal": {
+      "path": "assets/ui/edificios_chest_metal.png",
+      "category": "ui"
+    },
+    "edificios_chest_rope": {
+      "path": "assets/ui/edificios_chest_rope.png",
+      "category": "ui"
+    },
+    "edificios_crate": {
+      "path": "assets/ui/edificios_crate.png",
+      "category": "ui"
+    },
+    "edificios_desk_research": {
+      "path": "assets/ui/edificios_desk_research.png",
+      "category": "ui"
+    },
+    "edificios_forge": {
+      "path": "assets/ui/edificios_forge.png",
+      "category": "ui"
+    },
+    "edificios_kiln": {
+      "path": "assets/ui/edificios_kiln.png",
+      "category": "ui"
+    },
+    "edificios_sewing_table": {
+      "path": "assets/ui/edificios_sewing_table.png",
+      "category": "ui"
+    },
+    "edificios_stone_wall": {
+      "path": "assets/ui/edificios_stone_wall.png",
+      "category": "ui"
+    },
+    "edificios_tool_cabinet": {
+      "path": "assets/ui/edificios_tool_cabinet.png",
+      "category": "ui"
+    },
+    "edificios_workbench": {
+      "path": "assets/ui/edificios_workbench.png",
+      "category": "ui"
+    },
+    "ferramentas_arrow_quiver": {
+      "path": "assets/ui/ferramentas_arrow_quiver.png",
+      "category": "ui"
+    },
+    "ferramentas_axe": {
+      "path": "assets/ui/ferramentas_axe.png",
+      "category": "ui"
+    },
+    "ferramentas_bow": {
+      "path": "assets/ui/ferramentas_bow.png",
+      "category": "ui"
+    },
+    "ferramentas_chisel": {
+      "path": "assets/ui/ferramentas_chisel.png",
+      "category": "ui"
+    },
+    "ferramentas_hammer": {
+      "path": "assets/ui/ferramentas_hammer.png",
+      "category": "ui"
+    },
+    "ferramentas_knife": {
+      "path": "assets/ui/ferramentas_knife.png",
+      "category": "ui"
+    },
+    "ferramentas_mace": {
+      "path": "assets/ui/ferramentas_mace.png",
+      "category": "ui"
+    },
+    "ferramentas_machete": {
+      "path": "assets/ui/ferramentas_machete.png",
+      "category": "ui"
+    },
+    "ferramentas_mining_pick": {
+      "path": "assets/ui/ferramentas_mining_pick.png",
+      "category": "ui"
+    },
+    "ferramentas_pickaxe": {
+      "path": "assets/ui/ferramentas_pickaxe.png",
+      "category": "ui"
+    },
+    "ferramentas_pliers": {
+      "path": "assets/ui/ferramentas_pliers.png",
+      "category": "ui"
+    },
+    "ferramentas_shield": {
+      "path": "assets/ui/ferramentas_shield.png",
+      "category": "ui"
+    },
+    "ferramentas_shovel": {
+      "path": "assets/ui/ferramentas_shovel.png",
+      "category": "ui"
+    },
+    "ferramentas_sickle": {
+      "path": "assets/ui/ferramentas_sickle.png",
+      "category": "ui"
+    },
+    "ferramentas_sledgehammer": {
+      "path": "assets/ui/ferramentas_sledgehammer.png",
+      "category": "ui"
+    },
+    "ferramentas_spear": {
+      "path": "assets/ui/ferramentas_spear.png",
+      "category": "ui"
+    },
+    "ferramentas_sword": {
+      "path": "assets/ui/ferramentas_sword.png",
+      "category": "ui"
+    },
+    "ferramentas_toolbox": {
+      "path": "assets/ui/ferramentas_toolbox.png",
+      "category": "ui"
+    },
+    "ferramentas_tool_rack": {
+      "path": "assets/ui/ferramentas_tool_rack.png",
+      "category": "ui"
+    },
+    "ferramentas_weapon_rack": {
+      "path": "assets/ui/ferramentas_weapon_rack.png",
+      "category": "ui"
+    },
+    "ferramentas_wrench": {
+      "path": "assets/ui/ferramentas_wrench.png",
+      "category": "ui"
+    },
+    "icon_food": {
+      "path": "assets/ui/icon_food.png",
+      "category": "ui"
+    },
+    "icon_health": {
+      "path": "assets/ui/icon_health.png",
+      "category": "ui"
+    },
+    "icon_metal": {
+      "path": "assets/ui/icon_metal.png",
+      "category": "ui"
+    },
+    "icon_mood": {
+      "path": "assets/ui/icon_mood.png",
+      "category": "ui"
+    },
+    "icon_pause": {
+      "path": "assets/ui/icon_pause.png",
+      "category": "ui"
+    },
+    "icon_play": {
+      "path": "assets/ui/icon_play.png",
+      "category": "ui"
+    },
+    "icon_sleep": {
+      "path": "assets/ui/icon_sleep.png",
+      "category": "ui"
+    },
+    "icon_stone": {
+      "path": "assets/ui/icon_stone.png",
+      "category": "ui"
+    },
+    "icon_warn": {
+      "path": "assets/ui/icon_warn.png",
+      "category": "ui"
+    },
+    "icon_wood": {
+      "path": "assets/ui/icon_wood.png",
+      "category": "ui"
+    },
+    "logs": {
+      "path": "assets/ui/logs.png",
+      "category": "ui"
+    },
+    "med_station": {
+      "path": "assets/ui/med_station.png",
+      "category": "ui"
+    },
+    "recursos_arrow_bundle": {
+      "path": "assets/ui/recursos_arrow_bundle.png",
+      "category": "ui"
+    },
+    "recursos_berries": {
+      "path": "assets/ui/recursos_berries.png",
+      "category": "ui"
+    },
+    "recursos_bones": {
+      "path": "assets/ui/recursos_bones.png",
+      "category": "ui"
+    },
+    "recursos_charcoal": {
+      "path": "assets/ui/recursos_charcoal.png",
+      "category": "ui"
+    },
+    "recursos_cloth": {
+      "path": "assets/ui/recursos_cloth.png",
+      "category": "ui"
+    },
+    "recursos_coal": {
+      "path": "assets/ui/recursos_coal.png",
+      "category": "ui"
+    },
+    "recursos_copper_bar": {
+      "path": "assets/ui/recursos_copper_bar.png",
+      "category": "ui"
+    },
+    "recursos_copper_ore": {
+      "path": "assets/ui/recursos_copper_ore.png",
+      "category": "ui"
+    },
+    "recursos_feathers": {
+      "path": "assets/ui/recursos_feathers.png",
+      "category": "ui"
+    },
+    "recursos_grain_sack": {
+      "path": "assets/ui/recursos_grain_sack.png",
+      "category": "ui"
+    },
+    "recursos_herbs": {
+      "path": "assets/ui/recursos_herbs.png",
+      "category": "ui"
+    },
+    "recursos_iron_bar": {
+      "path": "assets/ui/recursos_iron_bar.png",
+      "category": "ui"
+    },
+    "recursos_leather": {
+      "path": "assets/ui/recursos_leather.png",
+      "category": "ui"
+    },
+    "recursos_logs": {
+      "path": "assets/ui/recursos_logs.png",
+      "category": "ui"
+    },
+    "recursos_nails": {
+      "path": "assets/ui/recursos_nails.png",
+      "category": "ui"
+    },
+    "recursos_planks": {
+      "path": "assets/ui/recursos_planks.png",
+      "category": "ui"
+    },
+    "recursos_raw_meat": {
+      "path": "assets/ui/recursos_raw_meat.png",
+      "category": "ui"
+    },
+    "recursos_rope": {
+      "path": "assets/ui/recursos_rope.png",
+      "category": "ui"
+    },
+    "recursos_scrap_metal": {
+      "path": "assets/ui/recursos_scrap_metal.png",
+      "category": "ui"
+    },
+    "recursos_stew": {
+      "path": "assets/ui/recursos_stew.png",
+      "category": "ui"
+    },
+    "recursos_stone_blocks": {
+      "path": "assets/ui/recursos_stone_blocks.png",
+      "category": "ui"
+    },
+    "recursos_stone_raw": {
+      "path": "assets/ui/recursos_stone_raw.png",
+      "category": "ui"
+    },
+    "recursos_twigs": {
+      "path": "assets/ui/recursos_twigs.png",
+      "category": "ui"
+    },
+    "recursos_water_bottle": {
+      "path": "assets/ui/recursos_water_bottle.png",
+      "category": "ui"
+    },
+    "research_desk": {
+      "path": "assets/ui/research_desk.png",
+      "category": "ui"
+    },
+    "res_arrows": {
+      "path": "assets/ui/res_arrows.png",
+      "category": "ui"
+    },
+    "res_berries": {
+      "path": "assets/ui/res_berries.png",
+      "category": "ui"
+    },
+    "res_bones": {
+      "path": "assets/ui/res_bones.png",
+      "category": "ui"
+    },
+    "res_charcoal": {
+      "path": "assets/ui/res_charcoal.png",
+      "category": "ui"
+    },
+    "res_cloth": {
+      "path": "assets/ui/res_cloth.png",
+      "category": "ui"
+    },
+    "res_coal": {
+      "path": "assets/ui/res_coal.png",
+      "category": "ui"
+    },
+    "res_copper_ingot": {
+      "path": "assets/ui/res_copper_ingot.png",
+      "category": "ui"
+    },
+    "res_feather": {
+      "path": "assets/ui/res_feather.png",
+      "category": "ui"
+    },
+    "res_herbs": {
+      "path": "assets/ui/res_herbs.png",
+      "category": "ui"
+    },
+    "res_iron_ingot": {
+      "path": "assets/ui/res_iron_ingot.png",
+      "category": "ui"
+    },
+    "res_leather": {
+      "path": "assets/ui/res_leather.png",
+      "category": "ui"
+    },
+    "res_logs": {
+      "path": "assets/ui/res_logs.png",
+      "category": "ui"
+    },
+    "res_nails": {
+      "path": "assets/ui/res_nails.png",
+      "category": "ui"
+    },
+    "res_ore_cluster": {
+      "path": "assets/ui/res_ore_cluster.png",
+      "category": "ui"
+    },
+    "res_planks": {
+      "path": "assets/ui/res_planks.png",
+      "category": "ui"
+    },
+    "res_raw_meat": {
+      "path": "assets/ui/res_raw_meat.png",
+      "category": "ui"
+    },
+    "res_rock_cluster": {
+      "path": "assets/ui/res_rock_cluster.png",
+      "category": "ui"
+    },
+    "res_rope": {
+      "path": "assets/ui/res_rope.png",
+      "category": "ui"
+    },
+    "res_scrap": {
+      "path": "assets/ui/res_scrap.png",
+      "category": "ui"
+    },
+    "res_seed_bag": {
+      "path": "assets/ui/res_seed_bag.png",
+      "category": "ui"
+    },
+    "res_stew": {
+      "path": "assets/ui/res_stew.png",
+      "category": "ui"
+    },
+    "res_sticks": {
+      "path": "assets/ui/res_sticks.png",
+      "category": "ui"
+    },
+    "res_stone_blocks": {
+      "path": "assets/ui/res_stone_blocks.png",
+      "category": "ui"
+    },
+    "res_water_bottle": {
+      "path": "assets/ui/res_water_bottle.png",
+      "category": "ui"
+    },
+    "rock": {
+      "path": "assets/ui/rock.png",
+      "category": "ui"
+    },
+    "station_anvil": {
+      "path": "assets/ui/station_anvil.png",
+      "category": "ui"
+    },
+    "station_blueprint_bench": {
+      "path": "assets/ui/station_blueprint_bench.png",
+      "category": "ui"
+    },
+    "station_butcher_table": {
+      "path": "assets/ui/station_butcher_table.png",
+      "category": "ui"
+    },
+    "station_carpentry_bench": {
+      "path": "assets/ui/station_carpentry_bench.png",
+      "category": "ui"
+    },
+    "station_research_alt": {
+      "path": "assets/ui/station_research_alt.png",
+      "category": "ui"
+    },
+    "station_sewing_table": {
+      "path": "assets/ui/station_sewing_table.png",
+      "category": "ui"
+    },
+    "station_smelter_alt": {
+      "path": "assets/ui/station_smelter_alt.png",
+      "category": "ui"
+    },
+    "station_tool_cabinet_alt": {
+      "path": "assets/ui/station_tool_cabinet_alt.png",
+      "category": "ui"
+    },
+    "stool": {
+      "path": "assets/ui/stool.png",
+      "category": "ui"
+    },
+    "table_wood": {
+      "path": "assets/ui/table_wood.png",
+      "category": "ui"
+    },
+    "toolkit": {
+      "path": "assets/ui/toolkit.png",
+      "category": "ui"
+    },
+    "tool_chisel": {
+      "path": "assets/ui/tool_chisel.png",
+      "category": "ui"
+    },
+    "tool_hammer": {
+      "path": "assets/ui/tool_hammer.png",
+      "category": "ui"
+    },
+    "tool_mattock": {
+      "path": "assets/ui/tool_mattock.png",
+      "category": "ui"
+    },
+    "tool_pickaxe": {
+      "path": "assets/ui/tool_pickaxe.png",
+      "category": "ui"
+    },
+    "tool_pliers": {
+      "path": "assets/ui/tool_pliers.png",
+      "category": "ui"
+    },
+    "tool_rack_alt": {
+      "path": "assets/ui/tool_rack_alt.png",
+      "category": "ui"
+    },
+    "tool_shovel": {
+      "path": "assets/ui/tool_shovel.png",
+      "category": "ui"
+    },
+    "tool_sickle": {
+      "path": "assets/ui/tool_sickle.png",
+      "category": "ui"
+    },
+    "tool_sledgehammer": {
+      "path": "assets/ui/tool_sledgehammer.png",
+      "category": "ui"
+    },
+    "tool_wrench": {
+      "path": "assets/ui/tool_wrench.png",
+      "category": "ui"
+    },
+    "tree": {
+      "path": "assets/ui/tree.png",
+      "category": "ui"
+    },
+    "wall_corner": {
+      "path": "assets/ui/wall_corner.png",
+      "category": "ui"
+    },
+    "wall_stone": {
+      "path": "assets/ui/wall_stone.png",
+      "category": "ui"
+    },
+    "weapon_arrows": {
+      "path": "assets/ui/weapon_arrows.png",
+      "category": "ui"
+    },
+    "weapon_axe": {
+      "path": "assets/ui/weapon_axe.png",
+      "category": "ui"
+    },
+    "weapon_bow": {
+      "path": "assets/ui/weapon_bow.png",
+      "category": "ui"
+    },
+    "weapon_club": {
+      "path": "assets/ui/weapon_club.png",
+      "category": "ui"
+    },
+    "weapon_knife": {
+      "path": "assets/ui/weapon_knife.png",
+      "category": "ui"
+    },
+    "weapon_machete": {
+      "path": "assets/ui/weapon_machete.png",
+      "category": "ui"
+    },
+    "weapon_rack_alt": {
+      "path": "assets/ui/weapon_rack_alt.png",
+      "category": "ui"
+    },
+    "weapon_shield": {
+      "path": "assets/ui/weapon_shield.png",
+      "category": "ui"
+    },
+    "weapon_spear": {
+      "path": "assets/ui/weapon_spear.png",
+      "category": "ui"
+    },
+    "weapon_sword": {
+      "path": "assets/ui/weapon_sword.png",
+      "category": "ui"
+    },
+    "window_wood": {
+      "path": "assets/ui/window_wood.png",
+      "category": "ui"
+    }
+  },
+  "animations": {}
+}
