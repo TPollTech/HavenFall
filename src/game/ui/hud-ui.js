@@ -55,7 +55,7 @@ function refreshMenuSaveInfo() {
   const continueBtn = dom.buttons?.continue;
   if (activeSession && state) {
     if (continueBtn) { continueBtn.textContent = 'Continuar'; continueBtn.disabled = false; }
-    dom.menuSaveInfo.innerHTML = `Partida em andamento · <b>${escapeHtml(state.config?.colonyName || 'Colônia sem nome')}</b> · Dia ${state.day || 1}`;
+    dom.menuSaveInfo.innerHTML = `<b>${escapeHtml(state.config?.colonyName || 'Colônia sem nome')}</b>`;
     return;
   }
   const raw = localStorage.getItem(SAVE_KEY);
@@ -68,7 +68,7 @@ function refreshMenuSaveInfo() {
     const data = JSON.parse(raw);
     const s = data.state;
     if (continueBtn) { continueBtn.textContent = 'Continuar'; continueBtn.disabled = false; }
-    dom.menuSaveInfo.innerHTML = `Save local · <b>${escapeHtml(s.config?.colonyName || 'Colônia sem nome')}</b> · Dia ${s.day || 1} · Seed ${escapeHtml(s.config?.seed || 'antiga')}`;
+    dom.menuSaveInfo.innerHTML = `<b>${escapeHtml(s.config?.colonyName || 'Colônia sem nome')}</b>`;
   } catch (_) {
     if (continueBtn) { continueBtn.textContent = 'Carregar'; continueBtn.disabled = true; }
     dom.menuSaveInfo.textContent = 'Save local encontrado, mas parece corrompido.';
@@ -151,7 +151,7 @@ function updateUI(force = false) {
     dom.speedLabel.title = `Zoom ${Math.round(camera.zoom * 100)}% · WASD/setas movem a câmera · Shift acelera · roda do mouse/+/- ajusta o zoom · G alterna a grade`;
   }
   if (dom.colonyTitle) dom.colonyTitle.textContent = state.config?.colonyName || 'First Haven';
-  if (dom.gameConfigLabel) dom.gameConfigLabel.textContent = `Dif.: ${labelDifficulty(state.config?.difficulty || 'normal')} · Mapa: ${labelMapSize(state.config?.mapSize || 'standard')} ${getWorldCols()}x${getWorldRows()} · Eventos: ${labelEventIntensity(state.config?.eventIntensity || 'normal')} · Seed ${state.config?.seed || 'antiga'}`;
+  if (dom.gameConfigLabel) dom.gameConfigLabel.textContent = '';
   dom.resFood.textContent = Math.floor(state.resources.food || 0);
   dom.resWood.textContent = Math.floor(state.resources.wood || 0);
   dom.resStone.textContent = Math.floor(state.resources.stone || 0);
