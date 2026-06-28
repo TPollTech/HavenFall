@@ -21,4 +21,6 @@
     const tileSize = typeof getTileSize === 'function' ? getTileSize() : TILE;
     return { x: Math.floor((Number(worldX) || 0) / tileSize), y: Math.floor((Number(worldY) || 0) / tileSize) };
   };
+
+  window.HavenfallAlphaConstruction = true;
 })();
