@@ -71,7 +71,7 @@
     const b = bounds || (typeof visibleTileBounds === 'function' ? visibleTileBounds(1) : { startX: 0, startY: 0, endX: getWorldCols() - 1, endY: getWorldRows() - 1 });
     const t = tileSize();
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,.16)';
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
     ctx.lineWidth = Math.max(0.5, 1 / Math.max(1, viewTransform.scale || 1));
     for (let x = b.startX; x <= b.endX + 1; x++) { ctx.beginPath(); ctx.moveTo(x * t + 0.5, b.startY * t); ctx.lineTo(x * t + 0.5, (b.endY + 1) * t); ctx.stroke(); }
     for (let y = b.startY; y <= b.endY + 1; y++) { ctx.beginPath(); ctx.moveTo(b.startX * t, y * t + 0.5); ctx.lineTo((b.endX + 1) * t, y * t + 0.5); ctx.stroke(); }
@@ -83,6 +83,37 @@
     const obj = objAt(x, y);
     if (isWall(obj) || isClosedDoor(obj)) return true;
     return !!obj?.shadowCaster;
+  }
+
+  function isShadowCasterBetween(x0, y0, x1, y1) {
+    let x = x0, y = y0;
+    const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    while (!(x === x1 && y === y1)) {
+      if (!(x === x0 && y === y0) && isShadowCaster(x, y)) return true;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+    }
+    return false;
+  }
+
+  function drawShadow(bounds = null) {
+    if (!state || appScreen !== SCREEN.PLAYING) return;
+    const fires = (state.objects || []).filter(o => o.type === 'campfire' && isTileDiscovered?.(o.x, o.y));
+    if (!fires.length) return;
+    const b = bounds || (typeof visibleTileBounds === 'function' ? visibleTileBounds(1) : { startX: 0, startY: 0, endX: getWorldCols() - 1, endY: getWorldRows() - 1 });
+    const t = tileSize();
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    for (const fire of fires) {
+      for (let y = b.startY; y <= b.endY; y++) for (let x = b.startX; x <= b.endX; x++) {
+        if (Math.abs(x - fire.x) + Math.abs(y - fire.y) > 9) continue;
+        if (isShadowCasterBetween(fire.x, fire.y, x, y)) ctx.fillRect(x * t, y * t, t, t);
+      }
+    }
+    ctx.restore();
   }
 
   function collisionAt(x, y, target = null) {
@@ -108,6 +139,7 @@
     if (!window.HavenfallContext?.gameBooted || !window.GameSystems) { setTimeout(install, 120); return; }
     installed = true;
     window.GameSystems.registerTileRenderer?.('terrain.mountains', drawTileLayer, { order: 20 });
+    window.GameSystems.registerWorldOverlay?.('lighting.shadow-occlusion', drawShadow, { order: 70 });
     window.GameSystems.registerWorldOverlay?.('grid.overlay', drawGrid, { order: 95 });
     window.GameSystems.registerCollisionProvider?.('terrain-structures.collision', collisionAt, { order: 10 });
     window.CollisionType = CollisionType;
@@ -116,8 +148,8 @@
     window.isShadowCaster = isShadowCaster;
     window.wallBitmaskAt = wallMask;
     window.rockBitmaskAt = rockMask;
-    window.HavenfallRenderCollisionSystem = 'terrain-structures-collision-fast';
-    console.info('[Render Collision System] Terreno, colisão e grid carregados em modo rápido.');
+    window.HavenfallRenderCollisionSystem = 'terrain-structures-collision';
+    console.info('[Render Collision System] Terreno, colisão, grid e sombra carregados.');
   }
 
   install();
