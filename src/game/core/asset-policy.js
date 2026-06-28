@@ -58,7 +58,7 @@
     return false;
   }
 
-  function isProceduralRuntimeAsset(name) {
+  function isProceduralRuntimeAssetPolicy(name) {
     const key = String(name || '');
     const path = assetPath(key);
     if (!key) return true;
@@ -73,7 +73,7 @@
   function shouldLoadRuntimeSprite(name) {
     const key = String(name || '');
     if (!key) return false;
-    return isNatureRuntimeAsset(key) && !isProceduralRuntimeAsset(key);
+    return isNatureRuntimeAsset(key) && !isProceduralRuntimeAssetPolicy(key);
   }
 
   function classify(name) {
@@ -91,8 +91,7 @@
   }
 
   function installGlobalBindings() {
-    try { isProceduralRuntimeAsset = isProceduralRuntimeAsset; } catch (_) {}
-    try { window.isProceduralRuntimeAsset = isProceduralRuntimeAsset; } catch (_) {}
+    try { window.isProceduralRuntimeAsset = isProceduralRuntimeAssetPolicy; } catch (_) {}
     window.HavenfallContext = window.HavenfallContext || {};
     window.HavenfallContext.assetPolicy = {
       rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI e objetos modulares ficam em JS.',
@@ -102,7 +101,7 @@
 
   window.HavenfallAssetPolicy = Object.freeze({
     isNatureRuntimeAsset,
-    isProceduralRuntimeAsset,
+    isProceduralRuntimeAsset: isProceduralRuntimeAssetPolicy,
     shouldLoadRuntimeSprite,
     classify,
     report,
