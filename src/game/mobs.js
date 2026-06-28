@@ -35,9 +35,7 @@ function allMobileEntities() {
   ].filter(Boolean);
 }
 
-function isHostileMobType(type) {
-  return !!mobSpawnConfig[type]?.hostile;
-}
+function isHostileMobType(type) { return !!mobSpawnConfig[type]?.hostile; }
 
 function countMob(type) {
   const mobs = ensureMobState();
@@ -97,10 +95,7 @@ function randomSafeInteriorTile(type) {
   const cols = getWorldCols();
   const rows = getWorldRows();
   for (let i = 0; i < 180; i++) {
-    const tile = {
-      x: 2 + Math.floor(Math.random() * Math.max(1, cols - 4)),
-      y: 2 + Math.floor(Math.random() * Math.max(1, rows - 4))
-    };
+    const tile = { x: 2 + Math.floor(Math.random() * Math.max(1, cols - 4)), y: 2 + Math.floor(Math.random() * Math.max(1, rows - 4)) };
     if (isValidMobSpawnTile(type, tile)) return tile;
   }
   return null;
@@ -112,18 +107,10 @@ function spawnMob(type, tile = null) {
   if (!t) return null;
   const stats = mobStatModifiers[type] || mobStatModifiers.wolf;
   const mob = {
-    id: uid(),
-    type,
-    x: t.x,
-    y: t.y,
-    px: t.x * TILE + TILE / 2,
-    py: t.y * TILE + TILE / 2,
-    dir: 'left',
-    anim: 0,
-    attackAnimTimer: 0,
-    hitAnimTimer: 0,
-    hp: stats.hp,
-    maxHp: stats.hp,
+    id: uid(), type, x: t.x, y: t.y,
+    px: t.x * TILE + TILE / 2, py: t.y * TILE + TILE / 2,
+    dir: 'left', anim: 0, attackAnimTimer: 0, hitAnimTimer: 0,
+    hp: stats.hp, maxHp: stats.hp,
     state: type === 'rabbit' ? 'wander' : type === 'spider' ? 'sleep' : 'hunting',
     target: null
   };
@@ -135,7 +122,6 @@ function mobSpawnTile(type) {
   const world = state?.world;
   const preferEdge = type === 'spider' || type === 'wolf';
   if (!world) return (preferEdge ? randomSafeEdgeTile(type) : randomSafeInteriorTile(type)) || randomSafeEdgeTile(type);
-
   for (let i = 0; i < 120; i++) {
     const tile = preferEdge ? (typeof randomEdgeTile === 'function' ? randomEdgeTile() : randomSafeEdgeTile(type)) : (typeof freeRandomTile === 'function' ? freeRandomTile() : randomSafeInteriorTile(type));
     if (!isValidMobSpawnTile(type, tile)) continue;
@@ -143,58 +129,35 @@ function mobSpawnTile(type) {
     const allowed = biomeDefinitions?.[biome]?.spawnMobs?.includes(type) ?? true;
     if (allowed) return tile;
   }
-
   return (preferEdge ? randomSafeEdgeTile(type) : randomSafeInteriorTile(type)) || randomSafeEdgeTile(type);
 }
 
 function installMobRuntimeHooks() {
   if (window.HavenfallContext?.mobRuntimeHooksInstalled) return;
   window.HavenfallContext = window.HavenfallContext || {};
-
   if (typeof spawnWolf === 'function') {
     spawnWolf = function spawnWolfSafe() {
       if (!state || !Array.isArray(state.wolves) || !canSpawnMob('wolf')) return null;
       const tile = mobSpawnTile('wolf');
       if (!tile) return null;
-      const wolf = {
-        id: uid(),
-        x: tile.x,
-        y: tile.y,
-        px: tile.x * TILE + TILE / 2,
-        py: tile.y * TILE + TILE / 2,
-        anim: 0,
-        dir: 'left',
-        hp: mobStatModifiers.wolf.hp,
-        maxHp: mobStatModifiers.wolf.hp,
-        morale: 100,
-        aggression: 1 + Math.random() * 0.25,
-        state: 'hunting',
-        attackAnimTimer: 0,
-        hitAnimTimer: 0
-      };
+      const wolf = { id: uid(), x: tile.x, y: tile.y, px: tile.x * TILE + TILE / 2, py: tile.y * TILE + TILE / 2, anim: 0, dir: 'left', hp: mobStatModifiers.wolf.hp, maxHp: mobStatModifiers.wolf.hp, morale: 100, aggression: 1 + Math.random() * 0.25, state: 'hunting', attackAnimTimer: 0, hitAnimTimer: 0 };
       state.wolves.push(wolf);
       enforceWolfCap();
       return wolf;
     };
     window.spawnWolf = spawnWolf;
   }
-
   window.GameSystems?.registerMovementModifier('mobs.slow', (c, multiplier) => multiplier * (c?.slowTimer > 0 ? 0.62 : 1), { order: 20 });
-
   window.GameSystems?.registerTaskHandler('huntMob', 'mobs.hunt', handleHuntMobTask, { order: 20 });
   window.GameSystems?.registerTaskHandler('rescueAlly', 'mobs.rescue', handleRescueAllyTask, { order: 20 });
-
   window.GameSystems?.registerAutoTaskProvider('mobs.medicalRescue', c => {
     if (!c || c.isUnconscious) return false;
     const patient = nearestUnconsciousColonist(c);
     return !!(patient && assignRescueAlly(c, patient));
   }, { order: 20 });
-
   window.GameSystems?.registerColonistUpdateGuard('mobs.unconscious', (c, dt) => {
     if (!c?.isUnconscious) return false;
-    c.task = null;
-    c.path = [];
-    c.work = 0;
+    c.task = null; c.path = []; c.work = 0;
     c.note = c.note || 'Inconsciente - aguardando resgate';
     c.x = Math.round((c.px - TILE / 2) / TILE);
     c.y = Math.round((c.py - TILE / 2) / TILE);
@@ -204,7 +167,6 @@ function installMobRuntimeHooks() {
   window.GameSystems?.registerAfterColonistUpdate('mobs.downing', c => {
     if ((c?.health || 0) <= 1) makeColonistUnconscious(c, 'Ferimento grave');
   }, { order: 20 });
-
   if (typeof updateWolves === 'function') {
     const nativeUpdateWolves = updateWolves;
     updateWolves = function updateWolvesWithImpactFeedback(dt) {
@@ -222,34 +184,24 @@ function installMobRuntimeHooks() {
       }
     };
   }
-
   window.GameSystems?.registerDrawOverlay('mobs.bloodParticles', drawBloodParticlesOverlay, { order: 80 });
-
   if (typeof drawColonist === 'function') {
     const nativeDrawColonist = drawColonist;
     drawColonist = function drawColonistWithDownedState(c) {
       if (c?.isUnconscious) return drawUnconsciousColonist(c);
       const off = combatRenderOffset(c);
       if (!off.x && !off.y) return nativeDrawColonist(c);
-      ctx.save();
-      ctx.translate(off.x, off.y);
-      nativeDrawColonist(c);
-      ctx.restore();
+      ctx.save(); ctx.translate(off.x, off.y); nativeDrawColonist(c); ctx.restore();
     };
   }
-
   if (typeof drawWolf === 'function') {
     const nativeDrawWolf = drawWolf;
     drawWolf = function drawWolfWithImpact(wolf) {
       const off = combatRenderOffset(wolf);
       if (!off.x && !off.y) return nativeDrawWolf(wolf);
-      ctx.save();
-      ctx.translate(off.x, off.y);
-      nativeDrawWolf(wolf);
-      ctx.restore();
+      ctx.save(); ctx.translate(off.x, off.y); nativeDrawWolf(wolf); ctx.restore();
     };
   }
-
   window.HavenfallContext.mobRuntimeHooksInstalled = true;
 }
 
@@ -267,7 +219,6 @@ function updateMobsTick(dt) {
   enforceWolfCap();
   updateSlowTimers(tick);
   maybeSpawnMobs(dt);
-
   for (let i = mobs.length - 1; i >= 0; i--) {
     const mob = mobs[i];
     decayImpactTimers(mob, tick);
@@ -275,7 +226,6 @@ function updateMobsTick(dt) {
     else if (mob.type === 'spider') updateSpider(mob, tick);
     if ((mob.hp ?? 1) <= 0) finishMobDeath(mob, i);
   }
-
   updateWolfPackLogic(tick);
   resolveMobOverlap();
   updateBloodParticles(tick);
@@ -314,10 +264,7 @@ function updateRabbit(mob, tick) {
 function updateSpider(mob, tick) {
   mob.anim += tick;
   const night = state.hour < 6 || state.hour > 20;
-  if (!night) {
-    mob.state = 'sleep';
-    return;
-  }
+  if (!night) { mob.state = 'sleep'; return; }
   const target = nearestColonistToMob(mob, 8);
   if (target && !target.isUnconscious) {
     mob.state = 'hunt';
@@ -356,9 +303,7 @@ function applySpiderSlow(c, tick, spider = null) {
   if (c.health <= 1) makeColonistUnconscious(c, 'Picada grave');
 }
 
-function getMobAt(x, y) {
-  return ensureMobState().find(m => Math.round(m.x) === x && Math.round(m.y) === y) || null;
-}
+function getMobAt(x, y) { return ensureMobState().find(m => Math.round(m.x) === x && Math.round(m.y) === y) || null; }
 
 function assignHuntMob(c, mob) {
   if (!c || !mob || c.isUnconscious) return false;
@@ -376,9 +321,7 @@ function handleHuntMobTask(c, task, tick) {
   const close = dist(c.x, c.y, mob.x, mob.y) <= 1;
   if (!close) {
     const adj = nearestFreeAdjacent(mob.x, mob.y, c.x, c.y) || { x: mob.x, y: mob.y };
-    c.task.x = adj.x;
-    c.task.y = adj.y;
-    c.path = findPath(c.x, c.y, adj.x, adj.y);
+    c.task.x = adj.x; c.task.y = adj.y; c.path = findPath(c.x, c.y, adj.x, adj.y);
     return;
   }
   ensureEquipment(c);
@@ -389,19 +332,15 @@ function handleHuntMobTask(c, task, tick) {
   c.work += tick * workRate(c, 'defense');
   c.note = `Caçando ${mobName(mob.type)} ${Math.floor((c.work / speed) * 100)}%`;
   if (c.work < speed) return;
-
   const damage = (weapon?.combat || 1.0) * (hasKnife ? 18 : 12) * (stats.damageTaken || 1);
   mob.hp = clamp((mob.hp || 1) - damage, 0, Math.max(100, mob.maxHp || 100));
   c.work = 0;
   applyAttackImpact(c, mob, 12);
   emitBloodParticles(mob.px, mob.py, mob.type === 'rabbit' ? 3 : 7);
-
   if (mob.hp <= 0) {
     const idx = state.mobs.findIndex(m => m.id === mob.id);
     if (idx >= 0) finishMobDeath(mob, idx, c);
-    c.task = null;
-    c.note = 'Caça concluída';
-    c.mood = clamp(c.mood + (mob.type === 'rabbit' ? 2 : 4), 0, 100);
+    c.task = null; c.note = 'Caça concluída'; c.mood = clamp(c.mood + (mob.type === 'rabbit' ? 2 : 4), 0, 100);
   }
 }
 
@@ -452,28 +391,19 @@ function moveMobVector(mob, dx, dy, step) {
   const nextY = Math.round((nextPy - TILE / 2) / TILE);
   mob.dir = dx > 0 ? 'right' : 'left';
   if (isBlocked(nextX, nextY)) { mob.target = null; return; }
-  mob.px = nextPx;
-  mob.py = nextPy;
-  mob.x = nextX;
-  mob.y = nextY;
+  mob.px = nextPx; mob.py = nextPy; mob.x = nextX; mob.y = nextY;
 }
 
 function resolveMobOverlap() {
   const list = allMobileEntities();
   for (let i = 0; i < list.length; i++) {
     for (let j = i + 1; j < list.length; j++) {
-      const a = list[i];
-      const b = list[j];
+      const a = list[i]; const b = list[j];
       let dx = (a.px || 0) - (b.px || 0);
       let dy = (a.py || 0) - (b.py || 0);
       let len = Math.hypot(dx, dy);
       if (len >= MOB_SEPARATION_DISTANCE_PX) continue;
-      if (len < 0.001) {
-        const angle = ((i + 1) * 1.917 + (j + 1) * 0.731) % (Math.PI * 2);
-        dx = Math.cos(angle);
-        dy = Math.sin(angle);
-        len = 1;
-      }
+      if (len < 0.001) { const angle = ((i + 1) * 1.917 + (j + 1) * 0.731) % (Math.PI * 2); dx = Math.cos(angle); dy = Math.sin(angle); len = 1; }
       const push = (MOB_SEPARATION_DISTANCE_PX - len) * 0.5;
       pushMobileEntity(a, dx, dy, push);
       pushMobileEntity(b, -dx, -dy, push);
@@ -496,12 +426,8 @@ function applyAttackImpact(attacker, target, amount = 12) {
   const dx = (target.px || target.x * TILE) - (attacker.px || attacker.x * TILE);
   const dy = (target.py || target.y * TILE) - (attacker.py || attacker.y * TILE);
   const len = Math.hypot(dx, dy) || 1;
-  attacker.attackAnimTimer = ATTACK_ANIM_DURATION;
-  attacker.attackOffsetX = dx / len * amount;
-  attacker.attackOffsetY = dy / len * amount;
-  target.hitAnimTimer = ATTACK_ANIM_DURATION;
-  target.hitOffsetX = -dx / len * amount * 0.45;
-  target.hitOffsetY = -dy / len * amount * 0.45;
+  attacker.attackAnimTimer = ATTACK_ANIM_DURATION; attacker.attackOffsetX = dx / len * amount; attacker.attackOffsetY = dy / len * amount;
+  target.hitAnimTimer = ATTACK_ANIM_DURATION; target.hitOffsetX = -dx / len * amount * 0.45; target.hitOffsetY = -dy / len * amount * 0.45;
 }
 
 function decayImpactTimers(entity, tick) {
@@ -513,10 +439,7 @@ function decayImpactTimers(entity, tick) {
 function combatRenderOffset(entity) {
   const attackT = Math.max(0, entity?.attackAnimTimer || 0) / ATTACK_ANIM_DURATION;
   const hitT = Math.max(0, entity?.hitAnimTimer || 0) / ATTACK_ANIM_DURATION;
-  return {
-    x: (entity?.attackOffsetX || 0) * attackT + (entity?.hitOffsetX || 0) * hitT,
-    y: (entity?.attackOffsetY || 0) * attackT + (entity?.hitOffsetY || 0) * hitT
-  };
+  return { x: (entity?.attackOffsetX || 0) * attackT + (entity?.hitOffsetX || 0) * hitT, y: (entity?.attackOffsetY || 0) * attackT + (entity?.hitOffsetY || 0) * hitT };
 }
 
 function emitBloodParticles(x, y, amount = 6) {
@@ -525,16 +448,7 @@ function emitBloodParticles(x, y, amount = 6) {
   for (let i = 0; i < amount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 18 + Math.random() * 48;
-    window.bloodParticles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      bornAt: now,
-      age: 0,
-      life: 0.42 + Math.random() * 0.28,
-      size: 1.4 + Math.random() * 2.2
-    });
+    window.bloodParticles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, bornAt: now, age: 0, life: 0.42 + Math.random() * 0.28, size: 1.4 + Math.random() * 2.2 });
   }
   if (window.bloodParticles.length > 120) window.bloodParticles.splice(0, window.bloodParticles.length - 120);
 }
@@ -555,38 +469,155 @@ function updateBloodParticles(tick) {
 function drawBloodParticlesOverlay() {
   const list = window.bloodParticles || [];
   if (!list.length || appScreen !== SCREEN.PLAYING) return;
-  ctx.save();
-  ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
-  ctx.scale(viewTransform.scale, viewTransform.scale);
+  ctx.save(); ctx.translate(viewTransform.offsetX, viewTransform.offsetY); ctx.scale(viewTransform.scale, viewTransform.scale);
   for (const p of list) {
     const alpha = Math.max(0, 1 - p.age / p.life);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = '#7f1d1d';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+
+function makeColonistUnconscious(c, reason = 'Ferimento grave') {
+  if (!c || c.isUnconscious) return;
+  c.isUnconscious = true;
+  c.health = Math.max(1, c.health || 1);
+  c.energy = Math.min(c.energy || 0, 4);
+  c.task = null; c.path = []; c.work = 0;
+  c.note = `${reason} — aguardando resgate`;
+  c.statuses = Array.isArray(c.statuses) ? c.statuses : [];
+  if (!c.statuses.includes('inconsciente')) c.statuses.push('inconsciente');
+  log(`${c.name} caiu inconsciente e precisa de resgate.`);
+}
+
+function nearestUnconsciousColonist(rescuer) {
+  const colonists = state?.colonists || [];
+  return colonists
+    .filter(c => c.id !== rescuer.id && c.isUnconscious)
+    .filter(c => !colonists.some(other => other.task?.type === 'rescueAlly' && other.task.patientId === c.id))
+    .sort((a, b) => dist(rescuer.x, rescuer.y, a.x, a.y) - dist(rescuer.x, rescuer.y, b.x, b.y))[0] || null;
+}
+
+function nearestMedicalDestination(c) {
+  return (state?.objects || [])
+    .filter(o => o.type === 'med_station' || o.type === 'bed')
+    .sort((a, b) => {
+      const rank = (a.type === 'med_station' ? 0 : 1) - (b.type === 'med_station' ? 0 : 1);
+      if (rank) return rank;
+      return dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y);
+    })[0] || null;
+}
+
+function assignRescueAlly(c, patient) {
+  const destination = nearestMedicalDestination(patient);
+  if (!destination) return false;
+  const adj = nearestFreeAdjacent(destination.x, destination.y, c.x, c.y) || { x: destination.x, y: destination.y };
+  c.task = { type: 'rescueAlly', patientId: patient.id, stationId: destination.id, x: adj.x, y: adj.y };
+  c.path = findPath(c.x, c.y, adj.x, adj.y, destination);
+  c.work = 0;
+  c.note = `Resgatando ${patient.name}`;
+  return true;
+}
+
+function handleRescueAllyTask(c, task, tick) {
+  const patient = state?.colonists?.find(item => item.id === task.patientId);
+  const destination = state?.objects?.find(obj => obj.id === task.stationId);
+  if (!patient || !patient.isUnconscious || !destination) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
+  c.work += tick * 1.15;
+  c.note = `Carregando ${patient.name} ${Math.floor((c.work / 2.2) * 100)}%`;
+  if (c.work < 2.2) return;
+  patient.x = task.x; patient.y = task.y; patient.px = task.x * TILE + TILE / 2; patient.py = task.y * TILE + TILE / 2;
+  patient.isUnconscious = false;
+  patient.statuses = (patient.statuses || []).filter(s => s !== 'inconsciente');
+  if (destination.type === 'med_station' && state.resources.medicine > 0) {
+    state.resources.medicine -= 1;
+    patient.health = Math.max(patient.health, 32);
+    patient.energy = Math.max(patient.energy, 16);
+    patient.note = 'Recebendo tratamento';
+    log(`${c.name} levou ${patient.name} até a estação médica e usou 1 remédio.`);
+  } else {
+    patient.health = Math.max(patient.health, 18);
+    patient.energy = Math.max(patient.energy, 12);
+    patient.note = destination.type === 'bed' ? 'Deitado na cama, recuperando' : 'Resgatado, recuperando';
+    log(`${c.name} levou ${patient.name} para um local seguro.`);
+  }
+  c.task = null; c.note = 'Resgate concluído'; c.work = 0;
+}
+
+function drawUnconsciousColonist(c) {
+  const img = images[`${c.sprite || 'colonistA'}_${c.dir || 'down'}_0`] || images[`${c.sprite || 'colonistA'}_down_0`];
+  ctx.save();
+  ctx.fillStyle = 'rgba(231, 189, 88, .22)'; ctx.strokeStyle = '#e7bd58'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(c.px, c.py + 19, 22, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.save(); ctx.translate(c.px, c.py + 24); ctx.rotate(Math.PI / 2);
+  if (img?.width && img?.height) { const scale = 0.48; const w = img.width * scale; const h = img.height * scale; ctx.drawImage(img, -w / 2, -h, w, h); }
+  else { ctx.fillStyle = '#d8c59b'; ctx.fillRect(-16, -30, 32, 44); }
+  ctx.restore();
+  drawTinyBars?.(c);
+  drawName?.(`${c.name} · inconsciente`, c.px, c.py - 38);
+}
+
+function finishMobDeath(mob, index, hunter = null) {
+  const drops = mobDrop(mob, hunter);
+  if (typeof addItems === 'function') addItems(drops.items || {});
+  if (typeof addResources === 'function') addResources(drops.resources || {});
+  if (index >= 0) state.mobs.splice(index, 1);
+  log(`${mobName(mob.type)} abatido. Recursos adicionados ao estoque.`);
+}
+
+function mobDrop(mob, hunter = null) {
+  const hunterHasKnife = hunter ? (hunter.equipment?.weapon === 'knife' || hunter.equipment?.tool === 'knife') : state.colonists?.some(c => c.equipment?.weapon === 'knife' || c.equipment?.tool === 'knife');
+  const bonus = hunterHasKnife ? 1.5 : 1;
+  if (mob.type === 'rabbit') return { items: { rawMeat: Math.ceil(2 * bonus), leather: Math.ceil(1 * bonus) } };
+  if (mob.type === 'spider') return { items: { rope: 1, venom: 1 } };
+  if (mob.type === 'wolf') return { items: { rawMeat: Math.ceil(4 * bonus), leather: Math.ceil(2 * bonus), bones: 1 } };
+  return { items: {} };
+}
+
+function mobName(type) { return ({ rabbit: 'Coelho', spider: 'Aranha', wolf: 'Lobo' })[type] || type; }
+
+function installMobRendererHook() {
+  if (window.HavenfallContext?.mobRendererHooked) return;
+  window.GameSystems?.registerDrawOverlay('mobs.entities', drawMobsOverlay, { order: 70 });
+  window.HavenfallContext.mobRendererHooked = true;
+}
+
+function drawMobsOverlay() {
+  if (!state?.mobs?.length || appScreen !== SCREEN.PLAYING) return;
+  ctx.save(); ctx.translate(viewTransform.offsetX, viewTransform.offsetY); ctx.scale(viewTransform.scale, viewTransform.scale);
+  for (const mob of state.mobs) drawMob(mob);
+  ctx.restore();
+}
+
+function drawMob(mob) {
+  const offset = combatRenderOffset(mob);
+  const x = mob.px + offset.x;
+  const y = mob.py + offset.y;
+  ctx.save();
+  if (mob.type === 'rabbit') {
+    ctx.fillStyle = '#d8d0bd'; ctx.beginPath(); ctx.ellipse(x, y + 12, 13, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#eee7d9'; ctx.beginPath(); ctx.ellipse(x + 8, y + 4, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (mob.type === 'spider') {
+    ctx.fillStyle = '#3b303e'; ctx.beginPath(); ctx.ellipse(x, y + 10, 14, 9, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#3b303e';
+    for (let i = -3; i <= 3; i += 2) {
+      ctx.beginPath(); ctx.moveTo(x, y + 10); ctx.lineTo(x + i * 7, y + 3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y + 10); ctx.lineTo(x + i * 7, y + 19); ctx.stroke();
+    }
   }
   ctx.restore();
-  ctx.globalAlpha = 1;
 }
 
-function finishMobDeath(mob, index, killer = null) {
-  if (index >= 0) state.mobs.splice(index, 1);
-  emitBloodParticles(mob.px, mob.py, mob.type === 'rabbit' ? 4 : 8);
-  const gain = mob.type === 'rabbit' ? { food: 4 } : mob.type === 'spider' ? { food: 2 } : { food: 6 };
-  addResources(gain);
-  log(`${killer?.name || 'A colônia'} abateu ${mobName(mob.type)}. +${gain.food} comida.`);
-}
-
-function mobName(type) {
-  if (type === 'wolf') return 'lobo';
-  if (type === 'spider') return 'aranha';
-  if (type === 'rabbit') return 'coelho';
-  return type;
-}
-
-installMobRuntimeHooks();
-window.updateMobsTick = updateMobsTick;
+window.canSpawnMob = canSpawnMob;
 window.spawnMob = spawnMob;
+window.updateMobsTick = updateMobsTick;
+window.mobDrop = mobDrop;
 window.getMobAt = getMobAt;
 window.assignHuntMob = assignHuntMob;
+window.makeColonistUnconscious = makeColonistUnconscious;
+
+installMobRuntimeHooks();
+installMobRendererHook();
+window.GameSystems?.registerTick('mobs', updateMobsTick, { order: 80 });
