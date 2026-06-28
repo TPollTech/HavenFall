@@ -11,6 +11,8 @@ const SCREEN_DOM_MAP = Object.freeze({
   [SCREEN.PAUSED]: 'game'
 });
 
+let activeRecruitmentCandidateIndex = 0;
+
 function setScreen(screen) {
   previousScreen = appScreen;
   appScreen = screen;
@@ -37,9 +39,18 @@ function goBackFromSettings() {
   setScreen(previousScreen === SCREEN.PAUSED || previousScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.MAIN_MENU);
 }
 
+function selectRecruitmentCandidate(index) {
+  const next = Math.max(0, Math.min((colonistCandidates?.length || 1) - 1, Number(index) || 0));
+  activeRecruitmentCandidateIndex = next;
+  if (typeof renderColonistSelection === 'function') renderColonistSelection();
+}
+
 function characterBuilderCard(c, i) {
+  if (colonistCandidates?.length && activeRecruitmentCandidateIndex >= colonistCandidates.length) activeRecruitmentCandidateIndex = 0;
   const remaining = Number(c.pointsRemaining ?? CharacterBuilder.remainingPointsFor(c.skills));
   const valid = remaining >= 0;
+  if (i !== activeRecruitmentCandidateIndex) return personnelFileCard(c, i, valid, remaining);
+
   const presetOptions = Object.entries(CHARACTER_CLASS_PRESETS)
     .map(([key, preset]) => `<option value="${key}" ${c.presetId === key ? 'selected' : ''}>${escapeHtml(preset.label)}</option>`)
     .join('') + `<option value="custom" ${c.presetId === 'custom' ? 'selected' : ''}>Personalizado</option>`;
@@ -50,7 +61,7 @@ function characterBuilderCard(c, i) {
   const spriteOptions = COLONIST_SPRITES.map(sprite => `<option value="${sprite}" ${c.sprite === sprite ? 'selected' : ''}>${sprite.replace('colonist', 'Modelo ')}</option>`).join('');
   const used = c.pointsUsed || CharacterBuilder.usedPointsFor(c.skills);
 
-  return `<article class="colonist-card builder-card bio-dossier-card ${valid ? '' : 'invalid'}" data-builder-index="${i}">
+  return `<article class="colonist-card builder-card bio-dossier-card bio-dossier-active ${valid ? '' : 'invalid'}" data-builder-index="${i}">
     <div class="bio-dossier-header">
       <div class="bio-file-id">
         <span>BIO-DOSSIER</span>
@@ -100,6 +111,23 @@ function characterBuilderCard(c, i) {
 
     <div class="builder-summary bio-dossier-footer ${valid ? '' : 'danger'}">PROTOCOLO HF-RECRUIT · Pool ${used}/${CHARACTER_BUILDER_POINTS} · mínimo ${CHARACTER_BUILDER_MIN_SKILL}, máximo ${CHARACTER_BUILDER_MAX_SKILL} por competência.</div>
   </article>`;
+}
+
+function personnelFileCard(c, i, valid, remaining) {
+  const entries = COLONIST_SKILL_KEYS.map(key => [key, Number(c.skills?.[key] || 1)]).sort((a, b) => b[1] - a[1]);
+  const [bestKey, bestValue] = entries[0] || ['coleta', 1];
+  const bestLabel = COLONIST_SKILL_LABELS[bestKey] || bestKey;
+  return `<button type="button" class="colonist-card builder-card personnel-file-card ${valid ? '' : 'invalid'}" data-recruitment-candidate="${i}" aria-label="Abrir arquivo de ${escapeHtml(c.name)}">
+    <span class="personnel-file-index">HF-${String(i + 1).padStart(2, '0')}</span>
+    <span class="personnel-file-avatar"><img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt=""></span>
+    <span class="personnel-file-main">
+      <b>${escapeHtml(c.name || `Candidato ${i + 1}`)}</b>
+      <small>${escapeHtml(c.role || 'Candidato')} · ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</small>
+      <em>${escapeHtml(bestLabel)} ${bestValue}/8</em>
+    </span>
+    <span class="personnel-file-status ${valid ? 'ok' : 'danger'}">${valid ? 'DISPONÍVEL' : 'REVISAR'}</span>
+    <span class="personnel-file-points ${remaining < 0 ? 'danger' : remaining > 0 ? 'warn' : 'ok'}">${remaining}</span>
+  </button>`;
 }
 
 function bioDossierSpiderChart(c) {
