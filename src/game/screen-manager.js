@@ -64,22 +64,24 @@ function characterBuilderCard(c, i) {
   return `<article class="colonist-card builder-card bio-dossier-card bio-dossier-active ${valid ? '' : 'invalid'}" data-builder-index="${i}">
     <div class="bio-dossier-header">
       <div class="bio-file-id">
-        <span>BIO-DOSSIER</span>
+        <span>PRONTUÁRIO ATIVO</span>
         <b>HF-INTAKE-${String(i + 1).padStart(2, '0')}</b>
       </div>
-      <div class="bio-status ${valid ? 'ok' : 'danger'}">${valid ? 'TRIAGEM ATIVA' : 'POOL INVÁLIDO'}</div>
+      <div class="bio-status ${valid ? 'ok' : 'danger'}">${valid ? 'APTO PARA TRIAGEM' : 'REVISÃO NECESSÁRIA'}</div>
     </div>
 
     <div class="bio-dossier-body">
       <aside class="bio-candidate-file">
-        <div class="bio-scan-frame">
+        <div class="bio-scan-frame bio-medical-frame">
+          <div class="bio-vital-line" aria-hidden="true"></div>
           <div class="bio-scan-lines" aria-hidden="true"></div>
           <img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt="">
         </div>
         <input class="builder-name-input bio-name-input" value="${escapeHtml(c.name)}" maxlength="18" data-builder-field="name" data-builder-index="${i}" aria-label="Nome do colono">
         <div class="bio-candidate-meta">
-          <span>${escapeHtml(c.role || 'Candidato')}</span>
-          <span>${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</span>
+          <span>${escapeHtml(c.age || '?')} anos · ${escapeHtml(c.role || 'Candidato')}</span>
+          <span>Preferência: ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</span>
+          <span>${escapeHtml(bioTraitLine(c))}</span>
         </div>
         <div class="builder-points bio-points ${remaining < 0 ? 'danger' : remaining > 0 ? 'warn' : 'ok'}">${remaining} ponto${Math.abs(remaining) === 1 ? '' : 's'} restante${Math.abs(remaining) === 1 ? '' : 's'}</div>
       </aside>
@@ -94,14 +96,15 @@ function characterBuilderCard(c, i) {
           <span>Diagnóstico de Aptidão</span>
           <b>${escapeHtml(bioDossierDiagnosis(c))}</b>
         </div>
+        ${bioDossierClinicalPanel(c)}
       </section>
 
       <section class="bio-controls-panel">
         <div class="builder-select-grid bio-select-grid">
-          <label>Classe rápida<select data-builder-preset="${i}">${presetOptions}</select></label>
+          <label>Classe<select data-builder-preset="${i}">${presetOptions}</select></label>
           <label>Papel<select data-builder-field="role" data-builder-index="${i}">${roleOptions}</select></label>
           <label>Preferência<select data-builder-field="workPreferenceId" data-builder-index="${i}">${workOptions}</select></label>
-          <label>Visual<select data-builder-field="sprite" data-builder-index="${i}">${spriteOptions}</select></label>
+          <label>Modelo<select data-builder-field="sprite" data-builder-index="${i}">${spriteOptions}</select></label>
           <label>Traço positivo<select data-builder-field="positiveTraitId" data-builder-index="${i}">${positiveOptions}</select></label>
           <label>Traço negativo<select data-builder-field="negativeTraitId" data-builder-index="${i}">${negativeOptions}</select></label>
         </div>
@@ -123,11 +126,16 @@ function personnelFileCard(c, i, valid, remaining) {
     <span class="personnel-file-main">
       <b>${escapeHtml(c.name || `Candidato ${i + 1}`)}</b>
       <small>${escapeHtml(c.role || 'Candidato')} · ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</small>
-      <em>${escapeHtml(bestLabel)} ${bestValue}/8</em>
+      <em><span>${escapeHtml(bestLabel)}</span>${proficiencyMeter(bestValue)}</em>
     </span>
     <span class="personnel-file-status ${valid ? 'ok' : 'danger'}">${valid ? 'DISPONÍVEL' : 'REVISAR'}</span>
     <span class="personnel-file-points ${remaining < 0 ? 'danger' : remaining > 0 ? 'warn' : 'ok'}">${remaining}</span>
   </button>`;
+}
+
+function proficiencyMeter(value) {
+  const safe = Math.max(1, Math.min(8, Number(value || 1)));
+  return `<span class="personnel-prof-meter" title="Proficiência ${safe}/8">${Array.from({ length: 8 }, (_, i) => `<i class="${i < safe ? 'on' : ''}"></i>`).join('')}</span>`;
 }
 
 function bioDossierSpiderChart(c) {
@@ -183,9 +191,38 @@ function bioDossierDiagnosis(c) {
   const [weakKey, weakValue] = entries[entries.length - 1] || ['medicina', 1];
   const bestLabel = COLONIST_SKILL_LABELS[bestKey] || bestKey;
   const weakLabel = COLONIST_SKILL_LABELS[weakKey] || weakKey;
-  if (bestValue >= 7) return `Alta aptidão para ${bestLabel.toLowerCase()} detectada.`;
-  if (weakValue <= 2) return `Lacuna crítica em ${weakLabel.toLowerCase()} registrada.`;
-  return `Perfil estável com tendência para ${bestLabel.toLowerCase()}.`;
+  if (bestValue >= 7) return `Alta aptidão para ${bestLabel.toLowerCase()} detectada. Indicado para assumir tarefas críticas dessa área.`;
+  if (weakValue <= 2) return `Lacuna crítica em ${weakLabel.toLowerCase()} registrada. Recomendado compensar com outro membro da equipe.`;
+  return `Perfil estável com tendência para ${bestLabel.toLowerCase()}. Bom candidato para equipe generalista.`;
+}
+
+function bioDossierClinicalPanel(c) {
+  const positive = (c.positiveTraitIds || []).map(id => colonistTraitLabel('positive', id)).join(', ') || 'sem registro';
+  const negative = (c.negativeTraitIds || []).map(id => colonistTraitLabel('negative', id)).join(', ') || 'sem alerta';
+  const physical = (c.physicalTraitIds || []).map(id => colonistTraitLabel('physical', id)).join(', ') || 'padrão';
+  const risk = operationalRiskLevel(c);
+  return `<div class="bio-clinical-panel">
+    <div><span>Idade</span><b>${escapeHtml(c.age || '?')} anos</b></div>
+    <div><span>Condição física</span><b>${escapeHtml(physical)}</b></div>
+    <div><span>Traço positivo</span><b>${escapeHtml(positive)}</b></div>
+    <div><span>Alerta psicológico</span><b>${escapeHtml(negative)}</b></div>
+    <div class="${risk.level}"><span>Risco operacional</span><b>${escapeHtml(risk.label)}</b></div>
+  </div>`;
+}
+
+function operationalRiskLevel(c) {
+  const negative = c.negativeTraitIds?.[0] || '';
+  const weakMedicine = Number(c.skills?.medicina || 1) <= 2;
+  const weakDefense = Number(c.skills?.defesa || 1) <= 2;
+  if (['fearful', 'clumsy', 'distracted', 'pessimistic'].includes(negative) || (weakMedicine && weakDefense)) return { level: 'warn', label: 'atenção' };
+  if (['focused', 'calm', 'organized', 'patient'].includes(c.positiveTraitIds?.[0])) return { level: 'ok', label: 'baixo' };
+  return { level: 'stable', label: 'moderado' };
+}
+
+function bioTraitLine(c) {
+  const positive = c.positiveTraitIds?.[0] ? colonistTraitLabel('positive', c.positiveTraitIds[0]) : 'sem traço';
+  const negative = c.negativeTraitIds?.[0] ? colonistTraitLabel('negative', c.negativeTraitIds[0]) : 'sem alerta';
+  return `Psique: ${positive} / ${negative}`;
 }
 
 function builderSkillRow(c, index, key) {
