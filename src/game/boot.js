@@ -16,6 +16,7 @@
     { id: 'module_boundary', file: 'src/game/core/module-boundary.js' },
     { id: 'menu_branding', file: 'src/game/ui/menu-branding.js' },
     { id: 'asset_manifest', file: 'assets/manifest.js' },
+    { id: 'fire_vfx_manifest', file: 'src/game/ui/fire-vfx-manifest.js' },
     { id: 'asset_audit', file: 'src/game/asset-audit.js' },
     { id: 'creature_sprite_sheet', file: 'src/game/creature-sprite-sheet.js' },
     { id: 'game_setup', file: 'src/game/game-setup.js' },
