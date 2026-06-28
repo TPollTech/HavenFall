@@ -8,24 +8,77 @@
     style.textContent = `
       .colonist-select-screen .colonist-cards {
         display: grid !important;
-        grid-template-columns: 310px minmax(0, 1fr);
-        grid-auto-flow: dense;
+        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-areas:
+          'files dossier'
+          'coverage coverage';
         align-items: start;
         gap: 14px;
-        max-height: min(68vh, 760px);
+        max-height: min(70vh, 780px);
         overflow: auto;
+        padding: 0 6px 4px 0;
       }
 
-      .bio-dossier-active {
-        grid-column: 2;
-        grid-row: 1 / span 24;
+      .personnel-files-column {
+        grid-area: files;
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+        align-self: start;
+      }
+
+      .personnel-files-title {
+        border: 1px solid rgba(125, 211, 252, .14);
+        border-radius: 16px;
+        background: rgba(2, 6, 23, .50);
+        padding: 11px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .personnel-files-title span {
+        color: rgba(94, 234, 212, .86);
+        font: 900 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .18em;
+      }
+
+      .personnel-files-title b {
+        color: rgba(203, 213, 225, .75);
+        font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        white-space: nowrap;
+      }
+
+      .dossier-stage {
+        grid-area: dossier;
         min-width: 0;
       }
 
-      .personnel-file-card {
-        grid-column: 1;
+      .dossier-stage .bio-dossier-card {
         width: 100%;
-        min-height: 96px;
+        margin: 0;
+      }
+
+      .bio-dossier-active {
+        grid-column: auto;
+        grid-row: auto;
+        min-width: 0;
+        max-width: none;
+      }
+
+      .bio-dossier-card.bio-dossier-active {
+        min-height: 0;
+      }
+
+      .bio-dossier-active .bio-dossier-body {
+        grid-template-columns: minmax(150px, 180px) minmax(250px, .9fr) minmax(320px, 1.1fr);
+        align-items: stretch;
+      }
+
+      .personnel-file-card {
+        width: 100%;
+        min-height: 92px;
         appearance: none;
         border: 1px solid rgba(125, 211, 252, .16) !important;
         border-radius: 18px !important;
@@ -46,6 +99,14 @@
         position: relative;
         overflow: hidden;
         transition: transform .14s ease, border-color .14s ease, background .14s ease;
+      }
+
+      .personnel-file-card.active {
+        border-color: rgba(94, 234, 212, .45) !important;
+        background:
+          linear-gradient(90deg, rgba(20, 184, 166, .18), rgba(2, 6, 23, .88)),
+          linear-gradient(180deg, rgba(15, 23, 42, .94), rgba(2, 6, 23, .94)) !important;
+        box-shadow: inset 3px 0 0 rgba(94, 234, 212, .70), 0 0 22px rgba(45, 212, 191, .10);
       }
 
       .personnel-file-card:hover {
@@ -175,15 +236,35 @@
         to { transform: translateX(110%); opacity: 0; }
       }
 
-      @media (max-width: 1080px) {
-        .colonist-select-screen .colonist-cards {
-          grid-template-columns: 1fr !important;
+      @media (max-width: 1180px) {
+        .bio-dossier-active .bio-dossier-body {
+          grid-template-columns: 170px minmax(250px, 1fr);
         }
 
-        .bio-dossier-active,
-        .personnel-file-card {
-          grid-column: 1;
-          grid-row: auto;
+        .bio-dossier-active .bio-controls-panel {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .colonist-select-screen .colonist-cards {
+          grid-template-columns: 1fr !important;
+          grid-template-areas:
+            'files'
+            'dossier'
+            'coverage';
+        }
+
+        .personnel-files-column {
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .personnel-files-title {
+          grid-column: 1 / -1;
+        }
+
+        .bio-dossier-active .bio-dossier-body {
+          grid-template-columns: 1fr;
         }
       }
     `;
