@@ -1,5 +1,15 @@
 'use strict';
 
+var defaultNewGameConfig = Object.freeze({
+  colonyName: 'First Haven',
+  seed: '',
+  difficulty: 'normal',
+  colonistCount: 3,
+  resourcesPreset: 'standard',
+  eventIntensity: 'normal',
+  mapSize: 'giant'
+});
+
 function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
