@@ -36,6 +36,7 @@
     { id: 'geology_system', file: 'src/game/systems/geology-system.js' },
     { id: 'schedule_manager', file: 'src/game/systems/schedule-manager.js' },
     { id: 'world_systems', file: 'src/game/world-systems.js' },
+    { id: 'mining_task_handler', file: 'src/game/systems/mining-task-handler.js' },
     { id: 'mining_orders', file: 'src/game/systems/mining-orders.js' },
     { id: 'renderer', file: 'src/game/renderer.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
