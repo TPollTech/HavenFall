@@ -29,6 +29,7 @@ const SETTINGS_KEY = 'havenfall-v1-settings';
 const SCREEN = Object.freeze({
   MAIN_MENU: 'MAIN_MENU',
   NEW_GAME_SETUP: 'NEW_GAME_SETUP',
+  PLANET_SCAN: 'PLANET_SCAN',
   COLONIST_SELECT: 'COLONIST_SELECT',
   LOAD_GAME: 'LOAD_GAME',
   SETTINGS: 'SETTINGS',
@@ -54,6 +55,7 @@ const dom = {
   screens: {
     main: document.getElementById('mainMenuScreen'),
     setup: document.getElementById('newGameSetupScreen'),
+    scan: document.getElementById('planetScanScreen'),
     colonists: document.getElementById('colonistSelectScreen'),
     load: document.getElementById('loadGameScreen'),
     settings: document.getElementById('settingsScreen'),
@@ -67,6 +69,9 @@ const dom = {
     exit: document.getElementById('exitBtn'),
     setupBack: document.getElementById('setupBackBtn'),
     setupNext: document.getElementById('setupNextBtn'),
+    scanBack: document.getElementById('scanBackBtn'),
+    scanProceed: document.getElementById('scanProceedBtn'),
+    scanRefresh: document.getElementById('scanRefreshBtn'),
     randomSeed: document.getElementById('randomSeedBtn'),
     colonistBack: document.getElementById('colonistBackBtn'),
     rerollAll: document.getElementById('rerollAllBtn'),
@@ -148,10 +153,3 @@ let doorIndex = new Map();
 let wallIndexDirty = true;
 let lastWallObjectCount = -1;
 let roofSet = new Set();
-let roofArrayRef = null;
-let roofTick = 0;
-let lastSpriteCleanupAt = 0;
-const transparentSpriteUrl = new Map();
-
-const defaultNewGameConfig = { colonyName: 'First Haven', seed: '', difficulty: 'normal', colonistCount: 3, resourcesPreset: 'standard', eventIntensity: 'normal', mapSize: 'giant' };
-
