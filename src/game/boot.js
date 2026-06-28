@@ -43,6 +43,7 @@
     { id: 'geology_backdrop_render_hook', file: 'src/game/ui/geology-backdrop-render-hook.js' },
     { id: 'fire_vfx_render_hooks', file: 'src/game/ui/fire-vfx-render-hooks.js' },
     { id: 'canvas_input_building', file: 'src/game/canvas-input-building.js' },
+    { id: 'orders_canvas_input_hook', file: 'src/game/ui/orders-canvas-input-hook.js' },
     { id: 'hud_ui', file: 'src/game/ui/hud-ui.js' },
     { id: 'planet_scan_profile', file: 'src/game/systems/planet-scan-profile.js' },
     { id: 'planet_scan_ui', file: 'src/game/ui/planet-scan-ui.js' },
