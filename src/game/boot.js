@@ -46,6 +46,8 @@
     { id: 'planet_scan_profile', file: 'src/game/systems/planet-scan-profile.js' },
     { id: 'planet_scan_ui', file: 'src/game/ui/planet-scan-ui.js' },
     { id: 'recruitment_dossier_ui', file: 'src/game/ui/recruitment-dossier-ui.js' },
+    { id: 'recruitment_dossier_layout_ui', file: 'src/game/ui/recruitment-dossier-layout-ui.js' },
+    { id: 'recruitment_coverage_ui', file: 'src/game/ui/recruitment-coverage-ui.js' },
     { id: 'zones', file: 'src/game/zones.js' },
     { id: 'environment', file: 'src/game/environment.js' },
     { id: 'workstations_tools', file: 'src/game/workstations-tools.js' },
