@@ -87,7 +87,54 @@
         </div>
 
         <div class="menu-actions row">
-          <button id="setupNextBtn">Continuar para Seleção de Colonos</button>
+          <button id="setupNextBtn">Iniciar Varredura Planetária</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="planetScanScreen" class="screen planet-scan-screen" data-screen="PLANET_SCAN">
+      <div class="planet-scan-shell">
+        <div class="scan-panel scan-hologram-panel">
+          <div class="scan-radar" aria-hidden="true">
+            <div id="scanRadarLabel" class="scan-sector-label"><span>SETOR</span><b>HV-00000</b></div>
+          </div>
+        </div>
+
+        <div class="scan-panel scan-grid">
+          <div class="scan-title-row">
+            <div>
+              <div class="kicker">Varredura Planetária</div>
+              <h1>Análise de Setor</h1>
+              <p>Prévia visual da zona de pouso. Nesta passada, a interface é apenas uma camada de leitura: a geração real do mapa ainda continua intacta.</p>
+            </div>
+            <div class="scan-status-pill">Scan in progress</div>
+          </div>
+
+          <div class="scan-signature-card">
+            <b id="scanSectorTitle">First Haven</b>
+            <small id="scanSectorMeta">Seed · setor · intensidade</small>
+          </div>
+
+          <div>
+            <div class="kicker">Dados do Setor</div>
+            <div id="scanMetrics" class="scan-data-list"></div>
+          </div>
+
+          <div>
+            <div class="kicker">Assinaturas Detectadas</div>
+            <div id="scanSignatures" class="scan-signature-list"></div>
+          </div>
+
+          <div>
+            <div class="kicker">Log de Processamento</div>
+            <div id="scanProcessingLog" class="scan-log-list"></div>
+          </div>
+
+          <div class="scan-actions">
+            <button id="scanBackBtn" type="button">Voltar</button>
+            <button id="scanRefreshBtn" type="button">Recalibrar leitura</button>
+            <button id="scanProceedBtn" type="button" class="primary">Continuar para Colonos</button>
+          </div>
         </div>
       </div>
     </section>
