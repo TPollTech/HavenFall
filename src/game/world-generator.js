@@ -10,7 +10,8 @@ function startNewGame(config, selectedColonists) {
   state.paused = false;
   started = true;
   activeSession = true;
-  log(`Nova partida iniciada: ${config.colonyName}. Seed: ${config.seed}. Mundo: ${getWorldCols()}x${getWorldRows()}.`);
+  const sector = state.world?.planetScan?.sectorId ? ` Setor: ${state.world.planetScan.sectorId}.` : '';
+  log(`Nova partida iniciada: ${config.colonyName}. Seed: ${config.seed}. Mundo: ${getWorldCols()}x${getWorldRows()}.${sector}`);
   setScreen(SCREEN.PLAYING);
   updateUI(true);
 }
@@ -82,6 +83,7 @@ function generateWorldFromSeed(config) {
     difficulty: config.difficulty,
     chunkMode: !!size.chunkMode,
     biomeIntent: size.biomeIntent || 'classic',
+    planetScan: compactPlanetScanForWorld(config),
     cols,
     rows,
     tileSize: TILE,
@@ -95,10 +97,43 @@ function generateWorldFromSeed(config) {
     spawnPoints,
     pointsOfInterest,
     weatherPattern: generateWeatherPattern(config, rand),
-    generationVersion: '1.8.2'
+    generationVersion: '1.8.3-scan'
   };
 
   return window.BiomeEngine?.applyToWorld ? window.BiomeEngine.applyToWorld(world, config) : world;
+}
+
+function planetScanProfile(config) {
+  const profile = config?.planetScan;
+  if (!profile || profile.version !== 'planet-scan-profile-v1') return null;
+  if (profile.seed && config?.seed && profile.seed !== config.seed) return null;
+  return profile;
+}
+
+function compactPlanetScanForWorld(config) {
+  const profile = planetScanProfile(config);
+  if (!profile) return null;
+  return {
+    version: profile.version,
+    sectorId: profile.sectorId,
+    dominantBiome: profile.dominantBiome,
+    biomeStats: { ...(profile.biomeStats || {}) },
+    metrics: { ...(profile.metrics || {}) },
+    signatureCount: Array.isArray(profile.signatures) ? profile.signatures.length : 0
+  };
+}
+
+function scanBiomeStat(config, key) {
+  return Number(planetScanProfile(config)?.biomeStats?.[key] || 0);
+}
+
+function scanModifier(config, key, fallback = 0) {
+  const value = planetScanProfile(config)?.modifiers?.[key];
+  return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function scanDominantBiome(config) {
+  return planetScanProfile(config)?.dominantBiome || null;
 }
 
 function difficultyResourceFactor(difficulty) {
@@ -121,11 +156,18 @@ function eventIntensityValue(intensity) {
 function generateWeatherPattern(config, rand) {
   const intensity = eventIntensityValue(config?.eventIntensity || 'normal');
   const difficultyBonus = config?.difficulty === 'hardcore' ? 0.06 : config?.difficulty === 'hard' ? 0.035 : 0;
+  const scan = planetScanProfile(config);
+  const weatherRisk = scanModifier(config, 'weatherRisk', 50) / 100;
+  const waterBonus = scanBiomeStat(config, 'water') * 0.0009;
+  const desertDryness = scanBiomeStat(config, 'desert') * 0.0007;
+  const snowStorm = scanBiomeStat(config, 'snow') * 0.0008;
   return Array.from({ length: 30 }, (_, i) => {
     const day = i + 1;
     const seasonalWave = Math.sin((day / 30) * Math.PI * 2) * 0.035;
-    const rainChance = Math.max(0.04, Math.min(0.62, 0.12 + rand() * 0.18 + intensity * 0.01 + seasonalWave + difficultyBonus));
-    const stormChance = Math.max(0.01, Math.min(0.26, 0.025 + intensity * 0.008 + difficultyBonus * 0.55 + rand() * 0.035));
+    const scanRainBias = scan ? (weatherRisk - 0.5) * 0.08 + waterBonus - desertDryness : 0;
+    const scanStormBias = scan ? (weatherRisk - 0.5) * 0.045 + snowStorm : 0;
+    const rainChance = Math.max(0.04, Math.min(0.62, 0.12 + rand() * 0.18 + intensity * 0.01 + seasonalWave + difficultyBonus + scanRainBias));
+    const stormChance = Math.max(0.01, Math.min(0.26, 0.025 + intensity * 0.008 + difficultyBonus * 0.55 + rand() * 0.035 + scanStormBias));
     return {
       day,
       rainChance: Math.round(rainChance * 100) / 100,
@@ -136,9 +178,11 @@ function generateWeatherPattern(config, rand) {
 
 function createTerrainMap(cols, rows, config, rand) {
   const terrain = Array.from({ length: rows }, () => Array.from({ length: cols }, () => 'grass'));
+  const scan = planetScanProfile(config);
   const regionCount = Math.max(8, Math.floor((cols * rows) / 620));
   const regions = [];
-  const types = ['forest', 'rocky', 'dry', 'meadow', 'rough', 'fertile'];
+  const baseTypes = ['forest', 'rocky', 'dry', 'meadow', 'rough', 'fertile'];
+  const types = scan ? planetScanRegionTypes(baseTypes, config) : baseTypes;
   for (let i = 0; i < regionCount; i++) {
     regions.push({
       x: 4 + Math.floor(rand() * (cols - 8)),
@@ -179,15 +223,47 @@ function createTerrainMap(cols, rows, config, rand) {
 
       if (noise + hardRockBonus > 0.91 && edge > 4) type = 'stone';
       if (rough < 0.055 && edge > 4) type = 'dirt';
-      terrain[y][x] = type;
+      terrain[y][x] = applyPlanetScanTerrainTile(type, config, x, y, edge);
     }
   }
   return terrain;
 }
 
+function planetScanRegionTypes(baseTypes, config) {
+  const types = [...baseTypes];
+  const dominant = scanDominantBiome(config);
+  const forest = scanBiomeStat(config, 'forest');
+  const desert = scanBiomeStat(config, 'desert');
+  const rock = scanBiomeStat(config, 'rock');
+  const snow = scanBiomeStat(config, 'snow');
+
+  if (dominant === 'forest' || forest > 42) types.push('forest', 'fertile', 'meadow');
+  if (dominant === 'desert' || desert > 24) types.push('dry', 'dry', 'rough');
+  if (dominant === 'rock' || rock > 30) types.push('rocky', 'rough', 'rocky');
+  if (dominant === 'snow' || snow > 26) types.push('rough', 'rocky');
+  return types;
+}
+
+function applyPlanetScanTerrainTile(type, config, x, y, edge) {
+  if (!planetScanProfile(config) || edge <= 3) return type;
+  const roll = worldNoise(config.seed, x, y, 'planet-scan-terrain');
+  const forest = scanBiomeStat(config, 'forest');
+  const desert = scanBiomeStat(config, 'desert');
+  const snow = scanBiomeStat(config, 'snow');
+  const rock = scanBiomeStat(config, 'rock');
+
+  if (rock > 28 && type !== 'sand' && roll > 1 - Math.min(0.20, rock / 430)) return 'stone';
+  if (desert > 22 && type !== 'stone' && roll < Math.min(0.22, desert / 330)) return 'sand';
+  if (forest > 40 && ['dirt', 'sand'].includes(type) && roll > 0.54 && roll < 0.54 + Math.min(0.18, forest / 470)) return 'grass';
+  if (snow > 26 && type === 'grass' && roll < Math.min(0.12, snow / 520)) return 'dirt';
+  return type;
+}
+
 function chooseSpawnPoint(terrain, cols, rows, config, rand) {
-  const centerX = Math.floor(cols * (0.42 + (rand() - 0.5) * 0.18));
-  const centerY = Math.floor(rows * (0.48 + (rand() - 0.5) * 0.18));
+  const integrity = scanModifier(config, 'landingIntegrity', 70);
+  const offsetScale = integrity >= 70 ? 0.12 : 0.20;
+  const centerX = Math.floor(cols * (0.42 + (rand() - 0.5) * offsetScale));
+  const centerY = Math.floor(rows * (0.48 + (rand() - 0.5) * offsetScale));
   let best = { x: centerX, y: centerY, score: -Infinity };
   const scan = Math.floor(Math.min(cols, rows) * 0.22);
   for (let y = Math.max(4, centerY - scan); y < Math.min(rows - 4, centerY + scan); y++) {
@@ -200,10 +276,20 @@ function chooseSpawnPoint(terrain, cols, rows, config, rand) {
       if (t === 'stone') score -= 14;
       score -= Math.hypot(x - centerX, y - centerY) * 0.22;
       score += worldNoise(config.seed, x, y, 'spawn') * 4;
+      if (planetScanProfile(config)) score += planetScanLandingScore(t, config);
       if (score > best.score) best = { x, y, score };
     }
   }
   return { x: best.x, y: best.y };
+}
+
+function planetScanLandingScore(tile, config) {
+  const dominant = scanDominantBiome(config);
+  if (dominant === 'forest' && tile === 'grass') return 2;
+  if (dominant === 'desert' && tile === 'sand') return -1.5;
+  if (dominant === 'rock' && tile === 'stone') return -2.5;
+  if (dominant === 'snow' && tile === 'dirt') return 0.8;
+  return 0;
 }
 
 function carveSpawnClearing(terrain, sx, sy, cols, rows) {
@@ -229,6 +315,7 @@ function generateResourceFields(ctx) {
     ore: Math.floor(area * 0.0065 * multiplier),
     logs: Math.floor(area * 0.0035 * multiplier)
   };
+  applyPlanetScanResourceMultipliers(counts, config);
 
   placeAroundSpawn(add, terrain, spawn, 'tree', 6, 8, 11, rand);
   placeAroundSpawn(add, terrain, spawn, 'berry', 3, 5, 8, rand);
@@ -241,6 +328,27 @@ function generateResourceFields(ctx) {
       add(type, tile.x, tile.y);
     }
   }
+}
+
+function applyPlanetScanResourceMultipliers(counts, config) {
+  if (!planetScanProfile(config)) return counts;
+  const forest = scanBiomeStat(config, 'forest');
+  const desert = scanBiomeStat(config, 'desert');
+  const snow = scanBiomeStat(config, 'snow');
+  const rock = scanBiomeStat(config, 'rock');
+  const water = scanBiomeStat(config, 'water');
+  const factor = {
+    tree: 1 + (forest - 35) * 0.012 - desert * 0.004 - snow * 0.002,
+    bush: 1 + (forest - 32) * 0.010 + water * 0.003 - desert * 0.005,
+    berry: 1 + (forest - 34) * 0.012 + water * 0.002 - desert * 0.006 - snow * 0.003,
+    rock: 1 + (rock - 24) * 0.014 + desert * 0.003,
+    ore: 1 + (rock - 24) * 0.018 + scanModifier(config, 'rockBias', 0) * 0.08,
+    logs: 1 + (forest - 35) * 0.010
+  };
+  Object.keys(counts).forEach(key => {
+    counts[key] = Math.max(0, Math.floor(counts[key] * Math.max(0.35, Math.min(1.75, factor[key] || 1))));
+  });
+  return counts;
 }
 
 function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
@@ -276,26 +384,56 @@ function placeAroundSpawn(add, terrain, spawn, type, amount, minR, maxR, rand) {
 function generatePointsOfInterest(ctx) {
   const { terrain, objects, cols, rows, spawn, config, rand, add } = ctx;
   const size = getMapSizeDef(config.mapSize);
+  const scan = planetScanProfile(config);
   const points = [];
   const names = ['Oficina afundada', 'Antiga torre de rádio', 'Mercado abandonado', 'Clínica rural', 'Depósito militar', 'Casa soterrada', 'Estação meteorológica'];
   const types = ['ruin', 'cache', 'supply_crate'];
-  for (let i = 0; i < size.poiCount; i++) {
+  const signatureCount = Array.isArray(scan?.signatures) ? scan.signatures.length : 0;
+  const totalPoi = size.poiCount + Math.min(2, Math.floor(signatureCount / 3));
+  for (let i = 0; i < totalPoi; i++) {
     const p = farRandomTile(terrain, objects, cols, rows, spawn, rand);
     if (!p) continue;
-    const type = types[Math.floor(rand() * types.length)];
+    const signature = scan?.signatures?.[i % Math.max(1, signatureCount)];
+    const type = signature ? poiTypeForScanSignature(signature, types, rand) : types[Math.floor(rand() * types.length)];
     const obj = add(type, p.x, p.y, { poiId: `poi_${i}` });
     if (!obj) continue;
     points.push({
       id: `poi_${i}`,
-      name: `${names[i % names.length]} ${i + 1}`,
+      name: signature ? poiNameForScanSignature(signature, i) : `${names[i % names.length]} ${i + 1}`,
       type,
       x: p.x,
       y: p.y,
+      scanSignature: signature?.kind || null,
       discovered: false,
       inspected: false
     });
   }
   return points;
+}
+
+function poiTypeForScanSignature(signature, fallbackTypes, rand) {
+  if (!signature) return fallbackTypes[Math.floor(rand() * fallbackTypes.length)];
+  if (['metal', 'geology', 'collapse'].includes(signature.kind)) return 'cache';
+  if (['water', 'humidity', 'cold', 'heat', 'dust'].includes(signature.kind)) return 'ruin';
+  if (['organic', 'fauna'].includes(signature.kind)) return 'supply_crate';
+  return fallbackTypes[Math.floor(rand() * fallbackTypes.length)];
+}
+
+function poiNameForScanSignature(signature, index) {
+  const names = {
+    organic: 'Assinatura orgânica',
+    fauna: 'Rastro de fauna',
+    ruin: 'Ruína detectada',
+    heat: 'Eco térmico',
+    dust: 'Sinal em poeira densa',
+    cold: 'Anomalia fria',
+    geology: 'Falha geológica',
+    metal: 'Sinal metálico',
+    collapse: 'Teto instável detectado',
+    water: 'Bacia hídrica',
+    humidity: 'Condensação anômala'
+  };
+  return `${names[signature?.kind] || 'Assinatura detectada'} ${index + 1}`;
 }
 
 function farRandomTile(terrain, objects, cols, rows, spawn, rand) {
