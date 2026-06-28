@@ -41,7 +41,7 @@ const colonistWorkPreferenceDefs = Object.freeze({
 });
 
 const COLONIST_FIRST_NAMES = Object.freeze(['Lia','Téo','Nico','Bia','Gael','Mira','Davi','Luma','Caio','Iris','Noa','Eva','Ravi','Mila','Otto','Nina']);
-const COLONIST_ROLES = Object.freeze(['Coletora', 'Construtor', 'Faz-tudo']);
+const COLONIST_ROLES = Object.freeze(['Coletor', 'Construtor', 'Generalista']);
 const COLONIST_SPRITES = Object.freeze(['colonistA', 'colonistB', 'colonistC']);
 const COLONIST_SKILL_KEYS = Object.freeze(['coleta', 'construcao', 'defesa', 'pesquisa', 'medicina']);
 const COLONIST_SKILL_LABELS = Object.freeze({ coleta: 'Coleta', construcao: 'Construção', defesa: 'Defesa', pesquisa: 'Pesquisa', medicina: 'Medicina' });
@@ -50,13 +50,14 @@ const CHARACTER_BUILDER_MIN_SKILL = 1;
 const CHARACTER_BUILDER_MAX_SKILL = 8;
 
 const CHARACTER_CLASS_PRESETS = Object.freeze({
-  balanced: { label: 'Sobrevivente', role: 'Faz-tudo', workPreferenceId: 'gather', skills: { coleta: 4, construcao: 4, defesa: 4, pesquisa: 4, medicina: 4 }, positive: 'calm', negative: 'stubborn' },
-  lumberjack: { label: 'Lenhador', role: 'Coletora', workPreferenceId: 'gather', skills: { coleta: 8, construcao: 4, defesa: 3, pesquisa: 2, medicina: 3 }, positive: 'organized', negative: 'impatient' },
+  balanced: { label: 'Sobrevivente', role: 'Generalista', workPreferenceId: 'gather', skills: { coleta: 4, construcao: 4, defesa: 4, pesquisa: 4, medicina: 4 }, positive: 'calm', negative: 'stubborn' },
+  lumberjack: { label: 'Coletor', role: 'Coletor', workPreferenceId: 'gather', skills: { coleta: 8, construcao: 4, defesa: 3, pesquisa: 2, medicina: 3 }, positive: 'organized', negative: 'impatient' },
   builder: { label: 'Construtor', role: 'Construtor', workPreferenceId: 'build', skills: { coleta: 3, construcao: 8, defesa: 3, pesquisa: 3, medicina: 3 }, positive: 'focused', negative: 'stubborn' },
-  guard: { label: 'Guarda', role: 'Faz-tudo', workPreferenceId: 'defense', skills: { coleta: 3, construcao: 3, defesa: 8, pesquisa: 2, medicina: 4 }, positive: 'brave', negative: 'fearful' },
-  researcher: { label: 'Pesquisador', role: 'Faz-tudo', workPreferenceId: 'research', skills: { coleta: 2, construcao: 3, defesa: 2, pesquisa: 8, medicina: 5 }, positive: 'curious', negative: 'distracted' },
-  medic: { label: 'Médico', role: 'Faz-tudo', workPreferenceId: 'medicine', skills: { coleta: 2, construcao: 3, defesa: 3, pesquisa: 4, medicina: 8 }, positive: 'patient', negative: 'pessimistic' }
+  guard: { label: 'Guarda', role: 'Generalista', workPreferenceId: 'defense', skills: { coleta: 3, construcao: 3, defesa: 8, pesquisa: 2, medicina: 4 }, positive: 'brave', negative: 'fearful' },
+  researcher: { label: 'Pesquisador', role: 'Generalista', workPreferenceId: 'research', skills: { coleta: 2, construcao: 3, defesa: 2, pesquisa: 8, medicina: 5 }, positive: 'curious', negative: 'distracted' },
+  medic: { label: 'Médico', role: 'Generalista', workPreferenceId: 'medicine', skills: { coleta: 2, construcao: 3, defesa: 3, pesquisa: 4, medicina: 8 }, positive: 'patient', negative: 'pessimistic' }
 });
+const STARTING_PRESET_ORDER = Object.freeze(['lumberjack', 'builder', 'guard', 'researcher', 'medic', 'balanced', 'balanced', 'balanced']);
 
 const TRAIT_KEYS_CACHE = Object.freeze({
   physical: Object.freeze(Object.keys(colonistTraitDefs.physical)),
@@ -76,7 +77,7 @@ class CharacterBuilder {
     this.name = data.name || COLONIST_FIRST_NAMES[(nameIndex + index) % COLONIST_FIRST_NAMES.length];
     this.age = Number(data.age || 22 + (index * 3) % 26);
     this.sprite = data.sprite || COLONIST_SPRITES[index % COLONIST_SPRITES.length];
-    this.role = data.role || preset.role || 'Faz-tudo';
+    this.role = data.role || preset.role || 'Generalista';
     this.workPreferenceId = data.workPreferenceId || preset.workPreferenceId || 'gather';
     this.physicalTraitIds = Array.isArray(data.physicalTraitIds) && data.physicalTraitIds.length ? data.physicalTraitIds.slice(0, 2) : ['resilient'];
     this.positiveTraitIds = Array.isArray(data.positiveTraitIds) && data.positiveTraitIds.length ? data.positiveTraitIds.slice(0, 1) : [preset.positive || 'calm'];
@@ -212,10 +213,28 @@ function workPreferenceLabel(id) {
 }
 
 function generateColonistCandidates(config) {
-  const count = Math.max(1, Number(config?.colonistCount || defaultNewGameConfig.colonistCount || 3));
-  colonistCandidates = Array.from({ length: count }, (_, i) => new CharacterBuilder(i, config).toCandidate());
+  const count = typeof clampColonistCount === 'function'
+    ? clampColonistCount(config?.colonistCount || defaultNewGameConfig.colonistCount || 3)
+    : Math.max(1, Number(config?.colonistCount || defaultNewGameConfig.colonistCount || 3));
+  const usedNames = new Set();
+  colonistCandidates = Array.from({ length: count }, (_, i) => {
+    const presetId = STARTING_PRESET_ORDER[i % STARTING_PRESET_ORDER.length] || 'balanced';
+    const candidate = new CharacterBuilder(i, config, { presetId }).applyPreset(presetId).toCandidate();
+    candidate.name = uniqueColonistName(candidate.name, usedNames, i);
+    usedNames.add(candidate.name.toLowerCase());
+    return candidate;
+  });
   if (typeof renderColonistSelection === 'function') renderColonistSelection();
   return colonistCandidates;
+}
+
+function uniqueColonistName(name, usedNames, index) {
+  const base = String(name || COLONIST_FIRST_NAMES[index % COLONIST_FIRST_NAMES.length]).trim() || `Colono ${index + 1}`;
+  if (!usedNames.has(base.toLowerCase())) return base;
+  for (const alt of COLONIST_FIRST_NAMES) {
+    if (!usedNames.has(alt.toLowerCase())) return alt;
+  }
+  return `${base} ${index + 1}`;
 }
 
 function updateColonistBuilderSkill(index, skill, delta) {

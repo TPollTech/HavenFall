@@ -77,19 +77,18 @@
   }
 
   function openPlanetScanFromSetup() {
-    newGameConfig = readNewGameConfig();
+    newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(readNewGameConfig()) : readNewGameConfig();
+    writeNewGameConfig(newGameConfig);
     if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
     setScreen(SCREEN.PLANET_SCAN);
   }
 
   function continueFromPlanetScan() {
-    if (!newGameConfig) newGameConfig = readNewGameConfig();
-    if (typeof attachPlanetScanToConfig === 'function') {
-      newGameConfig = attachPlanetScanToConfig(newGameConfig);
-    } else if (typeof buildPlanetScanWorldgenProfile === 'function') {
-      newGameConfig = { ...newGameConfig, planetScan: buildPlanetScanWorldgenProfile(newGameConfig) };
-    }
+    newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
+      ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
+      : { ...(newGameConfig || readNewGameConfig()), planetScan: typeof buildPlanetScanWorldgenProfile === 'function' ? buildPlanetScanWorldgenProfile(newGameConfig || readNewGameConfig()) : null };
     generateColonistCandidates(newGameConfig);
+    if (typeof activeRecruitmentCandidateIndex === 'number') activeRecruitmentCandidateIndex = 0;
     setScreen(SCREEN.COLONIST_SELECT);
   }
 
@@ -327,12 +326,15 @@
     on(dom.buttons.setupNext, 'click', openPlanetScanFromSetup);
     on(dom.buttons.scanBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
     on(dom.buttons.scanRefresh, 'click', () => {
-      newGameConfig = readNewGameConfig();
+      if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
+      newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(readNewGameConfig()) : readNewGameConfig();
       if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
+      updateSetupSummary();
     });
     on(dom.buttons.scanProceed, 'click', continueFromPlanetScan);
     on(dom.buttons.randomSeed, 'click', () => {
       if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
+      newGameConfig = null;
       updateSetupSummary();
     });
 
@@ -347,7 +349,9 @@
     on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.PLANET_SCAN));
     if (dom.buttons.rerollAll) dom.buttons.rerollAll.hidden = true;
     on(dom.buttons.startSelectedGame, 'click', () => {
-      if (!newGameConfig) newGameConfig = readNewGameConfig();
+      newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
+        ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
+        : (newGameConfig || readNewGameConfig());
       const validation = typeof validateColonistBuilders === 'function' ? validateColonistBuilders() : { ok: true };
       if (!validation.ok) {
         renderColonistSelection?.();

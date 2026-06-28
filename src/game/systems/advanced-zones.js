@@ -93,6 +93,55 @@
     return this.findFreeTile('storage', () => storageAcceptsObject(obj));
   };
 
+  function storageObjects() {
+    if (!state?.objects) return [];
+    return state.objects.filter(obj => {
+      if (!obj || obj.blueprint || obj.deconstruct) return false;
+      if (!objectDefs?.[obj.type]?.storage) return false;
+      if (!isTileDiscovered(obj.x, obj.y)) return false;
+      if (zoneSystem.hasAllowedArea?.() && !zoneSystem.isTileAllowed?.(obj.x, obj.y)) return false;
+      return true;
+    });
+  }
+
+  function storageObjectReservationCount(obj) {
+    if (!obj?.id || !state?.colonists) return 0;
+    return state.colonists.filter(c => c.task?.type === 'haul' && c.task.zoneType === 'storage_object' && c.task.zoneObjectId === obj.id).length;
+  }
+
+  function findFreeStorageObjectFor(obj, fromX = obj?.x || 0, fromY = obj?.y || 0) {
+    if (!obj || !storageAcceptsObject(obj)) return null;
+    return storageObjects()
+      .filter(storage => storageObjectReservationCount(storage) < Number(objectDefs?.[storage.type]?.storage || 1))
+      .sort((a, b) => dist(fromX, fromY, a.x, a.y) - dist(fromX, fromY, b.x, b.y))[0] || null;
+  }
+
+  zoneSystem.findFreeStorageObjectFor = function findFreeStorageObjectForZone(obj, fromX = obj?.x || 0, fromY = obj?.y || 0) {
+    const storage = findFreeStorageObjectFor(obj, fromX, fromY);
+    return storage ? { x: storage.x, y: storage.y, type: 'storage_object', objectId: storage.id } : null;
+  };
+
+  zoneSystem.findFreeStorageDestinationFor = function findFreeStorageDestinationFor(obj, fromX = obj?.x || 0, fromY = obj?.y || 0) {
+    if (!obj || !storageAcceptsObject(obj)) return null;
+    const zoneTile = this.findFreeStorageTileFor(obj);
+    const storageObject = this.findFreeStorageObjectFor(obj, fromX, fromY);
+    if (!zoneTile) return storageObject;
+    const zoneDestination = { ...zoneTile, type: 'storage' };
+    if (!storageObject) return zoneDestination;
+    const zoneDistance = dist(fromX, fromY, zoneDestination.x, zoneDestination.y);
+    const objectDistance = dist(fromX, fromY, storageObject.x, storageObject.y);
+    return objectDistance <= zoneDistance ? storageObject : zoneDestination;
+  };
+
+  zoneSystem.storageObjectCount = function storageObjectCount() {
+    return storageObjects().length;
+  };
+
+  zoneSystem.hasStorageDestination = function hasStorageDestination(obj = null) {
+    if (obj) return !!this.findFreeStorageDestinationFor(obj, obj.x, obj.y);
+    return this.count('storage') > 0 || this.storageObjectCount() > 0;
+  };
+
   zoneSystem.findFreeDumpingTile = function findFreeDumpingTile() {
     return this.findFreeTile('dumping');
   };
@@ -140,8 +189,7 @@
       return tile ? { ...tile, type: 'dumping' } : null;
     }
     if (storageAcceptsObject(obj)) {
-      const tile = zoneSystem.findFreeStorageTileFor(obj);
-      return tile ? { ...tile, type: 'storage' } : null;
+      return zoneSystem.findFreeStorageDestinationFor(obj, obj.x, obj.y);
     }
     return null;
   }
@@ -321,7 +369,7 @@
     if (zoneSystem.hasAllowedArea?.() && (!zoneSystem.isTileAllowed?.(obj.x, obj.y) || !zoneSystem.isTileAllowed?.(destination.x, destination.y))) return false;
     const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
     obj.reservedBy = c.id;
-    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y };
+    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y, zoneObjectId: destination.objectId || null };
     c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
     c.work = 0;
     c.note = destination.type === 'dumping' ? 'Indo recolher entulho' : 'Indo buscar item solto';
@@ -342,7 +390,7 @@
       task.x = task.storageX;
       task.y = task.storageY;
       c.path = findPath(c.x, c.y, task.storageX, task.storageY);
-      c.note = task.zoneType === 'dumping' ? 'Levando entulho ao descarte' : 'Levando item ao estoque';
+      c.note = task.zoneType === 'dumping' ? 'Levando entulho ao descarte' : task.zoneType === 'storage_object' ? 'Levando item ao depósito' : 'Levando item ao estoque';
       return true;
     }
     if (task.phase === 'dropoff') {
@@ -352,7 +400,8 @@
       } else {
         if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
         if (cargo?.item && cargo.amount && typeof addItems === 'function') addItems({ [cargo.item]: cargo.amount });
-        log(`${c.name} levou ${cargo?.amount || 0} ${cargo?.label || 'item'} para a zona de armazenamento.`);
+        const targetLabel = task.zoneType === 'storage_object' ? 'o depósito' : 'a zona de armazenamento';
+        log(`${c.name} levou ${cargo?.amount || 0} ${cargo?.label || 'item'} para ${targetLabel}.`);
       }
       c.carrying = null;
       c.task = null;

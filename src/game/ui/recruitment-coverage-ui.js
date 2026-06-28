@@ -13,7 +13,7 @@
   }
 
   function coverageLabel(level) {
-    return ({ high: 'FORTE', ok: 'ESTÁVEL', warn: 'BAIXA', gap: 'GAP' })[level] || 'N/D';
+    return ({ high: 'FORTE', ok: 'ESTÁVEL', warn: 'BAIXA', gap: 'FALHA' })[level] || 'N/D';
   }
 
   function coverageWarning(level, key) {
@@ -49,13 +49,13 @@
   }
 
   function renderRecruitmentCoveragePanel() {
-    return `<section class="squad-sync-panel" aria-label="Sincronia operacional da equipe">
+    return `<section class="squad-sync-panel" aria-label="Cobertura operacional da equipe">
       <div class="squad-sync-head">
         <div>
-          <span>SINCRONIA OPERACIONAL</span>
-          <b>Compatibilidade de Esquadrão</b>
+          <span>COBERTURA OPERACIONAL</span>
+          <b>Equilíbrio da Equipe</b>
         </div>
-        <em>${(colonistCandidates || []).length} registros</em>
+        <em>${(colonistCandidates || []).length} colono${(colonistCandidates || []).length === 1 ? '' : 's'}</em>
       </div>
       <div class="squad-sync-grid">${renderCoverageBars()}</div>
       <div class="squad-sync-alerts">${renderCoverageAlerts()}</div>
@@ -69,7 +69,6 @@
     style.textContent = `
       .squad-sync-panel {
         grid-area: coverage;
-        grid-column: auto;
         border: 1px solid rgba(125, 211, 252, .16);
         border-radius: 18px;
         background:

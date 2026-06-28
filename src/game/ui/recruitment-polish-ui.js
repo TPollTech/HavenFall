@@ -20,6 +20,11 @@
         grid-template-rows: auto minmax(0, 1fr) 58px !important;
       }
 
+      .colonist-select-screen .colonist-cards {
+        grid-template-columns: minmax(420px, .95fr) minmax(560px, 1.05fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
+      }
+
       .colonist-select-screen .screen-title-row {
         padding-right: 0 !important;
       }
@@ -99,13 +104,69 @@
         filter: drop-shadow(0 0 5px rgba(167, 243, 208, .30));
       }
 
-      .bio-chart-panel {
-        grid-template-rows: auto minmax(160px, .8fr) auto auto !important;
+      .bio-dossier-active .bio-dossier-body {
+        grid-template-columns: minmax(220px, .86fr) minmax(320px, 1.14fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        gap: 12px !important;
+        overflow: hidden !important;
+      }
+
+      .bio-dossier-active .bio-candidate-file {
+        grid-column: 1;
+        grid-row: 1;
+        grid-template-columns: 96px minmax(0, 1fr);
+        align-items: center;
+        align-content: start;
+        padding: 10px !important;
+      }
+
+      .bio-dossier-active .bio-scan-frame {
+        grid-row: span 4;
+        min-height: 104px;
+      }
+
+      .bio-dossier-active .bio-scan-frame img {
+        width: 68px;
+        height: 68px;
+      }
+
+      .bio-dossier-active .bio-chart-panel {
+        grid-column: 1;
+        grid-row: 2;
+        grid-template-rows: auto minmax(120px, 1fr) auto !important;
+        min-height: 0;
         overflow: hidden;
+        padding: 10px !important;
+      }
+
+      .bio-dossier-active .bio-controls-panel {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        overflow: hidden !important;
+        padding: 10px !important;
+        gap: 8px !important;
+      }
+
+      .bio-dossier-active .bio-spider-wrap {
+        min-height: 138px !important;
+      }
+
+      .bio-dossier-active .bio-spider-chart {
+        width: min(174px, 100%) !important;
+        max-height: 174px !important;
+      }
+
+      .bio-dossier-active .bio-diagnostic-box {
+        padding: 8px !important;
+      }
+
+      .bio-dossier-active .bio-diagnostic-box b {
+        font-size: 11px !important;
+        line-height: 1.25 !important;
       }
 
       .bio-clinical-panel {
-        display: grid;
+        display: none;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
       }
@@ -150,15 +211,14 @@
         border-color: rgba(167, 243, 208, .16) !important;
       }
 
-      .bio-controls-panel {
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-        max-width: 100%;
-      }
-
       .bio-select-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         max-width: 100%;
+      }
+
+      .bio-dossier-active .bio-select-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
       }
 
       .bio-select-grid label,
@@ -167,17 +227,42 @@
         max-width: 100% !important;
       }
 
+      .bio-select-grid label {
+        gap: 3px !important;
+        font-size: 9px !important;
+      }
+
       .bio-select-grid select {
-        padding: 8px 9px !important;
-        font-size: 11px !important;
+        min-height: 30px !important;
+        padding: 5px 8px !important;
+        font-size: 10px !important;
         text-overflow: ellipsis;
       }
 
       .bio-skill-row {
-        grid-template-columns: minmax(70px, 88px) 26px minmax(0, 1fr) 26px !important;
-        gap: 6px !important;
-        padding: 6px !important;
+        grid-template-columns: minmax(78px, 92px) 24px minmax(0, 1fr) 24px !important;
+        gap: 5px !important;
+        padding: 3px 6px !important;
         max-width: 100%;
+        min-height: 30px !important;
+      }
+
+      .bio-skill-row button {
+        min-height: 22px !important;
+        height: 22px !important;
+        padding: 0 !important;
+      }
+
+      .bio-skill-console {
+        gap: 5px !important;
+      }
+
+      .bio-skill-row > span {
+        font-size: 10px !important;
+      }
+
+      .bio-skill-row .builder-skill-bar {
+        height: 10px !important;
       }
 
       .bio-skill-row .builder-skill-bar {
@@ -225,6 +310,27 @@
       }
 
       @media (max-width: 1180px) {
+        .colonist-select-screen .colonist-cards {
+          grid-template-columns: minmax(300px, .9fr) minmax(440px, 1.1fr) !important;
+        }
+
+        .bio-dossier-active .bio-dossier-body {
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto auto auto !important;
+          overflow: auto !important;
+        }
+
+        .bio-dossier-active .bio-candidate-file,
+        .bio-dossier-active .bio-chart-panel,
+        .bio-dossier-active .bio-controls-panel {
+          grid-column: 1 !important;
+          grid-row: auto !important;
+        }
+
+        .bio-dossier-active .bio-controls-panel {
+          overflow: visible !important;
+        }
+
         .bio-clinical-panel {
           grid-template-columns: 1fr;
         }

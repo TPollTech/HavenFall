@@ -94,6 +94,7 @@
   }
 
   function buildPlanetScanWorldgenProfile(config = {}) {
+    config = typeof normalizeNewGameConfig === 'function' ? normalizeNewGameConfig(config) : { ...config };
     const rand = randFor(config, 'worldgen-profile-v1');
     const stats = buildBiomeStats(config, rand);
     const dominantBiome = strongest(stats);
@@ -126,6 +127,16 @@
     return { ...config, planetScan: profile };
   }
 
+  function ensurePlanetScanOnConfig(config = {}) {
+    const normalized = typeof normalizeNewGameConfig === 'function' ? normalizeNewGameConfig(config) : { ...config };
+    const current = normalized.planetScan;
+    if (current?.version === 'planet-scan-profile-v1' && (!current.seed || current.seed === normalized.seed)) {
+      return { ...normalized, planetScan: current };
+    }
+    return attachPlanetScanToConfig(normalized);
+  }
+
   window.buildPlanetScanWorldgenProfile = buildPlanetScanWorldgenProfile;
   window.attachPlanetScanToConfig = attachPlanetScanToConfig;
+  window.ensurePlanetScanOnConfig = ensurePlanetScanOnConfig;
 })();

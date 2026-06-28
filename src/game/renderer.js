@@ -337,10 +337,22 @@ const OBJECT_TARGET_H = {
   supply_crate: TILE * 1.1, wall: TILE * 1.5, door: TILE * 1.35, bench: TILE * 1.0, stool: TILE * 1.0
 };
 
+const OBJECT_TARGET_W = {
+  bench: TILE * 0.90
+};
+
 function objectScale(type, img) {
   const imgH = img?.naturalHeight || img?.height || 0;
-  if (imgH > 0) return objectScaleFromHeight(type, imgH);
+  const imgW = img?.naturalWidth || img?.width || 0;
+  if (imgH > 0) return objectScaleForBounds(type, imgW, imgH);
   return ({ tree:0.54, bush:0.42, rock:0.38, ore:0.34, logs:0.35, berry:0.42, crop:0.22, bed:0.28, campfire:0.30, forge:0.22, stove:0.24, med_station:0.24, research_desk:0.22, crate:0.34, ruin:0.30, cache:0.32, supply_crate:0.32, wall:0.29, door:0.31, bench:0.20, stool:0.45 })[type] || 0.35;
+}
+
+function objectScaleForBounds(type, imgW, imgH) {
+  const heightScale = objectScaleFromHeight(type, imgH);
+  const targetW = OBJECT_TARGET_W[type];
+  if (!targetW || !imgW) return heightScale;
+  return Math.min(heightScale, targetW / imgW);
 }
 
 function objectScaleFromHeight(type, imgH) {

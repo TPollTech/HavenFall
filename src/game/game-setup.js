@@ -1,7 +1,7 @@
 'use strict';
 
 var defaultNewGameConfig = Object.freeze({
-  colonyName: 'First Haven',
+  colonyName: 'Primeiro Refúgio',
   seed: '',
   difficulty: 'normal',
   colonistCount: 3,
@@ -9,6 +9,7 @@ var defaultNewGameConfig = Object.freeze({
   eventIntensity: 'normal',
   mapSize: 'giant'
 });
+const MAX_STARTING_COLONISTS = 8;
 
 function loadSettings() {
   try {
@@ -59,48 +60,73 @@ function setupInputValue(key, fallback = '') {
 }
 
 function clampColonistCount(value) {
-  return Math.max(1, Math.min(50, Math.floor(Number(value) || 3)));
+  return Math.max(1, Math.min(MAX_STARTING_COLONISTS, Math.floor(Number(value) || 3)));
+}
+
+function normalizeSeedValue(value) {
+  return String(value || '').trim().replace(/\s+/g, '-').toUpperCase();
+}
+
+function normalizeColonyName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 32) || defaultNewGameConfig.colonyName;
+}
+
+function normalizeNewGameConfig(config = {}) {
+  const seed = normalizeSeedValue(config.seed) || generateRandomSeed();
+  return {
+    ...defaultNewGameConfig,
+    ...config,
+    colonyName: normalizeColonyName(config.colonyName),
+    seed,
+    difficulty: ['easy', 'normal', 'hard', 'hardcore'].includes(config.difficulty) ? config.difficulty : defaultNewGameConfig.difficulty,
+    colonistCount: clampColonistCount(config.colonistCount),
+    resourcesPreset: ['scarce', 'standard', 'rich'].includes(config.resourcesPreset) ? config.resourcesPreset : defaultNewGameConfig.resourcesPreset,
+    eventIntensity: ['low', 'normal', 'high'].includes(config.eventIntensity) ? config.eventIntensity : defaultNewGameConfig.eventIntensity,
+    mapSize: ['large', 'huge', 'giant', 'infinite_chunks'].includes(config.mapSize) ? config.mapSize : defaultNewGameConfig.mapSize
+  };
 }
 
 function readNewGameConfig() {
-  const seed = setupInputValue('worldSeed').trim() || generateRandomSeed();
-  return {
-    colonyName: setupInputValue('colonyName').trim() || 'First Haven',
-    seed,
+  return normalizeNewGameConfig({
+    colonyName: setupInputValue('colonyName').trim() || defaultNewGameConfig.colonyName,
+    seed: setupInputValue('worldSeed').trim(),
     difficulty: setupInputValue('difficulty', 'normal'),
     colonistCount: clampColonistCount(setupInputValue('colonistCount', 3)),
     resourcesPreset: setupInputValue('resourcesPreset', 'standard'),
     eventIntensity: setupInputValue('eventIntensity', 'normal'),
     mapSize: setupInputValue('mapSize', 'giant')
-  };
+  });
 }
 
 function writeNewGameConfig(config = defaultNewGameConfig) {
-  if (dom.inputs.colonyName) dom.inputs.colonyName.value = config.colonyName || 'First Haven';
-  if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = config.seed || generateRandomSeed();
-  if (dom.inputs.difficulty) dom.inputs.difficulty.value = config.difficulty || 'normal';
-  if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(clampColonistCount(config.colonistCount || 3));
-  if (dom.inputs.resourcesPreset) dom.inputs.resourcesPreset.value = config.resourcesPreset || 'standard';
-  if (dom.inputs.eventIntensity) dom.inputs.eventIntensity.value = config.eventIntensity || 'normal';
-  if (dom.inputs.mapSize) dom.inputs.mapSize.value = config.mapSize || 'giant';
+  const normalized = normalizeNewGameConfig(config);
+  if (dom.inputs.colonyName) dom.inputs.colonyName.value = normalized.colonyName;
+  if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = normalized.seed;
+  if (dom.inputs.difficulty) dom.inputs.difficulty.value = normalized.difficulty;
+  if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(normalized.colonistCount);
+  if (dom.inputs.resourcesPreset) dom.inputs.resourcesPreset.value = normalized.resourcesPreset;
+  if (dom.inputs.eventIntensity) dom.inputs.eventIntensity.value = normalized.eventIntensity;
+  if (dom.inputs.mapSize) dom.inputs.mapSize.value = normalized.mapSize;
   updateSetupSummary();
+  return normalized;
 }
 
 function updateSetupSummary() {
   if (!dom.setupSummary) return;
-  dom.setupSummary.remove();
-  dom.setupSummary = null;
+  const cfg = readNewGameConfigSafe();
+  dom.setupSummary.innerHTML = `<b>Resumo da expedição:</b> ${escapeHtml(cfg.colonyName)} · Seed <b>${escapeHtml(cfg.seed)}</b> · ${labelDifficulty(cfg.difficulty)} · ${cfg.colonistCount} colono${cfg.colonistCount === 1 ? '' : 's'} · mapa ${labelMapSize(cfg.mapSize)} · eventos ${labelEventIntensity(cfg.eventIntensity)} · recursos ${labelResourcesPreset(cfg.resourcesPreset)}.`;
 }
 
 function readNewGameConfigSafe() {
   try { return readNewGameConfig(); }
-  catch (_) { return { ...defaultNewGameConfig, seed: '' }; }
+  catch (_) { return normalizeNewGameConfig(defaultNewGameConfig); }
 }
 
 function labelDifficulty(v) {
   return ({ easy: 'Fácil', normal: 'Normal', hard: 'Difícil', hardcore: 'Hardcore' })[v] || v;
 }
 function labelEventIntensity(v) { return ({ low: 'baixa', normal: 'normal', high: 'alta' })[v] || v; }
+function labelResourcesPreset(v) { return ({ scarce: 'escassos', standard: 'padrão', rich: 'abundantes' })[v] || v; }
 function labelMapSize(v) {
   return ({
     large: 'grande',

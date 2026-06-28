@@ -36,13 +36,13 @@
           <div>
             <div class="kicker">Novo jogo</div>
             <h1>Configuração da Colônia</h1>
-            <p>Defina as regras da sandbox, o tamanho do mundo e quantos sobreviventes começam no vale.</p>
+            <p>Defina o setor de pouso, o risco da expedição e a equipe inicial.</p>
           </div>
           <button id="setupBackBtn" class="secondary">Voltar</button>
         </div>
         <div class="form-grid setup-form-grid">
           <label>Nome da colônia
-            <input id="colonyNameInput" type="text" value="First Haven" maxlength="32" />
+            <input id="colonyNameInput" type="text" value="Primeiro Refúgio" maxlength="32" />
           </label>
           <label>Seed do mundo
             <div class="inline-field">
@@ -58,8 +58,8 @@
               <option value="hardcore">Hardcore (Ironman)</option>
             </select>
           </label>
-          <label>Quantidade inicial de colonos
-            <input id="colonist-count" type="number" min="1" max="50" value="3" inputmode="numeric" />
+          <label>Colonos iniciais
+            <input id="colonist-count" type="number" min="1" max="8" value="3" inputmode="numeric" />
           </label>
           <label>Recursos iniciais
             <select id="resourcesPresetSelect">
@@ -86,6 +86,8 @@
           </label>
         </div>
 
+        <div id="setupSummary" class="setup-summary" aria-live="polite"></div>
+
         <div class="menu-actions row">
           <button id="setupNextBtn">Iniciar Varredura Planetária</button>
         </div>
@@ -105,13 +107,13 @@
             <div>
               <div class="kicker">Varredura Planetária</div>
               <h1>Análise de Setor</h1>
-              <p>Prévia visual da zona de pouso. Nesta passada, a interface é apenas uma camada de leitura: a geração real do mapa ainda continua intacta.</p>
+              <p>Leitura orbital do setor que será usado pela geração do mapa, clima, recursos e pontos de interesse.</p>
             </div>
-            <div class="scan-status-pill">Scan in progress</div>
+            <div class="scan-status-pill">Leitura pronta</div>
           </div>
 
           <div class="scan-signature-card">
-            <b id="scanSectorTitle">First Haven</b>
+            <b id="scanSectorTitle">Primeiro Refúgio</b>
             <small id="scanSectorMeta">Seed · setor · intensidade</small>
           </div>
 
@@ -132,7 +134,7 @@
 
           <div class="scan-actions">
             <button id="scanBackBtn" type="button">Voltar</button>
-            <button id="scanRefreshBtn" type="button">Recalibrar leitura</button>
+            <button id="scanRefreshBtn" type="button">Gerar outro setor</button>
             <button id="scanProceedBtn" type="button" class="primary">Continuar para Colonos</button>
           </div>
         </div>
@@ -145,7 +147,7 @@
           <div>
             <div class="kicker">Seleção de colonos</div>
             <h1>Escolha quem vai começar</h1>
-            <p>Distribua pontos, escolha traços e monte a equipe inicial da colônia.</p>
+            <p>Revise papéis, aptidões e cobertura operacional antes do pouso.</p>
           </div>
           <button id="colonistBackBtn" class="secondary">Voltar</button>
         </div>

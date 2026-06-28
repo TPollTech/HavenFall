@@ -150,7 +150,7 @@ function updateUI(force = false) {
     dom.speedLabel.textContent = state.paused || appScreen === SCREEN.PAUSED ? 'Pausado' : `${state.speed}x`;
     dom.speedLabel.title = `Zoom ${Math.round(camera.zoom * 100)}% · WASD/setas movem a câmera · Shift acelera · roda do mouse/+/- ajusta o zoom · G alterna a grade`;
   }
-  if (dom.colonyTitle) dom.colonyTitle.textContent = state.config?.colonyName || 'First Haven';
+  if (dom.colonyTitle) dom.colonyTitle.textContent = state.config?.colonyName || defaultNewGameConfig.colonyName;
   if (dom.gameConfigLabel) dom.gameConfigLabel.textContent = '';
   dom.resFood.textContent = Math.floor(state.resources.food || 0);
   dom.resWood.textContent = Math.floor(state.resources.wood || 0);

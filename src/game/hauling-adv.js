@@ -62,6 +62,31 @@ function canColonistAutoHandle(c) {
   return getHaulingPriority(c) > 0;
 }
 
+function haulingDestinationFor(obj, c, destination = null) {
+  if (destination) return { ...destination, type: destination.type || 'storage' };
+  if (typeof zoneSystem === 'undefined') return null;
+  if (typeof zoneSystem.findFreeStorageDestinationFor === 'function') {
+    return zoneSystem.findFreeStorageDestinationFor(obj, c?.x ?? obj?.x ?? 0, c?.y ?? obj?.y ?? 0);
+  }
+  const tile = zoneSystem.findFreeStorageTileFor?.(obj) || zoneSystem.findFreeStorageTile?.();
+  return tile ? { ...tile, type: tile.type || 'storage' } : null;
+}
+
+function haulingCargoForObject(obj, c) {
+  if (!obj) return null;
+  if (obj.type === 'rubble') return { kind: 'debris', label: 'entulho', amount: 1, removeObject: true };
+  if (obj.type === 'logs') {
+    const available = Math.max(1, Number(obj.amount || 5));
+    const amount = Math.min(getHaulAmountForColonist(c, 'wood'), available);
+    return { resource: 'wood', amount, label: 'madeira', remaining: available - amount };
+  }
+  if (obj.itemKey) {
+    const label = typeof itemDefs !== 'undefined' ? itemDefs?.[obj.itemKey]?.label || obj.itemKey : obj.itemKey;
+    return { item: obj.itemKey, amount: Math.max(1, Number(obj.amount || 1)), label, removeObject: true };
+  }
+  return null;
+}
+
 function equipAvailableHandcart(c) {
   if (!c || !canColonistAutoHandle(c) || !isResearched('heavy_hauling')) return false;
   if ((state.items?.handcart || 0) <= 0) return false;
@@ -71,14 +96,16 @@ function equipAvailableHandcart(c) {
 function installHaulingZonePatch() {
   if (window.HavenfallContext?.haulingZonePatchInstalled || typeof assignHaulTask !== 'function' || typeof processHaulTask !== 'function') return;
 
-  assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile) {
-    if (!c || !obj || !storageTile || !canColonistAutoHandle(c)) return false;
+  assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile = null) {
+    if (!c || !obj || !canColonistAutoHandle(c)) return false;
+    const destination = haulingDestinationFor(obj, c, storageTile);
+    if (!destination) return false;
     const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
     obj.reservedBy = c.id;
-    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: storageTile.x, storageY: storageTile.y, zoneType: 'storage', zoneX: storageTile.x, zoneY: storageTile.y };
+    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y, zoneObjectId: destination.objectId || null };
     c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
     c.work = 0;
-    c.note = `Indo buscar toras soltas · carga ${getColonistCurrentLoadCount(c)}/${getColonistMaxCapacity(c)}`;
+    c.note = `Indo buscar item solto - carga ${getColonistCurrentLoadCount(c)}/${getColonistMaxCapacity(c)}`;
     return true;
   };
 
@@ -90,22 +117,35 @@ function installHaulingZonePatch() {
     if (task.phase === 'pickup') {
       const obj = state.objects.find(o => o.id === task.objId);
       if (!obj) { c.task = null; c.note = 'Ocioso'; return true; }
-      const amount = getHaulAmountForColonist(c, 'wood');
-      c.carrying = { resource: 'wood', amount, label: 'toras' };
-      state.objects = state.objects.filter(o => o.id !== obj.id);
-      if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+      const cargo = haulingCargoForObject(obj, c);
+      if (!cargo) { obj.reservedBy = null; c.task = null; c.note = 'Ocioso'; return true; }
+      c.carrying = cargo;
+      if (cargo.remaining > 0) {
+        obj.amount = cargo.remaining;
+        obj.reservedBy = null;
+      } else {
+        state.objects = state.objects.filter(o => o.id !== obj.id);
+        if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+      }
       task.phase = 'dropoff';
       task.x = task.storageX;
       task.y = task.storageY;
       c.path = findPath(c.x, c.y, task.storageX, task.storageY);
-      c.note = `Levando toras ao armazenamento · ${amount}/${getColonistMaxCapacity(c)}`;
+      const targetLabel = task.zoneType === 'storage_object' ? 'depósito' : task.zoneType === 'dumping' ? 'descarte' : 'armazenamento';
+      c.note = `Levando ${cargo.label} ao ${targetLabel} - ${cargo.amount}/${getColonistMaxCapacity(c)}`;
       return true;
     }
 
     if (task.phase === 'dropoff') {
       const cargo = c.carrying;
-      if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
-      log(`${c.name} levou ${cargo?.amount || 0} madeira para a zona de armazenamento.`);
+      if (task.zoneType === 'dumping' || cargo?.kind === 'debris') {
+        log(`${c.name} descartou ${cargo?.label || 'entulho'} na zona de descarte.`);
+      } else {
+        if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
+        if (cargo?.item && cargo.amount && typeof addItems === 'function') addItems({ [cargo.item]: cargo.amount });
+        const targetLabel = task.zoneType === 'storage_object' ? 'o depósito' : 'a zona de armazenamento';
+        log(`${c.name} levou ${cargo?.amount || 0} ${cargo?.label || 'item'} para ${targetLabel}.`);
+      }
       c.carrying = null;
       c.task = null;
       c.work = 0;

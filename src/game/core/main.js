@@ -15,7 +15,7 @@ function bootGame() {
       if (typeof setupEventListeners === 'function') setupEventListeners();
       if (typeof writeNewGameConfig === 'function') writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
 
-      state = createInitialState({ ...defaultNewGameConfig, colonyName: 'First Haven', seed: 'preview-menu' });
+      state = createInitialState({ ...defaultNewGameConfig, colonyName: defaultNewGameConfig.colonyName, seed: 'preview-menu' });
       activeSession = false;
 
       if (typeof ensureResearchState === 'function') ensureResearchState();

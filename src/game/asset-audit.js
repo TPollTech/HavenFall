@@ -3,7 +3,7 @@
 const RAW_ASSET_PIPELINE_NOTE = 'Assets brutos em assets/raw são fonte de produção. O runtime carrega sprites organizados em assets/mobs, assets/tiles, assets/vfx e assets/ui via assets/manifest.js.';
 
 const assetAudit = {
-  available: new Set(assetNames),
+  available: new Set([...assetNames, ...Object.keys(window.HavenfallAssets?.assets || {})]),
   rawSourcePath: 'assets/raw',
   rawSourceOnly: true,
   pipelineNote: RAW_ASSET_PIPELINE_NOTE,
@@ -22,7 +22,7 @@ const assetAudit = {
       willow_tree: { candidates: ['willow_tree'], fallback: 'tree', rawRequired: true }
     },
     workstations: {
-      forge: { candidates: ['forge', 'advanced_forge'], fallback: 'stove', rawRequired: true },
+      forge: { candidates: ['edificios_forge', 'forge', 'advanced_forge'], fallback: 'edificios_forge', rawRequired: false },
       sewing_table: { candidates: ['sewing_table'], fallback: 'table_wood', rawRequired: true },
       smokehouse: { candidates: ['smokehouse'], fallback: 'campfire', rawRequired: true }
     },

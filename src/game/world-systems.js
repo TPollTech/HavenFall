@@ -227,6 +227,15 @@ function taskPriorityOrder(c) {
   ].filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
 }
 
+function storageDestinationForPriority(obj, c = null) {
+  if (typeof zoneSystem === 'undefined' || !obj) return null;
+  if (typeof zoneSystem.findFreeStorageDestinationFor === 'function') {
+    return zoneSystem.findFreeStorageDestinationFor(obj, c?.x ?? obj.x, c?.y ?? obj.y);
+  }
+  const tile = zoneSystem.findFreeStorageTileFor?.(obj) || zoneSystem.findFreeStorageTile?.();
+  return tile ? { ...tile, type: tile.type || 'storage' } : null;
+}
+
 function canDoPriorityTask(c, key) {
   if (taskPriorityValue(c, key) <= 0) return false;
   if (key === 'gather') {
@@ -239,8 +248,11 @@ function canDoPriorityTask(c, key) {
     return !!state.research?.current && !!state.objects.find(o => o.type === 'research_desk');
   }
   if (key === 'handle') {
-    const haulReady = typeof zoneSystem !== 'undefined' && zoneSystem?.count?.('storage') && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function' && findLooseHaulTarget();
-    return !!haulReady;
+    if (typeof findLooseHaulTarget !== 'function' || typeof assignHaulTask !== 'function') return false;
+    const target = findLooseHaulTarget();
+    if (!target) return false;
+    if (typeof zoneSystem !== 'undefined' && typeof zoneSystem.hasStorageDestination === 'function') return zoneSystem.hasStorageDestination(target);
+    return !!storageDestinationForPriority(target, c);
   }
   return false;
 }
@@ -265,10 +277,10 @@ function assignPriorityTask(c, key) {
   }
 
   if (key === 'handle') {
-    if (typeof zoneSystem !== 'undefined' && zoneSystem?.count?.('storage') && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function') {
+    if (typeof zoneSystem !== 'undefined' && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function') {
       const target = findLooseHaulTarget();
-      const storageTile = zoneSystem.findFreeStorageTile?.();
-      if (target && storageTile && assignHaulTask(c, target, storageTile)) return true;
+      const destination = storageDestinationForPriority(target, c);
+      if (target && destination && assignHaulTask(c, target, destination)) return true;
     }
   }
 

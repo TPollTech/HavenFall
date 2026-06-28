@@ -64,10 +64,10 @@ function characterBuilderCard(c, i) {
   return `<article class="colonist-card builder-card bio-dossier-card bio-dossier-active ${valid ? '' : 'invalid'}" data-builder-index="${i}">
     <div class="bio-dossier-header">
       <div class="bio-file-id">
-        <span>PRONTUÁRIO ATIVO</span>
-        <b>HF-INTAKE-${String(i + 1).padStart(2, '0')}</b>
+        <span>COLONO SELECIONADO</span>
+        <b>CANDIDATO ${String(i + 1).padStart(2, '0')}</b>
       </div>
-      <div class="bio-status ${valid ? 'ok' : 'danger'}">${valid ? 'APTO PARA TRIAGEM' : 'REVISÃO NECESSÁRIA'}</div>
+      <div class="bio-status ${valid ? 'ok' : 'danger'}">${valid ? 'APTO PARA O POUSO' : 'REVISÃO NECESSÁRIA'}</div>
     </div>
 
     <div class="bio-dossier-body">
@@ -80,7 +80,7 @@ function characterBuilderCard(c, i) {
         <input class="builder-name-input bio-name-input" value="${escapeHtml(c.name)}" maxlength="18" data-builder-field="name" data-builder-index="${i}" aria-label="Nome do colono">
         <div class="bio-candidate-meta">
           <span>${escapeHtml(c.age || '?')} anos · ${escapeHtml(c.role || 'Candidato')}</span>
-          <span>Preferência: ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</span>
+          <span>Prioridade: ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</span>
           <span>${escapeHtml(bioTraitLine(c))}</span>
         </div>
         <div class="builder-points bio-points ${remaining < 0 ? 'danger' : remaining > 0 ? 'warn' : 'ok'}">${remaining} ponto${Math.abs(remaining) === 1 ? '' : 's'} restante${Math.abs(remaining) === 1 ? '' : 's'}</div>
@@ -101,10 +101,10 @@ function characterBuilderCard(c, i) {
 
       <section class="bio-controls-panel">
         <div class="builder-select-grid bio-select-grid">
-          <label>Classe<select data-builder-preset="${i}">${presetOptions}</select></label>
-          <label>Papel<select data-builder-field="role" data-builder-index="${i}">${roleOptions}</select></label>
-          <label>Preferência<select data-builder-field="workPreferenceId" data-builder-index="${i}">${workOptions}</select></label>
-          <label>Modelo<select data-builder-field="sprite" data-builder-index="${i}">${spriteOptions}</select></label>
+          <label>Perfil<select data-builder-preset="${i}">${presetOptions}</select></label>
+          <label>Função<select data-builder-field="role" data-builder-index="${i}">${roleOptions}</select></label>
+          <label>Prioridade<select data-builder-field="workPreferenceId" data-builder-index="${i}">${workOptions}</select></label>
+          <label>Visual<select data-builder-field="sprite" data-builder-index="${i}">${spriteOptions}</select></label>
           <label>Traço positivo<select data-builder-field="positiveTraitId" data-builder-index="${i}">${positiveOptions}</select></label>
           <label>Traço negativo<select data-builder-field="negativeTraitId" data-builder-index="${i}">${negativeOptions}</select></label>
         </div>
@@ -112,7 +112,7 @@ function characterBuilderCard(c, i) {
       </section>
     </div>
 
-    <div class="builder-summary bio-dossier-footer ${valid ? '' : 'danger'}">PROTOCOLO HF-RECRUIT · Pool ${used}/${CHARACTER_BUILDER_POINTS} · mínimo ${CHARACTER_BUILDER_MIN_SKILL}, máximo ${CHARACTER_BUILDER_MAX_SKILL} por competência.</div>
+    <div class="builder-summary bio-dossier-footer ${valid ? '' : 'danger'}">Pontos de aptidão ${used}/${CHARACTER_BUILDER_POINTS} · mínimo ${CHARACTER_BUILDER_MIN_SKILL}, máximo ${CHARACTER_BUILDER_MAX_SKILL} por competência.</div>
   </article>`;
 }
 
@@ -121,14 +121,14 @@ function personnelFileCard(c, i, valid, remaining) {
   const [bestKey, bestValue] = entries[0] || ['coleta', 1];
   const bestLabel = COLONIST_SKILL_LABELS[bestKey] || bestKey;
   return `<button type="button" class="colonist-card builder-card personnel-file-card ${valid ? '' : 'invalid'}" data-recruitment-candidate="${i}" aria-label="Abrir arquivo de ${escapeHtml(c.name)}">
-    <span class="personnel-file-index">HF-${String(i + 1).padStart(2, '0')}</span>
+    <span class="personnel-file-index">C-${String(i + 1).padStart(2, '0')}</span>
     <span class="personnel-file-avatar"><img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt=""></span>
     <span class="personnel-file-main">
       <b>${escapeHtml(c.name || `Candidato ${i + 1}`)}</b>
       <small>${escapeHtml(c.role || 'Candidato')} · ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</small>
       <em><span>${escapeHtml(bestLabel)}</span>${proficiencyMeter(bestValue)}</em>
     </span>
-    <span class="personnel-file-status ${valid ? 'ok' : 'danger'}">${valid ? 'DISPONÍVEL' : 'REVISAR'}</span>
+    <span class="personnel-file-status ${valid ? 'ok' : 'danger'}">${valid ? 'APTO' : 'REVISAR'}</span>
     <span class="personnel-file-points ${remaining < 0 ? 'danger' : remaining > 0 ? 'warn' : 'ok'}">${remaining}</span>
   </button>`;
 }

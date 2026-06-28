@@ -11,7 +11,7 @@ const baseObjectDefs = {
   crop: { name: 'plantação', img: 'crop_patch', blocks: false, gather: { food: 10 }, work: 2.4 },
   bed: { name: 'cama', img: 'bed_single', blocks: true, comfort: 1.25 },
   campfire: { name: 'fogueira', img: 'campfire', blocks: true, warmth: 1 },
-  forge: { name: 'forja de metal', img: 'stove', blocks: true, forge: { input: { stone: 3 }, output: { metal: 1 } }, work: 4.5 },
+  forge: { name: 'forja de metal', img: 'edificios_forge', blocks: true, forge: { input: { stone: 3 }, output: { metal: 1 } }, work: 4.5 },
   stove: { name: 'fogão', img: 'stove', blocks: true, cook: { input: { food: 2, wood: 1 }, output: { food: 4 } }, work: 3.8 },
   med_station: { name: 'estação médica', img: 'med_station', blocks: true, heal: { input: { medicine: 1 }, amount: 28 }, work: 4.2 },
   research_desk: { name: 'mesa de pesquisa', img: 'research_desk', blocks: true, research: 1, work: 5.0 },

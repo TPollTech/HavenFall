@@ -167,7 +167,7 @@
     return ({
       wall: 'Define defesa e layout da base.',
       door: 'Cria passagem controlada.',
-      crate: 'Organiza recursos e loot.',
+      crate: 'Destino físico para transporte automático de recursos e loot.',
       bed: 'Recuperação e descanso.',
       campfire: 'Fogo, calor e sobrevivência inicial.',
       bench: 'Base de ferramentas e armas.',

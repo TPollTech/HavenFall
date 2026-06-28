@@ -29,7 +29,7 @@ function renderColonistSelection() {
     const dossier = characterBuilderCard(activeCandidate, activeIndex);
     const coverage = typeof renderRecruitmentCoveragePanel === 'function' ? renderRecruitmentCoveragePanel() : '';
 
-    dom.colonistCards.innerHTML = `<div class="personnel-files-column"><div class="personnel-files-title"><span>ARQUIVOS DE PESSOAL</span><b>${colonistCandidates.length} registros</b></div>${files}</div><div class="dossier-stage">${dossier}</div>${coverage}`;
+    dom.colonistCards.innerHTML = `<div class="personnel-files-column"><div class="personnel-files-title"><span>EQUIPE INICIAL</span><b>${colonistCandidates.length} colono${colonistCandidates.length === 1 ? '' : 's'}</b></div>${files}</div><div class="dossier-stage">${dossier}</div>${coverage}`;
     return;
   }
 

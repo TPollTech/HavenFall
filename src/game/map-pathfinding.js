@@ -185,7 +185,7 @@ function equipmentCombatPower(c) {
   else if (tool?.combat) power += tool.combat * 0.55;
   if (offhand?.scare) power += offhand.scare;
   if (c.skills?.defesa) power += c.skills.defesa * 0.08;
-  if (c.role === 'Faz-tudo') power += 0.25;
+  if (c.role === 'Faz-tudo' || c.role === 'Generalista') power += 0.25;
   return power;
 }
 

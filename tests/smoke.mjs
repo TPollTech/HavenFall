@@ -64,6 +64,8 @@ async function main() {
     await page.click('#newGameBtn');
     await page.waitForSelector('#newGameSetupScreen.active', { timeout: 5000 });
     await page.click('#setupNextBtn');
+    await page.waitForSelector('#planetScanScreen.active #scanProceedBtn', { timeout: 5000 });
+    await page.click('#scanProceedBtn');
     await page.waitForSelector('#colonistSelectScreen.active .colonist-card', { timeout: 5000 });
     await page.click('#startSelectedGameBtn');
     await page.waitForSelector('#gameScreen.active', { timeout: 15000 });

@@ -1,15 +1,16 @@
 'use strict';
 
 function defaultPriorityForRole(role) {
-  if (role === 'Coletora') return 'gather';
+  if (role === 'Coletora' || role === 'Coletor') return 'gather';
   if (role === 'Construtor') return 'build';
+  if (role === 'Generalista') return 'gather';
   return 'defense';
 }
 
 function roleBonusText(c) {
-  if (c.role === 'Coletora') return '+25% em coleta';
+  if (c.role === 'Coletora' || c.role === 'Coletor') return '+25% em coleta';
   if (c.role === 'Construtor') return '+25% em construção';
-  if (c.role === 'Faz-tudo') return '+10% em tarefas gerais';
+  if (c.role === 'Faz-tudo' || c.role === 'Generalista') return '+10% em tarefas gerais';
   return 'sem bônus';
 }
 
@@ -24,9 +25,9 @@ function ensureEquipment(c) {
 function workRate(c, kind, target = null) {
   ensureEquipment(c);
   let rate = 1;
-  if (c.role === 'Coletora' && kind === 'gather') rate += 0.25;
+  if ((c.role === 'Coletora' || c.role === 'Coletor') && kind === 'gather') rate += 0.25;
   if (c.role === 'Construtor' && kind === 'build') rate += 0.25;
-  if (c.role === 'Faz-tudo' && ['gather','build','research','forge','cook','heal','defense','craft'].includes(kind)) rate += 0.10;
+  if ((c.role === 'Faz-tudo' || c.role === 'Generalista') && ['gather','build','research','forge','cook','heal','defense','craft'].includes(kind)) rate += 0.10;
   if (c.priority === 'build' && kind === 'build') rate += 0.10;
   if (c.priority === 'gather' && kind === 'gather') rate += 0.10;
   if (c.priority === 'defense' && kind === 'defense') rate += 0.10;

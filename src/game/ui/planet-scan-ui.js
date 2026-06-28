@@ -473,6 +473,66 @@
     };
   }
 
+  function scanSignatureName(signature, index) {
+    const labels = {
+      organic: 'Movimento orgânico',
+      fauna: 'Agrupamento de fauna',
+      ruin: 'Estrutura antiga',
+      heat: 'Eco térmico',
+      dust: 'Frente de poeira',
+      cold: 'Frente fria',
+      geology: 'Falha geológica',
+      metal: 'Sinal metálico',
+      collapse: 'Teto instável',
+      water: 'Bacia hídrica',
+      humidity: 'Condensação instável'
+    };
+    return `${labels[signature?.kind] || 'Assinatura orbital'} ${String(index + 1).padStart(2, '0')}`;
+  }
+
+  function biomeForSignature(signature, dominantBiome) {
+    const map = {
+      organic: 'forest',
+      fauna: 'forest',
+      ruin: dominantBiome,
+      heat: 'desert',
+      dust: 'desert',
+      cold: 'snow',
+      geology: 'rock',
+      metal: 'rock',
+      collapse: 'rock',
+      water: 'water',
+      humidity: 'water'
+    };
+    return map[signature?.kind] || dominantBiome || 'forest';
+  }
+
+  function modelFromWorldgenProfile(config, profile) {
+    const model = buildScanModel(config);
+    if (!profile) return model;
+    const rand = scanRandom(config, 'profile-signature-placement');
+    return {
+      ...model,
+      biomeStats: { ...(profile.biomeStats || model.biomeStats) },
+      dominantBiome: profile.dominantBiome || model.dominantBiome,
+      metrics: { ...(profile.metrics || model.metrics) },
+      signatures: (profile.signatures || []).map((signature, index) => {
+        const biome = biomeForSignature(signature, profile.dominantBiome || model.dominantBiome);
+        const angle = rand() * Math.PI * 2;
+        const radius = 0.18 + rand() * 0.68;
+        return {
+          ...signature,
+          name: scanSignatureName(signature, index),
+          range: Math.floor(14 + rand() * 76),
+          risk: signature.risk || 'moderado',
+          biome,
+          nx: Math.cos(angle) * radius,
+          ny: Math.sin(angle) * radius
+        };
+      })
+    };
+  }
+
   function segmentBar(value, amber = false) {
     const lit = Math.max(0, Math.min(10, Math.round(value / 10)));
     return `<div class="scan-segments ${amber ? 'amber' : ''}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < lit ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -642,9 +702,14 @@
 
   function refreshPlanetScan(config = null) {
     injectPlanetScanStyle();
-    const activeConfig = config || (typeof readNewGameConfigSafe === 'function' ? readNewGameConfigSafe() : defaultNewGameConfig);
-    const model = buildScanModel(activeConfig);
-    const sector = `HV-${String(stableHash(activeConfig.seed || 'scan')).slice(0, 5).toUpperCase()}`;
+    const baseConfig = config || (typeof newGameConfig !== 'undefined' && newGameConfig) || (typeof readNewGameConfigSafe === 'function' ? readNewGameConfigSafe() : defaultNewGameConfig);
+    const activeConfig = typeof ensurePlanetScanOnConfig === 'function'
+      ? ensurePlanetScanOnConfig(baseConfig)
+      : { ...baseConfig, planetScan: typeof buildPlanetScanWorldgenProfile === 'function' ? buildPlanetScanWorldgenProfile(baseConfig) : null };
+    if (typeof newGameConfig !== 'undefined') newGameConfig = activeConfig;
+    const profile = activeConfig.planetScan || null;
+    const model = modelFromWorldgenProfile(activeConfig, profile);
+    const sector = profile?.sectorId || `HV-${String(stableHash(activeConfig.seed || 'scan')).slice(0, 5).toUpperCase()}`;
 
     const title = document.getElementById('scanSectorTitle');
     const meta = document.getElementById('scanSectorMeta');
@@ -656,7 +721,7 @@
 
     renderPlanetPreview(model);
 
-    if (title) title.textContent = activeConfig.colonyName || 'First Haven';
+    if (title) title.textContent = activeConfig.colonyName || 'Primeiro Refúgio';
     if (meta) {
       const dominant = BIOME_LABELS[model.dominantBiome] || model.dominantBiome;
       meta.textContent = `Seed ${activeConfig.seed || 'sem seed'} · ${safeLabelMapSize(activeConfig.mapSize || 'giant')} · eventos ${safeLabelEventIntensity(activeConfig.eventIntensity || 'normal')} · dominante: ${dominant}`;
@@ -671,7 +736,7 @@
         `Seed confirmado: ${activeConfig.seed || 'sem seed'}`,
         `Bioma dominante: ${BIOME_LABELS[model.dominantBiome] || model.dominantBiome}`,
         `${model.signatures.length} assinatura${model.signatures.length === 1 ? '' : 's'} detectada${model.signatures.length === 1 ? '' : 's'}.`,
-        'Prévia procedural pronta. Motor real segue isolado para a próxima passada.'
+        'Perfil confirmado. Este setor será usado pelo gerador do mundo.'
       ].map(line => `<span>${escapeHtml(line)}</span>`).join('');
     }
   }

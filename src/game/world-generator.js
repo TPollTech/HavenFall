@@ -495,6 +495,7 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
     wolves: [],
     resources,
     items: startingItems(config.resourcesPreset),
+    taskPriorities: initialTaskPriorities(colonists),
     day: 1,
     hour: 6,
     speed: 1,
@@ -506,6 +507,21 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
     won: false,
     research: { unlocked: {}, completed: [], current: null, progress: 0 }
   };
+}
+
+function initialTaskPriorities(colonists = []) {
+  const presets = {
+    gather: { gather: 4, build: 2, research: 1, handle: 2 },
+    build: { gather: 2, build: 4, research: 1, handle: 2 },
+    defense: { gather: 1, build: 1, research: 1, handle: 1 },
+    research: { gather: 1, build: 1, research: 4, handle: 2 },
+    cooking: { gather: 1, build: 1, research: 2, handle: 3 },
+    medicine: { gather: 1, build: 1, research: 2, handle: 3 }
+  };
+  return Object.fromEntries((colonists || []).map(c => {
+    const key = c.workPreferenceId || (typeof legacyWorkPreferenceId === 'function' ? legacyWorkPreferenceId(c.workPreference) : null) || 'gather';
+    return [c.id, { ...(presets[key] || presets.gather) }];
+  }));
 }
 
 function startingResources(preset, difficulty = 'normal') {
