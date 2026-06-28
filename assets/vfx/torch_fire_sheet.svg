@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="96" viewBox="0 0 384 96">
+  <defs>
+    <filter id="torchGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="outer" x1="0" x2="0" y1="1" y2="0">
+      <stop offset="0" stop-color="#f97316"/>
+      <stop offset="0.55" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#fde047"/>
+    </linearGradient>
+    <linearGradient id="inner" x1="0" x2="0" y1="1" y2="0">
+      <stop offset="0" stop-color="#fff7ad"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(0 0)">
+    <ellipse cx="32" cy="35" rx="21" ry="25" fill="#f97316" opacity="0.17" filter="url(#torchGlow)"/>
+    <path d="M32 9 C20 24 22 40 31 51 C18 42 19 27 27 20 C25 34 38 36 32 9 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M35 21 C27 31 28 42 33 49 C25 43 27 33 32 27 C31 38 40 36 35 21 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(64 0)">
+    <ellipse cx="32" cy="35" rx="23" ry="24" fill="#fb923c" opacity="0.18" filter="url(#torchGlow)"/>
+    <path d="M29 11 C42 25 41 41 32 52 C45 44 46 28 36 20 C39 35 25 37 29 11 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M30 22 C39 32 38 43 33 50 C41 44 39 34 34 28 C35 39 26 37 30 22 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(128 0)">
+    <ellipse cx="32" cy="35" rx="20" ry="27" fill="#f97316" opacity="0.19" filter="url(#torchGlow)"/>
+    <path d="M33 7 C19 22 23 40 32 52 C18 43 19 28 28 19 C26 34 39 37 33 7 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M33 20 C27 31 29 43 33 50 C26 44 27 34 32 27 C31 39 39 37 33 20 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(192 0)">
+    <ellipse cx="32" cy="35" rx="23" ry="25" fill="#fb923c" opacity="0.18" filter="url(#torchGlow)"/>
+    <path d="M28 13 C43 25 41 42 32 52 C46 44 45 29 37 21 C40 36 24 37 28 13 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M30 24 C39 33 38 43 33 50 C41 44 38 34 34 29 C35 40 27 38 30 24 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(256 0)">
+    <ellipse cx="32" cy="35" rx="21" ry="24" fill="#f97316" opacity="0.16" filter="url(#torchGlow)"/>
+    <path d="M32 10 C21 24 22 40 31 51 C19 43 20 28 28 20 C26 35 38 36 32 10 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M35 22 C27 32 28 43 33 50 C25 44 27 34 32 28 C31 39 40 37 35 22 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(320 0)">
+    <ellipse cx="32" cy="35" rx="22" ry="26" fill="#fb923c" opacity="0.18" filter="url(#torchGlow)"/>
+    <path d="M30 12 C43 25 41 41 32 52 C45 44 45 30 36 21 C39 36 25 38 30 12 Z" fill="url(#outer)" filter="url(#torchGlow)"/>
+    <path d="M31 23 C39 32 38 43 33 50 C41 44 39 34 34 29 C35 40 27 38 31 23 Z" fill="url(#inner)"/>
+    <rect x="28" y="48" width="8" height="37" rx="3" fill="#6b3f1d"/>
+    <rect x="25" y="49" width="14" height="8" rx="3" fill="#3f2412"/>
+    <path d="M27 58 L37 63" stroke="#26160b" stroke-width="2" opacity="0.5"/>
+  </g>
+</svg>
