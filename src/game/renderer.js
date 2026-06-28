@@ -271,7 +271,9 @@ function drawObject(obj) {
     const img = images[objectDefs[type].img];
     ctx.save();
     ctx.globalAlpha = 0.42;
-    drawAsset(img, cx, (obj.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, objectRotationTurns(obj, type));
+    if (!window.HavenfallWorkstationRenderer?.drawObject?.({ ...obj, type })) {
+      drawAsset(img, cx, (obj.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, objectRotationTurns(obj, type));
+    }
     ctx.restore();
     drawProgress(cx, obj.y * TILE + 8, (obj.progress || 0) / buildDefs[obj.buildType].work, '#9bd36a');
     return;
@@ -334,11 +336,14 @@ const OBJECT_TARGET_H = {
   bed: TILE * 1.2,   campfire: TILE * 1.2, forge: TILE * 1.1,
   stove: TILE * 1.0, med_station: TILE * 1.0, research_desk: TILE * 1.0,
   crate: TILE * 1.1, ruin: TILE * 1.0,  cache: TILE * 1.1,
-  supply_crate: TILE * 1.1, wall: TILE * 1.5, door: TILE * 1.35, bench: TILE * 1.0, stool: TILE * 1.0
+  supply_crate: TILE * 1.1, wall: TILE * 1.5, door: TILE * 1.35, bench: TILE * 1.0, stool: TILE * 1.0,
+  sewing_table: TILE * 1.0, smokehouse: TILE * 1.0
 };
 
 const OBJECT_TARGET_W = {
-  bench: TILE * 0.90
+  bench: TILE * 0.90,
+  sewing_table: TILE * 0.95,
+  smokehouse: TILE * 0.95
 };
 
 function objectScale(type, img) {
@@ -581,7 +586,9 @@ function drawBuildPreview() {
   ctx.fillRect(mouseTile.x * TILE, mouseTile.y * TILE, TILE, TILE);
   const img = images[objectDefs[type].img];
   const rotation = (type === 'wall' || type === 'door') && typeof currentBuildRotation !== 'undefined' ? currentBuildRotation : 0;
-  drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, rotation);
+  if (!window.HavenfallWorkstationRenderer?.drawObject?.({ type, x: mouseTile.x, y: mouseTile.y })) {
+    drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, rotation);
+  }
   if (rotation) {
     ctx.fillStyle = 'rgba(0,0,0,.62)';
     ctx.fillRect(mouseTile.x * TILE + 5, mouseTile.y * TILE + 5, 34, 16);

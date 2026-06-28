@@ -40,55 +40,86 @@
           </div>
           <button id="setupBackBtn" class="secondary">Voltar</button>
         </div>
-        <div class="form-grid setup-form-grid">
-          <label>Nome da colônia
-            <input id="colonyNameInput" type="text" value="Primeiro Refúgio" maxlength="32" />
-          </label>
-          <label>Seed do mundo
-            <div class="inline-field">
-              <input id="worldSeedInput" type="text" value="" placeholder="ex: HVF-89X-OMEGA" />
-              <button id="randomSeedBtn" type="button">Gerar</button>
+
+        <div class="setup-layout">
+          <section class="setup-controls-panel" aria-label="Parâmetros da expedição">
+            <div class="setup-section">
+              <div class="setup-section-head">
+                <span>01</span>
+                <b>Identidade</b>
+              </div>
+              <div class="form-grid setup-form-grid">
+                <label>Nome da colônia
+                  <input id="colonyNameInput" type="text" value="Primeiro Refúgio" maxlength="32" />
+                </label>
+                <label>Seed do mundo
+                  <div class="inline-field">
+                    <input id="worldSeedInput" type="text" value="" placeholder="ex: HVF-89X-OMEGA" />
+                    <button id="randomSeedBtn" type="button">Gerar</button>
+                  </div>
+                </label>
+              </div>
             </div>
-          </label>
-          <label>Dificuldade
-            <select id="difficultySelect">
-              <option value="easy">Fácil</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Difícil</option>
-              <option value="hardcore">Hardcore (Ironman)</option>
-            </select>
-          </label>
-          <label>Colonos iniciais
-            <input id="colonist-count" type="number" min="1" max="8" value="3" inputmode="numeric" />
-          </label>
-          <label>Recursos iniciais
-            <select id="resourcesPresetSelect">
-              <option value="scarce">Escassos</option>
-              <option value="standard" selected>Padrão</option>
-              <option value="rich">Abundantes</option>
-            </select>
-          </label>
-          <label>
-            <span class="field-label-with-help">Intensidade de eventos <span class="setup-help" title="Define a frequência de ataques, doenças e tempestades." aria-label="Define a frequência de ataques, doenças e tempestades.">?</span></span>
-            <select id="eventIntensitySelect">
-              <option value="low">Baixa</option>
-              <option value="normal" selected>Normal</option>
-              <option value="high">Alta</option>
-            </select>
-          </label>
-          <label>Tamanho do mapa
-            <select id="mapSizeSelect">
-              <option value="large">Grande · Vale expandido</option>
-              <option value="huge">Enorme · Fronteira selvagem</option>
-              <option value="giant" selected>Gigante · Múltiplos Biomas</option>
-              <option value="infinite_chunks">Infinito (Chunks)</option>
-            </select>
-          </label>
+
+            <div class="setup-section">
+              <div class="setup-section-head">
+                <span>02</span>
+                <b>Expedição</b>
+              </div>
+              <div class="form-grid setup-form-grid">
+                <label>Dificuldade
+                  <select id="difficultySelect">
+                    <option value="easy">Fácil</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="hard">Difícil</option>
+                    <option value="hardcore">Hardcore (Ironman)</option>
+                  </select>
+                </label>
+                <label>Colonos iniciais
+                  <input id="colonist-count" type="number" min="1" max="8" value="3" inputmode="numeric" />
+                </label>
+                <label>Recursos iniciais
+                  <select id="resourcesPresetSelect">
+                    <option value="scarce">Escassos</option>
+                    <option value="standard" selected>Padrão</option>
+                    <option value="rich">Abundantes</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="field-label-with-help">Intensidade de eventos <span class="setup-help" title="Define a frequência de ataques, doenças e tempestades." aria-label="Define a frequência de ataques, doenças e tempestades.">?</span></span>
+                  <select id="eventIntensitySelect">
+                    <option value="low">Baixa</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">Alta</option>
+                  </select>
+                </label>
+                <label class="setup-wide-field">Tamanho do mapa
+                  <select id="mapSizeSelect">
+                    <option value="large">Grande · Vale expandido</option>
+                    <option value="huge">Enorme · Fronteira selvagem</option>
+                    <option value="giant" selected>Gigante · Múltiplos Biomas</option>
+                    <option value="infinite_chunks">Infinito (Chunks)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <aside class="setup-briefing-panel" aria-label="Resumo da expedição">
+            <div class="setup-sector-visual" aria-hidden="true">
+              <div class="setup-orbit-ring"></div>
+              <div class="setup-sector-grid"></div>
+              <span class="setup-landing-dot"></span>
+            </div>
+            <div id="setupSummary" class="setup-summary" aria-live="polite"></div>
+            <div class="setup-next-step">
+              <span>Próxima etapa</span>
+              <b>Varredura planetária</b>
+            </div>
+          </aside>
         </div>
 
-        <div id="setupSummary" class="setup-summary" aria-live="polite"></div>
-
-        <div class="menu-actions row">
+        <div class="menu-actions row setup-actions">
           <button id="setupNextBtn">Iniciar Varredura Planetária</button>
         </div>
       </div>

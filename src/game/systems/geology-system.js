@@ -23,10 +23,22 @@
     const spawn = world.spawn || { x: 0, y: 0 };
     if (Math.hypot(x - spawn.x, y - spawn.y) < 8) return false;
     const biomeId = getBiomeIdForWorld(world, x, y);
+    const mass = countNearbyStoneTerrain(world, x, y, 1);
+    if (mass >= 4) return true;
+    if (mass <= 1 && worldNoise(seed, x, y, 'mountain-isolated-rock') > 0.18) return false;
     const ridge = typeof worldNoise === 'function' ? worldNoise(seed, Math.floor(x / 3), Math.floor(y / 3), 'mountain-ridge') : Math.random();
     const core = typeof worldNoise === 'function' ? worldNoise(seed, x, y, 'mountain-core') : Math.random();
     const threshold = biomeId === 'snow' ? 0.50 : biomeId === 'desert' ? 0.64 : 0.56;
-    return ridge > threshold || core > 0.82;
+    return ridge > threshold - mass * 0.035 || core > 0.82 - mass * 0.04;
+  }
+
+  function countNearbyStoneTerrain(world, x, y, radius) {
+    let count = 0;
+    for (let yy = y - radius; yy <= y + radius; yy++) for (let xx = x - radius; xx <= x + radius; xx++) {
+      if (xx === x && yy === y) continue;
+      if (world?.terrain?.[yy]?.[xx] === 'stone') count++;
+    }
+    return count;
   }
 
   function getBiomeIdForWorld(world, x, y) {
@@ -51,7 +63,37 @@
     const rows = Number(world?.rows || world?.terrain?.length || 0);
     const cols = Number(world?.cols || world?.terrain?.[0]?.length || 0);
     const seed = world?.seed || state?.config?.seed || 'geology';
-    return makeEmptyLayer(rows, cols, (x, y) => shouldBecomeMountain(world, x, y, seed) ? createRockTile(world, x, y, seed) : null);
+    const layer = makeEmptyLayer(rows, cols, (x, y) => shouldBecomeMountain(world, x, y, seed) ? createRockTile(world, x, y, seed) : null);
+    pruneSmallRockClusters(layer, 9);
+    return layer;
+  }
+
+  function pruneSmallRockClusters(layer, minSize) {
+    const rows = layer.length;
+    const cols = layer[0]?.length || 0;
+    const seen = new Set();
+    const key = (x, y) => `${x},${y}`;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (!layer[y]?.[x]?.solid || seen.has(key(x, y))) continue;
+        const stack = [[x, y]];
+        const cells = [];
+        seen.add(key(x, y));
+        while (stack.length) {
+          const [cx, cy] = stack.pop();
+          cells.push([cx, cy]);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            const k = key(nx, ny);
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || seen.has(k) || !layer[ny]?.[nx]?.solid) continue;
+            seen.add(k);
+            stack.push([nx, ny]);
+          }
+        }
+        if (cells.length < minSize) for (const [cx, cy] of cells) layer[cy][cx] = null;
+      }
+    }
   }
 
   function createRoofLayer(world) {

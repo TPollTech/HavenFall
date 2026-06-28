@@ -1,7 +1,7 @@
 'use strict';
 
 const MOB_SAFE_ZONE_RADIUS = 15;
-const MOB_GLOBAL_DENSITY_CAP = 18;
+const MOB_GLOBAL_DENSITY_CAP = 28;
 const MOB_HOSTILE_DENSITY_CAP = 6;
 const MOB_SEPARATION_DISTANCE_PX = 26;
 const ATTACK_ANIM_DURATION = 0.18;
@@ -9,14 +9,69 @@ const ATTACK_ANIM_DURATION = 0.18;
 const mobSpawnConfig = {
   wolf: { maxCount: 3, spawnChance: 0.02, hostile: true },
   spider: { maxCount: 4, spawnChance: 0.035, hostile: true },
-  rabbit: { maxCount: 8, spawnChance: 0.075, hostile: false }
+  rabbit: { maxCount: 8, spawnChance: 0.075, hostile: false },
+  deer: { maxCount: 4, spawnChance: 0.026, hostile: false },
+  goat: { maxCount: 4, spawnChance: 0.024, hostile: false },
+  sheep: { maxCount: 5, spawnChance: 0.028, hostile: false },
+  pig: { maxCount: 4, spawnChance: 0.020, hostile: false },
+  cow: { maxCount: 3, spawnChance: 0.012, hostile: false },
+  chicken: { maxCount: 6, spawnChance: 0.035, hostile: false },
+  duck: { maxCount: 5, spawnChance: 0.026, hostile: false },
+  turkey: { maxCount: 4, spawnChance: 0.020, hostile: false },
+  squirrel: { maxCount: 6, spawnChance: 0.040, hostile: false },
+  turtle: { maxCount: 4, spawnChance: 0.018, hostile: false }
 };
 
 const mobStatModifiers = Object.freeze({
   wolf: { hp: 100, huntWork: 3.8, damageTaken: 1 },
   spider: { hp: 70, huntWork: 3.8, damageTaken: 1 },
-  rabbit: { hp: 42, huntWork: 2.6, damageTaken: 0.72 }
+  rabbit: { hp: 42, huntWork: 2.6, damageTaken: 0.72 },
+  deer: { hp: 74, huntWork: 3.4, damageTaken: 0.86 },
+  goat: { hp: 64, huntWork: 3.1, damageTaken: 0.9 },
+  sheep: { hp: 58, huntWork: 3.0, damageTaken: 0.92 },
+  pig: { hp: 68, huntWork: 3.2, damageTaken: 0.88 },
+  cow: { hp: 120, huntWork: 4.5, damageTaken: 0.78 },
+  chicken: { hp: 28, huntWork: 1.8, damageTaken: 1.15 },
+  duck: { hp: 32, huntWork: 2.0, damageTaken: 1.08 },
+  turkey: { hp: 44, huntWork: 2.5, damageTaken: 0.98 },
+  squirrel: { hp: 24, huntWork: 1.7, damageTaken: 1.25 },
+  turtle: { hp: 80, huntWork: 3.6, damageTaken: 0.58 }
 });
+
+const passiveMobSpeeds = Object.freeze({
+  rabbit: 26,
+  deer: 34,
+  goat: 28,
+  sheep: 22,
+  pig: 24,
+  cow: 18,
+  chicken: 25,
+  duck: 22,
+  turkey: 22,
+  squirrel: 38,
+  turtle: 10
+});
+
+const skittishMobTypes = Object.freeze(new Set(['rabbit', 'deer', 'chicken', 'duck', 'turkey', 'squirrel']));
+
+const mobHabitatWeights = Object.freeze({
+  rabbit: { grass: 1.25, dirt: 0.75, sand: 0.16 },
+  deer: { grass: 1.35, dirt: 0.62, sand: 0.05 },
+  goat: { grass: 0.62, dirt: 1.1, sand: 0.45 },
+  sheep: { grass: 1.2, dirt: 0.72, sand: 0.08 },
+  pig: { grass: 0.95, dirt: 0.95, sand: 0.02 },
+  cow: { grass: 1.3, dirt: 0.42, sand: 0.01 },
+  chicken: { grass: 1.05, dirt: 0.82, sand: 0.22 },
+  duck: { grass: 0.86, dirt: 0.72, sand: 0.16 },
+  turkey: { grass: 0.92, dirt: 0.78, sand: 0.20 },
+  squirrel: { grass: 1.45, dirt: 0.52, sand: 0.02 },
+  turtle: { grass: 0.56, dirt: 0.8, sand: 0.72 },
+  spider: { grass: 0.45, dirt: 0.9, sand: 0.8 },
+  wolf: { grass: 0.75, dirt: 0.95, sand: 0.38 },
+  blood_wolf: { grass: 0.7, dirt: 1.0, sand: 0.4 }
+});
+
+const herdMobTypes = Object.freeze(new Set(['deer', 'goat', 'sheep', 'pig', 'cow', 'chicken', 'duck', 'turkey']));
 
 window.mobSpawnConfig = mobSpawnConfig;
 window.mobStatModifiers = mobStatModifiers;
@@ -69,6 +124,7 @@ function hasMobileEntityAtTile(x, y) {
 function isValidMobSpawnTile(type, tile) {
   if (!tile) return false;
   if (typeof isInside === 'function' && !isInside(tile.x, tile.y)) return false;
+  if ((state?.terrain?.[tile.y]?.[tile.x] || state?.world?.terrain?.[tile.y]?.[tile.x]) === 'stone') return false;
   if (typeof isBlocked === 'function' && isBlocked(tile.x, tile.y)) return false;
   if (typeof getObjectAt === 'function' && getObjectAt(tile.x, tile.y)) return false;
   if (hasMobileEntityAtTile(tile.x, tile.y)) return false;
@@ -111,7 +167,7 @@ function spawnMob(type, tile = null) {
     px: t.x * TILE + TILE / 2, py: t.y * TILE + TILE / 2,
     dir: 'left', anim: 0, attackAnimTimer: 0, hitAnimTimer: 0,
     hp: stats.hp, maxHp: stats.hp,
-    state: type === 'rabbit' ? 'wander' : type === 'spider' ? 'sleep' : 'hunting',
+    state: isPassiveMobType(type) ? 'wander' : type === 'spider' ? 'sleep' : 'hunting',
     target: null
   };
   ensureMobState().push(mob);
@@ -122,15 +178,246 @@ function mobSpawnTile(type) {
   const world = state?.world;
   const preferEdge = type === 'spider' || type === 'wolf';
   if (!world) return (preferEdge ? randomSafeEdgeTile(type) : randomSafeInteriorTile(type)) || randomSafeEdgeTile(type);
-  for (let i = 0; i < 120; i++) {
-    const tile = preferEdge ? (typeof randomEdgeTile === 'function' ? randomEdgeTile() : randomSafeEdgeTile(type)) : (typeof freeRandomTile === 'function' ? freeRandomTile() : randomSafeInteriorTile(type));
-    if (!isValidMobSpawnTile(type, tile)) continue;
-    const biome = world.biomes?.[tile.y]?.[tile.x] || biomeAt?.(tile.x, tile.y, state.config?.seed);
-    const allowed = biomeDefinitions?.[biome]?.spawnMobs?.includes(type) ?? true;
-    if (allowed) return tile;
-  }
+  const weighted = weightedMobSpawnTile(type, { preferEdge, tries: preferEdge ? 180 : 240 });
+  if (weighted) return weighted;
   return (preferEdge ? randomSafeEdgeTile(type) : randomSafeInteriorTile(type)) || randomSafeEdgeTile(type);
 }
+
+function weightedMobSpawnTile(type, options = {}) {
+  const world = state?.world;
+  if (!world) return null;
+  let best = null;
+  let bestScore = 0;
+  const tries = Number(options.tries || 180);
+  for (let i = 0; i < tries; i++) {
+    const tile = options.preferEdge ? edgeCandidateTile(world) : interiorCandidateTile(world);
+    if (!isValidMobSpawnTile(type, tile)) continue;
+    const score = mobSpawnTileScore(type, tile, world);
+    if (score <= 0) continue;
+    if (Math.random() < Math.min(0.72, score / 3.2)) return tile;
+    if (score > bestScore) { bestScore = score; best = tile; }
+  }
+  return best;
+}
+
+function edgeCandidateTile(world) {
+  const side = Math.floor(Math.random() * 4);
+  if (side === 0) return { x: 1, y: 1 + Math.floor(Math.random() * Math.max(1, world.rows - 2)) };
+  if (side === 1) return { x: Math.max(1, world.cols - 2), y: 1 + Math.floor(Math.random() * Math.max(1, world.rows - 2)) };
+  if (side === 2) return { x: 1 + Math.floor(Math.random() * Math.max(1, world.cols - 2)), y: 1 };
+  return { x: 1 + Math.floor(Math.random() * Math.max(1, world.cols - 2)), y: Math.max(1, world.rows - 2) };
+}
+
+function interiorCandidateTile(world) {
+  return {
+    x: 2 + Math.floor(Math.random() * Math.max(1, world.cols - 4)),
+    y: 2 + Math.floor(Math.random() * Math.max(1, world.rows - 4))
+  };
+}
+
+function mobSpawnTileScore(type, tile, world = state?.world) {
+  if (!world || !tile) return 0;
+  const terrain = world.terrain?.[tile.y]?.[tile.x];
+  const terrainWeight = mobHabitatWeights[type]?.[terrain] ?? (terrain === 'stone' ? 0 : 0.35);
+  if (terrainWeight <= 0) return 0;
+  const biomeId = world.biomes?.[tile.y]?.[tile.x] || biomeAt?.(tile.x, tile.y, state?.config?.seed);
+  const context = {
+    hour: state?.hour ?? 12,
+    difficulty: state?.config?.difficulty || 'normal',
+    eventIntensity: state?.config?.eventIntensity || 'normal'
+  };
+  const biomeWeight = window.BiomeRegistry?.spawnWeightFor?.(type, biomeId, context) ?? 1;
+  if (biomeWeight <= 0) return 0;
+  const colonistDist = distanceToNearestColonistTile(tile.x, tile.y);
+  const distanceWeight = isHostileMobType(type)
+    ? (colonistDist < MOB_SAFE_ZONE_RADIUS ? 0 : Math.min(1.35, colonistDist / 26))
+    : (colonistDist < 7 ? 0.2 : Math.min(1.18, colonistDist / 16));
+  const coverWeight = nearbyObjectTypeCount(world, tile.x, tile.y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree'], 4);
+  const coverBonus = type === 'squirrel' || type === 'deer' || type === 'rabbit' ? Math.min(0.7, coverWeight * 0.09) : 0;
+  const opennessPenalty = herdMobTypes.has(type) ? Math.min(0.35, coverWeight * 0.035) : 0;
+  return biomeWeight * terrainWeight * distanceWeight + coverBonus - opennessPenalty;
+}
+
+function nearbyObjectTypeCount(world, x, y, types, radius) {
+  const allowed = new Set(types);
+  let count = 0;
+  for (const obj of world?.objects || []) {
+    if (!allowed.has(obj.type)) continue;
+    if (Math.abs(obj.x - x) <= radius && Math.abs(obj.y - y) <= radius) count++;
+  }
+  return count;
+}
+
+function generateInitialMobs(world, config = {}, colonists = []) {
+  if (!world?.terrain || !world.biomes) return [];
+  const rand = typeof seededRandom === 'function' ? seededRandom(`${world.seed || config.seed}|initial-fauna-v2`) : Math.random;
+  const area = world.cols * world.rows;
+  const target = Math.max(8, Math.min(34, Math.floor(area / 620)));
+  const mobs = [];
+  const occupied = new Set((world.objects || []).map(o => `${o.x},${o.y}`));
+  const counts = {};
+  const passiveTypes = Object.keys(mobSpawnConfig).filter(type => mobSpawnConfig[type]?.hostile === false);
+  const quotas = initialBiomeMobQuotas(world, target);
+  for (const [biomeId, quota] of Object.entries(quotas)) {
+    let biomeAttempts = 0;
+    while ((mobs.filter(m => world.biomes?.[m.y]?.[m.x] === biomeId).length) < quota && mobs.length < target && biomeAttempts++ < quota * 90) {
+      const availableTypes = passiveTypes.filter(type => (counts[type] || 0) < mobSpawnConfig[type].maxCount);
+      if (!availableTypes.length) break;
+      const anchor = initialFaunaAnchor(world, availableTypes, config, colonists, occupied, rand, biomeId);
+      if (!anchor) break;
+      const groupSize = initialGroupSize(anchor.type, rand);
+      for (let i = 0; i < groupSize && mobs.length < target; i++) {
+        if ((counts[anchor.type] || 0) >= mobSpawnConfig[anchor.type].maxCount) break;
+        const tile = nearbyInitialFaunaTile(world, anchor, colonists, occupied, rand, biomeId);
+        if (!tile) continue;
+        occupied.add(`${tile.x},${tile.y}`);
+        counts[anchor.type] = (counts[anchor.type] || 0) + 1;
+        mobs.push(createInitialMob(anchor.type, tile, mobs.length, world.seed || config.seed));
+      }
+    }
+  }
+
+  let attempts = 0;
+  while (mobs.length < target && attempts++ < target * 80) {
+    const availableTypes = passiveTypes.filter(type => (counts[type] || 0) < mobSpawnConfig[type].maxCount);
+    if (!availableTypes.length) break;
+    const anchor = initialFaunaAnchor(world, availableTypes, config, colonists, occupied, rand);
+    if (!anchor) continue;
+    const groupSize = initialGroupSize(anchor.type, rand);
+    for (let i = 0; i < groupSize && mobs.length < target; i++) {
+      if ((counts[anchor.type] || 0) >= mobSpawnConfig[anchor.type].maxCount) break;
+      const tile = nearbyInitialFaunaTile(world, anchor, colonists, occupied, rand);
+      if (!tile) continue;
+      occupied.add(`${tile.x},${tile.y}`);
+      counts[anchor.type] = (counts[anchor.type] || 0) + 1;
+      mobs.push(createInitialMob(anchor.type, tile, mobs.length, world.seed || config.seed));
+    }
+  }
+  return mobs;
+}
+
+function initialBiomeMobQuotas(world, target) {
+  const counts = {};
+  for (const row of world.biomes || []) for (const biome of row || []) counts[biome] = (counts[biome] || 0) + 1;
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0) || 1;
+  const quotas = {};
+  let assigned = 0;
+  for (const [biome, count] of Object.entries(counts)) {
+    if (count / total < 0.08) continue;
+    const quota = Math.max(2, Math.floor(target * count / total));
+    quotas[biome] = quota;
+    assigned += quota;
+  }
+  if (assigned < target && !quotas.forest) quotas.forest = target - assigned;
+  return quotas;
+}
+
+function initialFaunaAnchor(world, types, config, colonists, occupied, rand, biomeFilter = null) {
+  let best = null;
+  let bestScore = 0;
+  for (let i = 0; i < 120; i++) {
+    const tile = {
+      x: 3 + Math.floor(rand() * Math.max(1, world.cols - 6)),
+      y: 3 + Math.floor(rand() * Math.max(1, world.rows - 6))
+    };
+    if (biomeFilter && world.biomes?.[tile.y]?.[tile.x] !== biomeFilter) continue;
+    if (!isInitialFaunaTileOpen(world, tile, colonists, occupied)) continue;
+    const type = pickInitialFaunaType(world, tile, types, config, rand);
+    if (!type) continue;
+    const score = initialFaunaTileScore(type, tile, world, config, colonists);
+    if (score > bestScore) { bestScore = score; best = { ...tile, type }; }
+    if (score > 1.3 && rand() < 0.45) return { ...tile, type };
+  }
+  return best;
+}
+
+function pickInitialFaunaType(world, tile, types, config, rand) {
+  const biomeId = world.biomes?.[tile.y]?.[tile.x] || 'forest';
+  const weighted = [];
+  for (const type of types) {
+    const weight = window.BiomeRegistry?.spawnWeightFor?.(type, biomeId, { hour: 8, difficulty: config.difficulty, eventIntensity: config.eventIntensity }) ?? 1;
+    const terrain = mobHabitatWeights[type]?.[world.terrain?.[tile.y]?.[tile.x]] ?? 0;
+    if (weight > 0 && terrain > 0) weighted.push([type, weight * terrain]);
+  }
+  const total = weighted.reduce((sum, [, weight]) => sum + weight, 0);
+  if (total <= 0) return null;
+  let roll = rand() * total;
+  for (const [type, weight] of weighted) {
+    roll -= weight;
+    if (roll <= 0) return type;
+  }
+  return weighted[0]?.[0] || null;
+}
+
+function initialFaunaTileScore(type, tile, world, config, colonists) {
+  const terrain = world.terrain?.[tile.y]?.[tile.x];
+  const terrainWeight = mobHabitatWeights[type]?.[terrain] || 0;
+  const biomeId = world.biomes?.[tile.y]?.[tile.x] || 'forest';
+  const biomeWeight = window.BiomeRegistry?.spawnWeightFor?.(type, biomeId, { hour: 8, difficulty: config.difficulty, eventIntensity: config.eventIntensity }) ?? 1;
+  const dist = distanceToColonists(tile.x, tile.y, colonists);
+  const distanceWeight = dist < 9 ? 0 : Math.min(1.3, dist / 20);
+  return terrainWeight * biomeWeight * distanceWeight;
+}
+
+function nearbyInitialFaunaTile(world, anchor, colonists, occupied, rand, biomeFilter = null) {
+  for (let i = 0; i < 48; i++) {
+    const radius = herdMobTypes.has(anchor.type) ? 1 + Math.floor(rand() * 4) : Math.floor(rand() * 3);
+    const angle = rand() * Math.PI * 2;
+    const tile = {
+      x: Math.round(anchor.x + Math.cos(angle) * radius),
+      y: Math.round(anchor.y + Math.sin(angle) * radius)
+    };
+    if (biomeFilter && world.biomes?.[tile.y]?.[tile.x] !== biomeFilter) continue;
+    if (!isInitialFaunaTileOpen(world, tile, colonists, occupied)) continue;
+    if ((mobHabitatWeights[anchor.type]?.[world.terrain?.[tile.y]?.[tile.x]] || 0) <= 0) continue;
+    return tile;
+  }
+  return null;
+}
+
+function isInitialFaunaTileOpen(world, tile, colonists, occupied) {
+  if (!tile || tile.x < 1 || tile.y < 1 || tile.x >= world.cols - 1 || tile.y >= world.rows - 1) return false;
+  if (world.terrain?.[tile.y]?.[tile.x] === 'stone') return false;
+  if (occupied.has(`${tile.x},${tile.y}`)) return false;
+  if (distanceToColonists(tile.x, tile.y, colonists) < 7) return false;
+  return true;
+}
+
+function distanceToColonists(x, y, colonists = []) {
+  let best = Infinity;
+  for (const c of colonists || []) best = Math.min(best, Math.hypot(x - c.x, y - c.y));
+  return best;
+}
+
+function initialGroupSize(type, rand) {
+  if (type === 'cow') return 1 + Math.floor(rand() * 2);
+  if (type === 'deer' || type === 'goat' || type === 'sheep') return 2 + Math.floor(rand() * 3);
+  if (type === 'chicken' || type === 'duck' || type === 'turkey') return 2 + Math.floor(rand() * 4);
+  if (type === 'squirrel' || type === 'rabbit') return 1 + Math.floor(rand() * 3);
+  return 1 + Math.floor(rand() * 2);
+}
+
+function createInitialMob(type, tile, index, seed) {
+  const stats = mobStatModifiers[type] || mobStatModifiers.rabbit;
+  return {
+    id: `mob_${type}_${index}_${hashSeed(`${seed}|${type}|${tile.x}|${tile.y}|${index}`).toString(36)}`,
+    type,
+    x: tile.x,
+    y: tile.y,
+    px: tile.x * TILE + TILE / 2,
+    py: tile.y * TILE + TILE / 2,
+    dir: worldNoise(seed, tile.x, tile.y, 'mob-dir') > 0.5 ? 'right' : 'left',
+    anim: 0,
+    attackAnimTimer: 0,
+    hitAnimTimer: 0,
+    hp: stats.hp,
+    maxHp: stats.hp,
+    state: 'wander',
+    target: null
+  };
+}
+
+window.generateInitialMobs = generateInitialMobs;
 
 function installMobRuntimeHooks() {
   if (window.HavenfallContext?.mobRuntimeHooksInstalled) return;
@@ -222,7 +509,7 @@ function updateMobsTick(dt) {
   for (let i = mobs.length - 1; i >= 0; i--) {
     const mob = mobs[i];
     decayImpactTimers(mob, tick);
-    if (mob.type === 'rabbit') updateRabbit(mob, tick);
+    if (isPassiveMobType(mob.type)) updatePassiveMob(mob, tick);
     else if (mob.type === 'spider') updateSpider(mob, tick);
     if ((mob.hp ?? 1) <= 0) finishMobDeath(mob, i);
   }
@@ -249,16 +536,32 @@ function maybeSpawnMobs(dt) {
   }
 }
 
-function updateRabbit(mob, tick) {
+function isPassiveMobType(type) {
+  return !!mobSpawnConfig[type] && mobSpawnConfig[type].hostile === false;
+}
+
+function updatePassiveMob(mob, tick) {
   mob.anim += tick;
-  const threat = nearestColonistToMob(mob, 4);
+  const fleeRadius = skittishMobTypes.has(mob.type) ? 4 : 2;
+  const threat = nearestColonistToMob(mob, fleeRadius);
   if (threat && threat.task?.type !== 'huntMob') {
     mob.state = 'flee';
-    moveMobVector(mob, mob.px - threat.px, mob.py - threat.py, 72 * tick);
+    moveMobVector(mob, mob.px - threat.px, mob.py - threat.py, passiveFleeSpeed(mob) * tick);
     return;
   }
-  if (!mob.target || Math.random() < 0.006 * state.speed) mob.target = nearbyFreeTarget(mob, 5);
-  moveMobToTarget(mob, 26 * tick);
+  mob.state = 'wander';
+  if (!mob.target || Math.random() < 0.006 * state.speed) mob.target = nearbyFreeTarget(mob, passiveWanderRadius(mob));
+  moveMobToTarget(mob, passiveMobSpeeds[mob.type] * tick || 22 * tick);
+}
+
+function passiveFleeSpeed(mob) {
+  return Math.max(36, (passiveMobSpeeds[mob.type] || 22) * 2.4);
+}
+
+function passiveWanderRadius(mob) {
+  if (mob.type === 'cow' || mob.type === 'turtle') return 3;
+  if (mob.type === 'deer' || mob.type === 'squirrel') return 7;
+  return 5;
 }
 
 function updateSpider(mob, tick) {
@@ -571,12 +874,39 @@ function mobDrop(mob, hunter = null) {
   const hunterHasKnife = hunter ? (hunter.equipment?.weapon === 'knife' || hunter.equipment?.tool === 'knife') : state.colonists?.some(c => c.equipment?.weapon === 'knife' || c.equipment?.tool === 'knife');
   const bonus = hunterHasKnife ? 1.5 : 1;
   if (mob.type === 'rabbit') return { items: { rawMeat: Math.ceil(2 * bonus), leather: Math.ceil(1 * bonus) } };
+  if (mob.type === 'deer') return { items: { rawMeat: Math.ceil(5 * bonus), leather: Math.ceil(2 * bonus), bones: 1 } };
+  if (mob.type === 'goat') return { items: { rawMeat: Math.ceil(3 * bonus), leather: Math.ceil(1 * bonus) } };
+  if (mob.type === 'sheep') return { items: { rawMeat: Math.ceil(3 * bonus), leather: Math.ceil(1 * bonus), cloth: 1 } };
+  if (mob.type === 'pig') return { items: { rawMeat: Math.ceil(4 * bonus), leather: Math.ceil(1 * bonus) } };
+  if (mob.type === 'cow') return { items: { rawMeat: Math.ceil(8 * bonus), leather: Math.ceil(3 * bonus), bones: 2 } };
+  if (mob.type === 'chicken') return { items: { rawMeat: Math.ceil(1 * bonus), feathers: 1 } };
+  if (mob.type === 'duck') return { items: { rawMeat: Math.ceil(2 * bonus), feathers: 1 } };
+  if (mob.type === 'turkey') return { items: { rawMeat: Math.ceil(3 * bonus), feathers: 2 } };
+  if (mob.type === 'squirrel') return { items: { rawMeat: Math.ceil(1 * bonus) } };
+  if (mob.type === 'turtle') return { items: { rawMeat: Math.ceil(2 * bonus), bones: 1 } };
   if (mob.type === 'spider') return { items: { rope: 1, venom: 1 } };
   if (mob.type === 'wolf') return { items: { rawMeat: Math.ceil(4 * bonus), leather: Math.ceil(2 * bonus), bones: 1 } };
   return { items: {} };
 }
 
-function mobName(type) { return ({ rabbit: 'Coelho', spider: 'Aranha', wolf: 'Lobo' })[type] || type; }
+function mobName(type) {
+  return ({
+    rabbit: 'Coelho',
+    deer: 'Cervo',
+    goat: 'Cabra',
+    sheep: 'Ovelha',
+    pig: 'Porco',
+    cow: 'Vaca',
+    chicken: 'Galinha',
+    duck: 'Pato',
+    turkey: 'Peru',
+    squirrel: 'Esquilo',
+    turtle: 'Tartaruga',
+    spider: 'Aranha',
+    wolf: 'Lobo',
+    blood_wolf: 'Lobo de Sangue'
+  })[type] || type;
+}
 
 function installMobRendererHook() {
   if (window.HavenfallContext?.mobRendererHooked) return;
@@ -595,6 +925,7 @@ function drawMob(mob) {
   const offset = combatRenderOffset(mob);
   const x = mob.px + offset.x;
   const y = mob.py + offset.y;
+  if (window.HavenfallPawnRenderer?.drawMob?.({ ...mob, px: x, py: y })) return;
   ctx.save();
   if (mob.type === 'rabbit') {
     ctx.fillStyle = '#d8d0bd'; ctx.beginPath(); ctx.ellipse(x, y + 12, 13, 8, 0, 0, Math.PI * 2); ctx.fill();
@@ -608,6 +939,7 @@ function drawMob(mob) {
     }
   }
   ctx.restore();
+  if (mob.hp !== undefined && mob.maxHp) drawProgress?.(x, y - 21, (mob.hp || 0) / mob.maxHp, mob.type === 'rabbit' ? '#d8d0bd' : '#e67866');
 }
 
 window.canSpawnMob = canSpawnMob;

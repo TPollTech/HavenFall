@@ -17,6 +17,16 @@
     },
     spawnRules: {
       rabbit: { allowed: true, weight: 0.22 },
+      deer: { allowed: true, weight: 0.08 },
+      goat: { allowed: true, weight: 0.34 },
+      sheep: { allowed: true, weight: 0.10 },
+      pig: { allowed: false, weight: 0 },
+      cow: { allowed: false, weight: 0 },
+      chicken: { allowed: true, weight: 0.18 },
+      duck: { allowed: false, weight: 0 },
+      turkey: { allowed: true, weight: 0.10 },
+      squirrel: { allowed: true, weight: 0.12 },
+      turtle: { allowed: true, weight: 0.20 },
       spider: { allowed: true, weight: 0.9, nightBonus: 0.75 },
       wolf: { allowed: true, weight: 0.18, nightBonus: 0.25 },
       blood_wolf: { allowed: false, weight: 0 }

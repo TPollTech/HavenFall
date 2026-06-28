@@ -36,6 +36,25 @@ function uiSpriteSrc(name) {
   return typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
 }
 
+function colonistAvatarHtml(c, extraClass = '') {
+  const style = window.HavenfallPawnStyle?.colonistStyle?.(c) || fallbackColonistAvatarStyle(c);
+  const safeClass = extraClass ? ` ${extraClass}` : '';
+  return `<span class="procedural-colonist-avatar${safeClass}" style="--skin:${style.skin};--hair:${style.hair};--cloth:${style.cloth};--accent:${style.accent};" aria-hidden="true"><i class="body"></i><i class="head"></i><i class="hair"></i><i class="eye left"></i><i class="eye right"></i></span>`;
+}
+
+function fallbackColonistAvatarStyle(c) {
+  const seed = String(c?.name || c?.sprite || '').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const skins = ['#c98f65', '#b77a52', '#d3a072', '#8f5f43', '#e0b27f'];
+  const hairs = ['#2c1b13', '#4b2f1e', '#6b4a2f', '#202022', '#7a5537'];
+  const clothes = ['#8f5f3b', '#596f58', '#6b6478', '#7a5f4b'];
+  return {
+    skin: skins[seed % skins.length],
+    hair: hairs[Math.floor(seed / 3) % hairs.length],
+    cloth: clothes[Math.floor(seed / 5) % clothes.length],
+    accent: '#b7a66b'
+  };
+}
+
 function loadedIconSrc(name) {
   const key = name || 'icon_warn';
   if (typeof images === 'object' && images?.[key]?.src) return images[key].src;
@@ -113,7 +132,7 @@ function renderColonistSelection() {
 
   dom.colonistCards.innerHTML = colonistCandidates.map((c, i) => `
     <article class="colonist-card ${c.locked ? 'locked' : ''}">
-      <div class="colonist-head"><div class="colonist-preview"><img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt=""></div><div><h2>${escapeHtml(c.name)}, ${c.age}</h2><div class="empty">${escapeHtml(c.role)} · Prefere ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</div></div></div>
+      <div class="colonist-head"><div class="colonist-preview">${colonistAvatarHtml(c)}</div><div><h2>${escapeHtml(c.name)}, ${c.age}</h2><div class="empty">${escapeHtml(c.role)} · Prefere ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</div></div></div>
       <div class="tags">${colonistTraitTags(c.physicalTraitIds, 'physical')}${colonistTraitTags(c.positiveTraitIds, 'positive', '+ ', 'good')}${colonistTraitTags(c.negativeTraitIds, 'negative', '- ', 'bad')}</div>
       <div class="empty">Habilidades: coleta ${c.skills.coleta}, construção ${c.skills.construcao}, defesa ${c.skills.defesa}, pesquisa ${c.skills.pesquisa}, medicina ${c.skills.medicina}</div>
       <div class="empty">Necessidades: comida ${c.needs.hunger}%, energia ${c.needs.energy}%, humor ${c.needs.mood}%, saúde ${c.needs.health}%</div>
@@ -190,7 +209,7 @@ function updateUI(force = false) {
 
 function updateColonistPanel() {
   if (!dom.colonistList || !state?.colonists) return;
-  dom.colonistList.innerHTML = state.colonists.map(c => `<div class="colonist-row ${c.id === selectedColonistId ? 'active' : ''}" data-select-colonist="${c.id}"><img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt=""><div><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.note || 'Ocioso')}</small></div><span>${Math.floor(c.mood || 0)}%</span></div>`).join('');
+  dom.colonistList.innerHTML = state.colonists.map(c => `<div class="colonist-row ${c.id === selectedColonistId ? 'active' : ''}" data-select-colonist="${c.id}">${colonistAvatarHtml(c, 'small')}<div><b>${escapeHtml(c.name)}</b><small>${escapeHtml(c.note || 'Ocioso')}</small></div><span>${Math.floor(c.mood || 0)}%</span></div>`).join('');
 }
 
 function updateResearchUI() {

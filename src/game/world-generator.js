@@ -35,7 +35,7 @@ function loadAndPlay() {
 
 function loadImages() {
   const manifestAssetNames = Object.keys(window.HavenfallAssets?.assets || {});
-  const runtimeAssetNames = [...new Set([...assetNames, ...manifestAssetNames])];
+  const runtimeAssetNames = [...new Set([...assetNames, ...manifestAssetNames])].filter(name => !isProceduralRuntimeAsset(name));
   const spriteLoads = runtimeAssetNames.map(name => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { images[name] = img; resolve(); };
@@ -43,7 +43,7 @@ function loadImages() {
     img.src = typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
   }));
 
-  const animationLoads = Object.entries(window.HavenfallAssets?.animations || {}).map(([key, animation]) => new Promise((resolve, reject) => {
+  const animationLoads = Object.entries(window.HavenfallAssets?.animations || {}).filter(([key, animation]) => !isProceduralRuntimeAsset(key) && !isProceduralRuntimeAsset(animation?.key)).map(([key, animation]) => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { images[`vfx:${key}`] = img; resolve(); };
     img.onerror = reject;
@@ -51,6 +51,25 @@ function loadImages() {
   }));
 
   return Promise.all([...spriteLoads, ...animationLoads]);
+}
+
+function isProceduralRuntimeAsset(name) {
+  const key = String(name || '');
+  const asset = window.HavenfallAssets?.assets?.[key];
+  const path = String(asset?.path || '');
+  return /^colonist[A-Z]+_/.test(key)
+    || /^wolf_\d+$/.test(key)
+    || key.startsWith('creature_sprite_sheet_with_various_animals_cut_')
+    || path.includes('/mobs/')
+    || key === 'crafting_bench'
+    || key === 'research_desk'
+    || key === 'stove'
+    || key === 'edificios_stove'
+    || key === 'med_station'
+    || key === 'edificios_forge'
+    || key === 'edificios_sewing_table'
+    || key.startsWith('station_')
+    || key.startsWith('stations_raw_v19b_cut_');
 }
 
 function generateWorldFromSeed(config) {
@@ -486,12 +505,14 @@ function createInitialState(config = defaultNewGameConfig, selectedColonists = n
   const candidates = selectedColonists?.length ? selectedColonists : Array.from({ length: Number(config.colonistCount || 3) }, (_, i) => createColonistCandidate(i, config));
   const colonists = candidates.map((candidate, i) => candidateToColonist(candidate, i + 1, spawn.x + i, spawn.y + 2 + (i % 2)));
   const resources = startingResources(config.resourcesPreset, config.difficulty);
+  const mobs = typeof generateInitialMobs === 'function' ? generateInitialMobs(world, config, colonists) : [];
   return {
     config,
     world,
     terrain: world.terrain,
     objects: world.objects,
     colonists,
+    mobs,
     wolves: [],
     resources,
     items: startingItems(config.resourcesPreset),

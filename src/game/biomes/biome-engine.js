@@ -21,10 +21,10 @@
     const dry = worldNoise(seed, macroX, macroY, 'biome-dry');
     const forest = worldNoise(seed, Math.floor(x / 11), Math.floor(y / 11), 'biome-forest');
     const giantBias = config.mapSize === 'giant' || config.mapSize === 'infinite_chunks' ? 0.06 : 0;
-    if (cold > 0.72 - giantBias) return 'snow';
-    if (dry > 0.70 - giantBias && cold < 0.68) return 'desert';
-    if (forest > 0.22) return 'forest';
-    return dry > 0.58 ? 'desert' : 'forest';
+    if (cold > 0.70 - giantBias) return 'snow';
+    if (dry > 0.64 - giantBias && cold < 0.68) return 'desert';
+    if (forest > 0.42) return 'forest';
+    return dry > 0.54 ? 'desert' : 'forest';
   }
 
   function createBiomeMap(cols, rows, seed, config = {}) {
@@ -70,6 +70,105 @@
       }
     }
     return world;
+  }
+
+  function mountainDensity(config = {}) {
+    const rock = typeof scanBiomeStat === 'function' ? scanBiomeStat(config, 'rock') : 24;
+    const dominant = typeof scanDominantBiome === 'function' ? scanDominantBiome(config) : null;
+    const sizeBias = config.mapSize === 'giant' || config.mapSize === 'infinite_chunks' ? 1.25 : config.mapSize === 'huge' ? 1.12 : 1;
+    const scanBias = dominant === 'rock' ? 1.55 : 0.85 + Math.max(0, Math.min(70, rock)) / 70;
+    return Math.max(0.75, Math.min(2.0, sizeBias * scanBias));
+  }
+
+  function createMountainRanges(world, config = {}) {
+    if (!world?.terrain) return world;
+    const seed = config.seed || world.seed || 'mountains';
+    const rand = typeof seededRandom === 'function' ? seededRandom(`${seed}|mountain-ranges|v2`) : Math.random;
+    const density = mountainDensity(config);
+    const area = world.cols * world.rows;
+    const rangeCount = Math.max(2, Math.round(area / 3600 * density));
+    const spawn = world.spawn || { x: Math.floor(world.cols / 2), y: Math.floor(world.rows / 2) };
+    const occupied = new Set((world.objects || []).map(obj => `${obj.x},${obj.y}`));
+
+    for (let i = 0; i < rangeCount; i++) {
+      const start = mountainRangeStart(world, spawn, rand);
+      if (!start) continue;
+      const angle = rand() * Math.PI * 2;
+      const length = Math.max(18, Math.floor((Math.min(world.cols, world.rows) * (0.28 + rand() * 0.30)) * density));
+      const width = 2.4 + rand() * 3.2 + density * 0.8;
+      carveMountainRidge(world, seed, start, angle, length, width, spawn, occupied, i);
+    }
+
+    smoothMountainTerrain(world, seed, occupied);
+    world.mountainGenerationVersion = '2.0-ridges';
+    return world;
+  }
+
+  function mountainRangeStart(world, spawn, rand) {
+    for (let tries = 0; tries < 80; tries++) {
+      const x = 4 + Math.floor(rand() * Math.max(1, world.cols - 8));
+      const y = 4 + Math.floor(rand() * Math.max(1, world.rows - 8));
+      if (Math.hypot(x - spawn.x, y - spawn.y) < 18) continue;
+      return { x, y };
+    }
+    return null;
+  }
+
+  function carveMountainRidge(world, seed, start, angle, length, width, spawn, occupied, index) {
+    let cx = start.x;
+    let cy = start.y;
+    let dir = angle;
+    for (let step = 0; step < length; step++) {
+      const turn = (worldNoise(seed, step, index, 'mountain-turn') - 0.5) * 0.42;
+      dir += turn;
+      cx += Math.cos(dir) * 0.92;
+      cy += Math.sin(dir) * 0.92;
+      if (cx < 3 || cy < 3 || cx >= world.cols - 3 || cy >= world.rows - 3) break;
+
+      const localWidth = width * (0.72 + worldNoise(seed, step, index, 'mountain-width') * 0.72);
+      const minX = Math.max(1, Math.floor(cx - localWidth - 2));
+      const maxX = Math.min(world.cols - 2, Math.ceil(cx + localWidth + 2));
+      const minY = Math.max(1, Math.floor(cy - localWidth - 2));
+      const maxY = Math.min(world.rows - 2, Math.ceil(cy + localWidth + 2));
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          if (occupied.has(`${x},${y}`)) continue;
+          const spawnDist = Math.hypot(x - spawn.x, y - spawn.y);
+          if (spawnDist < 13) continue;
+          const d = Math.hypot(x - cx, y - cy);
+          const rough = worldNoise(seed, x, y, `mountain-rough-${index}`);
+          const score = 1 - d / localWidth + (rough - 0.5) * 0.34;
+          if (score > 0.02) world.terrain[y][x] = 'stone';
+          else if (score > -0.14 && world.terrain[y][x] !== 'sand') world.terrain[y][x] = 'dirt';
+        }
+      }
+    }
+  }
+
+  function smoothMountainTerrain(world, seed, occupied) {
+    const copy = world.terrain.map(row => row.slice());
+    for (let y = 1; y < world.rows - 1; y++) {
+      for (let x = 1; x < world.cols - 1; x++) {
+        if (occupied.has(`${x},${y}`)) continue;
+        const stones = countNeighborTerrain(world.terrain, x, y, 'stone', 1);
+        const current = world.terrain[y][x];
+        if (current === 'stone' && stones <= 1 && worldNoise(seed, x, y, 'mountain-erosion') > 0.22) copy[y][x] = 'dirt';
+        if (current !== 'stone' && stones >= 6 && worldNoise(seed, x, y, 'mountain-fill') > 0.18) copy[y][x] = 'stone';
+      }
+    }
+    world.terrain = copy;
+    return world;
+  }
+
+  function countNeighborTerrain(terrain, x, y, type, radius) {
+    let count = 0;
+    for (let yy = y - radius; yy <= y + radius; yy++) {
+      for (let xx = x - radius; xx <= x + radius; xx++) {
+        if (xx === x && yy === y) continue;
+        if (terrain[yy]?.[xx] === type) count++;
+      }
+    }
+    return count;
   }
 
   function installBiomeObjectDefs() {
@@ -166,6 +265,7 @@
     world.biomes = createBiomeMap(world.cols, world.rows, seed, config);
     world.biomeDefinitionsVersion = '1.0';
     applyBiomeTerrain(world, config);
+    createMountainRanges(world, config);
     decorateExistingObjects(world, seed);
     addBiomeForage(world, seed);
     world.generationVersion = `${world.generationVersion || 'world'}+biomes`;
@@ -175,6 +275,7 @@
   window.BiomeEngine = {
     createBiomeMap,
     applyToWorld,
+    createMountainRanges,
     getBiomeIdAt,
     canSpawnMobAt,
     spawnWeightAt,

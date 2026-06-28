@@ -126,7 +126,16 @@ p { color: var(--muted); line-height: 1.45; }
 .colonist-card.locked { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(227, 169, 63, .14) inset; }
 .colonist-head { display: flex; align-items: center; gap: 10px; }
 .colonist-preview { width: 54px; height: 64px; display: grid; place-items: center; background: rgba(0,0,0,.25); border-radius: 14px; border: 1px solid rgba(255,255,255,.08); }
-.colonist-preview img { max-width: 48px; max-height: 58px; object-fit: contain; }
+.procedural-colonist-avatar { position: relative; display: inline-block; width: 34px; height: 42px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.45)); }
+.procedural-colonist-avatar.large { width: 54px; height: 66px; }
+.procedural-colonist-avatar.small { width: 28px; height: 36px; }
+.procedural-colonist-avatar i { position: absolute; display: block; box-sizing: border-box; }
+.procedural-colonist-avatar .body { left: 28%; right: 28%; bottom: 4%; height: 48%; border-radius: 44% 44% 38% 38%; background: var(--cloth); border: 1px solid #201a14; }
+.procedural-colonist-avatar .head { left: 25%; right: 25%; top: 16%; height: 38%; border-radius: 50%; background: var(--skin); border: 1px solid #2b211b; }
+.procedural-colonist-avatar .hair { left: 24%; right: 24%; top: 12%; height: 18%; border-radius: 999px 999px 45% 45%; background: var(--hair); }
+.procedural-colonist-avatar .eye { top: 34%; width: 5%; height: 5%; border-radius: 50%; background: #1b1512; }
+.procedural-colonist-avatar .eye.left { left: 38%; }
+.procedural-colonist-avatar .eye.right { right: 38%; }
 .tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tag { border: 1px solid rgba(121,199,232,.22); background: rgba(10, 13, 19, .58); color: #d8e8ed; border-radius: 999px; padding: 3px 7px; font-size: 11px; }
 .tag.bad { color: #ffd6d0; border-color: rgba(239, 121, 109, .42); }
@@ -331,7 +340,6 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 .colonist-strip { grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); }
 .colonist-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; background: rgba(18, 22, 31, .62); border: 1px solid rgba(255,255,255,.09); border-radius: 12px; padding: 7px; cursor: pointer; min-height: 48px; }
 .colonist-row.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(227, 169, 63, .16) inset; }
-.colonist-row img { width: 28px; height: 36px; object-fit: contain; }
 .colonist-row small { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 #log { height: 98px; overflow: hidden; font-size: 12px; color: #f0e7d8; line-height: 1.32; column-count: 2; column-gap: 22px; }
 #log p { margin: 0 0 5px; break-inside: avoid; border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 4px; }
@@ -562,6 +570,340 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 .load-screen .kicker,
 .settings-screen .kicker {
   color: #d79b46;
+}
+
+#newGameSetupScreen.screen.active {
+  display: grid;
+  place-items: center;
+  padding: clamp(14px, 3vh, 30px);
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#newGameSetupScreen .setup-sandbox-card {
+  width: min(1180px, calc(100vw - 36px));
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: 18px;
+}
+
+#newGameSetupScreen .screen-title-row {
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+#newGameSetupScreen .screen-title-row h1 {
+  margin: 8px 0 8px;
+  font-size: clamp(38px, 4.4vw, 58px);
+  line-height: .94;
+  letter-spacing: 0;
+}
+
+#newGameSetupScreen .screen-title-row p {
+  max-width: 640px;
+  color: rgba(244, 239, 228, .68);
+}
+
+.setup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.setup-controls-panel,
+.setup-briefing-panel {
+  min-width: 0;
+}
+
+.setup-controls-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.setup-section {
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 14px;
+}
+
+.setup-section-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+  color: #fff3df;
+}
+
+.setup-section-head span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(215,155,70,.12);
+  border: 1px solid rgba(215,155,70,.25);
+  color: #ffd890;
+  font: 900 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.setup-section-head b {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+#newGameSetupScreen .setup-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+#newGameSetupScreen .setup-wide-field {
+  grid-column: 1 / -1;
+}
+
+#newGameSetupScreen label {
+  display: grid;
+  gap: 7px;
+  color: rgba(244, 239, 228, .70);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+#newGameSetupScreen input,
+#newGameSetupScreen select {
+  min-width: 0;
+  width: 100%;
+  height: 40px;
+  background: rgba(5, 8, 13, .68);
+  color: #fff3df;
+  border: 1px solid rgba(215,155,70,.24);
+  border-radius: 10px;
+  padding: 0 12px;
+  font-weight: 850;
+  box-sizing: border-box;
+  outline: none;
+}
+
+#newGameSetupScreen input:focus,
+#newGameSetupScreen select:focus {
+  border-color: rgba(96,165,250,.70);
+  box-shadow: 0 0 0 3px rgba(96,165,250,.14);
+}
+
+#newGameSetupScreen .inline-field {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+#newGameSetupScreen #randomSeedBtn,
+#newGameSetupScreen #setupBackBtn {
+  height: 40px;
+  border-radius: 10px;
+}
+
+.setup-briefing-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: 168px auto auto;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(96,165,250,.16);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.62), rgba(5,8,13,.58));
+  overflow: hidden;
+}
+
+.setup-sector-visual {
+  position: relative;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 46% 50%, rgba(96,165,250,.18), transparent 32%),
+    linear-gradient(135deg, rgba(7,10,16,.92), rgba(20,37,54,.78));
+  border: 1px solid rgba(255,255,255,.08);
+  overflow: hidden;
+}
+
+.setup-sector-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, #000 0 62%, transparent 84%);
+}
+
+.setup-orbit-ring {
+  position: absolute;
+  inset: 22px 78px;
+  border: 1px solid rgba(215,155,70,.42);
+  border-radius: 50%;
+  transform: rotate(-18deg);
+  box-shadow: 0 0 40px rgba(215,155,70,.08);
+}
+
+.setup-landing-dot {
+  position: absolute;
+  left: 52%;
+  top: 45%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #f7b84a;
+  box-shadow: 0 0 0 6px rgba(247,184,74,.15), 0 0 22px rgba(247,184,74,.65);
+}
+
+.setup-summary {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.setup-summary-title {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.setup-summary-title span,
+.setup-next-step span {
+  color: #d79b46;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+.setup-summary-title b {
+  color: #fff3df;
+  font-size: 20px;
+}
+
+.setup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.setup-summary-grid span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.setup-summary-grid small {
+  color: rgba(244,239,228,.56);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.setup-summary-grid b {
+  min-width: 0;
+  color: #f4efe4;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup-risk-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  margin-top: 12px;
+  color: rgba(244,239,228,.68);
+  font-size: 12px;
+}
+
+.setup-risk-meter::before {
+  content: '';
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+}
+
+.setup-risk-meter i {
+  grid-column: 1;
+  grid-row: 1;
+  width: 40%;
+  height: 7px;
+  border-radius: 999px;
+  background: #f7b84a;
+  z-index: 1;
+}
+
+.setup-risk-meter.ok i { background: #61d37e; }
+.setup-risk-meter.warn i { background: #f7b84a; }
+.setup-risk-meter.danger i { background: #ef6b5a; }
+.setup-risk-meter em { grid-column: 1; font-style: normal; line-height: 1.35; }
+
+.setup-next-step {
+  align-self: end;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.setup-next-step b {
+  color: #fff3df;
+  font-size: 13px;
+}
+
+.setup-actions {
+  margin-top: 18px;
+  justify-content: flex-start;
+}
+
+#newGameSetupScreen #setupNextBtn {
+  min-height: 42px;
+  padding-inline: 18px;
+  border-radius: 11px;
+}
+
+@media (max-width: 920px) {
+  .setup-layout { grid-template-columns: 1fr; }
+  .setup-briefing-panel { grid-template-rows: 130px auto auto; }
+}
+
+@media (max-height: 820px) and (min-width: 921px) {
+  #newGameSetupScreen.screen.active { padding: 12px; }
+  #newGameSetupScreen .setup-sandbox-card { padding: 24px 34px; }
+  #newGameSetupScreen .screen-title-row { margin-bottom: 16px; }
+  #newGameSetupScreen .screen-title-row h1 {
+    margin: 4px 0 6px;
+    font-size: clamp(36px, 4vw, 50px);
+  }
+  .setup-controls-panel { gap: 10px; }
+  .setup-section { padding-top: 10px; }
+  #newGameSetupScreen .setup-form-grid { gap: 12px; }
+  .setup-briefing-panel {
+    grid-template-rows: 140px auto auto;
+    gap: 10px;
+  }
+  .setup-actions { margin-top: 12px; }
+}
+
+@media (max-width: 620px) {
+  #newGameSetupScreen .setup-sandbox-card { width: calc(100vw - 20px); padding: 18px; }
+  #newGameSetupScreen .screen-title-row { display: grid; gap: 12px; }
+  #newGameSetupScreen .screen-title-row h1 { font-size: 34px; }
+  #newGameSetupScreen .setup-form-grid,
+  .setup-summary-grid { grid-template-columns: 1fr; }
+  .setup-actions { display: grid; }
 }
 
 @media (max-width: 720px) {

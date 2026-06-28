@@ -40,14 +40,10 @@ const SCREEN = Object.freeze({
 const assetNames = [
   'tile_grass','tile_dirt','tile_sand','tile_stone','tree','bush','rock','logs','berry','crop_patch',
   'bed_single','table_wood','crate_wood','stool','wall_stone','door_wood','campfire','chest_large',
-  'crafting_bench','research_desk','stove','med_station','wolf_0','wolf_1','wolf_2','wolf_3','wolf_4',
   'icon_food','icon_wood','icon_stone','icon_metal','icon_warn',
   'weapon_axe','tool_pickaxe','tool_mattock','tool_shovel','tool_hammer','tool_sledgehammer','tool_chisel','tool_sickle','tool_wrench','tool_pliers',
   'weapon_knife','weapon_machete','weapon_sword','weapon_spear','weapon_bow','weapon_arrows','weapon_club','weapon_shield','weapon_torch','toolkit',
-  'res_rope','res_nails','res_leather','res_cloth','res_stew','res_raw_meat','res_berries','res_herbs','res_scrap',
-  'colonistA_down_0','colonistA_down_1','colonistA_down_2','colonistA_down_3','colonistA_up_0','colonistA_up_1','colonistA_up_2','colonistA_up_3','colonistA_left_0','colonistA_left_1','colonistA_left_2','colonistA_left_3','colonistA_right_0','colonistA_right_1','colonistA_right_2','colonistA_right_3',
-  'colonistB_down_0','colonistB_down_1','colonistB_down_2','colonistB_down_3','colonistB_up_0','colonistB_up_1','colonistB_up_2','colonistB_up_3','colonistB_right_0','colonistB_right_1','colonistB_right_2','colonistB_right_3',
-  'colonistC_down_0','colonistC_down_1','colonistC_down_2','colonistC_down_3','colonistC_up_0','colonistC_up_1','colonistC_up_2','colonistC_up_3','colonistC_right_0','colonistC_right_1','colonistC_right_2','colonistC_right_3'
+  'res_rope','res_nails','res_leather','res_cloth','res_stew','res_raw_meat','res_berries','res_herbs','res_scrap'
 ];
 
 const images = {};

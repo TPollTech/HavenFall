@@ -114,7 +114,40 @@ function writeNewGameConfig(config = defaultNewGameConfig) {
 function updateSetupSummary() {
   if (!dom.setupSummary) return;
   const cfg = readNewGameConfigSafe();
-  dom.setupSummary.innerHTML = `<b>Resumo da expedição:</b> ${escapeHtml(cfg.colonyName)} · Seed <b>${escapeHtml(cfg.seed)}</b> · ${labelDifficulty(cfg.difficulty)} · ${cfg.colonistCount} colono${cfg.colonistCount === 1 ? '' : 's'} · mapa ${labelMapSize(cfg.mapSize)} · eventos ${labelEventIntensity(cfg.eventIntensity)} · recursos ${labelResourcesPreset(cfg.resourcesPreset)}.`;
+  const risk = setupRiskLabel(cfg);
+  dom.setupSummary.innerHTML = `
+    <div class="setup-summary-title">
+      <span>Briefing</span>
+      <b>${escapeHtml(cfg.colonyName)}</b>
+    </div>
+    <div class="setup-summary-grid">
+      <span><small>Seed</small><b>${escapeHtml(cfg.seed)}</b></span>
+      <span><small>Risco</small><b>${escapeHtml(risk.label)}</b></span>
+      <span><small>Equipe</small><b>${cfg.colonistCount} colono${cfg.colonistCount === 1 ? '' : 's'}</b></span>
+      <span><small>Mapa</small><b>${escapeHtml(labelMapSize(cfg.mapSize))}</b></span>
+      <span><small>Eventos</small><b>${escapeHtml(labelEventIntensity(cfg.eventIntensity))}</b></span>
+      <span><small>Suprimentos</small><b>${escapeHtml(labelResourcesPreset(cfg.resourcesPreset))}</b></span>
+    </div>
+    <div class="setup-risk-meter ${risk.className}">
+      <i style="width:${risk.value}%"></i>
+      <em>${escapeHtml(risk.note)}</em>
+    </div>`;
+}
+
+function setupRiskLabel(cfg) {
+  let score = 34;
+  if (cfg.difficulty === 'easy') score -= 12;
+  if (cfg.difficulty === 'hard') score += 18;
+  if (cfg.difficulty === 'hardcore') score += 34;
+  if (cfg.eventIntensity === 'low') score -= 8;
+  if (cfg.eventIntensity === 'high') score += 16;
+  if (cfg.resourcesPreset === 'scarce') score += 14;
+  if (cfg.resourcesPreset === 'rich') score -= 10;
+  if (cfg.mapSize === 'infinite_chunks') score += 8;
+  const value = Math.max(8, Math.min(100, score));
+  if (value >= 72) return { value, label: 'Alto', className: 'danger', note: 'Setor exigente: eventos e logística podem pressionar cedo.' };
+  if (value >= 48) return { value, label: 'Moderado', className: 'warn', note: 'Expedição equilibrada, com margem para adaptação.' };
+  return { value, label: 'Controlado', className: 'ok', note: 'Condições favoráveis para estabelecer a base inicial.' };
 }
 
 function readNewGameConfigSafe() {

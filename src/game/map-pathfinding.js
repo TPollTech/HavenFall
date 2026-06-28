@@ -107,6 +107,16 @@ function itemLabel(key) {
   return itemDefs[key]?.label || key;
 }
 
+function resourceLabel(key) {
+  return ({
+    food: 'comida',
+    wood: 'madeira',
+    stone: 'pedra',
+    metal: 'metal',
+    medicine: 'remédio'
+  })[key] || key;
+}
+
 function itemCount(key) {
   return state?.items?.[key] || 0;
 }

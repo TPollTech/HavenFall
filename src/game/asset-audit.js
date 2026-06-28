@@ -10,8 +10,30 @@ const assetAudit = {
 
   categories: {
     animals: {
-      rabbit: { candidates: ['rabbit', 'bunny'], fallback: 'res_raw_meat', rawRequired: true },
-      spider: { candidates: ['spider'], fallback: 'icon_warn', rawRequired: true },
+      rabbit: {
+        candidates: [
+          'rabbit', 'bunny',
+          'creature_sprite_sheet_with_various_animals_cut_019',
+          'creature_sprite_sheet_with_various_animals_cut_020',
+          'creature_sprite_sheet_with_various_animals_cut_021',
+          'creature_sprite_sheet_with_various_animals_cut_022',
+          'creature_sprite_sheet_with_various_animals_cut_023'
+        ],
+        fallback: 'res_raw_meat',
+        rawRequired: false
+      },
+      spider: {
+        candidates: [
+          'spider',
+          'creature_sprite_sheet_with_various_animals_cut_035',
+          'creature_sprite_sheet_with_various_animals_cut_036',
+          'creature_sprite_sheet_with_various_animals_cut_037',
+          'creature_sprite_sheet_with_various_animals_cut_038',
+          'creature_sprite_sheet_with_various_animals_cut_039'
+        ],
+        fallback: 'icon_warn',
+        rawRequired: false
+      },
       wolf: { candidates: ['wolf_0', 'wolf_1', 'wolf_2', 'wolf_3', 'wolf_4'], fallback: 'wolf_0', rawRequired: false }
     },
     vegetation: {
@@ -23,8 +45,14 @@ const assetAudit = {
     },
     workstations: {
       forge: { candidates: ['edificios_forge', 'forge', 'advanced_forge'], fallback: 'edificios_forge', rawRequired: false },
-      sewing_table: { candidates: ['sewing_table'], fallback: 'table_wood', rawRequired: true },
-      smokehouse: { candidates: ['smokehouse'], fallback: 'campfire', rawRequired: true }
+      blueprint_bench: { candidates: ['station_blueprint_bench', 'stations_raw_v19b_cut_002'], fallback: 'crafting_bench', rawRequired: false },
+      carpentry_bench: { candidates: ['station_carpentry_bench', 'stations_raw_v19b_cut_003'], fallback: 'crafting_bench', rawRequired: false },
+      sewing_table: { candidates: ['station_sewing_table', 'stations_raw_v19b_cut_004'], fallback: 'table_wood', rawRequired: false },
+      smokehouse: { candidates: ['stations_raw_v19b_cut_005', 'survival_crafting_game_asset_collection_cut_004'], fallback: 'campfire', rawRequired: false },
+      crate: { candidates: ['container_crate_large', 'stations_raw_v19b_cut_010'], fallback: 'crate_wood', rawRequired: false },
+      chest: { candidates: ['container_chest_large_alt', 'stations_raw_v19b_cut_012'], fallback: 'chest_large', rawRequired: false },
+      weapon_rack: { candidates: ['weapon_rack_alt', 'stations_raw_v19b_cut_011'], fallback: 'weapon_rack_alt', rawRequired: false },
+      tool_rack: { candidates: ['tool_rack_alt', 'stations_raw_v19b_cut_013'], fallback: 'tool_rack_alt', rawRequired: false }
     },
     tools: {
       sickle: { candidates: ['tool_sickle', 'sickle'], fallback: 'tool_sickle', rawRequired: false },

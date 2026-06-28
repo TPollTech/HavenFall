@@ -253,12 +253,9 @@
         overflow: hidden;
       }
 
-      .personnel-file-avatar img {
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
-        image-rendering: pixelated;
-        filter: drop-shadow(0 0 9px rgba(94, 234, 212, .26));
+      .personnel-file-avatar .procedural-colonist-avatar {
+        width: 31px;
+        height: 36px;
       }
 
       .personnel-file-main {

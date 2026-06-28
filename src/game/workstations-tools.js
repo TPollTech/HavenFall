@@ -5,14 +5,18 @@ function installWorkbenchExpansionDefs() {
   window.HavenfallContext = window.HavenfallContext || {};
 
   itemDefs.rawMeat = { label: 'Carne crua', icon: 'res_raw_meat', kind: 'food', note: 'Ingrediente obtido de caça.' };
-  itemDefs.bones = { label: 'Ossos', icon: 'res_scrap', kind: 'material', note: 'Material para futuras ferramentas e decoração.' };
+  itemDefs.bones = { label: 'Ossos', icon: assetAudit?.resolve?.({ candidates: ['res_bones'], fallback: 'res_scrap' }) || 'res_scrap', kind: 'material', note: 'Material para futuras ferramentas e decoração.' };
+  itemDefs.feathers = { label: 'Penas', icon: assetAudit?.resolve?.({ candidates: ['res_feather', 'recursos_feathers'], fallback: 'res_cloth' }) || 'res_cloth', kind: 'material', note: 'Material leve obtido de aves.' };
   itemDefs.venom = { label: 'Veneno', icon: 'icon_warn', kind: 'material', note: 'Recurso raro de aranhas.' };
   itemDefs.sickle = { label: 'Foice', icon: assetAudit?.tool?.('sickle') || 'tool_sickle', slot: 'tool', kind: 'tool', gatherBonus: { food: 1.0, medicine: 1.0 }, combat: 0.8, note: 'Dobra a eficiência em plantações e ervas.' };
   itemDefs.advancedPickaxe = { label: 'Picareta reforçada', icon: assetAudit?.tool?.('advanced_pickaxe') || 'tool_pickaxe', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.7, metal: 0.7 }, combat: 1.4, note: 'Mineração durável para biomas rochosos.' };
   itemDefs.thermalClothes = { label: 'Roupa térmica', icon: 'res_cloth', slot: 'offhand', kind: 'clothing', defense: 0.08, coldResist: 0.45, note: 'Ajuda contra frio e chuva.' };
 
+  objectDefs.bench = { ...(objectDefs.bench || {}), img: assetAudit?.workstation?.('carpentry_bench') || objectDefs.bench?.img || 'crafting_bench' };
+  objectDefs.crate = { ...(objectDefs.crate || {}), img: assetAudit?.workstation?.('crate') || objectDefs.crate?.img || 'crate_wood' };
+  objectDefs.cache = { ...(objectDefs.cache || {}), img: assetAudit?.workstation?.('chest') || objectDefs.cache?.img || 'chest_large' };
   objectDefs.sewing_table = { name: 'mesa de alfaiataria', img: assetAudit?.workstation?.('sewing_table') || 'table_wood', blocks: true, craft: 1, work: 4.5 };
-  objectDefs.smokehouse = { name: 'defumador simples', img: assetAudit?.workstation?.('smokehouse') || 'campfire', blocks: true, cook: { input: { wood: 2 }, output: {} }, work: 5.5 };
+  objectDefs.smokehouse = { name: 'mesa de defumação', img: assetAudit?.workstation?.('smokehouse') || 'campfire', blocks: true, cook: { input: { wood: 2 }, output: {} }, craft: 1, work: 5.5 };
 
   buildDefs.sewing_table = { label: 'Alfaiataria', type: 'sewing_table', cost: { wood: 16 }, itemCost: { leather: 2 }, work: 7, requires: 'medicine' };
   buildDefs.smokehouse = { label: 'Defumador', type: 'smokehouse', cost: { wood: 14, stone: 6 }, work: 7, requires: 'preservation' };
@@ -24,6 +28,7 @@ function installWorkbenchExpansionDefs() {
   recipeDefs.advancedPickaxe = { label: 'Picareta reforçada', station: 'forge', cost: { wood: 3, metal: 6 }, itemCost: { nails: 2 }, duration: 9, output: { items: { advancedPickaxe: 1 } }, unlock: 'metalworking', desc: 'Mineração avançada.' };
   recipeDefs.thermalClothes = { label: 'Roupa térmica', station: 'sewing_table', itemCost: { leather: 3, cloth: 2 }, duration: 8, output: { items: { thermalClothes: 1 } }, unlock: 'thermal_comfort', desc: 'Proteção contra frio e chuva.' };
   recipeDefs.cookedMeat = { label: 'Carne cozida x3', station: 'stove', cost: { wood: 1 }, itemCost: { rawMeat: 2 }, duration: 4, output: { resources: { food: 6 } }, unlock: 'cooking', desc: 'Transforma caça em comida segura.' };
+  recipeDefs.smokedMeat = { label: 'Carne defumada x4', station: 'smokehouse', cost: { wood: 2 }, itemCost: { rawMeat: 3 }, duration: 7, output: { resources: { food: 10 } }, unlock: 'preservation', desc: 'Conserva carne de caça com alto rendimento.' };
 
   window.HavenfallContext.workbenchExpansionInstalled = true;
 }

@@ -75,7 +75,7 @@ function characterBuilderCard(c, i) {
         <div class="bio-scan-frame bio-medical-frame">
           <div class="bio-vital-line" aria-hidden="true"></div>
           <div class="bio-scan-lines" aria-hidden="true"></div>
-          <img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt="">
+          ${colonistAvatarHtml(c, 'large')}
         </div>
         <input class="builder-name-input bio-name-input" value="${escapeHtml(c.name)}" maxlength="18" data-builder-field="name" data-builder-index="${i}" aria-label="Nome do colono">
         <div class="bio-candidate-meta">
@@ -122,7 +122,7 @@ function personnelFileCard(c, i, valid, remaining) {
   const bestLabel = COLONIST_SKILL_LABELS[bestKey] || bestKey;
   return `<button type="button" class="colonist-card builder-card personnel-file-card ${valid ? '' : 'invalid'}" data-recruitment-candidate="${i}" aria-label="Abrir arquivo de ${escapeHtml(c.name)}">
     <span class="personnel-file-index">C-${String(i + 1).padStart(2, '0')}</span>
-    <span class="personnel-file-avatar"><img src="${uiSpriteSrc(`${c.sprite}_down_0`)}" alt=""></span>
+    <span class="personnel-file-avatar">${colonistAvatarHtml(c, 'small')}</span>
     <span class="personnel-file-main">
       <b>${escapeHtml(c.name || `Candidato ${i + 1}`)}</b>
       <small>${escapeHtml(c.role || 'Candidato')} · ${escapeHtml(workPreferenceLabel(c.workPreferenceId || c.workPreference))}</small>
