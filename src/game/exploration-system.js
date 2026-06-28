@@ -1,5 +1,7 @@
 'use strict';
 
+let lastExplorationVisionSignature = '';
+
 function makeExplorationMatrix(cols, rows) {
   return Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
 }
@@ -16,7 +18,20 @@ function ensureExplorationState() {
   if (!Array.isArray(state.world.exploration) || state.world.exploration.length !== state.world.rows || state.world.exploration[0]?.length !== state.world.cols) {
     state.world.exploration = makeExplorationMatrix(state.world.cols, state.world.rows);
     state.world.visibleTiles = [];
+    lastExplorationVisionSignature = '';
   }
+}
+
+function visionRangeForColonist(c, force = false) {
+  const base = Number(c?.visionRange || c?.vision || 8);
+  return clamp(Math.round(force ? Math.max(base, 10) : base), 3, 18);
+}
+
+function explorationVisionSignature() {
+  if (!state?.colonists?.length) return '';
+  return state.colonists
+    .map(c => `${c.id}:${Math.round(c.x)},${Math.round(c.y)}:${visionRangeForColonist(c)}`)
+    .join('|');
 }
 
 function updateExploration(force = false) {
@@ -24,10 +39,24 @@ function updateExploration(force = false) {
   ensureExplorationState();
   clearPreviousVisibleTiles(force);
   const visible = new Set();
-  const baseRadius = force ? 10 : 8;
-  for (const c of state.colonists) revealAround(c.x, c.y, baseRadius, visible);
+  for (const c of state.colonists) {
+    const cx = Math.round(c.x);
+    const cy = Math.round(c.y);
+    const radius = visionRangeForColonist(c, force);
+    c.visionRange = c.visionRange || radius;
+    revealAround(cx, cy, radius, visible);
+  }
   state.world.visibleTiles = Array.from(visible);
+  lastExplorationVisionSignature = explorationVisionSignature();
   updatePoiDiscovery();
+}
+
+function updateExplorationIfNeeded() {
+  if (!state || appScreen !== SCREEN.PLAYING) return;
+  ensureExplorationState();
+  const signature = explorationVisionSignature();
+  if (!signature) return;
+  if (signature !== lastExplorationVisionSignature) updateExploration(false);
 }
 
 function clearPreviousVisibleTiles(force = false) {
@@ -72,3 +101,12 @@ function updatePoiDiscovery() {
     }
   }
 }
+
+window.makeExplorationMatrix = makeExplorationMatrix;
+window.ensureExplorationState = ensureExplorationState;
+window.updateExploration = updateExploration;
+window.updateExplorationIfNeeded = updateExplorationIfNeeded;
+window.revealAround = revealAround;
+window.isTileDiscovered = isTileDiscovered;
+window.isTileVisible = isTileVisible;
+window.GameSystems?.registerTick('exploration', updateExplorationIfNeeded, { order: 35 });
