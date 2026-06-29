@@ -4,8 +4,22 @@ const GAME_HOUR_SECONDS_1X = 40;
 const TIME_SPEED = 1 / GAME_HOUR_SECONDS_1X;
 const AUTOSAVE_INTERVAL_SECONDS = 90;
 const UI_REFRESH_INTERVAL_SECONDS = 0.35;
+const TARGET_RENDER_INTERVAL_MS = 1000 / 45;
+const PAUSED_RENDER_INTERVAL_MS = 1000 / 15;
 const loopErrorState = new Set();
 let doorAutoClosePulse = 0;
+let lastRenderAt = 0;
+
+window.HavenfallPerf = window.HavenfallPerf || {
+  frame: 0,
+  updateMs: 0,
+  systemsMs: 0,
+  drawMs: 0,
+  uiMs: 0,
+  lastFrameMs: 0,
+  rendered: false,
+  skippedRender: false
+};
 
 function newGame() {
   writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
@@ -34,6 +48,12 @@ function roundRect(x, y, w, h, r, fill, stroke) {
   ctx.closePath();
   if (fill) ctx.fill();
   if (stroke) ctx.stroke();
+}
+
+function markPerf(label, startedAt) {
+  const elapsed = Math.round(((performance.now ? performance.now() : Date.now()) - startedAt) * 10) / 10;
+  window.HavenfallPerf[label] = elapsed;
+  return elapsed;
 }
 
 function safeSystemTick(label, fn) {
@@ -281,32 +301,59 @@ function shouldAutosave() {
   return isRealGameplay() && settings?.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > AUTOSAVE_INTERVAL_SECONDS;
 }
 
+function shouldRenderFrame(now) {
+  if (!isRealGameplay() || !(appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) return false;
+  const interval = appScreen === SCREEN.PAUSED ? PAUSED_RENDER_INTERVAL_MS : TARGET_RENDER_INTERVAL_MS;
+  return now - lastRenderAt >= interval;
+}
+
 function gameLoop(now = performance.now()) {
+  const frameStart = performance.now ? performance.now() : Date.now();
   const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000 || 0));
   lastTime = now;
+  window.HavenfallPerf.rendered = false;
+  window.HavenfallPerf.skippedRender = false;
 
+  let stepStart = performance.now ? performance.now() : Date.now();
   runLoopStep('world', () => updateWorld(dt));
+  markPerf('updateMs', stepStart);
+
+  stepStart = performance.now ? performance.now() : Date.now();
   if (isRealGameplay() && window.GameSystems?.tick) {
     window.GameSystems.tick(dt, (label, fn) => safeSystemTick(label, fn));
   }
+  markPerf('systemsMs', stepStart);
 
   runLoopStep('camera', () => updateCamera(dt));
 
-  if (isRealGameplay() && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
+  if (shouldRenderFrame(now)) {
+    stepStart = performance.now ? performance.now() : Date.now();
+    lastRenderAt = now;
     runLoopStep('draw', draw);
+    window.HavenfallPerf.rendered = true;
+    markPerf('drawMs', stepStart);
+  } else {
+    window.HavenfallPerf.skippedRender = isRealGameplay();
+    window.HavenfallPerf.drawMs = 0;
   }
 
   uiTimer += dt;
   autosaveTimer += dt;
   if (state && uiTimer > UI_REFRESH_INTERVAL_SECONDS) {
     uiTimer = 0;
-    if (shouldRefreshUi()) runLoopStep('ui', () => updateUI());
+    if (shouldRefreshUi()) {
+      stepStart = performance.now ? performance.now() : Date.now();
+      runLoopStep('ui', () => updateUI());
+      markPerf('uiMs', stepStart);
+    }
   }
   if (state && shouldAutosave()) {
     autosaveTimer = 0;
     runLoopStep('autosave', () => saveGame(false));
   }
 
+  window.HavenfallPerf.frame++;
+  window.HavenfallPerf.lastFrameMs = Math.round(((performance.now ? performance.now() : Date.now()) - frameStart) * 10) / 10;
   requestAnimationFrame(gameLoop);
 }
 
