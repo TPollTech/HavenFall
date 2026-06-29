@@ -1,65 +1,142 @@
-/* Minimal pre-game layout polish.
-   Goal: bigger setup screens without changing the HavenFall visual identity. */
+/* Pre-game full-screen menu flow.
+   Keeps the original screens, but removes the big centered modal/card feeling. */
 
-.setup-screen.active,
-.planet-scan-screen.active,
-.colonist-select-screen.active {
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow: auto;
+#newGameSetupScreen.screen.active,
+#planetScanScreen.screen.active,
+#colonistSelectScreen.screen.active {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 72% 26%, rgba(86, 112, 144, .24), transparent 34%),
+    radial-gradient(circle at 18% 82%, rgba(184, 126, 47, .16), transparent 36%),
+    linear-gradient(135deg, #07090d 0%, #101621 44%, #06070a 100%);
+  color: var(--text);
 }
 
-.setup-screen .menu-card,
-.colonist-select-screen .menu-card {
-  width: min(1180px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow: auto;
+#newGameSetupScreen.screen.active::before,
+#planetScanScreen.screen.active::before,
+#colonistSelectScreen.screen.active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.58), rgba(0,0,0,.08) 46%, rgba(0,0,0,.62)),
+    radial-gradient(circle at center, transparent 34%, rgba(0,0,0,.72) 100%);
+  background-size: 72px 72px, 72px 72px, auto, auto;
+  opacity: .95;
 }
 
-.planet-scan-screen .planet-scan-shell {
-  width: min(1240px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  margin: 0 auto;
-  overflow: auto;
+#newGameSetupScreen > *,
+#planetScanScreen > *,
+#colonistSelectScreen > * {
+  position: relative;
+  z-index: 1;
 }
 
-.planet-scan-screen .scan-hologram-panel {
-  min-height: min(520px, calc(100vh - 96px));
+#newGameSetupScreen .menu-card,
+#colonistSelectScreen .menu-card {
+  width: 100%;
+  min-height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: clamp(24px, 4vw, 64px) clamp(24px, 6vw, 96px);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
-.planet-scan-screen .scan-grid {
-  max-height: calc(100vh - 48px);
-  overflow: auto;
+#newGameSetupScreen .screen-title-row,
+#colonistSelectScreen .screen-title-row,
+#planetScanScreen .scan-title-row {
+  width: min(1280px, 100%);
+  margin: 0 auto clamp(22px, 3vh, 36px);
+  align-items: flex-start;
 }
 
-.setup-screen h1,
-.planet-scan-screen h1,
-.colonist-select-screen h1 {
-  font-size: clamp(34px, 4.8vw, 64px);
+#newGameSetupScreen h1,
+#planetScanScreen h1,
+#colonistSelectScreen h1 {
+  font-size: clamp(42px, 6vw, 86px);
+  line-height: .92;
+  letter-spacing: -.045em;
+  text-shadow: 0 18px 44px rgba(0,0,0,.62);
 }
 
-.setup-screen .screen-title-row,
-.planet-scan-screen .scan-title-row,
-.colonist-select-screen .screen-title-row {
-  margin-bottom: 18px;
+#newGameSetupScreen .screen-title-row p,
+#planetScanScreen .scan-title-row p,
+#colonistSelectScreen .screen-title-row p {
+  max-width: 720px;
+  color: rgba(230, 236, 245, .72);
+  text-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+
+#newGameSetupScreen .setup-layout,
+#newGameSetupScreen .setup-actions,
+#colonistSelectScreen .colonist-cards,
+#colonistSelectScreen .menu-actions {
+  width: min(1280px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#newGameSetupScreen .setup-layout {
+  align-items: stretch;
+}
+
+#newGameSetupScreen .setup-briefing-panel,
+#newGameSetupScreen .setup-sector-visual,
+#colonistSelectScreen .colonist-card {
+  box-shadow: 0 18px 54px rgba(0,0,0,.26);
+}
+
+#newGameSetupScreen .setup-actions,
+#colonistSelectScreen .menu-actions {
+  margin-top: clamp(18px, 3vh, 32px);
+}
+
+#planetScanScreen .planet-scan-shell {
+  width: 100%;
+  min-height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: clamp(24px, 4vw, 64px) clamp(24px, 6vw, 96px);
+  overflow: visible;
+}
+
+#planetScanScreen .scan-grid {
+  max-height: none;
+  overflow: visible;
 }
 
 @media (max-width: 900px) {
-  .setup-screen.active,
-  .planet-scan-screen.active,
-  .colonist-select-screen.active {
-    padding: 14px;
+  #newGameSetupScreen .menu-card,
+  #colonistSelectScreen .menu-card,
+  #planetScanScreen .planet-scan-shell {
+    padding: 18px;
   }
 
-  .setup-screen .menu-card,
-  .colonist-select-screen .menu-card,
-  .planet-scan-screen .planet-scan-shell {
-    width: 100%;
-    max-height: none;
+  #newGameSetupScreen .screen-title-row,
+  #colonistSelectScreen .screen-title-row,
+  #planetScanScreen .scan-title-row {
+    display: grid;
+    gap: 14px;
   }
 
-  .planet-scan-screen .scan-grid {
-    max-height: none;
+  #newGameSetupScreen h1,
+  #planetScanScreen h1,
+  #colonistSelectScreen h1 {
+    font-size: clamp(34px, 12vw, 56px);
   }
 }
