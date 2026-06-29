@@ -141,7 +141,7 @@
     if (craft && state && typeof selectedColonist === 'function') {
       cancelZoneToolForAction();
       const c = selectedColonist();
-      const station = selectedCraftStationId ? state.objects.find(o => o.id === selectedCraftStationId) : null;
+      const station = selectedCraftStationId ? state.objects.find(o => String(o.id) === String(selectedCraftStationId)) : null;
       if (c) assignCraft(c, craft.dataset.craft, station);
       updateUI(true);
       return;

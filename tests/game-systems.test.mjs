@@ -150,6 +150,111 @@ test('Handle priority can haul loose items to a built storage depot', () => {
   assert.equal(colonist.task.zoneObjectId, 'crate-1');
 });
 
+test('Crafting dock keeps string workstation ids selectable', () => {
+  let clickHandler = null;
+  const bench = { id: 'obj_bench_1', type: 'bench', x: 5, y: 6 };
+  const context = createContext({
+    state: { objects: [bench], colonists: [{ id: 1, name: 'Lia' }] },
+    selectedCraftStationId: null,
+    recipeDefs: {
+      hammer: { label: 'Martelo', station: 'bench', cost: { wood: 2 }, output: { items: { hammer: 1 } }, desc: 'Acelera construção.' }
+    },
+    stationLabels: { bench: 'Bancada' },
+    objectDefs: { bench: { name: 'bancada' } },
+    researchDefs: {},
+    document: {
+      addEventListener: (name, handler) => {
+        if (name === 'click') clickHandler = handler;
+      }
+    },
+    selectedColonist: () => ({ id: 1, name: 'Lia' }),
+    recipeUnlocked: () => true,
+    hasRecipeCost: () => true,
+    itemCostText: () => '2 madeira',
+    outputText: () => '+1 Martelo',
+    escapeHtml: value => String(value ?? ''),
+    assignCraft: (colonist, recipeKey, station) => {
+      context.assigned = { colonist, recipeKey, station };
+    },
+    updateUI: () => {}
+  });
+  runBrowserScript('src/game/ui/tab-crafting.js', context);
+
+  const html = context.HavenfallUI.tabViews.crafting.render();
+  assert.equal(context.selectedCraftStationId, 'obj_bench_1');
+  assert.match(html, /data-craft-recipe="hammer"/);
+
+  clickHandler({
+    target: {
+      closest: selector => selector === '[data-craft-station-id]' ? { dataset: { craftStationId: 'obj_bench_1' } } : null
+    }
+  });
+  assert.equal(context.selectedCraftStationId, 'obj_bench_1');
+});
+
+test('Living world registers water infrastructure and bridges unblock water', () => {
+  const context = createContext({
+    console,
+    performance: { now: () => 0 },
+    TILE: 48,
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    buildDefs: {},
+    objectDefs: {},
+    state: {
+      day: 1,
+      hour: 8,
+      speed: 1,
+      weather: 'limpo',
+      terrain: [
+        ['grass', 'grass', 'grass', 'grass'],
+        ['grass', 'water', 'water', 'grass'],
+        ['grass', 'grass', 'grass', 'grass']
+      ],
+      objects: [],
+      mobs: [],
+      wolves: [],
+      colonists: [],
+      resources: {},
+      world: { seed: 'test', waterTiles: [{ x: 1, y: 1 }], livingWorld: null, spawn: { x: 0, y: 0 } }
+    },
+    document: {
+      activeElement: null,
+      addEventListener: () => {},
+      createElement: () => ({
+        style: {},
+        dataset: {},
+        className: '',
+        setAttribute: () => {},
+        appendChild: () => {},
+        querySelector: () => null,
+        addEventListener: () => {}
+      }),
+      head: { appendChild: () => {} },
+      body: { appendChild: () => {} }
+    },
+    getWorldCols: () => 4,
+    getWorldRows: () => 3,
+    getObjectAt: (x, y) => context.state.objects.find(o => o.x === x && o.y === y) || null,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value))
+  });
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/living-world.js', context);
+
+  assert.equal(context.buildDefs.bridge.placeOnWater, true);
+  assert.equal(context.buildDefs.water_collector.needsAdjacentWater, true);
+  assert.equal(context.GameSystems.pathBlocked(1, 1), true);
+
+  context.state.objects.push({ id: 'bridge-1', type: 'bridge', x: 1, y: 1 });
+  assert.equal(context.GameSystems.pathBlocked(1, 1), false);
+
+  context.HavenfallLivingWorld.createWaypoint(3, 2, 'exploration', 'Ruina distante');
+  context.HavenfallLivingWorld.createWaypoint(1, 0, 'water', 'Agua ao norte');
+  const queue = context.HavenfallLivingWorld.generateExplorationQueue();
+  assert.equal(queue.length, 2);
+  assert.equal(context.state.livingWorld.explorationQueue.length, 2);
+});
+
 test('New game config clamps setup values and keeps planet scan stable', () => {
   const context = createContext({
     dom: { inputs: {} },
@@ -169,15 +274,23 @@ test('New game config clamps setup values and keeps planet scan stable', () => {
     difficulty: 'hard',
     mapSize: 'giant',
     eventIntensity: 'high',
-    resourcesPreset: 'rich'
+    resourcesPreset: 'rich',
+    sectorProfile: 'water',
+    landingPriority: 'resources'
   });
   const same = context.ensurePlanetScanOnConfig(config);
+  const changed = context.ensurePlanetScanOnConfig({ ...config, sectorProfile: 'rock' });
 
   assert.equal(config.colonyName, 'Vale Novo');
   assert.equal(config.seed, 'HVF-TESTE-01');
   assert.equal(config.colonistCount, 8);
+  assert.equal(config.sectorProfile, 'water');
+  assert.equal(config.landingPriority, 'resources');
   assert.equal(config.planetScan.seed, config.seed);
+  assert.equal(config.planetScan.sectorProfile, 'water');
+  assert.equal(config.planetScan.landingPriority, 'resources');
   assert.equal(same.planetScan.sectorId, config.planetScan.sectorId);
+  assert.equal(changed.planetScan.sectorProfile, 'rock');
 });
 
 test('Forge uses its own workstation sprite instead of fire or stove fallback', () => {

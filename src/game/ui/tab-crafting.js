@@ -14,8 +14,14 @@
     return stationLabels?.[type] || objectDefs?.[type]?.name || type;
   }
 
-  function selectedStation() {
-    return state?.objects?.find(o => o.id === selectedCraftStationId) || null;
+  function selectedStation(list = stations()) {
+    const selected = list.find(o => String(o.id) === String(selectedCraftStationId));
+    if (selected) return selected;
+    if (list.length === 1) {
+      selectedCraftStationId = list[0].id;
+      return list[0];
+    }
+    return null;
   }
 
   function recipeProgress(key) {
@@ -50,7 +56,7 @@
   function render() {
     if (!state) return '<div class="dock-empty">Inicie uma partida para fabricar.</div>';
     const list = stations();
-    const selected = selectedStation();
+    const selected = selectedStation(list);
     const station = selected || null;
     const recipes = station ? Object.entries(recipeDefs || {}).filter(([, r]) => r.station === station.type) : [];
     return `<div class="dock-tab-head"><div><h3>Crafting</h3><p>Receitas filtradas por estação de trabalho selecionada.</p></div></div>
@@ -63,12 +69,16 @@
   function handleClick(event) {
     const station = event.target.closest?.('[data-craft-station-id]');
     if (station) {
-      selectedCraftStationId = Number(station.dataset.craftStationId);
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      selectedCraftStationId = station.dataset.craftStationId;
       window.HavenfallUI.refreshDockPanel?.('crafting');
       return;
     }
     const recipe = event.target.closest?.('[data-craft-recipe]');
     if (!recipe || recipe.disabled || !state) return;
+    event.preventDefault?.();
+    event.stopPropagation?.();
     const c = selectedColonist?.();
     const stationObj = selectedStation();
     if (!c) { gameLog?.('Selecione um colono para fabricar.', 'warn'); return; }
@@ -77,6 +87,6 @@
     window.HavenfallUI.refreshDockPanel?.('crafting');
   }
 
-  document.addEventListener('click', handleClick);
+  document.addEventListener('click', handleClick, true);
   window.HavenfallUI.tabViews.crafting = { render };
 })();

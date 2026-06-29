@@ -2,7 +2,7 @@
 
 function activeCraftStation() {
   if (!state || !selectedCraftStationId) return null;
-  const station = state.objects.find(o => o.id === selectedCraftStationId);
+  const station = state.objects.find(o => String(o.id) === String(selectedCraftStationId));
   return station && stationLabels[station.type] ? station : null;
 }
 
@@ -175,6 +175,8 @@ function updateUI(force = false) {
   dom.resWood.textContent = Math.floor(state.resources.wood || 0);
   dom.resStone.textContent = Math.floor(state.resources.stone || 0);
   dom.resMetal.textContent = Math.floor(state.resources.metal || 0);
+  const resWater = dom.resWater || document.getElementById('resWater');
+  if (resWater) resWater.textContent = Math.floor(state.resources.water || 0);
   if (dom.resMedicine) dom.resMedicine.textContent = Math.floor(state.resources.medicine || 0);
   ensureResearchState();
   updateResearchUI();

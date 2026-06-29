@@ -10,9 +10,9 @@
   }
 
   const groups = {
-    structures: ['wall', 'door', 'crop'],
+    structures: ['wall', 'door', 'crop', 'bridge'],
     furniture: ['bed', 'campfire', 'crate', 'bench', 'research_desk', 'stove', 'forge', 'med_station', 'sewing_table', 'smokehouse'],
-    support: ['torch']
+    support: ['torch', 'fish_trap', 'water_collector', 'irrigation_channel']
   };
   const groupNames = { structures: 'Estruturas', furniture: 'Mobília', support: 'Suporte' };
   const costNames = { wood: 'Madeira', stone: 'Pedra', food: 'Comida', metal: 'Metal', medicine: 'Remédio', leather: 'Couro', cloth: 'Tecido', nails: 'Pregos' };
