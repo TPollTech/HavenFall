@@ -8,6 +8,12 @@
   const STUCK_REPATH_SECONDS = 3.0;
   const STUCK_CANCEL_SECONDS = 8.0;
   const MIN_MOVE_DELTA_PX = 0.35;
+  const TASK_VALIDATION_MS = 420;
+  const TASK_REPATH_MS = 850;
+
+  function nowMs() {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
 
   function cancel(c, reason) {
     if (window.HavenfallRuntime?.cancelColonistTask) return window.HavenfallRuntime.cancelColonistTask(c, reason);
@@ -16,6 +22,11 @@
     c.work = 0;
     c.note = reason || 'Ocioso';
     return true;
+  }
+
+  function taskSignature(task) {
+    if (!task) return '';
+    return [task.type, task.objId, task.poiId, task.wolfId, task.mobId, task.targetId, task.recipeKey, task.x, task.y, task.mineX, task.mineY].join('|');
   }
 
   function objectById(id) {
@@ -41,9 +52,12 @@
     return Math.round(c.x) === Math.round(tx) && Math.round(c.y) === Math.round(ty);
   }
 
-  function canRepath(c, task, target = null) {
+  function canRepath(c, task, target = null, force = false) {
     if (!task || !Number.isFinite(Number(task.x)) || !Number.isFinite(Number(task.y))) return false;
     if (typeof findPath !== 'function') return false;
+    const now = nowMs();
+    if (!force && Number(c._nextRuntimeRepathAt || 0) > now) return false;
+    c._nextRuntimeRepathAt = now + TASK_REPATH_MS;
     const path = findPath(c.x, c.y, task.x, task.y, target || null);
     if (!Array.isArray(path) || !path.length) return false;
     c.path = path;
@@ -115,13 +129,32 @@
     if (!task || isAtTaskTile(c, task)) return true;
     if (Array.isArray(c.path) && c.path.length) return true;
     if (canRepath(c, task, target)) return true;
-    cancel(c, 'Tarefa cancelada: destino inacessível.');
-    return false;
+    if (Number(c._runtimeNoPathSince || 0) <= 0) c._runtimeNoPathSince = nowMs();
+    if (nowMs() - c._runtimeNoPathSince > 2400) {
+      cancel(c, 'Tarefa cancelada: destino inacessível.');
+      return false;
+    }
+    return true;
+  }
+
+  function shouldValidateTask(c, task) {
+    const now = nowMs();
+    const signature = taskSignature(task);
+    if (c._runtimeTaskSignature !== signature) {
+      c._runtimeTaskSignature = signature;
+      c._nextRuntimeValidationAt = now + TASK_VALIDATION_MS;
+      c._runtimeNoPathSince = 0;
+      return true;
+    }
+    if (Number(c._nextRuntimeValidationAt || 0) > now) return false;
+    c._nextRuntimeValidationAt = now + TASK_VALIDATION_MS;
+    return true;
   }
 
   function beforeColonistUpdate(c) {
     if (!state || state.isPreview || !c?.task) return;
     const task = c.task;
+    if (!shouldValidateTask(c, task)) return;
     const validation = validateTarget(c, task);
     if (!validation.ok) {
       cancel(c, `Tarefa cancelada: ${validation.reason}`);
@@ -151,7 +184,7 @@
 
     if (c._runtimeStuckSeconds >= STUCK_REPATH_SECONDS) {
       const validation = validateTarget(c, c.task);
-      if (validation.ok && canRepath(c, c.task, validation.target)) {
+      if (validation.ok && canRepath(c, c.task, validation.target, true)) {
         c._runtimeStuckSeconds = 0;
         c.note = 'Rota recalculada';
       }
