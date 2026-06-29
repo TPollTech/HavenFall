@@ -3,6 +3,7 @@
 const GAME_HOUR_SECONDS_1X = 40;
 const TIME_SPEED = 1 / GAME_HOUR_SECONDS_1X;
 const loopErrorState = new Set();
+let doorAutoClosePulse = 0;
 
 function newGame() {
   writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
@@ -43,6 +44,64 @@ function safeSystemTick(label, fn) {
       console.error(`[GameLoop:${label}]`, err);
       if (typeof log === 'function') log(`Sistema ${label} falhou e foi isolado para manter o jogo rodando.`);
     }
+  }
+}
+
+function doorOpenState() { return window.DoorState?.OPEN || 'open'; }
+function doorClosedState() { return window.DoorState?.CLOSED || 'closed'; }
+function doorClock() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
+
+function isOpenedDoorObject(obj) {
+  return obj?.type === 'door' && (obj.state || doorClosedState()) === doorOpenState();
+}
+
+function normalizeDoorObject(obj) {
+  if (obj?.type !== 'door') return;
+  obj.state = obj.state || doorClosedState();
+  obj.doorState = obj.state;
+  obj.texture_id = obj.state === doorOpenState() ? 'door_wood_open' : 'door_wood_closed';
+  obj.lastDoorSeenAt = Number(obj.lastDoorSeenAt || doorClock());
+}
+
+function doorTileOccupied(obj) {
+  const actors = [ ...(state?.colonists || []), ...(state?.visitors || []), ...(state?.mobs || []) ];
+  return actors.some(actor => Math.round(actor.x) === obj.x && Math.round(actor.y) === obj.y);
+}
+
+function colonistNearDoor(obj) {
+  return (state?.colonists || []).some(c => !c.isUnconscious && Math.hypot(Math.round(c.x) - obj.x, Math.round(c.y) - obj.y) <= 1.35);
+}
+
+function closeDoorObject(obj, reason = 'auto') {
+  if (!isOpenedDoorObject(obj)) return false;
+  if (doorTileOccupied(obj)) {
+    obj.closeRequested = true;
+    return false;
+  }
+  obj.state = doorClosedState();
+  obj.doorState = doorClosedState();
+  obj.texture_id = 'door_wood_closed';
+  obj.lastClosedAt = doorClock();
+  obj.lastDoorReason = reason;
+  obj.lastOpenedBy = null;
+  obj.closeRequested = false;
+  if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+  return true;
+}
+
+function updateDoorAutoClose(dt) {
+  if (!state || appScreen !== SCREEN.PLAYING) return;
+  doorAutoClosePulse += dt * Number(state.speed || 1);
+  if (doorAutoClosePulse < 0.10) return;
+  doorAutoClosePulse = 0;
+  const now = doorClock();
+  for (const obj of state.objects || []) {
+    if (obj?.type !== 'door') continue;
+    normalizeDoorObject(obj);
+    if (!isOpenedDoorObject(obj)) continue;
+    const openedAt = Number(obj.lastOpenedAt || obj.lastDoorSeenAt || now);
+    const elapsed = (now - openedAt) / 1000;
+    if (obj.closeRequested || (!colonistNearDoor(obj) && elapsed >= 1.15) || elapsed >= 3.6) closeDoorObject(obj, 'auto');
   }
 }
 
@@ -87,6 +146,8 @@ function updateWorld(dt) {
       obj.growth = clamp((obj.growth || 0) + tick * 0.85 * rainBonus, 0, 100);
     }
   }
+
+  updateDoorAutoClose(dt);
 
   for (const c of state.colonists || []) {
     try {
@@ -182,54 +243,5 @@ function checkGoals() {
   setGoal('researchDesk', researchDesk);
   setGoal('techs', allTechs);
   setGoal('food', state.resources.food >= 20);
-  setGoal('days', state.day >= 4);
-  if (!state.won && beds >= 2 && campfire && researchDesk && allTechs && state.resources.food >= 20 && state.day >= 4) {
-    state.won = true;
-    setScreen(SCREEN.PAUSED);
-    showModal('Base estabilizada!', 'Tu venceu a versão atual: a colônia tem cama, fogo, comida, mesa de pesquisa e tecnologias avançadas desbloqueadas. Dá para continuar jogando.', 'Continuar jogando');
-    log('Objetivos principais concluídos.');
-  }
+  setGoal('medicine', state.resources.medicine >= 1);
 }
-
-function setGoal(key, done) {
-  const el = dom.goalList?.querySelector(`[data-goal="${key}"]`);
-  if (el) el.classList.toggle('done', !!done);
-}
-
-function gameLoop(now) {
-  if (window.HavenfallSettings?.shouldSkipFrame?.(now)) {
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-
-  const frameStart = performance.now();
-  const dt = Math.min(0.05, (now - lastTime) / 1000);
-  lastTime = now;
-
-  const updateStart = performance.now();
-  if (window.GameSystems) GameSystems.tick(dt, safeSystemTick);
-  else safeSystemTick('world', () => updateWorld(dt));
-  safeSystemTick('camera', () => updateCamera(dt));
-  const updateMs = performance.now() - updateStart;
-
-  let renderMs = 0;
-  safeSystemTick('draw', () => {
-    if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
-      const renderStart = performance.now();
-      draw();
-      renderMs = performance.now() - renderStart;
-    }
-  });
-
-  uiTimer += dt;
-  autosaveTimer += dt;
-  if (state && uiTimer > 0.25) { uiTimer = 0; safeSystemTick('ui', () => updateUI()); }
-  if (state && settings.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) { autosaveTimer = 0; safeSystemTick('save', () => saveGame(false)); }
-
-  window.HavenfallSettings?.recordFrame?.({ frameMs: performance.now() - frameStart, updateMs, renderMs });
-  requestAnimationFrame(gameLoop);
-}
-
-window.GameSystems?.registerTick('world', updateWorld, { order: 30 });
-window.TIME_SPEED = TIME_SPEED;
-window.GAME_HOUR_SECONDS_1X = GAME_HOUR_SECONDS_1X;
