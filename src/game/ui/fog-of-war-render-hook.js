@@ -5,15 +5,20 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.fogOfWarRenderHookInstalled = true;
 
-  drawFogOfWar = function drawStrictFogOfWar(bounds = visibleTileBounds(1)) {
+  drawFogOfWar = function drawReadableFogOfWar(bounds = visibleTileBounds(1)) {
     if (!state?.world?.exploration) return;
     ctx.save();
     for (let y = bounds.startY; y <= bounds.endY; y++) {
       for (let x = bounds.startX; x <= bounds.endX; x++) {
         const v = state.world.exploration[y]?.[x] || 0;
         if (v === 2) continue;
-        ctx.fillStyle = v === 1 ? 'rgba(4, 8, 13, .58)' : 'rgba(0, 0, 0, 1)';
+        const unseen = v === 0;
+        ctx.fillStyle = unseen ? 'rgba(3, 7, 18, .86)' : 'rgba(4, 8, 13, .48)';
         ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
+        if (unseen && ((x + y) % 2 === 0)) {
+          ctx.fillStyle = 'rgba(148, 163, 184, .035)';
+          ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
+        }
       }
     }
     ctx.restore();
