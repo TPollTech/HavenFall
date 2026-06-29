@@ -62,8 +62,7 @@
     "win": {
       "target": [
         "portable"
-      ],
-      "icon": "logo.png"
+      ]
     }
   }
 }
