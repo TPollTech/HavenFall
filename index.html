@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="logo.png" />
   <link rel="stylesheet" href="src/styles.css" />
   <link rel="stylesheet" href="src/hud_footer.css" />
+  <link rel="stylesheet" href="src/pregame-cinematic.css" />
 </head>
 <body>
   <main id="app" class="app-shell">
@@ -88,7 +89,7 @@
           <div>
             <div class="kicker">Novo jogo</div>
             <h1>Configuração da Colônia</h1>
-            <p>Defina o setor de pouso, o risco da expedição e a equipe inicial.</p>
+            <p>Defina o setor de pouso, o risco da expedição e a equipe inicial antes de tocar no mundo.</p>
           </div>
           <button id="setupBackBtn" class="secondary">Voltar</button>
         </div>
@@ -127,7 +128,7 @@
       <div class="planet-scan-shell">
         <div class="scan-panel scan-hologram-panel"><div class="scan-radar" aria-hidden="true"><div id="scanRadarLabel" class="scan-sector-label"><span>SETOR</span><b>HV-00000</b></div></div></div>
         <div class="scan-panel scan-grid">
-          <div class="scan-title-row"><div><div class="kicker">Varredura Planetária</div><h1>Análise de Setor</h1><p>Leitura orbital do setor que será usado pela geração do mapa, clima, recursos e pontos de interesse.</p></div><div class="scan-status-pill">Leitura pronta</div></div>
+          <div class="scan-title-row"><div><div class="kicker">Varredura Planetária</div><h1>Análise de Setor</h1><p>Leitura orbital em tela cheia do setor que será usado pela geração do mapa, clima, recursos e pontos de interesse.</p></div><div class="scan-status-pill">Leitura pronta</div></div>
           <div class="scan-signature-card"><b id="scanSectorTitle">Primeiro Refúgio</b><small id="scanSectorMeta">Seed · setor · intensidade</small></div>
           <div><div class="kicker">Dados do Setor</div><div id="scanMetrics" class="scan-data-list"></div></div>
           <div><div class="kicker">Assinaturas Detectadas</div><div id="scanSignatures" class="scan-signature-list"></div></div>
@@ -141,7 +142,41 @@
       <div class="menu-card wide-card max-card">
         <div class="screen-title-row"><div><div class="kicker">Seleção de colonos</div><h1>Escolha quem vai começar</h1><p>Revise papéis, aptidões e cobertura operacional antes do pouso.</p></div><button id="colonistBackBtn" class="secondary">Voltar</button></div>
         <div id="colonistCards" class="colonist-cards"></div>
-        <div class="menu-actions row spread"><button id="rerollAllBtn" class="secondary">Rerolar todos não travados</button><button id="startSelectedGameBtn">Iniciar Partida</button></div>
+        <div class="menu-actions row spread"><button id="rerollAllBtn" class="secondary">Rerolar todos não travados</button><button id="startSelectedGameBtn">Revisar Expedição</button></div>
+      </div>
+    </section>
+
+    <section id="expeditionBriefingScreen" class="screen expedition-briefing-screen" data-screen="EXPEDITION_BRIEFING">
+      <div class="expedition-briefing-shell">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Resumo da Expedição</div>
+            <h1>Última checagem antes do pouso</h1>
+            <p>Confirme setor, equipe e risco operacional. Depois disso, a colônia entra no mundo sem modal intermediário.</p>
+          </div>
+          <button id="briefingBackBtn" class="secondary">Voltar aos Colonos</button>
+        </div>
+        <div class="expedition-briefing-grid">
+          <section class="expedition-panel">
+            <div>
+              <div class="kicker">Parâmetros finais</div>
+              <div id="expeditionBriefingSummary" class="expedition-stat-grid"></div>
+            </div>
+            <div>
+              <div class="kicker">Equipe de pouso</div>
+              <div id="expeditionBriefingColonists" class="expedition-colonist-grid"></div>
+            </div>
+            <div>
+              <div class="kicker">Log orbital</div>
+              <div id="expeditionBriefingLog" class="expedition-colonist-grid"></div>
+            </div>
+          </section>
+          <aside class="expedition-final-card">
+            <div id="expeditionOrbitalMark" class="expedition-orbital-mark"><div><span>Pouso autorizado</span><b>HV-00000</b></div></div>
+            <div class="subtle-box">A próxima ação inicia a gameplay diretamente. Nada de popup de introdução antes do mundo.</div>
+          </aside>
+        </div>
+        <div class="expedition-actions"><button id="briefingStartBtn" class="primary">Iniciar Pouso</button></div>
       </div>
     </section>
 
@@ -190,7 +225,6 @@
     </section>
   </main>
 
-  <div id="eventModal" class="modal game-popup-modal" aria-hidden="true"><div class="modal-box"><h2>Dia 1 — O Primeiro Fogo</h2><p>Três sobreviventes chegam a um vale desconhecido. Recursos são poucos, a noite cai cedo e algo se move entre as árvores. Construa abrigo, mantenha todos vivos e pesquise tecnologias para transformar o acampamento em uma colônia.</p><button id="modalStartBtn">Começar</button></div></div>
   <div id="pauseOverlay" class="pause-overlay game-popup-modal" aria-hidden="true"><div class="pause-card"><div class="kicker">Pausado</div><h1>Menu</h1><p>Salve, carregue ou ajuste a partida.</p><div class="menu-actions vertical"><button id="resumeBtn">Continuar</button><button id="pauseSaveBtn">Salvar Agora</button><button id="pauseLoadBtn">Carregar Save</button><button id="pauseSettingsBtn" class="secondary">Configurações</button><button id="pauseMainMenuBtn" class="secondary">Voltar ao Menu Principal</button></div></div></div>
 
   <script type="module" src="src/game/boot.js"></script>
