@@ -137,6 +137,8 @@ function compactPlanetScanForWorld(config) {
   return {
     version: profile.version,
     sectorId: profile.sectorId,
+    sectorProfile: profile.sectorProfile || config.sectorProfile || 'balanced',
+    landingPriority: profile.landingPriority || config.landingPriority || 'safe',
     dominantBiome: profile.dominantBiome,
     biomeStats: { ...(profile.biomeStats || {}) },
     metrics: { ...(profile.metrics || {}) },

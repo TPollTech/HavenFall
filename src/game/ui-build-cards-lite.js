@@ -10,8 +10,8 @@
   }
 
   const groups = {
-    structures: ['wall', 'door', 'bridge', 'crop'],
-    furniture: ['bed', 'campfire', 'crate', 'bench', 'research_desk', 'stove', 'forge', 'med_station', 'sewing_table', 'smokehouse', 'butcher_table'],
+    structures: ['wall', 'door', 'crop'],
+    furniture: ['bed', 'campfire', 'crate', 'bench', 'research_desk', 'stove', 'forge', 'med_station', 'sewing_table', 'smokehouse'],
     support: ['torch']
   };
   const groupNames = { structures: 'Estruturas', furniture: 'Mobília', support: 'Suporte' };

@@ -7,7 +7,9 @@ var defaultNewGameConfig = Object.freeze({
   colonistCount: 3,
   resourcesPreset: 'standard',
   eventIntensity: 'normal',
-  mapSize: 'giant'
+  mapSize: 'giant',
+  sectorProfile: 'balanced',
+  landingPriority: 'safe'
 });
 const MAX_STARTING_COLONISTS = 8;
 
@@ -82,7 +84,9 @@ function normalizeNewGameConfig(config = {}) {
     colonistCount: clampColonistCount(config.colonistCount),
     resourcesPreset: ['scarce', 'standard', 'rich'].includes(config.resourcesPreset) ? config.resourcesPreset : defaultNewGameConfig.resourcesPreset,
     eventIntensity: ['low', 'normal', 'high'].includes(config.eventIntensity) ? config.eventIntensity : defaultNewGameConfig.eventIntensity,
-    mapSize: ['large', 'huge', 'giant', 'infinite_chunks'].includes(config.mapSize) ? config.mapSize : defaultNewGameConfig.mapSize
+    mapSize: ['large', 'huge', 'giant', 'infinite_chunks'].includes(config.mapSize) ? config.mapSize : defaultNewGameConfig.mapSize,
+    sectorProfile: ['balanced', 'forest', 'water', 'rock', 'harsh'].includes(config.sectorProfile) ? config.sectorProfile : defaultNewGameConfig.sectorProfile,
+    landingPriority: ['safe', 'resources', 'exploration', 'challenge'].includes(config.landingPriority) ? config.landingPriority : defaultNewGameConfig.landingPriority
   };
 }
 

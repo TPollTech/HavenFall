@@ -33,6 +33,26 @@
     return true;
   }
 
+  function setEnabled(registry, id, enabled) {
+    const entry = registry.get(id);
+    if (!entry) return false;
+    entry.enabled = !!enabled;
+    return true;
+  }
+
+  function setRegistryEnabled(registry, matcher, enabled) {
+    let changed = 0;
+    const test = typeof matcher === 'function'
+      ? matcher
+      : (id, entry) => String(id) === String(matcher) || String(entry.type || '') === String(matcher);
+    for (const [id, entry] of registry.entries()) {
+      if (!test(id, entry)) continue;
+      entry.enabled = !!enabled;
+      changed++;
+    }
+    return changed;
+  }
+
   function registerTick(id, fn, options = {}) {
     return register(ticks, id, fn, options);
   }
@@ -43,6 +63,10 @@
 
   function hasTick(id) {
     return ticks.has(id);
+  }
+
+  function setTickEnabled(id, enabled) {
+    return setEnabled(ticks, id, enabled);
   }
 
   function tick(dt, safeTick = null) {
@@ -110,12 +134,20 @@
     return register(drawOverlays, id, fn, options);
   }
 
+  function setDrawOverlayEnabled(id, enabled) {
+    return setEnabled(drawOverlays, id, enabled);
+  }
+
   function drawRegisteredOverlays() {
     run(drawOverlays);
   }
 
   function registerTileRenderer(id, fn, options = {}) {
     return register(tileRenderers, id, fn, options);
+  }
+
+  function setTileRendererEnabled(id, enabled) {
+    return setEnabled(tileRenderers, id, enabled);
   }
 
   function drawTileRenderers(x, y, type) {
@@ -126,12 +158,20 @@
     return register(objectRenderers, id, fn, options);
   }
 
+  function setObjectRendererEnabled(id, enabled) {
+    return setEnabled(objectRenderers, id, enabled);
+  }
+
   function drawObject(obj) {
     return runFirst(objectRenderers, obj);
   }
 
   function registerWorldOverlay(id, fn, options = {}) {
     return register(worldOverlays, id, fn, options);
+  }
+
+  function setWorldOverlayEnabled(id, enabled) {
+    return setEnabled(worldOverlays, id, enabled);
   }
 
   function drawWorldOverlays(bounds = null) {
@@ -198,6 +238,7 @@
     registerTick,
     unregisterTick,
     hasTick,
+    setTickEnabled,
     tick,
     registerColonistUpdateGuard,
     runColonistUpdateGuards,
@@ -210,12 +251,16 @@
     registerTaskHandler,
     handleTask,
     registerDrawOverlay,
+    setDrawOverlayEnabled,
     drawRegisteredOverlays,
     registerTileRenderer,
+    setTileRendererEnabled,
     drawTileRenderers,
     registerObjectRenderer,
+    setObjectRendererEnabled,
     drawObject,
     registerWorldOverlay,
+    setWorldOverlayEnabled,
     drawWorldOverlays,
     registerCollisionProvider,
     collisionAt,
@@ -225,6 +270,7 @@
     movementMultiplier,
     registerWorkRateModifier,
     applyWorkRateModifiers,
+    setRegistryEnabled,
     installHook,
     installedHooks
   };

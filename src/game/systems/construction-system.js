@@ -41,6 +41,8 @@
 
   function isWallAnchorAt(x, y) { const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null; return obj?.type === 'wall' || (obj?.type === 'blueprint' && typeForBuild(obj.buildType) === 'wall'); }
   function hasAdjacentWallForDoor(x, y) { return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => isWallAnchorAt(x + dx, y + dy)); }
+  function isWaterTerrain(x, y) { return state?.terrain?.[y]?.[x] === 'water'; }
+  function hasAdjacentWater(x, y) { return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => isWaterTerrain(x + dx, y + dy)); }
   function occupiedByColonist(x, y) { return !!state?.colonists?.some(c => Math.round(c.x) === x && Math.round(c.y) === y); }
 
   function canPlaceBuild(key, x, y) {
@@ -54,6 +56,9 @@
     if (occupiedByColonist(tx, ty)) return false;
     if (state.terrain?.[ty]?.[tx] === 'water' && def.type !== 'bridge') return false;
     if (def.type === 'door' && !hasAdjacentWallForDoor(tx, ty)) return false;
+    if (def.placeOnWater) return isWaterTerrain(tx, ty);
+    if (def.needsAdjacentWater && !hasAdjacentWater(tx, ty)) return false;
+    if (isWaterTerrain(tx, ty)) return false;
     return state.terrain?.[ty]?.[tx] !== 'stone' || def.type === 'wall';
   }
 
@@ -105,7 +110,7 @@
     originalUpdateUI = typeof updateUI === 'function' ? updateUI : null;
     originalRoutePrimaryObjectAction = typeof routePrimaryObjectAction === 'function' ? routePrimaryObjectAction : null;
     installDefinitions();
-    window.tileToWorld = tileToWorldGrid; window.worldToTile = worldToTileGrid; window.canvasClientToWorld = canvasClientToWorldGrid; window.tileFromPointerEvent = tileFromPointer; window.tileRectBetween = rectBetween; window.forEachTileInRect = eachTile; window.canPlaceBuild = canPlaceBuild; window.queueConstruction = queueConstruction; window.QueueConstruction = queueConstruction; window.placeBlueprintRect = placeRect; window.placeBlueprint = placeBuildBlueprint; window.toggleDoorState = toggleDoorState; window.applyCompletedBuildMetadata = applyBuildMetadata; window.hasAdjacentWallForDoor = hasAdjacentWallForDoor; window.isWallAnchorAt = isWallAnchorAt;
+    window.tileToWorld = tileToWorldGrid; window.worldToTile = worldToTileGrid; window.canvasClientToWorld = canvasClientToWorldGrid; window.tileFromPointerEvent = tileFromPointer; window.tileRectBetween = rectBetween; window.forEachTileInRect = eachTile; window.canPlaceBuild = canPlaceBuild; window.queueConstruction = queueConstruction; window.QueueConstruction = queueConstruction; window.placeBlueprintRect = placeRect; window.placeBlueprint = placeBuildBlueprint; window.toggleDoorState = toggleDoorState; window.applyCompletedBuildMetadata = applyBuildMetadata; window.hasAdjacentWallForDoor = hasAdjacentWallForDoor; window.isWallAnchorAt = isWallAnchorAt; window.hasAdjacentWater = hasAdjacentWater;
     try { tileFromEvent = tileFromPointer; } catch (_) {}
     try { canPlace = (type, x, y) => canPlaceBuild(type === 'wall' ? 'wall' : type, x, y); } catch (_) {}
     try { placeBlueprint = placeBuildBlueprint; } catch (_) {}

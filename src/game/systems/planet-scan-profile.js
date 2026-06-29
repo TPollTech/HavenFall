@@ -56,6 +56,12 @@
     if (events === 'high') { stats.desert += 4; stats.snow += 3; stats.water += 2; }
     if (events === 'low') { stats.forest += 5; stats.rock -= 2; }
 
+    const profile = config?.sectorProfile || 'balanced';
+    if (profile === 'forest') { stats.forest += 22; stats.water += 4; stats.desert -= 8; stats.rock -= 4; }
+    if (profile === 'water') { stats.water += 18; stats.forest += 7; stats.desert -= 6; stats.snow -= 3; }
+    if (profile === 'rock') { stats.rock += 22; stats.desert += 5; stats.forest -= 9; stats.water -= 3; }
+    if (profile === 'harsh') { stats.desert += 13; stats.snow += 11; stats.rock += 9; stats.forest -= 15; stats.water -= 4; }
+
     return normalizeStats(stats);
   }
 
@@ -70,7 +76,9 @@
     const biology = Math.max(4, Math.min(98, Math.round(18 + stats.forest * 0.82 + stats.water * 0.30 - stats.desert * 0.18 + rand() * 10)));
     const climate = Math.max(4, Math.min(98, Math.round(18 + stats.snow * 0.58 + stats.desert * 0.45 + eventBonus + rand() * 12)));
     const noise = Math.max(4, Math.min(98, Math.round(22 + difficultyBonus + eventBonus * 0.6 + rand() * 22)));
-    const landing = Math.max(4, Math.min(98, Math.round(88 - climate * 0.25 - noise * 0.18 - Math.max(0, difficultyBonus) * 0.25)));
+    const priority = config?.landingPriority || 'safe';
+    const priorityLanding = ({ safe: 10, resources: -2, exploration: -5, challenge: -14 })[priority] || 0;
+    const landing = Math.max(4, Math.min(98, Math.round(88 + priorityLanding - climate * 0.25 - noise * 0.18 - Math.max(0, difficultyBonus) * 0.25)));
     return { geology, biology, climate, noise, landing };
   }
 
@@ -105,6 +113,8 @@
     return {
       version: 'planet-scan-profile-v1',
       seed: config.seed || '',
+      sectorProfile: config.sectorProfile || 'balanced',
+      landingPriority: config.landingPriority || 'safe',
       sectorId,
       dominantBiome,
       biomeStats: stats,
@@ -130,7 +140,10 @@
   function ensurePlanetScanOnConfig(config = {}) {
     const normalized = typeof normalizeNewGameConfig === 'function' ? normalizeNewGameConfig(config) : { ...config };
     const current = normalized.planetScan;
-    if (current?.version === 'planet-scan-profile-v1' && (!current.seed || current.seed === normalized.seed)) {
+    if (current?.version === 'planet-scan-profile-v1'
+      && (!current.seed || current.seed === normalized.seed)
+      && (current.sectorProfile || 'balanced') === (normalized.sectorProfile || 'balanced')
+      && (current.landingPriority || 'safe') === (normalized.landingPriority || 'safe')) {
       return { ...normalized, planetScan: current };
     }
     return attachPlanetScanToConfig(normalized);

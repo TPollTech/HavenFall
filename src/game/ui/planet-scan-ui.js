@@ -222,6 +222,88 @@
         box-shadow: 0 0 10px currentColor;
       }
 
+      .scan-custom-panel {
+        border: 1px solid rgba(125,211,252,.16);
+        background: rgba(2,6,23,.38);
+        border-radius: 16px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .scan-custom-panel h3,
+      .scan-world-card h3 {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #67e8f9;
+      }
+
+      .scan-custom-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .scan-custom-grid label {
+        display: grid;
+        gap: 5px;
+        color: rgba(203,213,225,.74);
+        font-size: 11px;
+      }
+
+      .scan-custom-grid input,
+      .scan-custom-grid select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid rgba(125,211,252,.20);
+        border-radius: 10px;
+        background: rgba(2,6,23,.72);
+        color: #e5eefc;
+        padding: 8px;
+      }
+
+      .scan-world-card {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        top: 18px;
+        z-index: 5;
+        display: grid;
+        gap: 8px;
+        border: 1px solid rgba(125,211,252,.18);
+        border-radius: 16px;
+        background: rgba(2,6,23,.58);
+        padding: 10px;
+        backdrop-filter: blur(8px);
+      }
+
+      .scan-world-map-canvas {
+        width: 100%;
+        height: min(232px, 30vh);
+        min-height: 170px;
+        border-radius: 12px;
+        background: #020617;
+        border: 1px solid rgba(148,163,184,.18);
+        image-rendering: pixelated;
+      }
+
+      .scan-world-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .scan-world-summary span {
+        border: 1px solid rgba(148,163,184,.13);
+        border-radius: 10px;
+        background: rgba(15,23,42,.54);
+        padding: 6px;
+        color: rgba(226,232,240,.82);
+        font-size: 10px;
+      }
+
       .scan-data-list,
       .scan-log-list,
       .scan-signature-list {
@@ -334,6 +416,18 @@
           right: auto;
           bottom: auto;
           margin-top: 12px;
+        }
+        .scan-custom-grid,
+        .scan-world-summary {
+          grid-template-columns: 1fr;
+        }
+        .scan-world-card {
+          position: relative;
+          left: auto;
+          right: auto;
+          top: auto;
+          width: 100%;
+          box-sizing: border-box;
         }
       }
     `;
@@ -569,6 +663,170 @@
       }).join('');
   }
 
+  function ensureScanCustomizationPanel() {
+    const grid = document.querySelector('.scan-grid');
+    if (!grid) return null;
+    let panel = document.getElementById('scanCustomizationPanel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'scanCustomizationPanel';
+      panel.className = 'scan-custom-panel';
+      const anchor = document.querySelector('.scan-signature-card');
+      grid.insertBefore(panel, anchor?.nextSibling || grid.firstChild);
+      panel.addEventListener('input', onScanCustomizationInput);
+      panel.addEventListener('change', onScanCustomizationInput);
+    }
+    return panel;
+  }
+
+  function renderScanCustomizationPanel(config) {
+    const panel = ensureScanCustomizationPanel();
+    if (!panel) return;
+    if (panel.contains(document.activeElement)) return;
+    panel.innerHTML = `<h3>Customização do setor</h3>
+      <div class="scan-custom-grid">
+        <label>Seed<input data-scan-config="seed" value="${escapeHtml(config.seed || '')}" maxlength="32"></label>
+        <label>Mapa<select data-scan-config="mapSize">${scanOptions({ large: 'Grande', huge: 'Enorme', giant: 'Gigante', infinite_chunks: 'Infinito' }, config.mapSize)}</select></label>
+        <label>Perfil<select data-scan-config="sectorProfile">${scanOptions({ balanced: 'Equilibrado', forest: 'Floresta viva', water: 'Bacia hídrica', rock: 'Rochoso/mineral', harsh: 'Hostil extremo' }, config.sectorProfile || 'balanced')}</select></label>
+        <label>Pouso<select data-scan-config="landingPriority">${scanOptions({ safe: 'Seguro', resources: 'Perto de recursos', exploration: 'Exploração', challenge: 'Desafio' }, config.landingPriority || 'safe')}</select></label>
+        <label>Dificuldade<select data-scan-config="difficulty">${scanOptions({ easy: 'Fácil', normal: 'Normal', hard: 'Difícil', hardcore: 'Hardcore' }, config.difficulty)}</select></label>
+        <label>Eventos<select data-scan-config="eventIntensity">${scanOptions({ low: 'Baixa', normal: 'Normal', high: 'Alta' }, config.eventIntensity)}</select></label>
+        <label>Suprimentos<select data-scan-config="resourcesPreset">${scanOptions({ scarce: 'Escassos', standard: 'Padrão', rich: 'Abundantes' }, config.resourcesPreset)}</select></label>
+        <label>Colonos<input data-scan-config="colonistCount" type="number" min="1" max="8" value="${Number(config.colonistCount || 3)}"></label>
+      </div>`;
+  }
+
+  function scanOptions(options, selected) {
+    return Object.entries(options).map(([value, label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
+  }
+
+  function onScanCustomizationInput(event) {
+    const field = event.target.closest?.('[data-scan-config]');
+    if (!field) return;
+    const key = field.dataset.scanConfig;
+    const base = { ...(typeof newGameConfig !== 'undefined' && newGameConfig ? newGameConfig : readNewGameConfigSafe?.() || defaultNewGameConfig) };
+    const value = key === 'colonistCount' ? clampColonistCount(field.value) : field.value;
+    const next = { ...base, [key]: value, planetScan: null };
+    if (key === 'seed') next.seed = normalizeSeedValue(field.value);
+    if (typeof newGameConfig !== 'undefined') newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(next) : next;
+    syncSetupInputsFromScan(newGameConfig || next);
+    refreshPlanetScan(newGameConfig || next);
+  }
+
+  function syncSetupInputsFromScan(config) {
+    if (!dom?.inputs) return;
+    if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = config.seed || '';
+    if (dom.inputs.mapSize) dom.inputs.mapSize.value = config.mapSize || 'giant';
+    if (dom.inputs.difficulty) dom.inputs.difficulty.value = config.difficulty || 'normal';
+    if (dom.inputs.resourcesPreset) dom.inputs.resourcesPreset.value = config.resourcesPreset || 'standard';
+    if (dom.inputs.eventIntensity) dom.inputs.eventIntensity.value = config.eventIntensity || 'normal';
+    if (dom.inputs.colonistCount) dom.inputs.colonistCount.value = String(config.colonistCount || 3);
+    if (typeof updateSetupSummary === 'function') updateSetupSummary();
+  }
+
+  function ensureWorldPreviewCard() {
+    const panel = document.querySelector('.scan-hologram-panel');
+    if (!panel) return null;
+    let card = document.getElementById('scanWorldPreviewCard');
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'scanWorldPreviewCard';
+      card.className = 'scan-world-card';
+      card.innerHTML = '<h3>Prévia real do mundo</h3><canvas id="scanWorldMapCanvas" class="scan-world-map-canvas"></canvas><div id="scanWorldSummary" class="scan-world-summary"></div>';
+      panel.appendChild(card);
+    }
+    return card;
+  }
+
+  function buildPreviewWorld(config) {
+    if (typeof generateWorldFromSeed !== 'function') return null;
+    try {
+      return generateWorldFromSeed(config);
+    } catch (error) {
+      console.warn('[Planet Scan] Falha ao gerar prévia real', error);
+      return null;
+    }
+  }
+
+  function terrainBiomeStats(world) {
+    const stats = { forest: 0, desert: 0, snow: 0, rock: 0, water: 0 };
+    let total = 0;
+    for (let y = 0; y < (world?.rows || 0); y++) {
+      for (let x = 0; x < (world?.cols || 0); x++) {
+        const type = world.terrain?.[y]?.[x] || 'grass';
+        const key = type === 'water' ? 'water' : type === 'stone' ? 'rock' : type === 'sand' ? 'desert' : type === 'snow' ? 'snow' : 'forest';
+        stats[key] += 1;
+        total++;
+      }
+    }
+    if (!total) return stats;
+    return Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, Math.round(value / total * 100)]));
+  }
+
+  function dominantBiomeFromStats(stats = {}) {
+    return Object.entries(stats).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0]?.[0] || 'forest';
+  }
+
+  function terrainColor(type) {
+    if (type === 'water') return [24, 88, 122];
+    if (type === 'stone') return [104, 116, 135];
+    if (type === 'sand') return [185, 125, 45];
+    if (type === 'dirt') return [117, 79, 45];
+    if (type === 'snow') return [178, 224, 235];
+    return [42, 132, 82];
+  }
+
+  function drawRealWorldPreview(world) {
+    const card = ensureWorldPreviewCard();
+    const canvas = document.getElementById('scanWorldMapCanvas');
+    const summary = document.getElementById('scanWorldSummary');
+    if (!card || !canvas || !world?.terrain) return;
+    const scale = Math.max(1, Math.floor(320 / Math.max(world.cols, world.rows)));
+    canvas.width = Math.max(240, world.cols * scale);
+    canvas.height = Math.max(160, world.rows * scale);
+    const ctx2 = canvas.getContext('2d');
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < world.rows; y++) {
+      for (let x = 0; x < world.cols; x++) {
+        const rgb = terrainColor(world.terrain[y]?.[x]);
+        ctx2.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx2.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+    for (const obj of world.objects || []) {
+      if (!obj || obj.x < 0 || obj.y < 0) continue;
+      if (['tree', 'bush', 'berry'].includes(obj.type)) ctx2.fillStyle = '#86efac';
+      else if (['stone', 'ore'].includes(obj.type)) ctx2.fillStyle = '#e2e8f0';
+      else if (obj.type === 'cache') ctx2.fillStyle = '#facc15';
+      else continue;
+      ctx2.fillRect(obj.x * scale, obj.y * scale, Math.max(1, scale), Math.max(1, scale));
+    }
+    for (const poi of world.pointsOfInterest || []) {
+      ctx2.fillStyle = '#fb7185';
+      ctx2.fillRect(poi.x * scale - 1, poi.y * scale - 1, Math.max(3, scale + 2), Math.max(3, scale + 2));
+    }
+    if (world.spawn) {
+      ctx2.fillStyle = '#f8fafc';
+      ctx2.strokeStyle = '#020617';
+      ctx2.lineWidth = 2;
+      ctx2.beginPath();
+      ctx2.arc(world.spawn.x * scale + scale / 2, world.spawn.y * scale + scale / 2, Math.max(4, scale * 2.5), 0, Math.PI * 2);
+      ctx2.fill();
+      ctx2.stroke();
+    }
+    const stats = terrainBiomeStats(world);
+    if (summary) {
+      summary.innerHTML = [
+        `Mapa ${world.cols}x${world.rows}`,
+        `Pouso ${world.spawn?.x || 0},${world.spawn?.y || 0}`,
+        `${world.pointsOfInterest?.length || 0} pontos de interesse`,
+        `Água ${stats.water || 0}%`,
+        `Rocha ${stats.rock || 0}%`,
+        `Vegetação ${stats.forest || 0}%`
+      ].map(text => `<span>${escapeHtml(text)}</span>`).join('');
+    }
+  }
+
   function ensurePlanetCanvas() {
     const radar = document.querySelector('.scan-radar');
     if (!radar) return null;
@@ -707,8 +965,15 @@
       ? ensurePlanetScanOnConfig(baseConfig)
       : { ...baseConfig, planetScan: typeof buildPlanetScanWorldgenProfile === 'function' ? buildPlanetScanWorldgenProfile(baseConfig) : null };
     if (typeof newGameConfig !== 'undefined') newGameConfig = activeConfig;
+    renderScanCustomizationPanel(activeConfig);
+    const previewWorld = buildPreviewWorld(activeConfig);
     const profile = activeConfig.planetScan || null;
-    const model = modelFromWorldgenProfile(activeConfig, profile);
+    let model = modelFromWorldgenProfile(activeConfig, profile);
+    if (previewWorld) {
+      const realStats = terrainBiomeStats(previewWorld);
+      model = { ...model, biomeStats: realStats, dominantBiome: dominantBiomeFromStats(realStats) };
+      drawRealWorldPreview(previewWorld);
+    }
     const sector = profile?.sectorId || `HV-${String(stableHash(activeConfig.seed || 'scan')).slice(0, 5).toUpperCase()}`;
 
     const title = document.getElementById('scanSectorTitle');
@@ -734,7 +999,8 @@
       log.innerHTML = [
         'Sincronizando telemetria orbital...',
         `Seed confirmado: ${activeConfig.seed || 'sem seed'}`,
-        `Bioma dominante: ${BIOME_LABELS[model.dominantBiome] || model.dominantBiome}`,
+        `Prévia real: ${previewWorld ? `${previewWorld.cols}x${previewWorld.rows} tiles` : 'indisponível'}`,
+        `Bioma dominante real: ${BIOME_LABELS[model.dominantBiome] || model.dominantBiome}`,
         `${model.signatures.length} assinatura${model.signatures.length === 1 ? '' : 's'} detectada${model.signatures.length === 1 ? '' : 's'}.`,
         'Perfil confirmado. Este setor será usado pelo gerador do mundo.'
       ].map(line => `<span>${escapeHtml(line)}</span>`).join('');

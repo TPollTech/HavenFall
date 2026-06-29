@@ -18,7 +18,8 @@
     structure: { label: 'Estrutura', items: ['wall', 'door', 'crate'] },
     furniture: { label: 'Mobília', items: ['bed', 'campfire', 'bench', 'research_desk'] },
     production: { label: 'Produção', items: ['forge', 'stove', 'med_station'] },
-    agriculture: { label: 'Agricultura', items: ['crop'] }
+    agriculture: { label: 'Agricultura', items: ['crop', 'irrigation_channel'] },
+    water: { label: 'Água', items: ['bridge', 'fish_trap', 'water_collector'] }
   };
 
   function isGameplayScreen() {
@@ -78,6 +79,7 @@
       '<div class="res-item" title="Madeira"><span class="res-icon">🪵</span> Madeira <b id="resWood">0</b><span id="txt-wood" hidden>0</span></div>',
       '<div class="res-item" title="Pedra"><span class="res-icon">🪨</span> Pedra <b id="resStone">0</b><span id="txt-stone" hidden>0</span></div>',
       '<div class="res-item" title="Metal"><span class="res-icon">🪙</span> Metal <b id="resMetal">0</b><span id="txt-metal" hidden>0</span></div>',
+      '<div class="res-item" title="Água"><span class="res-icon">💧</span> Água <b id="resWater">0</b><span id="txt-water" hidden>0</span></div>',
       '<div class="res-item" title="Remédios"><span class="res-icon">💊</span> Remédios <b id="resMedicine">0</b><span id="txt-meds" hidden>0</span></div>'
     ].join('');
   }
@@ -124,6 +126,7 @@
       ['resWood', 'txt-wood', state.resources.wood],
       ['resStone', 'txt-stone', state.resources.stone],
       ['resMetal', 'txt-metal', state.resources.metal],
+      ['resWater', 'txt-water', state.resources.water],
       ['resMedicine', 'txt-meds', state.resources.medicine]
     ];
     pairs.forEach(([visibleId, hiddenId, value]) => {
@@ -175,7 +178,11 @@
       forge: 'Produção metálica.',
       stove: 'Preparo de refeições.',
       med_station: 'Tratamento e resgate.',
-      crop: 'Produção agrícola.'
+      crop: 'Produção agrícola.',
+      bridge: 'Permite cruzar água profunda.',
+      fish_trap: 'Gera comida quando instalada na água.',
+      water_collector: 'Capta água e melhora suporte hídrico.',
+      irrigation_channel: 'Acelera plantações próximas e reduz seca.'
     })[key] || 'Construção disponível para a colônia.';
   }
 

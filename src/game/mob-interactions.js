@@ -32,6 +32,7 @@ function installMobCanvasInteractions() {
     event.stopPropagation();
     event.stopImmediatePropagation?.();
     showContextMenu(event.clientX, event.clientY, [
+      { label: 'Inspecionar animal', hint: 'estado, grupo, rota e memória', run: () => window.HavenfallLivingWorld?.inspectAnimal?.(mob) },
       { label: `Caçar ${mobName?.(mob.type) || 'animal'}`, hint: mob.type === 'rabbit' ? 'carne e pele' : 'risco de lentidão', run: () => assignHuntMob(c, mob) },
       { label: 'Mover até perto', hint: `${mob.x},${mob.y}`, run: () => assignMoveNearTarget(c, mob) }
     ], { kind: 'mob', mob, label: mobName?.(mob.type) || 'Animal' });

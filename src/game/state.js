@@ -109,6 +109,7 @@ const dom = {
   resWood: document.getElementById('resWood'),
   resStone: document.getElementById('resStone'),
   resMetal: document.getElementById('resMetal'),
+  resWater: document.getElementById('resWater'),
   resMedicine: document.getElementById('resMedicine'),
   selectedInfo: document.getElementById('selectedInfo'),
   selectedObjectInfo: document.getElementById('selectedObjectInfo'),

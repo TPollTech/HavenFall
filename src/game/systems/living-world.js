@@ -928,6 +928,73 @@
     ctx.restore();
   }
 
+  function drawLivingWorldObject(obj) {
+    if (!obj) return false;
+    const type = obj.type === 'blueprint' ? buildDefs?.[obj.buildType]?.type : obj.type;
+    if (!['bridge', 'fish_trap', 'water_collector', 'irrigation_channel', 'sapling', 'invasive_weed', 'environmental_fire'].includes(type)) return false;
+    const s = typeof getTileSize === 'function' ? getTileSize() : TILE;
+    const x = obj.x * s + s / 2;
+    const y = obj.y * s + s / 2;
+    ctx.save();
+    if (obj.type === 'blueprint') ctx.globalAlpha *= 0.48;
+    if (type === 'bridge') {
+      ctx.fillStyle = '#7a5537';
+      ctx.fillRect(obj.x * s + 4, obj.y * s + s * .33, s - 8, s * .34);
+      ctx.strokeStyle = '#3a2416';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
+        const xx = obj.x * s + 8 + i * ((s - 16) / 3);
+        ctx.beginPath(); ctx.moveTo(xx, obj.y * s + s * .3); ctx.lineTo(xx, obj.y * s + s * .7); ctx.stroke();
+      }
+    } else if (type === 'fish_trap') {
+      ctx.strokeStyle = '#d8b76a';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x, y, s * .28, s * .16, -0.4, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(216,183,106,.22)';
+      ctx.fill();
+    } else if (type === 'water_collector') {
+      ctx.fillStyle = '#6b4f34';
+      ctx.fillRect(x - 14, y - 13, 28, 26);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(x - 10, y - 9, 20, 8);
+      ctx.strokeStyle = '#2b1a10';
+      ctx.strokeRect(x - 14, y - 13, 28, 26);
+    } else if (type === 'irrigation_channel') {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(obj.x * s + 6, y - 5, s - 12, 10);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(obj.x * s + 8, y - 2, s - 16, 4);
+    } else if (type === 'sapling') {
+      const stage = obj.stage || saplingStage(obj);
+      const scale = stage === 'sprout' ? 0.62 : stage === 'young' ? 0.82 : 1.08;
+      ctx.strokeStyle = '#22543d';
+      ctx.lineWidth = 2 + scale;
+      ctx.beginPath(); ctx.moveTo(x, y + 12 * scale); ctx.lineTo(x, y - 9 * scale); ctx.stroke();
+      ctx.fillStyle = obj.watered ? '#86efac' : '#65a30d';
+      ctx.beginPath(); ctx.ellipse(x - 6 * scale, y - 5 * scale, 8 * scale, 5 * scale, -0.5, 0, Math.PI * 2); ctx.fill();
+      if (stage !== 'sprout') { ctx.beginPath(); ctx.ellipse(x + 6 * scale, y - 8 * scale, 8 * scale, 5 * scale, 0.5, 0, Math.PI * 2); ctx.fill(); }
+      if (stage === 'almost') { ctx.fillStyle = 'rgba(34,84,61,.45)'; ctx.beginPath(); ctx.arc(x, y - 8, 10, 0, Math.PI * 2); ctx.fill(); }
+    } else if (type === 'invasive_weed') {
+      ctx.strokeStyle = '#84cc16';
+      ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(x, y + 12); ctx.lineTo(x + i * 5, y - 8 + Math.abs(i) * 2); ctx.stroke();
+      }
+    } else if (type === 'environmental_fire') {
+      const flicker = Math.sin(performance.now() / 90 + obj.x * 3 + obj.y) * 3;
+      ctx.fillStyle = 'rgba(88,28,28,.42)';
+      ctx.beginPath(); ctx.arc(x, y + 4, s * .38, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.ellipse(x - 3, y + 1, 8, 15 + flicker, -0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath(); ctx.ellipse(x + 4, y, 7, 13 - flicker, 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return true;
+  }
+
   function drawLivingWorldMarkers() {
     if (!state?.world?.livingWorld?.waypoints?.length) return;
     ctx.save();

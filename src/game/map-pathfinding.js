@@ -113,6 +113,7 @@ function resourceLabel(key) {
     wood: 'madeira',
     stone: 'pedra',
     metal: 'metal',
+    water: 'água',
     medicine: 'remédio'
   })[key] || key;
 }
