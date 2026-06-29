@@ -8,7 +8,8 @@
     stove: { stone: '#6c665c', darkStone: '#37332d', metal: '#a6aaa8', fire: '#f59e0b' },
     med_station: { wood: '#746250', cloth: '#d8d5cb', accent: '#b93b3b', metal: '#9aa3a1' },
     sewing_table: { wood: '#77563d', cloth: '#8977a2', thread: '#d8c59b', metal: '#a7aba8' },
-    smokehouse: { wood: '#604735', darkWood: '#35251b', smoke: 'rgba(214,205,185,.45)', ember: '#f97316' }
+    smokehouse: { wood: '#604735', darkWood: '#35251b', smoke: 'rgba(214,205,185,.45)', ember: '#f97316' },
+    butcher_table: { wood: '#705035', darkWood: '#3a281c', meat: '#9f1d1d', bone: '#e6dcc8', metal: '#a7aba8' }
   });
 
   function profile(type) {

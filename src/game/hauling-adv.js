@@ -82,6 +82,8 @@ function haulingCargoForObject(obj, c) {
   }
   if (obj.itemKey) {
     const label = typeof itemDefs !== 'undefined' ? itemDefs?.[obj.itemKey]?.label || obj.itemKey : obj.itemKey;
+    const resourceKey = itemDefs?.[obj.itemKey]?.resourceKey || null;
+    if (resourceKey) return { resource: resourceKey, amount: Math.max(1, Number(obj.amount || 1)), label, removeObject: true };
     return { item: obj.itemKey, amount: Math.max(1, Number(obj.amount || 1)), label, removeObject: true };
   }
   return null;

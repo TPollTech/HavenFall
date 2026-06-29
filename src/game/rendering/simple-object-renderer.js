@@ -106,11 +106,36 @@
     ctx.fillRect(x - 12, y - 12, 14, 3);
   }
 
+  function drawBridge(x, y) {
+    shadow(x, y, 23, 6);
+    for (const oy of [-9, 1, 11]) {
+      roundRect(x - 24, y + oy, 48, 7, 2, '#8a5a33', '#2b1b12', 1.1);
+      line(x - 18, y + oy + 2, x + 18, y + oy + 2, 'rgba(255,220,160,.12)', 1);
+    }
+    line(x - 19, y - 13, x - 19, y + 17, '#4a2c17', 2);
+    line(x + 19, y - 13, x + 19, y + 17, '#4a2c17', 2);
+  }
+
+  function drawLoot(x, y, obj) {
+    shadow(x, y, 14, 5);
+    const item = itemDefs?.[obj.itemKey] || {};
+    const color = item.kind === 'food' ? '#b45309' : item.kind === 'medical' ? '#e5e7eb' : item.kind === 'resource' ? '#7c8794' : '#c8a35a';
+    roundRect(x - 13, y - 12, 26, 22, 6, color, '#2b2118', 1.4);
+    ctx.fillStyle = 'rgba(255,255,255,.20)';
+    ctx.fillRect(x - 8, y - 8, 15, 3);
+    if (obj.amount > 1) {
+      ctx.fillStyle = '#fff3df';
+      ctx.font = '900 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(obj.amount), x, y + 4);
+    }
+  }
+
   function drawSimpleObject(obj) {
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const supported = ['bed', 'crate', 'campfire', 'supply_crate', 'cache', 'ruin', 'ore'].includes(type);
+    const supported = ['bed', 'crate', 'campfire', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot'].includes(type);
     if (!supported) return false;
 
     const p = anchor(obj);
@@ -122,6 +147,8 @@
     else if (type === 'campfire') drawCampfire(p.x, p.y);
     else if (type === 'ruin') drawRuin(p.x, p.y);
     else if (type === 'ore') drawOre(p.x, p.y);
+    else if (type === 'bridge') drawBridge(p.x, p.y);
+    else if (type === 'loot') drawLoot(p.x, p.y, obj);
     ctx.restore();
 
     if (isBlueprint) {

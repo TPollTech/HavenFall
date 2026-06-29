@@ -442,7 +442,7 @@ function handleTaskAtTarget(c, tick) {
   }
 
   if (task.type === 'inspect' || task.type === 'loot' || task.type === 'inspectPoi') {
-    handleInteractionTask(c, task, tick);
+    window.handleInteractionTask?.(c, task, tick);
     return;
   }
 

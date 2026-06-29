@@ -71,6 +71,8 @@ function migrateLoadedState() {
     exploration: existingWorld.exploration,
     visibleTiles: existingWorld.visibleTiles || [],
     biomes: existingWorld.biomes || null,
+    waterDepth: existingWorld.waterDepth || null,
+    livingWorld: existingWorld.livingWorld || null,
     geologyLayer: existingWorld.geologyLayer || null,
     roofLayer: existingWorld.roofLayer || null,
     geologyVersion: existingWorld.geologyVersion,
@@ -88,6 +90,11 @@ function migrateLoadedState() {
   state.colonists = ensureLoadedEntityIds(state.colonists || [], 'colonist');
   state.mobs = ensureLoadedEntityIds(state.mobs || [], 'mob');
   state.wolves = ensureLoadedEntityIds(state.wolves || [], 'wolf');
+  state.visitors = ensureLoadedEntityIds(state.visitors || [], 'visitor');
+
+  if (typeof window.HavenfallLivingWorld?.ensureWorldWater === 'function') window.HavenfallLivingWorld.ensureWorldWater(state.world, state.config);
+  state.world.livingWorld = state.world.livingWorld || {};
+  state.world.livingWorld.waypoints = Array.isArray(state.world.livingWorld.waypoints) ? state.world.livingWorld.waypoints : [];
 
   ensureExplorationState();
   ensureResearchState();

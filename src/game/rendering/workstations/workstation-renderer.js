@@ -26,6 +26,7 @@
     else if (obj.type === 'med_station') drawMedStation(p.x, p.y, styles.profile(obj.type));
     else if (obj.type === 'sewing_table') drawSewingTable(p.x, p.y, styles.profile(obj.type));
     else if (obj.type === 'smokehouse') drawSmokehouse(p.x, p.y, styles.profile(obj.type));
+    else if (obj.type === 'butcher_table') drawButcherTable(p.x, p.y, styles.profile(obj.type));
     ctx.restore();
     return true;
   }
@@ -112,6 +113,19 @@
     drawEllipse(x - 6, y - 27, 5, 9, s.smoke, null, 1, -0.3);
     drawEllipse(x + 3, y - 31, 5, 10, s.smoke, null, 1, 0.2);
     drawTriangle([{ x: x - 18, y: y - 22 }, { x, y: y - 35 }, { x: x + 18, y: y - 22 }], '#4a3426', '#211811', 1.3);
+  }
+
+  function drawButcherTable(x, y, s) {
+    drawShadow(x, y, 26, 8);
+    drawLegs(x, y + 6, 38, 16, s.darkWood);
+    drawBoard(x, y, 42, 14, s.wood);
+    drawRoundRect(x - 17, y - 11, 17, 9, 3, s.meat, '#4b1515', 1.1);
+    drawLine(x - 15, y - 6, x - 2, y - 6, 'rgba(255,255,255,.18)', 1);
+    drawLine(x + 4, y - 10, x + 18, y - 15, s.metal, 2.2);
+    drawRoundRect(x + 15, y - 17, 8, 4, 2, '#5b3a27', '#2b1d14', 1);
+    drawCircle(x + 3, y + 1, 3.4, s.bone, '#6b5b47', 1);
+    drawCircle(x + 13, y + 3, 3.1, s.bone, '#6b5b47', 1);
+    drawLine(x + 4, y + 1, x + 12, y + 3, s.bone, 3);
   }
 
   function installWorkstationRenderer() {

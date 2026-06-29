@@ -10,7 +10,7 @@ canvas.addEventListener('mouseup', handleCanvasMouseUp);
 canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 
-const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse'];
+const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse', 'butcher_table'];
 const ROTATABLE_BUILD_TYPES = new Set(['wall', 'door']);
 
 function normalizeBuildRotation(rotation) {
@@ -188,6 +188,9 @@ function routePrimaryObjectAction(c, obj) {
   else if (obj.type === 'research_desk') assignResearch(c, obj);
   else if (objectDefs[obj.type]?.interactable) assignInspect(c, obj);
   else if (obj.type === 'crop' && (obj.growth || 0) < 100) log('Essa plantação ainda está crescendo.');
+  else if (obj.itemKey && typeof assignHaulTask === 'function') {
+    if (!assignHaulTask(c, obj)) log('Crie uma zona de estoque ou depósito para guardar esse item.');
+  }
   else if (objectDefs[obj.type]?.gather) assignGather(c, obj);
   else log(`${objectDefs[obj.type]?.name || 'Objeto'} já está construído.`);
 }
@@ -261,6 +264,11 @@ function makeContextActions(c, target, tile) {
     if (def.gather) {
       actions.push({ label: obj.markedForGather ? 'Desmarcar coleta' : 'Marcar para coleta', hint: 'fila automática de coleta', run: () => toggleGatherMark(obj) });
       actions.push({ label: 'Coletar agora', hint: def.name || obj.type, run: () => assignGather(c, obj) });
+    }
+    if (obj.itemKey && typeof assignHaulTask === 'function') {
+      actions.push({ label: 'Levar ao estoque', hint: obj.lootLabel || itemDefs?.[obj.itemKey]?.label || obj.itemKey, run: () => {
+        if (!assignHaulTask(c, obj)) log('Crie uma zona de estoque ou depósito para guardar esse item.');
+      } });
     }
     if (CRAFT_STATION_TYPES.includes(obj.type)) actions.push({ label: 'Abrir crafting', hint: stationLabels[obj.type] || def.name, run: () => openCraftingForStation(obj) });
     if (obj.type === 'forge') actions.push({ label: 'Forjar metal rápido', hint: '3 pedra → 1 metal', run: () => assignForge(c, obj) });
@@ -364,6 +372,7 @@ function canPlace(type, x, y) {
   if (typeof isMountainBlocked === 'function' && isMountainBlocked(x, y)) return false;
   if (getObjectAt(x, y)) return false;
   if (state.colonists.some(c => Math.round(c.x) === x && Math.round(c.y) === y)) return false;
+  if (state.terrain?.[y]?.[x] === 'water' && type !== 'bridge') return false;
   if (type === 'door' && !hasAdjacentWallForDoor(x, y)) return false;
   return state.terrain[y]?.[x] !== 'stone' || type === 'wall';
 }

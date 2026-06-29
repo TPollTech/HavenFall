@@ -279,7 +279,7 @@ function findPath(startX, startY, endX, endY, target = null) {
   const came = new Map();
   const startKey = tileKey(startX, startY);
   const endKey = tileKey(endX, endY);
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
   const maxIterations = Math.min(getWorldCols() * getWorldRows(), 4000);
   let found = false;
   let iterations = 0;
@@ -298,6 +298,8 @@ function findPath(startX, startY, endX, endY, target = null) {
       const nx = curr.x + dirs[i][0];
       const ny = curr.y + dirs[i][1];
       const nKey = tileKey(nx, ny);
+      const diagonal = dirs[i][0] !== 0 && dirs[i][1] !== 0;
+      if (diagonal && (isBlocked(curr.x + dirs[i][0], curr.y, target) || isBlocked(curr.x, curr.y + dirs[i][1], target))) continue;
       if (!came.has(nKey) && !isBlocked(nx, ny, target)) {
         came.set(nKey, currKey);
         queue.push({ x: nx, y: ny });

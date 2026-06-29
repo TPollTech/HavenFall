@@ -91,7 +91,6 @@
     return { width, height };
   }
   function connections(keys) {
-    if (Array.isArray(baseResearchConnections) && baseResearchConnections.length) return baseResearchConnections.filter(c => researchDefs?.[c.from] && researchDefs?.[c.to]);
     return keys.flatMap(key => requirementKeys(key).map(req => ({ from: req, to: key })));
   }
   function lineStatus(conn) {
