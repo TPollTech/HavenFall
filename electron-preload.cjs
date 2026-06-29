@@ -17,20 +17,20 @@ function userDataPath() {
   return ipcRenderer.sendSync('havenfall:user-data-path');
 }
 
-const basePath = userDataPath();
-const paths = Object.freeze({
-  userData: basePath,
-  saves: ensureDir(path.join(basePath, 'saves')),
-  backups: ensureDir(path.join(basePath, 'backups')),
-  logs: ensureDir(path.join(basePath, 'logs'))
-});
+function getDesktopPaths() {
+  const paths = ipcRenderer.sendSync('havenfall:desktop-paths');
+  ensureDir(paths.saves);
+  ensureDir(paths.backups);
+  ensureDir(paths.logs);
+  return paths;
+}
 
 function savePath(slot = 'autosave') {
-  return path.join(paths.saves, `${cleanSlot(slot)}.json`);
+  return path.join(getDesktopPaths().saves, `${cleanSlot(slot)}.json`);
 }
 
 function metaPath(slot = 'autosave') {
-  return path.join(paths.saves, `${cleanSlot(slot)}.meta.json`);
+  return path.join(getDesktopPaths().saves, `${cleanSlot(slot)}.meta.json`);
 }
 
 function atomicWrite(file, content) {
@@ -55,6 +55,7 @@ function writeJson(file, data) {
 
 function appendLog(message, details = null) {
   try {
+    const paths = getDesktopPaths();
     const line = `[${new Date().toISOString()}] ${message}${details ? ` ${JSON.stringify(details)}` : ''}\n`;
     fs.appendFileSync(path.join(paths.logs, 'renderer.log'), line, 'utf8');
     return { ok: true };
@@ -76,7 +77,7 @@ function writeSaveSlot(slot, text, metadata = {}) {
       bytes: Buffer.byteLength(String(text || ''), 'utf8'),
       ...metadata
     });
-    return { ok: true, slot: clean, path: file, updatedAt };
+    return { ok: true, slot: clean, path: file, updatedAt, paths: getDesktopPaths() };
   } catch (error) {
     appendLog('writeSaveSlot failed', { slot, error: error.message });
     return { ok: false, error: error.message };
@@ -87,7 +88,7 @@ function readSaveSlot(slot = 'autosave') {
   try {
     const clean = cleanSlot(slot);
     const file = savePath(clean);
-    if (!fs.existsSync(file)) return { ok: false, exists: false, slot: clean, path: file };
+    if (!fs.existsSync(file)) return { ok: false, exists: false, slot: clean, path: file, paths: getDesktopPaths() };
     const text = fs.readFileSync(file, 'utf8');
     const stat = fs.statSync(file);
     const meta = readJsonSafe(metaPath(clean), {});
@@ -99,7 +100,8 @@ function readSaveSlot(slot = 'autosave') {
       text,
       updatedAt: meta.updatedAt || stat.mtime.toISOString(),
       updatedAtMs: Number(meta.updatedAtMs || stat.mtimeMs || 0),
-      bytes: stat.size
+      bytes: stat.size,
+      paths: getDesktopPaths()
     };
   } catch (error) {
     appendLog('readSaveSlot failed', { slot, error: error.message });
@@ -111,7 +113,7 @@ function getSaveInfo(slot = 'autosave') {
   try {
     const clean = cleanSlot(slot);
     const file = savePath(clean);
-    if (!fs.existsSync(file)) return { ok: true, exists: false, slot: clean, path: file };
+    if (!fs.existsSync(file)) return { ok: true, exists: false, slot: clean, path: file, paths: getDesktopPaths() };
     const stat = fs.statSync(file);
     const meta = readJsonSafe(metaPath(clean), {});
     return {
@@ -121,7 +123,8 @@ function getSaveInfo(slot = 'autosave') {
       path: file,
       updatedAt: meta.updatedAt || stat.mtime.toISOString(),
       updatedAtMs: Number(meta.updatedAtMs || stat.mtimeMs || 0),
-      bytes: stat.size
+      bytes: stat.size,
+      paths: getDesktopPaths()
     };
   } catch (error) {
     return { ok: false, exists: false, error: error.message };
@@ -134,7 +137,7 @@ function backupSaveSlot(slot = 'autosave', label = 'manual') {
     if (!current.ok || !current.exists) return { ok: false, error: 'save inexistente' };
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const clean = cleanSlot(slot);
-    const file = path.join(paths.backups, `${clean}-${String(label).replace(/[^a-zA-Z0-9_-]/g, '')}-${stamp}.json`);
+    const file = path.join(getDesktopPaths().backups, `${clean}-${String(label).replace(/[^a-zA-Z0-9_-]/g, '')}-${stamp}.json`);
     atomicWrite(file, current.text);
     return { ok: true, path: file };
   } catch (error) {
@@ -145,9 +148,11 @@ function backupSaveSlot(slot = 'autosave', label = 'manual') {
 
 function listSaves() {
   try {
+    const paths = getDesktopPaths();
     const files = fs.readdirSync(paths.saves).filter(file => file.endsWith('.json') && !file.endsWith('.meta.json'));
     return {
       ok: true,
+      paths,
       saves: files.map(file => {
         const full = path.join(paths.saves, file);
         const stat = fs.statSync(full);
@@ -169,12 +174,14 @@ function listSaves() {
 
 function exportDiagnostics(payload = {}) {
   try {
+    const paths = getDesktopPaths();
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const file = path.join(paths.logs, `diagnostics-${stamp}.json`);
     writeJson(file, {
       createdAt: new Date().toISOString(),
       platform: process.platform,
       versions: process.versions,
+      paths,
       payload
     });
     return { ok: true, path: file };
@@ -183,7 +190,7 @@ function exportDiagnostics(payload = {}) {
   }
 }
 
-contextBridge.exposeInMainWorld('HavenfallDesktop', Object.freeze({
+const desktopApi = {
   isElectron: true,
   platform: process.platform,
   versions: Object.freeze({
@@ -191,7 +198,18 @@ contextBridge.exposeInMainWorld('HavenfallDesktop', Object.freeze({
     chrome: process.versions.chrome,
     node: process.versions.node
   }),
-  paths,
+  paths: getDesktopPaths(),
+  userDataPath,
+  getDesktopPaths,
+  getDesktopConfig() { return ipcRenderer.invoke('havenfall:get-desktop-config'); },
+  chooseSaveFolder(options = { migrate: true }) { return ipcRenderer.invoke('havenfall:choose-save-root', options); },
+  resetSaveFolder(options = { migrate: true }) { return ipcRenderer.invoke('havenfall:reset-save-root', options); },
+  onDesktopPathsChanged(callback) {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, paths) => callback(paths);
+    ipcRenderer.on('havenfall:desktop-paths-changed', listener);
+    return () => ipcRenderer.removeListener('havenfall:desktop-paths-changed', listener);
+  },
   getSaveInfo,
   readSaveSlot,
   writeSaveSlot,
@@ -201,4 +219,6 @@ contextBridge.exposeInMainWorld('HavenfallDesktop', Object.freeze({
   exportDiagnostics,
   openFolder(target = 'saves') { return ipcRenderer.invoke('havenfall:open-path', target); },
   quit() { return ipcRenderer.invoke('havenfall:quit'); }
-}));
+};
+
+contextBridge.exposeInMainWorld('HavenfallDesktop', Object.freeze(desktopApi));
