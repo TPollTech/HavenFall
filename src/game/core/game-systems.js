@@ -215,7 +215,7 @@
   }
 
   function registerWorkRateModifier(id, fn, options = {}) {
-    return register(workRateModifiers, id, options);
+    return register(workRateModifiers, id, fn, options);
   }
 
   function applyWorkRateModifiers(rate, c, kind, target = null) {
