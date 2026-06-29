@@ -74,6 +74,7 @@ function haulingDestinationFor(obj, c, destination = null) {
 
 function haulingCargoForObject(obj, c) {
   if (!obj) return null;
+  if (obj.stored || obj.type === 'stockpile') return null;
   if (obj.type === 'rubble') return { kind: 'debris', label: 'entulho', amount: 1, removeObject: true };
   if (obj.type === 'logs') {
     const available = Math.max(1, Number(obj.amount || 5));
@@ -89,6 +90,31 @@ function haulingCargoForObject(obj, c) {
   return null;
 }
 
+function haulAmount(cargo) {
+  return Math.max(1, Number(cargo?.amount || 1));
+}
+
+function isAtTile(c, x, y) {
+  return c && c.x === x && c.y === y;
+}
+
+function routeBetween(fromX, fromY, toX, toY, target = null) {
+  if (fromX === toX && fromY === toY) return [];
+  const path = typeof findPath === 'function' ? findPath(fromX, fromY, toX, toY, target) : [];
+  return Array.isArray(path) ? path : [];
+}
+
+function canRouteBetween(fromX, fromY, toX, toY, target = null) {
+  return (fromX === toX && fromY === toY) || routeBetween(fromX, fromY, toX, toY, target).length > 0;
+}
+
+function dropoffTileForDestination(destination, c) {
+  if (!destination) return null;
+  if (destination.type === 'storage_object') return nearestFreeAdjacent(destination.x, destination.y, c.x, c.y);
+  if (typeof isBlocked === 'function' && isBlocked(destination.x, destination.y)) return nearestFreeAdjacent(destination.x, destination.y, c.x, c.y);
+  return { x: destination.x, y: destination.y };
+}
+
 function equipAvailableHandcart(c) {
   if (!c || !canColonistAutoHandle(c) || !isResearched('heavy_hauling')) return false;
   if ((state.items?.handcart || 0) <= 0) return false;
@@ -100,12 +126,36 @@ function installHaulingZonePatch() {
 
   assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile = null) {
     if (!c || !obj || !canColonistAutoHandle(c)) return false;
-    const destination = haulingDestinationFor(obj, c, storageTile);
+    const plannedCargo = haulingCargoForObject(obj, c);
+    if (!plannedCargo) return false;
+    const destination = haulingDestinationFor(obj, c, storageTile)
+      || window.HavenfallStorage?.destinationForCargo?.(plannedCargo, c.x, c.y);
     if (!destination) return false;
     const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
+    const pickupPath = routeBetween(c.x, c.y, adj.x, adj.y, obj);
+    if (!isAtTile(c, adj.x, adj.y) && !pickupPath.length) return false;
+    const dropoff = dropoffTileForDestination(destination, c);
+    if (!dropoff) return false;
+    if (!canRouteBetween(adj.x, adj.y, dropoff.x, dropoff.y)) return false;
     obj.reservedBy = c.id;
-    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y, zoneObjectId: destination.objectId || null };
-    c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
+    c.task = {
+      type: 'haul',
+      phase: 'pickup',
+      objId: obj.id,
+      x: adj.x,
+      y: adj.y,
+      storageX: destination.x,
+      storageY: destination.y,
+      dropoffX: dropoff.x,
+      dropoffY: dropoff.y,
+      zoneType: destination.type,
+      zoneX: destination.x,
+      zoneY: destination.y,
+      zoneObjectId: destination.objectId || null,
+      zoneStackId: destination.stackId || null,
+      haulAmount: haulAmount(plannedCargo)
+    };
+    c.path = pickupPath;
     c.work = 0;
     c.note = `Indo buscar item solto - carga ${getColonistCurrentLoadCount(c)}/${getColonistMaxCapacity(c)}`;
     return true;
@@ -119,6 +169,18 @@ function installHaulingZonePatch() {
     if (task.phase === 'pickup') {
       const obj = state.objects.find(o => o.id === task.objId);
       if (!obj) { c.task = null; c.note = 'Ocioso'; return true; }
+      if (!isAtTile(c, task.x, task.y)) {
+        const path = routeBetween(c.x, c.y, task.x, task.y, obj);
+        if (path.length) {
+          c.path = path;
+          c.note = 'Indo buscar item solto';
+        } else {
+          obj.reservedBy = null;
+          c.task = null;
+          c.note = 'Sem caminho para buscar item';
+        }
+        return true;
+      }
       const cargo = haulingCargoForObject(obj, c);
       if (!cargo) { obj.reservedBy = null; c.task = null; c.note = 'Ocioso'; return true; }
       c.carrying = cargo;
@@ -130,9 +192,9 @@ function installHaulingZonePatch() {
         if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
       }
       task.phase = 'dropoff';
-      task.x = task.storageX;
-      task.y = task.storageY;
-      c.path = findPath(c.x, c.y, task.storageX, task.storageY);
+      task.x = task.dropoffX ?? task.storageX;
+      task.y = task.dropoffY ?? task.storageY;
+      c.path = routeBetween(c.x, c.y, task.x, task.y);
       const targetLabel = task.zoneType === 'storage_object' ? 'depósito' : task.zoneType === 'dumping' ? 'descarte' : 'armazenamento';
       c.note = `Levando ${cargo.label} ao ${targetLabel} - ${cargo.amount}/${getColonistMaxCapacity(c)}`;
       return true;
@@ -140,11 +202,25 @@ function installHaulingZonePatch() {
 
     if (task.phase === 'dropoff') {
       const cargo = c.carrying;
+      if (!isAtTile(c, task.x, task.y)) {
+        const path = routeBetween(c.x, c.y, task.x, task.y);
+        if (path.length) {
+          c.path = path;
+          c.note = `Levando ${cargo?.label || 'item'} ao armazenamento`;
+        } else {
+          c.task = null;
+          c.note = 'Sem caminho para entregar item';
+        }
+        return true;
+      }
       if (task.zoneType === 'dumping' || cargo?.kind === 'debris') {
         log(`${c.name} descartou ${cargo?.label || 'entulho'} na zona de descarte.`);
       } else {
-        if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
-        if (cargo?.item && cargo.amount && typeof addItems === 'function') addItems({ [cargo.item]: cargo.amount });
+        const stored = window.HavenfallStorage?.depositCargoForTask?.(task, cargo);
+        if (!stored?.ok) {
+          if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
+          if (cargo?.item && cargo.amount && typeof addItems === 'function') addItems({ [cargo.item]: cargo.amount });
+        }
         const targetLabel = task.zoneType === 'storage_object' ? 'o depósito' : 'a zona de armazenamento';
         log(`${c.name} levou ${cargo?.amount || 0} ${cargo?.label || 'item'} para ${targetLabel}.`);
       }

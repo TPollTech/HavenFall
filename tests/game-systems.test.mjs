@@ -150,6 +150,147 @@ test('Handle priority can haul loose items to a built storage depot', () => {
   assert.equal(colonist.task.zoneObjectId, 'crate-1');
 });
 
+test('Storage zone falls back to floor stack when crate is full', () => {
+  const grid = {};
+  const zoneKey = (x, y) => String((x << 16) | y);
+  grid[zoneKey(7, 4)] = 'storage';
+  grid[zoneKey(8, 4)] = 'storage';
+  const crate = {
+    id: 'crate-1',
+    type: 'crate',
+    x: 7,
+    y: 4,
+    storageContents: { resources: { wood: 80 }, items: {} }
+  };
+  const looseLogs = { id: 'logs-1', type: 'logs', x: 4, y: 4, amount: 5 };
+  const context = createContext({
+    state: {
+      zones: { grid },
+      objects: [crate, looseLogs],
+      colonists: [],
+      resources: { wood: 0 },
+      items: {}
+    },
+    zoneDefs: { storage: { label: 'Armazenamento' }, home: {}, safe: {}, dumping: {}, priority: {} },
+    zoneSystem: {
+      ensureState() { return context.state.zones; },
+      key: zoneKey,
+      decode(key) { const raw = Number(key); return { x: raw >> 16, y: raw & 0xFFFF }; },
+      entries(type = null) {
+        return Object.entries(context.state.zones.grid)
+          .map(([key, zoneType]) => ({ ...this.decode(key), type: zoneType }))
+          .filter(tile => !type || tile.type === type);
+      },
+      count(type = null) { return this.entries(type).length; },
+      getZoneAt(x, y) { return context.state.zones.grid[this.key(x, y)] || null; },
+      findFreeTile(type, predicate = null) {
+        return this.entries(type).find(tile => !context.getObjectAt(tile.x, tile.y) && (!predicate || predicate(tile))) || null;
+      }
+    },
+    objectDefs: {
+      crate: { storage: 1, storageCapacity: 80 },
+      logs: { gather: { wood: 5 } },
+      stockpile: { stored: true }
+    },
+    itemDefs: {},
+    GameSystems: { registerTaskHandler: () => {} },
+    HavenfallContext: {},
+    isInside: () => true,
+    isTileDiscovered: () => true,
+    isBlocked: () => false,
+    getObjectAt: (x, y) => context.state.objects.find(obj => obj.x === x && obj.y === y) || null,
+    dist: (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by),
+    uid: prefix => `${prefix}-1`,
+    addResources: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.resources[key] = (context.state.resources[key] || 0) + value;
+    },
+    addItems: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.items[key] = (context.state.items[key] || 0) + value;
+    },
+    invalidateSpatialGrid: () => {},
+    escapeHtml: value => String(value ?? ''),
+    zoneToolButtonsHtml: () => '',
+    zoneLabel: value => value,
+    zoneToolLabel: () => '',
+    updateZonePanel: () => {},
+    updateZonesModal: () => {},
+    ensureZonesModalElement: () => ({ dataset: {}, addEventListener: () => {} }),
+    ensureZonesModalStyles: () => {},
+    assignMove: () => false,
+    findLooseHaulTarget: () => null,
+    assignHaulTask: () => false,
+    processHaulTask: () => false,
+    updateZoneBehaviors: () => {},
+    drawZonesOverlay: () => {}
+  });
+  runBrowserScript('src/game/systems/advanced-zones.js', context);
+
+  const destination = context.zoneSystem.findFreeStorageDestinationFor(looseLogs, looseLogs.x, looseLogs.y);
+  assert.equal(destination.type, 'storage');
+  assert.equal(destination.x, 8);
+  assert.equal(destination.y, 4);
+
+  const stored = context.HavenfallStorage.depositCargoForTask({
+    zoneType: 'storage_object',
+    zoneObjectId: crate.id,
+    storageX: crate.x,
+    storageY: crate.y
+  }, { resource: 'wood', amount: 5, label: 'madeira' });
+  assert.equal(stored.ok, true);
+  assert.equal(crate.storageContents.resources.wood, 80);
+  const stack = context.state.objects.find(obj => obj.type === 'stockpile');
+  assert.equal(stack.amount, 5);
+  assert.equal(stack.x, 8);
+  assert.equal(stack.y, 4);
+  assert.equal(context.state.resources.wood, 5);
+  assert.equal(context.storageAcceptsObject(stack), false);
+});
+
+test('Hauling task cannot pick up loose item remotely when path is missing', () => {
+  const looseLogs = { id: 'logs-1', type: 'logs', x: 4, y: 4, amount: 5, reservedBy: 1 };
+  const context = createContext({
+    state: {
+      objects: [looseLogs],
+      items: {},
+      resources: {},
+      taskPriorities: {}
+    },
+    itemDefs: {},
+    recipeDefs: {},
+    HavenfallContext: {},
+    assignHaulTask: () => false,
+    processHaulTask: () => false,
+    canAutoHandleZoneTask: () => true,
+    nearestFreeAdjacent: (x, y) => ({ x: x - 1, y }),
+    findPath: () => [],
+    isResearched: () => false,
+    equipItem: () => false,
+    addResources: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.resources[key] = (context.state.resources[key] || 0) + value;
+    },
+    addItems: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.items[key] = (context.state.items[key] || 0) + value;
+    },
+    invalidateSpatialGrid: () => {},
+    log: () => {}
+  });
+  runBrowserScript('src/game/hauling-adv.js', context);
+
+  const colonist = {
+    id: 1,
+    name: 'Lia',
+    x: 0,
+    y: 0,
+    task: { type: 'haul', phase: 'pickup', objId: looseLogs.id, x: 3, y: 4 },
+    path: []
+  };
+  assert.equal(context.processHaulTask(colonist), true);
+  assert.equal(colonist.carrying, undefined);
+  assert.equal(colonist.task, null);
+  assert.equal(context.state.objects.includes(looseLogs), true);
+  assert.equal(looseLogs.reservedBy, null);
+});
+
 test('Crafting dock keeps string workstation ids selectable', () => {
   let clickHandler = null;
   const bench = { id: 'obj_bench_1', type: 'bench', x: 5, y: 6 };

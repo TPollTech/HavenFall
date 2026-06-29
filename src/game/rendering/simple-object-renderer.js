@@ -131,11 +131,29 @@
     }
   }
 
+  function drawStockpile(x, y, obj) {
+    shadow(x, y, 20, 7);
+    const color = obj.resource === 'wood' ? '#8a5a33'
+      : obj.resource === 'stone' ? '#737b82'
+        : obj.resource === 'metal' ? '#7f1d1d'
+          : obj.resource === 'food' ? '#9a5f18'
+            : obj.itemKey ? '#9b7b45'
+              : '#6b7280';
+    roundRect(x - 18, y - 12, 36, 23, 5, color, '#241812', 1.5);
+    ctx.fillStyle = 'rgba(255,255,255,.18)';
+    ctx.fillRect(x - 14, y - 8, 28, 4);
+    line(x - 13, y + 1, x + 13, y + 1, 'rgba(0,0,0,.25)', 1.4);
+    ctx.fillStyle = '#fff3df';
+    ctx.font = '900 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(Math.max(1, Number(obj.amount || 1))), x, y + 7);
+  }
+
   function drawSimpleObject(obj) {
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const supported = ['bed', 'crate', 'campfire', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot'].includes(type);
+    const supported = ['bed', 'crate', 'campfire', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile'].includes(type);
     if (!supported) return false;
 
     const p = anchor(obj);
@@ -149,6 +167,7 @@
     else if (type === 'ore') drawOre(p.x, p.y);
     else if (type === 'bridge') drawBridge(p.x, p.y);
     else if (type === 'loot') drawLoot(p.x, p.y, obj);
+    else if (type === 'stockpile') drawStockpile(p.x, p.y, obj);
     ctx.restore();
 
     if (isBlueprint) {
