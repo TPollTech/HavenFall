@@ -197,20 +197,36 @@ function setGoal(key, done) {
 }
 
 function gameLoop(now) {
+  if (window.HavenfallSettings?.shouldSkipFrame?.(now)) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  const frameStart = performance.now();
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+
+  const updateStart = performance.now();
   if (window.GameSystems) GameSystems.tick(dt, safeSystemTick);
   else safeSystemTick('world', () => updateWorld(dt));
   safeSystemTick('camera', () => updateCamera(dt));
+  const updateMs = performance.now() - updateStart;
+
+  let renderMs = 0;
   safeSystemTick('draw', () => {
     if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
+      const renderStart = performance.now();
       draw();
+      renderMs = performance.now() - renderStart;
     }
   });
+
   uiTimer += dt;
   autosaveTimer += dt;
   if (state && uiTimer > 0.25) { uiTimer = 0; safeSystemTick('ui', () => updateUI()); }
   if (state && settings.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) { autosaveTimer = 0; safeSystemTick('save', () => saveGame(false)); }
+
+  window.HavenfallSettings?.recordFrame?.({ frameMs: performance.now() - frameStart, updateMs, renderMs });
   requestAnimationFrame(gameLoop);
 }
 
