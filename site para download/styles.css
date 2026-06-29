@@ -45,12 +45,21 @@ body {
   width: fit-content;
 }
 
-.brand-row img {
+.logo-mark {
+  display: inline-grid;
+  place-items: center;
   width: 44px;
   height: 44px;
+  border: 1px solid rgba(127, 215, 255, 0.22);
   border-radius: 14px;
-  object-fit: cover;
+  color: var(--brand);
+  background:
+    radial-gradient(circle at 50% 75%, rgba(244, 196, 107, 0.22), transparent 30%),
+    linear-gradient(145deg, rgba(15, 28, 45, 0.95), rgba(5, 8, 13, 0.95));
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.32);
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.05em;
 }
 
 .brand-row strong {
@@ -131,21 +140,124 @@ h1 {
   color: var(--text);
 }
 
-.preview {
+.preview-art {
+  position: relative;
   overflow: hidden;
+  height: min(46vh, 390px);
+  min-height: 300px;
   border: 1px solid var(--line);
   border-radius: 30px;
-  background: var(--panel);
+  background:
+    radial-gradient(circle at 20% 82%, rgba(255, 132, 45, 0.38), transparent 18%),
+    radial-gradient(circle at 72% 15%, rgba(127, 215, 255, 0.10), transparent 18%),
+    linear-gradient(180deg, #101927 0%, #070b11 68%, #050609 100%);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
 }
 
-.preview img {
-  display: block;
-  width: 100%;
-  height: min(46vh, 390px);
-  min-height: 300px;
-  object-fit: cover;
-  object-position: center;
+.preview-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 62% 26%, rgba(255,255,255,.45) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 36%, rgba(255,255,255,.35) 0 1px, transparent 2px);
+  opacity: .55;
+}
+
+.moon {
+  position: absolute;
+  right: 72px;
+  top: 46px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(222, 238, 255, 0.85);
+  box-shadow: 0 0 44px rgba(127, 215, 255, 0.25);
+}
+
+.mountain {
+  position: absolute;
+  bottom: 62px;
+  width: 280px;
+  height: 260px;
+  transform: rotate(45deg);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #25354a 0%, #101926 56%, #070b11 100%);
+}
+
+.mountain-back {
+  right: 110px;
+  bottom: 62px;
+  opacity: .68;
+}
+
+.mountain-front {
+  right: 22px;
+  bottom: 32px;
+  width: 330px;
+  height: 330px;
+  background: linear-gradient(135deg, #40556f 0%, #132034 42%, #060910 100%);
+}
+
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 96px;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0,0,0,.62) 34%),
+    linear-gradient(90deg, #080d13, #11100d 48%, #080d13);
+}
+
+.fire {
+  position: absolute;
+  left: 86px;
+  bottom: 62px;
+  width: 58px;
+  height: 76px;
+  filter: drop-shadow(0 0 28px rgba(255, 120, 38, 0.72));
+}
+
+.fire span {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  border-radius: 50% 50% 50% 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.fire span:nth-child(1) {
+  width: 52px;
+  height: 52px;
+  background: #ff7a2f;
+}
+
+.fire span:nth-child(2) {
+  width: 36px;
+  height: 36px;
+  background: #ffd15a;
+  bottom: 10px;
+}
+
+.fire span:nth-child(3) {
+  width: 22px;
+  height: 22px;
+  background: #fff2b0;
+  bottom: 19px;
+}
+
+.preview-art p {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 20px;
+  margin: 0;
+  color: rgba(246, 241, 232, 0.78);
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
 }
 
 @media (max-width: 880px) {
@@ -166,11 +278,8 @@ h1 {
     padding: 16px 0 42px;
   }
 
-  .preview {
+  .preview-art {
     order: -1;
-  }
-
-  .preview img {
     height: 250px;
     min-height: 220px;
   }
