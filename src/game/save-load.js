@@ -3,6 +3,7 @@
 const SAVE_VERSION = '1.9E-runtime-stable';
 const SAVE_UPDATED_AT_KEY = `${SAVE_KEY}:updatedAt`;
 const DESKTOP_SAVE_SLOT = 'autosave';
+const SAVE_LOCAL_MIRROR_LIMIT_BYTES = 1_500_000;
 
 function desktopApi() {
   return window.HavenfallDesktop?.isElectron ? window.HavenfallDesktop : null;
@@ -66,13 +67,24 @@ function readLocalSavePayload() {
   };
 }
 
-function chooseSavedPayload() {
+function mirrorDesktopSaveToLocal(desktopPayload, options = {}) {
+  if (!desktopPayload?.text || !options.cacheLocal) return false;
+  if (desktopPayload.text.length > SAVE_LOCAL_MIRROR_LIMIT_BYTES) {
+    localRemove(SAVE_KEY);
+    markLocalSaveUpdated(desktopPayload.updatedAtMs || Date.now());
+    return false;
+  }
+  localSet(SAVE_KEY, desktopPayload.text);
+  markLocalSaveUpdated(desktopPayload.updatedAtMs || Date.now());
+  return true;
+}
+
+function chooseSavedPayload(options = {}) {
   const local = readLocalSavePayload();
   const desktop = readDesktopSavePayload();
 
   if (desktop?.text && (!local?.text || desktop.updatedAtMs >= local.updatedAtMs)) {
-    localSet(SAVE_KEY, desktop.text);
-    markLocalSaveUpdated(desktop.updatedAtMs || Date.now());
+    mirrorDesktopSaveToLocal(desktop, options);
     return { text: desktop.text, source: 'arquivo desktop', path: desktop.path, bytes: desktop.bytes };
   }
 
@@ -128,6 +140,25 @@ function writeDesktopSavePayload(payload, manual = false) {
   return result || { ok: false };
 }
 
+function writeSavePayload(payload, manual = false) {
+  const api = desktopApi();
+  const updatedAt = Date.now();
+  if (api) {
+    const desktopResult = writeDesktopSavePayload(payload, manual);
+    if (desktopResult?.ok) {
+      localRemove(SAVE_KEY);
+      markLocalSaveUpdated(updatedAt);
+      return { ok: true, source: 'arquivo desktop', desktop: desktopResult };
+    }
+    localSet(SAVE_KEY, payload);
+    markLocalSaveUpdated(updatedAt);
+    return { ok: true, source: 'navegador fallback', desktop: desktopResult };
+  }
+  localSet(SAVE_KEY, payload);
+  markLocalSaveUpdated(updatedAt);
+  return { ok: true, source: 'navegador' };
+}
+
 function validateSaveData(data) {
   const errors = [];
   const warnings = [];
@@ -147,17 +178,15 @@ function saveGame(manual = false) {
   if (typeof ensureGeologyState === 'function') ensureGeologyState();
   if (window.HavenfallRuntime?.normalizeState) window.HavenfallRuntime.normalizeState(state);
   const payload = serialize();
-  const updatedAt = Date.now();
-  localSet(SAVE_KEY, payload);
-  markLocalSaveUpdated(updatedAt);
-  const desktopResult = writeDesktopSavePayload(payload, manual);
+  const result = writeSavePayload(payload, manual);
   if (manual) {
-    if (desktopResult?.ok) log('Jogo salvo no desktop e backup manual criado.');
-    else log('Jogo salvo no navegador. O save em arquivo desktop não está disponível.');
+    if (result?.source === 'arquivo desktop') log('Jogo salvo no desktop e backup manual criado.');
+    else if (result?.source === 'navegador fallback') log('Jogo salvo no navegador. O save em arquivo desktop falhou.');
+    else log('Jogo salvo no navegador.');
+    refreshMenuSaveInfo?.();
+    refreshLoadScreen?.();
   }
-  refreshMenuSaveInfo?.();
-  refreshLoadScreen?.();
-  return true;
+  return !!result?.ok;
 }
 
 function deleteGameSave() {
@@ -304,7 +333,7 @@ function migrateLoadedState() {
 }
 
 function loadGame() {
-  const payload = chooseSavedPayload();
+  const payload = chooseSavedPayload({ cacheLocal: false });
   if (!payload?.text) {
     if (state) log('Nenhum save encontrado.');
     return false;
