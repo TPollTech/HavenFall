@@ -5,259 +5,161 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.workCoordinationInstalled = true;
 
-  const VERSION = 'work-coordination-v1';
   const reservations = new Map();
-  const unreachable = new Map();
-  let assignmentPulse = 0;
+  const blockedUntil = new Map();
+  let pulse = 0;
 
-  function objKey(obj) {
-    return obj?.id || `${obj?.type || 'obj'}:${obj?.x},${obj?.y}`;
+  function keyOf(obj) { return obj?.id || `${obj?.type}:${obj?.x},${obj?.y}`; }
+  function timeKey() { return (state?.day || 0) * 24000 + Math.floor((state?.hour || 0) * 1000); }
+  function priority(c, key) { return typeof taskPriorityValue === 'function' ? taskPriorityValue(c, key) : 2; }
+
+  function workHour(c) {
+    const manager = window.ScheduleManager;
+    if (!manager?.getScheduleState) return true;
+    return manager.getScheduleState(c, state?.hour || 0) === manager.SCHEDULE?.WORK;
   }
 
-  function nowTick() {
-    return (state?.day || 0) * 24000 + Math.floor((state?.hour || 0) * 1000);
+  function canWork(c, key = 'gather') {
+    return !!state && !!c && !c.task && c.health > 15 && c.energy > 14 && workHour(c) && priority(c, key) > 0;
   }
 
-  function scheduleAllowsWork(c) {
-    if (!c || c.isUnconscious) return false;
-    if (typeof ScheduleManager?.getScheduleState === 'function') {
-      const mode = ScheduleManager.getScheduleState(c, state?.hour || 0);
-      if (mode === ScheduleManager.SCHEDULE?.SLEEP) return false;
-      if (mode === ScheduleManager.SCHEDULE?.LEISURE) return false;
-    }
-    return true;
+  function cleanup() {
+    const ids = new Set((state?.objects || []).map(o => o.id));
+    for (const id of [...reservations.keys()]) if (!ids.has(id)) reservations.delete(id);
+    const now = timeKey();
+    for (const [id, until] of [...blockedUntil.entries()]) if (until <= now) blockedUntil.delete(id);
   }
 
-  function canTakeWork(c, priorityKey = 'gather') {
-    if (!state || !c || c.task || c.health <= 15 || c.energy <= 14) return false;
-    if (!scheduleAllowsWork(c)) return false;
-    if (typeof taskPriorityValue === 'function' && taskPriorityValue(c, priorityKey) <= 0) return false;
-    return true;
+  function isBadMountainObject(obj) {
+    return !!window.HavenfallGeologyObjectRenderGuard?.objectInvalidatedByMountain?.(obj);
   }
 
-  function cleanupReservations() {
-    if (!state?.objects) return;
-    const ids = new Set(state.objects.map(o => o.id));
-    for (const key of [...reservations.keys()]) {
-      if (!ids.has(key)) reservations.delete(key);
-    }
-    const t = nowTick();
-    for (const [key, entry] of [...unreachable.entries()]) {
-      if (!entry || entry.until <= t) unreachable.delete(key);
-    }
-  }
-
-  function isReservedByOther(obj, c) {
-    const key = objKey(obj);
-    const owner = reservations.get(key);
-    return owner !== undefined && owner !== c.id;
-  }
-
-  function reserveFor(obj, c) {
-    if (!obj || !c) return;
-    reservations.set(objKey(obj), c.id);
-  }
-
-  function releaseReservation(objOrId) {
-    const key = typeof objOrId === 'string' ? objOrId : objKey(objOrId);
-    reservations.delete(key);
-  }
-
-  function markUnreachable(obj) {
-    if (!obj) return;
-    unreachable.set(objKey(obj), { until: nowTick() + 850 });
-  }
-
-  function isTemporarilyUnreachable(obj) {
-    const entry = unreachable.get(objKey(obj));
-    return !!entry && entry.until > nowTick();
-  }
-
-  function validGatherTarget(obj, c = null) {
-    if (!obj || !obj.markedForGather) return false;
-    if (typeof isGatherableReady === 'function' && !isGatherableReady(obj)) return false;
-    else if (!objectDefs?.[obj.type]?.gather) return false;
+  function validMarkedResource(obj, c) {
+    if (!obj?.markedForGather) return false;
+    if (typeof isGatherableReady === 'function' ? !isGatherableReady(obj) : !objectDefs?.[obj.type]?.gather) return false;
     if (typeof isTileDiscovered === 'function' && !isTileDiscovered(obj.x, obj.y)) return false;
-    if (window.HavenfallGeologyObjectRenderGuard?.objectInvalidatedByMountain?.(obj)) return false;
-    if (isTemporarilyUnreachable(obj)) return false;
-    if (c && isReservedByOther(obj, c)) return false;
-    return true;
+    if (isBadMountainObject(obj)) return false;
+    const id = keyOf(obj);
+    if (blockedUntil.has(id)) return false;
+    const owner = reservations.get(id);
+    return owner === undefined || owner === c.id;
   }
 
-  function pathToAdjacent(c, obj) {
+  function routeToObject(c, obj) {
     const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) : null;
     if (!adj) return null;
-    const alreadyThere = c.x === adj.x && c.y === adj.y;
-    const path = alreadyThere ? [] : (typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, obj) : []);
-    if (!alreadyThere && (!Array.isArray(path) || path.length === 0)) return null;
+    const already = c.x === adj.x && c.y === adj.y;
+    const path = already ? [] : (typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, obj) : []);
+    if (!already && (!Array.isArray(path) || path.length === 0)) return null;
     return { adj, path };
   }
 
-  function nearestReservedGatherTarget(c) {
+  function nearestMarkedResource(c) {
     let best = null;
-    let bestPath = null;
+    let bestRoute = null;
     let bestScore = Infinity;
     for (const obj of state.objects || []) {
-      if (!validGatherTarget(obj, c)) continue;
-      const route = pathToAdjacent(c, obj);
-      if (!route) { markUnreachable(obj); continue; }
-      const d = Math.abs(c.x - obj.x) + Math.abs(c.y - obj.y);
-      const markedBoost = obj.markedForGather ? -1000 : 0;
-      const score = d + markedBoost;
-      if (score < bestScore) {
-        best = obj;
-        bestPath = route;
-        bestScore = score;
-      }
+      if (!validMarkedResource(obj, c)) continue;
+      const route = routeToObject(c, obj);
+      if (!route) { blockedUntil.set(keyOf(obj), timeKey() + 850); continue; }
+      const score = Math.abs(c.x - obj.x) + Math.abs(c.y - obj.y);
+      if (score < bestScore) { best = obj; bestRoute = route; bestScore = score; }
     }
-    return best ? { obj: best, route: bestPath } : null;
+    return best ? { obj: best, route: bestRoute } : null;
   }
 
-  function assignGatherCoordinated(c, obj, route = null) {
-    if (!c || !obj || !validGatherTarget(obj, c)) return false;
-    const resolved = route || pathToAdjacent(c, obj);
-    if (!resolved) { markUnreachable(obj); return false; }
-    reserveFor(obj, c);
-    c.task = { type: 'gather', objId: obj.id, x: resolved.adj.x, y: resolved.adj.y, reserved: true };
-    c.path = resolved.path;
+  function assignMarkedResource(c) {
+    if (!canWork(c, 'gather')) return false;
+    const target = nearestMarkedResource(c);
+    if (!target) return false;
+    reservations.set(keyOf(target.obj), c.id);
+    c.task = { type: 'gather', objId: target.obj.id, x: target.route.adj.x, y: target.route.adj.y, coordinated: true };
+    c.path = target.route.path;
     c.work = 0;
-    c.note = `Coletando ${objectDefs?.[obj.type]?.name || obj.type}`;
+    c.note = `Coletando ${objectDefs?.[target.obj.type]?.name || target.obj.type}`;
     return true;
   }
 
-  function syncObjects(nextObjects) {
-    state.objects = nextObjects;
-    if (state.world) state.world.objects = nextObjects;
+  function syncObjects(next) {
+    state.objects = next;
+    if (state.world) state.world.objects = next;
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   }
 
-  function completeGather(c, obj, def) {
+  function finishGather(c, obj, def) {
     addResources(def.gather);
     const next = (state.objects || []).filter(o => o.id !== obj.id);
     if (obj.type === 'tree') next.push({ id: uid('obj'), type: 'logs', x: obj.x, y: obj.y });
     if (obj.type === 'crop') next.push({ id: uid('obj'), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
     syncObjects(next);
-    releaseReservation(obj);
+    reservations.delete(keyOf(obj));
     log(`${c.name} coletou ${def.name}.`);
-    c.task = null;
-    c.note = 'Ocioso';
-    c.work = 0;
+    c.task = null; c.note = 'Ocioso'; c.work = 0;
   }
 
-  function handleGatherTask(c, task, tick) {
+  function handleGather(c, task, tick) {
     const obj = state?.objects?.find(o => o.id === task?.objId);
-    if (!obj) {
-      releaseReservation(task?.objId);
-      c.task = null; c.note = 'Ocioso'; c.work = 0;
-      return true;
-    }
-    if (!validGatherTarget(obj, c) && !objectDefs?.[obj.type]?.gather) {
-      releaseReservation(obj);
-      c.task = null; c.note = 'Ocioso'; c.work = 0;
-      return true;
-    }
-    reserveFor(obj, c);
-    const def = objectDefs[obj.type];
-    const workNeeded = Math.max(0.25, Number(def.work || 1));
+    if (!obj) { reservations.delete(task?.objId); c.task = null; c.note = 'Ocioso'; c.work = 0; return true; }
+    const def = objectDefs?.[obj.type];
+    if (!def?.gather) { reservations.delete(keyOf(obj)); c.task = null; c.note = 'Ocioso'; c.work = 0; return true; }
+    reservations.set(keyOf(obj), c.id);
+    const needed = Math.max(0.25, Number(def.work || 1));
     c.work += tick * workRate(c, 'gather', obj);
-    c.note = `Coletando ${def.name} ${Math.floor((c.work / workNeeded) * 100)}%`;
-    if (c.work >= workNeeded) completeGather(c, obj, def);
+    c.note = `Coletando ${def.name} ${Math.floor((c.work / needed) * 100)}%`;
+    if (c.work >= needed) finishGather(c, obj, def);
     return true;
   }
 
-  function assignMarkedGatherTasksCoordinated() {
-    if (!state?.colonists?.length) return 0;
-    cleanupReservations();
-    let assigned = 0;
-    const workers = state.colonists
-      .filter(c => canTakeWork(c, 'gather'))
-      .sort((a, b) => (taskPriorityValue?.(b, 'gather') || 0) - (taskPriorityValue?.(a, 'gather') || 0));
-    for (const c of workers) {
-      const target = nearestReservedGatherTarget(c);
-      if (!target) continue;
-      if (assignGatherCoordinated(c, target.obj, target.route)) assigned++;
+  function assignAllMarked() {
+    cleanup();
+    let count = 0;
+    for (const c of (state?.colonists || []).filter(c => canWork(c, 'gather')).sort((a, b) => priority(b, 'gather') - priority(a, 'gather'))) {
+      if (assignMarkedResource(c)) count++;
     }
-    return assigned;
+    return count;
   }
 
-  function assignCoordinatorAutoTask(c) {
-    cleanupReservations();
-    if (!canTakeWork(c, 'gather')) return false;
-    const target = nearestReservedGatherTarget(c);
-    if (target && assignGatherCoordinated(c, target.obj, target.route)) return true;
-    return false;
-  }
-
-  function hasAvailableWork() {
-    if (!state) return false;
-    if ((state.objects || []).some(o => o.markedForGather && objectDefs?.[o.type]?.gather)) return true;
-    if ((state.objects || []).some(o => o.type === 'blueprint')) return true;
-    if (typeof nearestMarkedMine === 'function' && state.colonists?.some(c => nearestMarkedMine(c))) return true;
+  function workExists() {
+    if ((state?.objects || []).some(o => o.markedForGather && objectDefs?.[o.type]?.gather)) return true;
+    if ((state?.objects || []).some(o => o.type === 'blueprint')) return true;
     if (window.HavenfallRoofSystem?.hasPendingJobs?.()) return true;
     return false;
   }
 
-  function controlledIdle(c) {
+  function calmIdle(c) {
     if (!c || c.task || appScreen !== SCREEN.PLAYING) return false;
-    if (hasAvailableWork()) {
-      c.note = 'Aguardando designação lógica';
-      return true;
-    }
+    if (workExists()) { c.note = 'Aguardando designação lógica'; return true; }
     c.idlePulse = (c.idlePulse || 0) + 1;
-    if (c.idlePulse % 240 !== 0) {
-      c.note = 'Aguardando na base';
-      return true;
-    }
+    if (c.idlePulse % 240 !== 0) { c.note = 'Aguardando na base'; return true; }
     const anchors = (state.objects || []).filter(o => ['campfire', 'crate', 'bed', 'research_desk'].includes(o.type));
     const anchor = anchors.sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0] || state.world?.spawn;
-    if (!anchor) return true;
-    const target = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(anchor.x, anchor.y, c.x, c.y) : null;
-    if (target && !isBlocked(target.x, target.y)) {
-      assignMove(c, target.x, target.y);
-      c.note = 'Reposicionando perto da base';
-    } else {
-      c.note = 'Aguardando na base';
-    }
+    const adj = anchor && typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(anchor.x, anchor.y, c.x, c.y) : null;
+    if (adj && !isBlocked(adj.x, adj.y)) { assignMove(c, adj.x, adj.y); c.note = 'Reposicionando perto da base'; }
+    else c.note = 'Aguardando na base';
     return true;
   }
 
-  function patchWander() {
-    if (window.HavenfallContext.workCoordinationWanderPatched || typeof randomWander !== 'function') return;
-    randomWander = function coordinatedIdleInsteadOfRandomWander(c) {
-      controlledIdle(c);
-    };
-    window.HavenfallContext.workCoordinationWanderPatched = true;
-  }
-
-  function installGlobalOverrides() {
-    if (!window.HavenfallContext.workCoordinationGatherPatched) {
-      window.assignMarkedGatherTasks = assignMarkedGatherTasksCoordinated;
-      window.HavenfallContext.workCoordinationGatherPatched = true;
+  function installOverrides() {
+    window.assignMarkedGatherTasks = assignAllMarked;
+    if (!window.HavenfallContext.workCoordinationWanderPatched && typeof randomWander === 'function') {
+      randomWander = c => calmIdle(c);
+      window.HavenfallContext.workCoordinationWanderPatched = true;
     }
-    patchWander();
   }
 
-  function updateWorkCoordinator(dt) {
+  function tick(dt) {
     if (!state || appScreen !== SCREEN.PLAYING) return;
-    installGlobalOverrides();
-    cleanupReservations();
-    assignmentPulse += dt * Number(state.speed || 1);
-    if (assignmentPulse < 0.35) return;
-    assignmentPulse = 0;
-    assignMarkedGatherTasksCoordinated();
+    installOverrides();
+    cleanup();
+    pulse += dt * Number(state.speed || 1);
+    if (pulse < 0.35) return;
+    pulse = 0;
+    assignAllMarked();
   }
 
-  window.HavenfallWorkCoordinator = {
-    version: VERSION,
-    reservations,
-    assignMarkedGatherTasks: assignMarkedGatherTasksCoordinated,
-    assignGatherCoordinated,
-    hasAvailableWork,
-    controlledIdle
-  };
-
-  window.GameSystems?.registerTaskHandler?.('gather', 'work-coordination.gather', handleGatherTask, { order: 1 });
-  window.GameSystems?.registerAutoTaskProvider?.('work-coordination.marked-gather', assignCoordinatorAutoTask, { order: 1 });
-  window.GameSystems?.registerTick?.('work-coordination', updateWorkCoordinator, { order: 21 });
-  installGlobalOverrides();
+  window.HavenfallWorkCoordinator = { assignMarkedGatherTasks: assignAllMarked, assignMarkedResource, calmIdle, workExists, reservations };
+  window.GameSystems?.registerTaskHandler?.('gather', 'work-coordination.gather', handleGather, { order: 1 });
+  window.GameSystems?.registerAutoTaskProvider?.('work-coordination.marked-gather', assignMarkedResource, { order: 1 });
+  window.GameSystems?.registerTick?.('work-coordination', tick, { order: 21 });
+  installOverrides();
 })();
