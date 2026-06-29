@@ -9,7 +9,11 @@ var defaultNewGameConfig = Object.freeze({
   eventIntensity: 'normal',
   mapSize: 'giant',
   sectorProfile: 'balanced',
-  landingPriority: 'safe'
+  landingPriority: 'safe',
+  planetScan: null,
+  selectedLandingSiteId: null,
+  selectedLandingSite: null,
+  landingSiteId: null
 });
 const MAX_STARTING_COLONISTS = 8;
 
@@ -73,8 +77,36 @@ function normalizeColonyName(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 32) || defaultNewGameConfig.colonyName;
 }
 
+function sanitizeLandingSite(site) {
+  if (!site || typeof site !== 'object') return null;
+  return {
+    id: String(site.id || ''),
+    name: String(site.name || site.labels?.title || 'Local de pouso'),
+    archetype: String(site.archetype || 'safe'),
+    labels: { ...(site.labels || {}) },
+    difficulty: { ...(site.difficulty || {}) },
+    biomes: {
+      primary: site.biomes?.primary || 'forest',
+      secondary: Array.isArray(site.biomes?.secondary) ? [...site.biomes.secondary] : [],
+      mix: { ...(site.biomes?.mix || {}) }
+    },
+    resources: { ...(site.resources || {}) },
+    risks: { ...(site.risks || {}) },
+    positives: Array.isArray(site.positives) ? [...site.positives] : [],
+    negatives: Array.isArray(site.negatives) ? [...site.negatives] : [],
+    signatures: Array.isArray(site.signatures) ? [...site.signatures] : [],
+    worldgenModifiers: { ...(site.worldgenModifiers || {}) },
+    preview: {
+      seed: site.preview?.seed || '',
+      terrainSample: site.preview?.terrainSample || []
+    }
+  };
+}
+
 function normalizeNewGameConfig(config = {}) {
   const seed = normalizeSeedValue(config.seed) || generateRandomSeed();
+  const selectedLandingSite = sanitizeLandingSite(config.selectedLandingSite || config.planetScan?.selectedLandingSite);
+  const selectedLandingSiteId = String(config.selectedLandingSiteId || config.landingSiteId || selectedLandingSite?.id || config.planetScan?.selectedLandingSiteId || '') || null;
   return {
     ...defaultNewGameConfig,
     ...config,
@@ -85,13 +117,19 @@ function normalizeNewGameConfig(config = {}) {
     resourcesPreset: ['scarce', 'standard', 'rich'].includes(config.resourcesPreset) ? config.resourcesPreset : defaultNewGameConfig.resourcesPreset,
     eventIntensity: ['low', 'normal', 'high'].includes(config.eventIntensity) ? config.eventIntensity : defaultNewGameConfig.eventIntensity,
     mapSize: ['large', 'huge', 'giant', 'infinite_chunks'].includes(config.mapSize) ? config.mapSize : defaultNewGameConfig.mapSize,
-    sectorProfile: ['balanced', 'forest', 'water', 'rock', 'harsh'].includes(config.sectorProfile) ? config.sectorProfile : defaultNewGameConfig.sectorProfile,
-    landingPriority: ['safe', 'resources', 'exploration', 'challenge'].includes(config.landingPriority) ? config.landingPriority : defaultNewGameConfig.landingPriority
+    sectorProfile: ['balanced', 'forest', 'water', 'rock', 'harsh', 'safe', 'dense_forest', 'rocky_valley', 'riverbank', 'dry_desert', 'frozen_mountain', 'ancient_ruins', 'extreme'].includes(config.sectorProfile) ? config.sectorProfile : defaultNewGameConfig.sectorProfile,
+    landingPriority: ['safe', 'resources', 'exploration', 'challenge'].includes(config.landingPriority) ? config.landingPriority : defaultNewGameConfig.landingPriority,
+    planetScan: config.planetScan || null,
+    selectedLandingSiteId,
+    selectedLandingSite,
+    landingSiteId: selectedLandingSiteId
   };
 }
 
 function readNewGameConfig() {
-  return normalizeNewGameConfig({
+  const previous = (typeof newGameConfig !== 'undefined' && newGameConfig) ? newGameConfig : {};
+  const raw = normalizeNewGameConfig({
+    ...previous,
     colonyName: setupInputValue('colonyName').trim() || defaultNewGameConfig.colonyName,
     seed: setupInputValue('worldSeed').trim(),
     difficulty: setupInputValue('difficulty', 'normal'),
@@ -100,6 +138,24 @@ function readNewGameConfig() {
     eventIntensity: setupInputValue('eventIntensity', 'normal'),
     mapSize: setupInputValue('mapSize', 'giant')
   });
+
+  const changedScanInputs = previous.seed && (
+    previous.seed !== raw.seed
+    || previous.mapSize !== raw.mapSize
+    || previous.difficulty !== raw.difficulty
+    || previous.eventIntensity !== raw.eventIntensity
+    || previous.resourcesPreset !== raw.resourcesPreset
+  );
+
+  if (changedScanInputs) {
+    raw.planetScan = null;
+    raw.selectedLandingSiteId = null;
+    raw.selectedLandingSite = null;
+    raw.landingSiteId = null;
+    raw.sectorProfile = defaultNewGameConfig.sectorProfile;
+  }
+
+  return raw;
 }
 
 function writeNewGameConfig(config = defaultNewGameConfig) {
@@ -119,6 +175,10 @@ function updateSetupSummary() {
   if (!dom.setupSummary) return;
   const cfg = readNewGameConfigSafe();
   const risk = setupRiskLabel(cfg);
+  const landing = cfg.selectedLandingSite;
+  const landingLine = landing ? `
+      <span><small>Pouso</small><b>${escapeHtml(landing.name || landing.id)}</b></span>
+      <span><small>Score orbital</small><b>${Number(landing.difficulty?.score || 0)}/100</b></span>` : '';
   dom.setupSummary.innerHTML = `
     <div class="setup-summary-title">
       <span>Briefing</span>
@@ -131,6 +191,7 @@ function updateSetupSummary() {
       <span><small>Mapa</small><b>${escapeHtml(labelMapSize(cfg.mapSize))}</b></span>
       <span><small>Eventos</small><b>${escapeHtml(labelEventIntensity(cfg.eventIntensity))}</b></span>
       <span><small>Suprimentos</small><b>${escapeHtml(labelResourcesPreset(cfg.resourcesPreset))}</b></span>
+      ${landingLine}
     </div>
     <div class="setup-risk-meter ${risk.className}">
       <i style="width:${risk.value}%"></i>
@@ -148,6 +209,12 @@ function setupRiskLabel(cfg) {
   if (cfg.resourcesPreset === 'scarce') score += 14;
   if (cfg.resourcesPreset === 'rich') score -= 10;
   if (cfg.mapSize === 'infinite_chunks') score += 8;
+
+  const landing = cfg.selectedLandingSite;
+  if (landing?.difficulty?.tier === 'extreme') score += 22;
+  else if (landing?.difficulty?.tier === 'hard') score += 12;
+  else if (landing?.difficulty?.tier === 'safe' || landing?.difficulty?.tier === 'favorable') score -= 8;
+
   const value = Math.max(8, Math.min(100, score));
   if (value >= 72) return { value, label: 'Alto', className: 'danger', note: 'Setor exigente: eventos e logística podem pressionar cedo.' };
   if (value >= 48) return { value, label: 'Moderado', className: 'warn', note: 'Expedição equilibrada, com margem para adaptação.' };
