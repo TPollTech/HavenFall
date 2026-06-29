@@ -37,9 +37,7 @@
     document.head.appendChild(style);
   }
 
-  function getInput(id) {
-    return document.getElementById(id);
-  }
+  function getInput(id) { return document.getElementById(id); }
 
   function defaultServerValue() {
     const saved = (() => {
@@ -70,27 +68,27 @@
     const inputNick = getInput('multiplayerNickInput');
     if (inputServer && !inputServer.value) inputServer.value = defaultServerValue();
     if (inputNick && !inputNick.value) inputNick.value = defaultNickValue();
-
     const session = window.HavenfallMultiplayer?.session;
     const status = getInput('multiplayerStatus');
     if (status && session) {
       status.className = `multiplayer-status ${session.mode === 'host' || session.mode === 'join' ? 'ok' : 'info'}`;
       status.textContent = session.statusText || 'Offline';
     }
-
     const players = getInput('multiplayerPlayers');
     if (players) players.innerHTML = playersHtml(session?.players || []);
-
     const hostAddress = getInput('multiplayerHostAddress');
-    if (hostAddress) {
-      const value = inputServer?.value || defaultServerValue();
-      hostAddress.value = value;
-    }
+    if (hostAddress) hostAddress.value = inputServer?.value || defaultServerValue();
   };
 
   window.openMultiplayerMenu = function openMultiplayerMenu() {
     refreshMultiplayerMenu();
-    setScreen(SCREEN.MULTIPLAYER);
+    previousScreen = appScreen;
+    appScreen = SCREEN.MULTIPLAYER;
+    Object.entries(dom.screens).forEach(([key, el]) => {
+      if (el) el.classList.toggle('active', key === 'multiplayer');
+    });
+    if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('show');
+    if (state) state.paused = true;
   };
 
   injectStyle();
