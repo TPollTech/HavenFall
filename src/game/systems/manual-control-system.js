@@ -40,6 +40,7 @@
       c.task = null;
       c.path = [];
       c.work = 0;
+      c.manualAction = false;
       c.note = 'Controle manual ativo';
     }
     if (typeof log === 'function') log(next === 'manual' ? 'Controle manual ligado: use WASD/setas e E para interagir.' : 'Controle automático ligado: colonos voltaram à IA.' );
@@ -120,19 +121,28 @@
     return !!c && state?.controlMode === 'manual' && c.id === selectedColonistId;
   }
 
+  function isManualActionRunning(c) {
+    return !!(c?.manualAction && c.task);
+  }
+
+  function cancelManualAction(c) {
+    if (!c) return;
+    c.task = null;
+    c.path = [];
+    c.work = 0;
+    c.manualAction = false;
+  }
+
   function blockAutoForManualColonist(c) {
     if (!isManualColonist(c)) return false;
-    if (c.task || c.path?.length) {
-      c.task = null;
-      c.path = [];
-      c.work = 0;
-    }
+    if (isManualActionRunning(c)) return false;
+    if (c.task || c.path?.length) cancelManualAction(c);
     c.note = input.size ? 'Controle manual' : 'Aguardando comando manual';
     return false;
   }
 
   function claimAutoTaskForManualColonist(c) {
-    if (!isManualColonist(c)) return false;
+    if (!isManualColonist(c) || isManualActionRunning(c)) return false;
     c.note = input.size ? 'Controle manual' : 'Aguardando comando manual';
     return true;
   }
@@ -207,6 +217,10 @@
     return actions[0] || null;
   }
 
+  function markManualTask(c) {
+    if (c?.task) c.manualAction = true;
+  }
+
   function executeBestInteraction(c) {
     const action = findBestInteraction(c);
     if (!action) {
@@ -216,10 +230,13 @@
     input.clear();
     if (action.kind === 'gather') {
       if (typeof assignGather === 'function') assignGather(c, action.obj);
+      markManualTask(c);
     } else if (action.kind === 'mine') {
       if (typeof assignMine === 'function') assignMine(c, action.x, action.y, true);
+      markManualTask(c);
     } else if (action.kind === 'research') {
       if (typeof assignResearch === 'function') assignResearch(c, action.obj);
+      markManualTask(c);
     } else if (action.kind === 'station') {
       selectedCraftStationId = action.obj.id;
       if (window.HavenfallUI?.renderDockPanel) window.HavenfallUI.renderDockPanel('crafting');
@@ -229,13 +246,16 @@
       if (typeof toggleDoorState === 'function') toggleDoorState(action.obj);
     } else if (action.kind === 'inspect') {
       if (typeof assignInspect === 'function') assignInspect(c, action.obj);
+      markManualTask(c);
     } else if (action.kind === 'loot') {
       if (typeof assignLoot === 'function') assignLoot(c, action.obj);
+      markManualTask(c);
     } else if (action.kind === 'leisure') {
       const adj = nearestFreeAdjacent?.(action.obj.x, action.obj.y, c.x, c.y) || { x: action.obj.x, y: action.obj.y };
       c.task = { type: 'leisure', x: adj.x, y: adj.y, objId: action.obj.id };
       c.path = findPath(c.x, c.y, adj.x, adj.y, action.obj);
       c.work = 0;
+      c.manualAction = true;
       c.note = 'Indo relaxar';
     }
     if (typeof log === 'function') log(`Interação manual: ${interactionLabel(action)}.`);
@@ -257,15 +277,17 @@
     if (input.has('KeyA') || input.has('ArrowLeft')) dx -= 1;
     if (input.has('KeyD') || input.has('ArrowRight')) dx += 1;
 
-    c.task = null;
-    c.path = [];
-    c.work = 0;
     if (!dx && !dy) {
-      c.note = 'Aguardando comando manual';
+      if (!c.task) {
+        c.manualAction = false;
+        c.note = 'Aguardando comando manual';
+      }
       interactionCache.target = findBestInteraction(c);
       interactionCache.updatedAt = performance.now();
       return;
     }
+
+    if (c.task || c.path?.length || c.manualAction) cancelManualAction(c);
 
     const len = Math.hypot(dx, dy) || 1;
     const tick = dt * (state.speed || 1);
