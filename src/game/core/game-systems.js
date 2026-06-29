@@ -16,10 +16,30 @@
   const workRateModifiers = new Map();
   const installedHooks = new Set();
 
+  const registryVersions = new WeakMap();
+  const registryOrderedCache = new WeakMap();
+
+  function registryVersion(registry) {
+    return registryVersions.get(registry) || 0;
+  }
+
+  function touchRegistry(registry) {
+    registryVersions.set(registry, registryVersion(registry) + 1);
+    registryOrderedCache.delete(registry);
+  }
+
   function orderedEntries(registry) {
-    return [...registry.entries()]
-      .filter(([, entry]) => entry.enabled)
-      .sort((a, b) => a[1].order - b[1].order || String(a[0]).localeCompare(String(b[0])));
+    const version = registryVersion(registry);
+    const cached = registryOrderedCache.get(registry);
+    if (cached && cached.version === version) return cached.entries;
+
+    const entries = [];
+    for (const item of registry.entries()) {
+      if (item[1].enabled) entries.push(item);
+    }
+    entries.sort((a, b) => a[1].order - b[1].order || String(a[0]).localeCompare(String(b[0])));
+    registryOrderedCache.set(registry, { version, entries });
+    return entries;
   }
 
   function register(registry, id, fn, options = {}) {
@@ -30,26 +50,32 @@
       enabled: options.enabled !== false,
       type: options.type || null
     });
+    touchRegistry(registry);
     return true;
   }
 
   function setEnabled(registry, id, enabled) {
     const entry = registry.get(id);
     if (!entry) return false;
-    entry.enabled = !!enabled;
+    const next = !!enabled;
+    if (entry.enabled === next) return false;
+    entry.enabled = next;
+    touchRegistry(registry);
     return true;
   }
 
   function setRegistryEnabled(registry, matcher, enabled) {
     let changed = 0;
+    const next = !!enabled;
     const test = typeof matcher === 'function'
       ? matcher
       : (id, entry) => String(id) === String(matcher) || String(entry.type || '') === String(matcher);
     for (const [id, entry] of registry.entries()) {
-      if (!test(id, entry)) continue;
-      entry.enabled = !!enabled;
+      if (!test(id, entry) || entry.enabled === next) continue;
+      entry.enabled = next;
       changed++;
     }
+    if (changed) touchRegistry(registry);
     return changed;
   }
 
@@ -58,7 +84,9 @@
   }
 
   function unregisterTick(id) {
-    return ticks.delete(id);
+    const removed = ticks.delete(id);
+    if (removed) touchRegistry(ticks);
+    return removed;
   }
 
   function hasTick(id) {
