@@ -5,6 +5,16 @@
     return window.HavenfallAnimalRenderer?.drawMob?.(mob) || window.HavenfallHostileRenderer?.drawMob?.(mob) || false;
   }
 
+  function loadSimulationUpgrade() {
+    if (window.HavenfallContext?.simulationUpgradeRequested) return;
+    window.HavenfallContext.simulationUpgradeRequested = true;
+    const script = document.createElement('script');
+    script.src = 'src/game/systems/simulation-upgrade-system.js';
+    script.dataset.blueprintId = 'simulation_upgrade';
+    script.onerror = () => console.error('[Simulation] Falha ao carregar sistema de simulação avançada.');
+    document.body.appendChild(script);
+  }
+
   function installPawnRenderer() {
     if (window.HavenfallContext?.pawnRendererInstalled) return;
     window.HavenfallContext = window.HavenfallContext || {};
@@ -36,6 +46,7 @@
       drawWolf: window.HavenfallHostileRenderer.drawWolf
     });
     window.HavenfallContext.pawnRendererInstalled = true;
+    loadSimulationUpgrade();
   }
 
   installPawnRenderer();
