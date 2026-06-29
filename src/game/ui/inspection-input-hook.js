@@ -33,6 +33,12 @@
     updateUI?.(true);
   }
 
+  function blockLegacyDoubleClick(event) {
+    if (appScreen !== SCREEN.PLAYING || !state || currentBuild) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
   function openInspectionFromHudClick(event) {
     const select = event.target?.closest?.('[data-select-colonist]');
     if (!select || !state || !window.InspectionPanel?.selectById) return;
@@ -55,6 +61,7 @@
   }
 
   canvas?.addEventListener?.('click', inspectCanvasClickCapture, true);
+  canvas?.addEventListener?.('dblclick', blockLegacyDoubleClick, true);
   document.addEventListener('click', openInspectionFromHudClick, true);
   window.addEventListener('keydown', closeInspectionOnEsc, true);
 })();
