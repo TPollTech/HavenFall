@@ -5,7 +5,7 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.geologyMassPatchInstalled = true;
 
-  const VERSION = 'dense-mountains-v1';
+  const VERSION = 'dense-mountains-v2';
   const ROCK_TYPES = Object.freeze({
     granite: { hp: 190, resource: 'stone', yield: 9, mineSpeed: 0.82, insulation: 0.72 },
     slate: { hp: 150, resource: 'stone', yield: 7, mineSpeed: 1.0, insulation: 0.55 },
@@ -14,6 +14,7 @@
   });
   const PLANT_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed']);
   const LOOSE_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs', 'rock', 'ore']);
+  const TALL_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
 
   function noise(seed, x, y, salt) {
     if (typeof worldNoise === 'function') return worldNoise(seed, x, y, salt);
@@ -191,8 +192,52 @@
     }
   }
 
+  function hasSolidRock(layer, x, y) {
+    return !!layer?.[Math.round(y)]?.[Math.round(x)]?.solid;
+  }
+
+  function hasSolidNear(layer, x, y, radius = 1) {
+    for (let yy = y - radius; yy <= y + radius; yy++) {
+      for (let xx = x - radius; xx <= x + radius; xx++) {
+        if (hasSolidRock(layer, xx, yy)) return true;
+      }
+    }
+    return false;
+  }
+
+  function objectInvalidForLayer(obj, layer, roofLayer = null) {
+    if (!obj || !LOOSE_RESOURCE_TYPES.has(obj.type)) return false;
+    const x = Math.round(obj.x);
+    const y = Math.round(obj.y);
+    if (hasSolidRock(layer, x, y)) return true;
+    if (roofLayer?.[y]?.[x]) return true;
+    if (TALL_RESOURCE_TYPES.has(obj.type) && (hasSolidNear(layer, x, y - 1, 1) || hasSolidNear(layer, x, y, 1))) return true;
+    return false;
+  }
+
+  function syncObjectArrays(filtered) {
+    if (!state?.world) return;
+    state.world.objects = filtered;
+    state.objects = filtered;
+  }
+
+  function purgeLooseResourcesOnGeology(layer = state?.world?.geologyLayer, roofLayer = state?.world?.roofLayer) {
+    if (!state?.world) return 0;
+    const source = Array.isArray(state.objects) ? state.objects : state.world.objects || [];
+    const filtered = source.filter(obj => !objectInvalidForLayer(obj, layer, roofLayer));
+    const removed = source.length - filtered.length;
+    if (removed > 0 || state.world.objects !== filtered || state.objects !== filtered) syncObjectArrays(filtered);
+    if (removed > 0 && typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    return removed;
+  }
+
   function applyDenseGeology(world = state?.world) {
-    if (!world?.terrain || world.geologyMassVersion === VERSION) return false;
+    if (!world?.terrain) return false;
+    const firstApply = world.geologyMassVersion !== VERSION;
+    if (!firstApply) {
+      purgeLooseResourcesOnGeology(world.geologyLayer, world.roofLayer);
+      return false;
+    }
     const layer = makeDenseLayer(world);
     world.geologyLayer = layer;
     world.roofLayer = layer.map(row => row.map(rock => !!rock?.solid));
@@ -201,23 +246,14 @@
         if (layer[y][x]?.solid && world.terrain[y]?.[x] !== 'water') world.terrain[y][x] = 'stone';
       }
     }
-    world.objects = (world.objects || []).filter(obj => !LOOSE_RESOURCE_TYPES.has(obj.type) || !layer[obj.y]?.[obj.x]?.solid);
     world.geologyMassVersion = VERSION;
+    purgeLooseResourcesOnGeology(layer, world.roofLayer);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     return true;
   }
 
   function cleanupVegetationOnGeology() {
-    if (!state?.objects?.length || typeof getRockAt !== 'function') return;
-    const before = state.objects.length;
-    state.objects = state.objects.filter(obj => {
-      if (!PLANT_TYPES.has(obj.type)) return true;
-      const rock = getRockAt(obj.x, obj.y);
-      if (rock?.solid) return false;
-      if (typeof hasNaturalRoofAt === 'function' && hasNaturalRoofAt(obj.x, obj.y)) return false;
-      return true;
-    });
-    if (state.objects.length !== before && typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    purgeLooseResourcesOnGeology(state?.world?.geologyLayer, state?.world?.roofLayer);
   }
 
   function updateGeologyMassPatch() {
@@ -226,6 +262,6 @@
     cleanupVegetationOnGeology();
   }
 
-  window.HavenfallGeologyMassPatch = { applyDenseGeology, cleanupVegetationOnGeology };
+  window.HavenfallGeologyMassPatch = { applyDenseGeology, cleanupVegetationOnGeology, purgeLooseResourcesOnGeology, objectInvalidForLayer };
   window.GameSystems?.registerTick?.('geology.mass-patch', updateGeologyMassPatch, { order: 11 });
 })();
