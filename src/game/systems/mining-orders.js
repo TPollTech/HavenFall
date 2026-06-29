@@ -119,7 +119,6 @@ function markVisibleMineableRocks(limit = 12) {
   }
   if (picked.length) {
     log(`${picked.length} rocha${picked.length > 1 ? 's' : ''} próxima${picked.length > 1 ? 's' : ''} marcada${picked.length > 1 ? 's' : ''} para mineração.`);
-    if (typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
   }
   return picked.length;
 }
@@ -241,6 +240,17 @@ function handleDeconstructTask(c, task, tick) {
 function handleOrderToolAtTile(tool, tile, event = null) {
   if (!tool || !tile || appScreen !== SCREEN.PLAYING || !state) return false;
   const obj = isTileDiscovered(tile.x, tile.y) && typeof getObjectAt === 'function' ? getObjectAt(tile.x, tile.y) : null;
+
+  if (tool === 'mine') {
+    const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
+    if (!rock?.solid) {
+      log('Minerar: clique em uma rocha ou montanha mineável.');
+      return true;
+    }
+    const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
+    if (typeof markRockForMining === 'function' && markRockForMining(tile.x, tile.y, true)) log(`${label} marcada para mineração.`);
+    return true;
+  }
 
   if (tool === 'cancel') {
     let changed = false;

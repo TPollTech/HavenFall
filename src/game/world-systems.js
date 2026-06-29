@@ -31,11 +31,19 @@ function assignMine(c, x, y, mark = false) {
     log(`${c.name} não conseguiu chegar até a rocha.`);
     return false;
   }
+  const alreadyAtWorkTile = c.x === adj.x && c.y === adj.y;
+  const path = alreadyAtWorkTile ? [] : findPath(c.x, c.y, adj.x, adj.y, rock);
+  if (!alreadyAtWorkTile && (!Array.isArray(path) || path.length === 0)) {
+    log(`${c.name} não encontrou caminho até a rocha.`);
+    return false;
+  }
   if (mark && typeof markRockForMining === 'function') markRockForMining(x, y, true);
   c.task = { type: 'mine', mineX: x, mineY: y, x: adj.x, y: adj.y };
-  c.path = findPath(c.x, c.y, adj.x, adj.y);
+  c.path = path;
   c.work = 0;
-  c.note = `Minerando ${typeof geologyLabelAt === 'function' ? geologyLabelAt(x, y) : 'rocha'}`;
+  c.note = alreadyAtWorkTile
+    ? `Minerando ${typeof geologyLabelAt === 'function' ? geologyLabelAt(x, y) : 'rocha'}`
+    : `Indo minerar ${typeof geologyLabelAt === 'function' ? geologyLabelAt(x, y) : 'rocha'}`;
   return true;
 }
 

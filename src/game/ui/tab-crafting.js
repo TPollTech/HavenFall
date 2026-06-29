@@ -113,7 +113,7 @@
     const status = recipeStatus(key, recipe, station, worker);
     const progress = recipeProgress(key);
     const active = uiState.recipeKey === key;
-    return `<button type="button" class="craft-recipe-row ${active ? 'is-selected' : ''} ${status.ok ? '' : 'is-locked'}" data-craft-select-recipe="${h(key)}"><span class="craft-recipe-main"><b>${h(recipe.label)}</b><small>${h(outputText(recipe.output))}</small></span><span class="craft-recipe-meta"><em>${h(status.label)}</em><small>${h(recipe.duration || 1)}s</small></span>${progress.pct ? `<i class="craft-mini-progress"><b style="width:${progress.pct}%"></b></i>` : ''}</button>`;
+    return `<button type="button" class="craft-recipe-row ${active ? 'is-selected' : ''} ${status.ok ? '' : 'is-locked'}" data-craft-select-recipe="${h(key)}" data-craft-recipe="${h(key)}"><span class="craft-recipe-main"><b>${h(recipe.label)}</b><small>${h(outputText(recipe.output))}</small></span><span class="craft-recipe-meta"><em>${h(status.label)}</em><small>${h(recipe.duration || 1)}s</small></span>${progress.pct ? `<i class="craft-mini-progress"><b style="width:${progress.pct}%"></b></i>` : ''}</button>`;
   }
 
   function renderRecipeList(recipes, station, worker) {
@@ -222,6 +222,7 @@
   }
 
   function ensureStyle() {
+    if (!document?.getElementById || !document?.createElement || !document?.head?.appendChild) return;
     let style = document.getElementById('crafting-panel-style');
     if (!style) {
       style = document.createElement('style');

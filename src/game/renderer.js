@@ -238,9 +238,121 @@ function draw() {
   window.GameSystems?.drawRegisteredOverlays();
 }
 
+const TERRAIN_BASE_COLORS = Object.freeze({
+  grass: '#586d2d',
+  dirt: '#7a5738',
+  sand: '#aa914f',
+  stone: '#626966',
+  water: '#1f6f88'
+});
+const TILE_OVERDRAW = 1.4;
+const TILE_BLEND_WIDTH = 9;
+const TILE_SOURCE_CROP_RATIO = 0.055;
+
+function terrainBaseColor(type) {
+  return TERRAIN_BASE_COLORS[type] || TERRAIN_BASE_COLORS.grass;
+}
+
+function terrainAtTile(x, y) {
+  return state?.terrain?.[y]?.[x] || null;
+}
+
+function rgbaFromHex(hex, alpha) {
+  const value = String(hex || '').replace('#', '');
+  if (value.length !== 6) return `rgba(88, 109, 45, ${alpha})`;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function drawTerrainGroundFill(x, y, type) {
+  ctx.fillStyle = terrainBaseColor(type);
+  ctx.fillRect(
+    x * TILE - TILE_OVERDRAW,
+    y * TILE - TILE_OVERDRAW,
+    TILE + TILE_OVERDRAW * 2,
+    TILE + TILE_OVERDRAW * 2
+  );
+}
+
+function drawTerrainTexture(img, x, y) {
+  if (!img) return;
+
+  const sw = img.naturalWidth || img.width || TILE;
+  const sh = img.naturalHeight || img.height || TILE;
+  const crop = Math.max(0, Math.min(14, Math.floor(Math.min(sw, sh) * TILE_SOURCE_CROP_RATIO)));
+  const sx = crop;
+  const sy = crop;
+  const sWidth = Math.max(1, sw - crop * 2);
+  const sHeight = Math.max(1, sh - crop * 2);
+
+  ctx.drawImage(
+    img,
+    sx,
+    sy,
+    sWidth,
+    sHeight,
+    x * TILE - TILE_OVERDRAW,
+    y * TILE - TILE_OVERDRAW,
+    TILE + TILE_OVERDRAW * 2,
+    TILE + TILE_OVERDRAW * 2
+  );
+}
+
+function drawTerrainBlendStrip(x, y, side, neighborType) {
+  if (!neighborType) return;
+
+  const px = x * TILE;
+  const py = y * TILE;
+  const w = TILE_BLEND_WIDTH;
+  const color = terrainBaseColor(neighborType);
+  let gradient;
+
+  if (side === 'left') {
+    gradient = ctx.createLinearGradient(px, 0, px + w, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
+    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(px - 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+  } else if (side === 'right') {
+    gradient = ctx.createLinearGradient(px + TILE, 0, px + TILE - w, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
+    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(px + TILE - w + 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+  } else if (side === 'top') {
+    gradient = ctx.createLinearGradient(0, py, 0, py + w);
+    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
+    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(px - TILE_OVERDRAW, py - 0.5, TILE + TILE_OVERDRAW * 2, w);
+  } else if (side === 'bottom') {
+    gradient = ctx.createLinearGradient(0, py + TILE, 0, py + TILE - w);
+    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
+    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(px - TILE_OVERDRAW, py + TILE - w + 0.5, TILE + TILE_OVERDRAW * 2, w);
+  }
+}
+
+function drawTerrainBlends(x, y, type) {
+  const left = terrainAtTile(x - 1, y);
+  const right = terrainAtTile(x + 1, y);
+  const top = terrainAtTile(x, y - 1);
+  const bottom = terrainAtTile(x, y + 1);
+
+  if (left && left !== type) drawTerrainBlendStrip(x, y, 'left', left);
+  if (right && right !== type) drawTerrainBlendStrip(x, y, 'right', right);
+  if (top && top !== type) drawTerrainBlendStrip(x, y, 'top', top);
+  if (bottom && bottom !== type) drawTerrainBlendStrip(x, y, 'bottom', bottom);
+}
+
 function drawTile(x, y, type) {
-  const img = images[`tile_${type}`] || images.tile_grass;
-  ctx.drawImage(img, x * TILE, y * TILE, TILE, TILE);
+  const img = images[`tile_${type}`] || (type === 'water' ? null : images.tile_grass);
+  drawTerrainGroundFill(x, y, type);
+  drawTerrainTexture(img, x, y);
+  drawTerrainBlends(x, y, type);
   window.GameSystems?.drawTileRenderers(x, y, type);
 }
 

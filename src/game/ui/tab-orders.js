@@ -82,8 +82,13 @@
   }
 
   function handleClick(event) {
+    if (!event.target.closest?.('#anchored-ui-panel')) return;
+
     const orderTool = event.target.closest?.('[data-order-tool]');
     if (orderTool) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       const tool = orderTool.dataset.orderTool;
       if (typeof setOrderTool === 'function') setOrderTool(activeOrderTool() === tool ? null : tool);
       window.HavenfallUI.refreshDockPanel?.('orders');
@@ -92,6 +97,9 @@
 
     const clear = event.target.closest?.('[data-clear-order-tool]');
     if (clear) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       if (typeof clearOrderTool === 'function') clearOrderTool('manual');
       window.HavenfallUI.refreshDockPanel?.('orders');
       return;
@@ -99,6 +107,9 @@
 
     const autoMine = event.target.closest?.('[data-auto-mine]');
     if (autoMine) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       if (typeof assignNearestMine === 'function') assignNearestMine(null, { markedOnly: true });
       window.HavenfallUI.refreshDockPanel?.('orders');
       return;
@@ -106,11 +117,14 @@
 
     const markNearby = event.target.closest?.('[data-mark-nearby-mine]');
     if (markNearby) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       if (typeof markVisibleMineableRocks === 'function') markVisibleMineableRocks(12);
       window.HavenfallUI.refreshDockPanel?.('orders');
     }
   }
 
-  document.addEventListener('click', handleClick);
+  document.addEventListener('click', handleClick, true);
   window.HavenfallUI.tabViews.orders = { render, onOpen };
 })();

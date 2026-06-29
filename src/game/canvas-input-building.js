@@ -117,13 +117,10 @@ function handleCanvasClick(e) {
     const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
     if (rock?.solid) {
       selectedWorldObjectId = null;
-      if (e.shiftKey && typeof markRockForMining === 'function') {
+      if (typeof markRockForMining === 'function') {
         markRockForMining(tile.x, tile.y, true);
         const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
         log(`${label} marcada para mineração.`);
-        if (typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
-      } else {
-        assignMine(c, tile.x, tile.y, true);
       }
     } else {
       log('Ordem Minerar ativa: clique em uma rocha ou montanha mineável.');
@@ -158,7 +155,6 @@ function handleCanvasClick(e) {
       markRockForMining(tile.x, tile.y, true);
       const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
       log(`${label} marcada para mineração.`);
-      if (typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
     } else {
       assignMine(c, tile.x, tile.y, true);
     }
@@ -239,7 +235,6 @@ function makeContextActions(c, target, tile) {
     actions.push({ label: target.rock.markedForMining ? 'Desmarcar mineração' : 'Marcar para mineração', hint: 'entra na fila automática de coleta', run: () => {
       const marked = typeof toggleRockMiningMark === 'function' ? toggleRockMiningMark(tile.x, tile.y) : false;
       log(`${label} ${marked ? 'marcada' : 'desmarcada'} para mineração.`);
-      if (marked && typeof assignMarkedGatherTasks === 'function') assignMarkedGatherTasks();
     } });
     actions.push({ label: 'Mover até perto', hint: `${tile.x},${tile.y}`, run: () => assignMoveNearTarget(c, tile) });
     return actions;

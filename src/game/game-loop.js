@@ -245,3 +245,52 @@ function checkGoals() {
   setGoal('food', state.resources.food >= 20);
   setGoal('medicine', state.resources.medicine >= 1);
 }
+
+function setGoal(key, done) {
+  const el = dom.goalList?.querySelector?.(`[data-goal="${key}"]`);
+  if (el) el.classList.toggle('done', !!done);
+}
+
+function runLoopStep(label, fn) {
+  try {
+    return typeof fn === 'function' ? fn() : undefined;
+  } catch (err) {
+    if (!loopErrorState.has(label)) {
+      loopErrorState.add(label);
+      console.error(`[GameLoop:${label}]`, err);
+      if (typeof log === 'function') log(`Sistema ${label} falhou e foi isolado para manter o jogo rodando.`);
+    }
+    return undefined;
+  }
+}
+
+function gameLoop(now = performance.now()) {
+  const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000 || 0));
+  lastTime = now;
+
+  runLoopStep('world', () => updateWorld(dt));
+  if (window.GameSystems?.tick) {
+    window.GameSystems.tick(dt, (label, fn) => safeSystemTick(label, fn));
+  }
+
+  runLoopStep('camera', () => updateCamera(dt));
+
+  if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
+    runLoopStep('draw', draw);
+  }
+
+  uiTimer += dt;
+  autosaveTimer += dt;
+  if (state && uiTimer > 0.25) {
+    uiTimer = 0;
+    runLoopStep('ui', () => updateUI());
+  }
+  if (state && settings?.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) {
+    autosaveTimer = 0;
+    runLoopStep('autosave', () => saveGame(false));
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+window.gameLoop = gameLoop;

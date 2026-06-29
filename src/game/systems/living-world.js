@@ -30,6 +30,7 @@
   let mapCanvas = null;
 
   function install() {
+    installDefinitions();
     patchWorldGeneration();
     patchAnimalBehavior();
     patchMobSpawning();
@@ -38,7 +39,50 @@
     window.GameSystems?.registerWorldOverlay?.('living-world.markers', drawLivingWorldMarkers, { order: 92 });
     window.GameSystems?.registerCollisionProvider?.('living-world.water-collision', waterCollisionAt, { order: 8 });
     installMapControls();
-    window.HavenfallLivingWorld = { version: 'living-world-v2', animalProfiles, openMap: openWorldMap, closeMap: closeWorldMap };
+    window.HavenfallLivingWorld = {
+      version: 'living-world-v2',
+      animalProfiles,
+      openMap: openWorldMap,
+      closeMap: closeWorldMap,
+      ensureWorldWater: enhanceWorldWithWater,
+      createWaypoint,
+      generateExplorationQueue
+    };
+  }
+
+  function installDefinitions() {
+    if (typeof buildDefs !== 'object' || typeof objectDefs !== 'object') return;
+    buildDefs.bridge = {
+      ...(buildDefs.bridge || {}),
+      label: 'Ponte',
+      type: 'bridge',
+      cost: { wood: 8 },
+      work: 4,
+      placeOnWater: true,
+      requires: buildDefs.bridge?.requires || 'watercraft'
+    };
+    buildDefs.fish_trap = {
+      ...(buildDefs.fish_trap || {}),
+      label: 'Armadilha de Peixe',
+      type: 'fish_trap',
+      cost: { wood: 10 },
+      itemCost: { rope: 1 },
+      work: 5,
+      needsAdjacentWater: true,
+      requires: buildDefs.fish_trap?.requires || 'watercraft'
+    };
+    buildDefs.water_collector = {
+      ...(buildDefs.water_collector || {}),
+      label: 'Coletor de Agua',
+      type: 'water_collector',
+      cost: { wood: 12, stone: 4 },
+      work: 6,
+      needsAdjacentWater: true,
+      requires: buildDefs.water_collector?.requires || 'watercraft'
+    };
+    objectDefs.bridge = { ...(objectDefs.bridge || {}), name: 'ponte', img: objectDefs.bridge?.img || 'logs', blocks: false };
+    objectDefs.fish_trap = { ...(objectDefs.fish_trap || {}), name: 'armadilha de peixe', img: objectDefs.fish_trap?.img || 'crate_wood', blocks: false, interactable: true };
+    objectDefs.water_collector = { ...(objectDefs.water_collector || {}), name: 'coletor de agua', img: objectDefs.water_collector?.img || 'chest_large', blocks: false, interactable: true };
   }
 
   function patchWorldGeneration() {
@@ -67,7 +111,7 @@
     const rand = typeof seededRandom === 'function' ? seededRandom(`${world.seed}|living-water-v2`) : Math.random;
     const cols = world.cols;
     const rows = world.rows;
-    const waterTiles = new Set(world.waterTiles || []);
+    const waterTiles = normalizeWaterTileSet(world.waterTiles);
     const spawn = world.spawn || { x: Math.floor(cols / 2), y: Math.floor(rows / 2) };
     const waterBias = Number(world.planetScan?.biomeStats?.water || 0) / 100;
     const pondCount = Math.max(2, Math.min(8, Math.floor((cols * rows) / 4800) + Math.round(waterBias * 4)));
@@ -93,6 +137,15 @@
     world.objects = (world.objects || []).filter(obj => !waterTiles.has(`${obj.x},${obj.y}`));
     world.livingWorld = { ...(world.livingWorld || {}), waterEnhanced: true, waterTiles: world.waterTiles, version: 'living-world-v2' };
     return world;
+  }
+
+  function normalizeWaterTileSet(tiles = []) {
+    const set = new Set();
+    for (const tile of tiles || []) {
+      if (typeof tile === 'string') set.add(tile);
+      else if (tile && Number.isFinite(Number(tile.x)) && Number.isFinite(Number(tile.y))) set.add(`${Math.round(tile.x)},${Math.round(tile.y)}`);
+    }
+    return set;
   }
 
   function insideWorld(world, x, y) {
@@ -124,7 +177,7 @@
   }
 
   function isWaterTile(x, y) {
-    return state?.terrain?.[y]?.[x] === WATER_TILE || state?.world?.waterTiles?.includes?.(`${x},${y}`);
+    return state?.terrain?.[y]?.[x] === WATER_TILE || normalizeWaterTileSet(state?.world?.waterTiles || []).has(`${x},${y}`);
   }
 
   function isBridgeAt(x, y) {
@@ -133,8 +186,9 @@
   }
 
   function waterCollisionAt(x, y) {
-    if (!isWaterTile(x, y) || isBridgeAt(x, y)) return null;
-    return { type: 'water', blocks: false, cost: (state?.world?.waterDepth?.[y]?.[x] || 1) >= 2 ? 3 : 1.6 };
+    if (!isWaterTile(x, y)) return null;
+    if (isBridgeAt(x, y)) return { type: 'water_bridge', blocks: false, cost: 1 };
+    return { type: 'water', blocks: true, cost: (state?.world?.waterDepth?.[y]?.[x] || 1) >= 2 ? 3 : 1.6 };
   }
 
   function drawWaterTile(x, y, type) {
@@ -525,6 +579,39 @@
 
   function drawLivingWorldMarkers(bounds = null) {
     // reservado para waypoints/mapa global nas próximas fases
+  }
+
+  function ensureWaypointState() {
+    const living = ensureRuntimeState() || (state.livingWorld = state.world.livingWorld = {});
+    living.waypoints = Array.isArray(living.waypoints) ? living.waypoints : [];
+    living.explorationQueue = Array.isArray(living.explorationQueue) ? living.explorationQueue : [];
+    return living;
+  }
+
+  function createWaypoint(x, y, type = 'exploration', label = '') {
+    if (!state?.world) return null;
+    const living = ensureWaypointState();
+    const waypoint = {
+      id: typeof uid === 'function' ? uid('waypoint') : `waypoint_${living.waypoints.length + 1}`,
+      x: clamp(Math.round(Number(x) || 0), 0, getWorldCols() - 1),
+      y: clamp(Math.round(Number(y) || 0), 0, getWorldRows() - 1),
+      type,
+      label: String(label || type || 'Ponto de interesse'),
+      createdAtDay: Number(state.day || 1)
+    };
+    living.waypoints.push(waypoint);
+    return waypoint;
+  }
+
+  function generateExplorationQueue() {
+    if (!state?.world) return [];
+    const living = ensureWaypointState();
+    const base = state.world.spawn || state.colonists?.[0] || { x: 0, y: 0 };
+    living.explorationQueue = living.waypoints
+      .filter(point => !point.completed)
+      .map(point => ({ ...point, distance: Math.round(Math.hypot(point.x - base.x, point.y - base.y) * 10) / 10 }))
+      .sort((a, b) => a.distance - b.distance || String(a.id).localeCompare(String(b.id)));
+    return living.explorationQueue;
   }
 
   function installMapControls() {

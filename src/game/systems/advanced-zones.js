@@ -35,6 +35,8 @@
     food: { label: 'Comida básica', buildType: 'crop', seedCost: { food: 1 }, note: 'Produz alimento genérico.' },
     berries: { label: 'Bagas', buildType: 'crop', seedCost: { food: 1 }, note: 'Variante visual/narrativa de alimento.' }
   });
+  const STORAGE_OBJECT_UNIT_CAPACITY = 80;
+  const FLOOR_STACK_CAPACITY = 75;
 
   const baseZoneDefs = typeof zoneDefs !== 'undefined' ? zoneDefs : {};
   const allZoneDefs = () => ({ ...baseZoneDefs, ...advancedZoneDefs });
@@ -95,10 +97,12 @@
 
   function storageObjects() {
     if (!state?.objects) return [];
+    const hasStorageZones = zoneSystem.count('storage') > 0;
     return state.objects.filter(obj => {
-      if (!obj || obj.blueprint || obj.deconstruct) return false;
+      if (!obj || obj.type === 'blueprint' || obj.deconstruct) return false;
       if (!objectDefs?.[obj.type]?.storage) return false;
       if (!isTileDiscovered(obj.x, obj.y)) return false;
+      if (hasStorageZones && zoneSystem.getZoneAt(obj.x, obj.y) !== 'storage') return false;
       if (zoneSystem.hasAllowedArea?.() && !zoneSystem.isTileAllowed?.(obj.x, obj.y)) return false;
       return true;
     });
@@ -109,10 +113,72 @@
     return state.colonists.filter(c => c.task?.type === 'haul' && c.task.zoneType === 'storage_object' && c.task.zoneObjectId === obj.id).length;
   }
 
+  function cargoCategory(cargo) {
+    if (!cargo) return null;
+    if (cargo.kind === 'debris') return 'debris';
+    if (cargo.resource) return cargo.resource;
+    if (cargo.item) return 'item';
+    return null;
+  }
+
+  function storageAcceptsCargo(cargo) {
+    const zones = zoneSystem.ensureState();
+    const category = cargoCategory(cargo);
+    if (!category || category === 'debris') return false;
+    const filters = zones?.storageFilters || {};
+    if (category === 'item') return filters.items !== false;
+    return filters[category] !== false;
+  }
+
+  function cargoStorageKey(cargo) {
+    if (cargo?.resource) return `resource:${cargo.resource}`;
+    if (cargo?.item) return `item:${cargo.item}`;
+    return null;
+  }
+
+  function cargoAmount(cargo) {
+    return Math.max(1, Number(cargo?.amount || 1));
+  }
+
+  function ensureStorageContents(obj) {
+    obj.storageContents = obj.storageContents || { resources: {}, items: {} };
+    obj.storageContents.resources = obj.storageContents.resources || {};
+    obj.storageContents.items = obj.storageContents.items || {};
+    return obj.storageContents;
+  }
+
+  function storedAmountInContents(contents = {}) {
+    const resources = Object.values(contents.resources || {}).reduce((sum, value) => sum + Math.max(0, Number(value || 0)), 0);
+    const items = Object.values(contents.items || {}).reduce((sum, value) => sum + Math.max(0, Number(value || 0)), 0);
+    return resources + items;
+  }
+
+  function storageObjectCapacity(obj) {
+    const def = objectDefs?.[obj?.type] || {};
+    return Math.max(1, Number(obj?.storageCapacity || def.storageCapacity || Number(def.storage || 1) * STORAGE_OBJECT_UNIT_CAPACITY || STORAGE_OBJECT_UNIT_CAPACITY));
+  }
+
+  function storageObjectUsed(obj) {
+    return storedAmountInContents(ensureStorageContents(obj));
+  }
+
+  function storageObjectReservedAmount(obj) {
+    if (!obj?.id || !state?.colonists) return 0;
+    return state.colonists.reduce((sum, c) => {
+      const task = c.task;
+      if (task?.type !== 'haul' || task.zoneType !== 'storage_object' || task.zoneObjectId !== obj.id) return sum;
+      return sum + Math.max(1, Number(task.haulAmount || c.carrying?.amount || 1));
+    }, 0);
+  }
+
+  function storageObjectFreeCapacity(obj) {
+    return Math.max(0, storageObjectCapacity(obj) - storageObjectUsed(obj) - storageObjectReservedAmount(obj));
+  }
+
   function findFreeStorageObjectFor(obj, fromX = obj?.x || 0, fromY = obj?.y || 0) {
     if (!obj || !storageAcceptsObject(obj)) return null;
     return storageObjects()
-      .filter(storage => storageObjectReservationCount(storage) < Number(objectDefs?.[storage.type]?.storage || 1))
+      .filter(storage => storageObjectFreeCapacity(storage) > 0)
       .sort((a, b) => dist(fromX, fromY, a.x, a.y) - dist(fromX, fromY, b.x, b.y))[0] || null;
   }
 
@@ -123,14 +189,8 @@
 
   zoneSystem.findFreeStorageDestinationFor = function findFreeStorageDestinationFor(obj, fromX = obj?.x || 0, fromY = obj?.y || 0) {
     if (!obj || !storageAcceptsObject(obj)) return null;
-    const zoneTile = this.findFreeStorageTileFor(obj);
-    const storageObject = this.findFreeStorageObjectFor(obj, fromX, fromY);
-    if (!zoneTile) return storageObject;
-    const zoneDestination = { ...zoneTile, type: 'storage' };
-    if (!storageObject) return zoneDestination;
-    const zoneDistance = dist(fromX, fromY, zoneDestination.x, zoneDestination.y);
-    const objectDistance = dist(fromX, fromY, storageObject.x, storageObject.y);
-    return objectDistance <= zoneDistance ? storageObject : zoneDestination;
+    const cargo = cargoForObject(obj);
+    return destinationForCargo(cargo, fromX, fromY);
   };
 
   zoneSystem.storageObjectCount = function storageObjectCount() {
@@ -156,6 +216,7 @@
 
   function resourceCategoryForObject(obj) {
     if (!obj) return null;
+    if (obj.stored || obj.type === 'stockpile') return null;
     if (obj.type === 'rubble') return 'debris';
     if (obj.type === 'logs') return 'wood';
     if (obj.type === 'berry' || obj.type === 'crop') return 'food';
@@ -166,6 +227,7 @@
   }
 
   function storageAcceptsObject(obj) {
+    if (obj?.stored || obj?.type === 'stockpile') return false;
     const zones = zoneSystem.ensureState();
     const category = resourceCategoryForObject(obj);
     if (!category || category === 'debris') return false;
@@ -176,10 +238,145 @@
 
   function cargoForObject(obj) {
     if (!obj) return null;
+    if (obj.stored || obj.type === 'stockpile') return null;
     if (obj.type === 'rubble') return { kind: 'debris', label: 'entulho', amount: 1 };
     if (obj.type === 'logs') return { resource: 'wood', amount: Number(obj.amount || 5), label: 'toras' };
-    if (obj.itemKey) return { item: obj.itemKey, amount: Number(obj.amount || 1), label: itemDefs?.[obj.itemKey]?.label || obj.itemKey };
+    if (obj.itemKey) {
+      const resourceKey = itemDefs?.[obj.itemKey]?.resourceKey || null;
+      const label = itemDefs?.[obj.itemKey]?.label || obj.itemKey;
+      if (resourceKey) return { resource: resourceKey, amount: Number(obj.amount || 1), label };
+      return { item: obj.itemKey, amount: Number(obj.amount || 1), label };
+    }
     return null;
+  }
+
+  function stackMatchesCargo(stack, cargo) {
+    if (!stack?.stored || stack.type !== 'stockpile' || !cargo) return false;
+    if (stack.storageKey && stack.storageKey !== cargoStorageKey(cargo)) return false;
+    if (cargo.resource) return stack.storageKind === 'resource' && stack.resource === cargo.resource;
+    if (cargo.item) return stack.storageKind === 'item' && stack.itemKey === cargo.item;
+    return false;
+  }
+
+  function stackFreeCapacity(stack) {
+    return Math.max(0, Number(stack.storageCapacity || FLOOR_STACK_CAPACITY) - Math.max(0, Number(stack.amount || 0)));
+  }
+
+  function findExistingStorageStackForCargo(cargo, fromX = 0, fromY = 0) {
+    if (!storageAcceptsCargo(cargo) || !zoneSystem.count('storage')) return null;
+    return (state?.objects || [])
+      .filter(obj => stackMatchesCargo(obj, cargo) && zoneSystem.getZoneAt(obj.x, obj.y) === 'storage' && stackFreeCapacity(obj) > 0)
+      .sort((a, b) => dist(fromX, fromY, a.x, a.y) - dist(fromX, fromY, b.x, b.y))[0] || null;
+  }
+
+  function findFreeStorageTileForCargo(cargo, fromX = 0, fromY = 0) {
+    if (!storageAcceptsCargo(cargo)) return null;
+    return zoneSystem.entries('storage')
+      .filter(tile => !getObjectAt(tile.x, tile.y) && !isBlocked(tile.x, tile.y))
+      .sort((a, b) => dist(fromX, fromY, a.x, a.y) - dist(fromX, fromY, b.x, b.y))[0] || null;
+  }
+
+  function destinationForCargo(cargo, fromX = 0, fromY = 0) {
+    if (!storageAcceptsCargo(cargo)) return null;
+    const sourceLike = cargo.resource === 'wood'
+      ? { type: 'logs', amount: cargo.amount }
+      : cargo.item
+        ? { type: 'loot', itemKey: cargo.item, amount: cargo.amount }
+        : null;
+    const storageObject = sourceLike ? zoneSystem.findFreeStorageObjectFor(sourceLike, fromX, fromY) : null;
+    if (storageObject) return storageObject;
+    const stack = findExistingStorageStackForCargo(cargo, fromX, fromY);
+    if (stack) return { x: stack.x, y: stack.y, type: 'storage_stack', stackId: stack.id };
+    const tile = findFreeStorageTileForCargo(cargo, fromX, fromY);
+    return tile ? { ...tile, type: 'storage' } : null;
+  }
+
+  zoneSystem.findFreeStorageStackForCargo = function findFreeStorageStackForCargo(cargo, fromX = 0, fromY = 0) {
+    const stack = findExistingStorageStackForCargo(cargo, fromX, fromY);
+    return stack ? { x: stack.x, y: stack.y, type: 'storage_stack', stackId: stack.id } : null;
+  };
+
+  zoneSystem.findFreeStorageDestinationForCargo = function findFreeStorageDestinationForCargo(cargo, fromX = 0, fromY = 0) {
+    return destinationForCargo(cargo, fromX, fromY);
+  };
+
+  function addCargoToGlobalStock(cargo, amount = cargoAmount(cargo)) {
+    if (cargo?.resource && amount > 0) addResources({ [cargo.resource]: amount });
+    if (cargo?.item && amount > 0 && typeof addItems === 'function') addItems({ [cargo.item]: amount });
+  }
+
+  function depositIntoStorageObject(objectId, cargo, amount = cargoAmount(cargo)) {
+    const storage = (state?.objects || []).find(obj => obj.id === objectId);
+    if (!storage || !objectDefs?.[storage.type]?.storage || !storageAcceptsCargo(cargo)) return { ok: false, amount: 0 };
+    const free = Math.max(0, storageObjectCapacity(storage) - storageObjectUsed(storage));
+    const stored = Math.min(amount, free);
+    if (stored <= 0) return { ok: false, amount: 0, full: true };
+    const contents = ensureStorageContents(storage);
+    if (cargo.resource) contents.resources[cargo.resource] = (contents.resources[cargo.resource] || 0) + stored;
+    if (cargo.item) contents.items[cargo.item] = (contents.items[cargo.item] || 0) + stored;
+    storage.lastStoredAt = Date.now();
+    addCargoToGlobalStock(cargo, stored);
+    return { ok: true, amount: stored, target: storage };
+  }
+
+  function createStockpileAt(x, y, cargo) {
+    const stack = {
+      id: typeof uid === 'function' ? uid('stock') : `stock_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      type: 'stockpile',
+      x,
+      y,
+      stored: true,
+      storageKind: cargo.resource ? 'resource' : 'item',
+      storageKey: cargoStorageKey(cargo),
+      resource: cargo.resource || null,
+      itemKey: cargo.item || null,
+      label: cargo.label || cargo.resource || cargo.item || 'item',
+      amount: 0,
+      storageCapacity: FLOOR_STACK_CAPACITY
+    };
+    state.objects.push(stack);
+    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    return stack;
+  }
+
+  function depositIntoFloorStack(destination, cargo, amount = cargoAmount(cargo)) {
+    if (!storageAcceptsCargo(cargo) || !destination) return { ok: false, amount: 0 };
+    let stack = destination.stackId ? state.objects.find(obj => obj.id === destination.stackId) : null;
+    if (!stack && destination.x !== undefined && destination.y !== undefined) {
+      const existing = getObjectAt(destination.x, destination.y);
+      if (stackMatchesCargo(existing, cargo)) stack = existing;
+    }
+    if (!stack && destination.x !== undefined && destination.y !== undefined && !getObjectAt(destination.x, destination.y)) {
+      stack = createStockpileAt(destination.x, destination.y, cargo);
+    }
+    if (!stack || !stackMatchesCargo(stack, cargo)) return { ok: false, amount: 0 };
+    const stored = Math.min(amount, stackFreeCapacity(stack));
+    if (stored <= 0) return { ok: false, amount: 0, full: true };
+    stack.amount = Math.max(0, Number(stack.amount || 0)) + stored;
+    stack.label = cargo.label || stack.label;
+    stack.lastStoredAt = Date.now();
+    addCargoToGlobalStock(cargo, stored);
+    return { ok: true, amount: stored, target: stack };
+  }
+
+  function depositCargoForTask(task, cargo) {
+    if (!task || !cargo || cargo.kind === 'debris') return { ok: false, amount: 0 };
+    let remaining = cargoAmount(cargo);
+    let stored = 0;
+    if (task.zoneType === 'storage_object' && task.zoneObjectId) {
+      const result = depositIntoStorageObject(task.zoneObjectId, cargo, remaining);
+      stored += result.amount || 0;
+      remaining -= result.amount || 0;
+    }
+    if (remaining > 0) {
+      const preferred = task.zoneType === 'storage' || task.zoneType === 'storage_stack'
+        ? { x: task.storageX, y: task.storageY, type: task.zoneType, stackId: task.zoneStackId || null }
+        : destinationForCargo(cargo, task.storageX, task.storageY);
+      const result = depositIntoFloorStack(preferred, cargo, remaining);
+      stored += result.amount || 0;
+      remaining -= result.amount || 0;
+    }
+    return { ok: stored > 0 && remaining <= 0, amount: stored, remaining };
   }
 
   function destinationForObject(obj) {
@@ -189,7 +386,8 @@
       return tile ? { ...tile, type: 'dumping' } : null;
     }
     if (storageAcceptsObject(obj)) {
-      return zoneSystem.findFreeStorageDestinationFor(obj, obj.x, obj.y);
+      const cargo = cargoForObject(obj);
+      return destinationForCargo(cargo, obj.x, obj.y);
     }
     return null;
   }
@@ -505,5 +703,20 @@
   window.storageFilterDefs = storageFilterDefs;
   window.cropDefs = cropDefs;
   window.storageAcceptsObject = storageAcceptsObject;
+  window.HavenfallStorage = {
+    cargoForObject,
+    cargoAmount,
+    cargoStorageKey,
+    destinationForCargo,
+    destinationForObject,
+    depositCargoForTask,
+    depositIntoStorageObject,
+    depositIntoFloorStack,
+    storageObjectCapacity,
+    storageObjectUsed,
+    storageObjectFreeCapacity,
+    stackFreeCapacity,
+    floorStackCapacity: FLOOR_STACK_CAPACITY
+  };
   window.GameSystems?.registerTaskHandler('plantZone', 'zones.growing', handlePlantZoneTask, { order: 26 });
 })();

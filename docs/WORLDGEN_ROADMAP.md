@@ -1,4 +1,4 @@
-# HavenFall — Roadmap e Implementação da Geração de Mundo V2
+# HavenFall — Roadmap e Implementação da Geração de Mundo 
 
 ## Objetivo
 
@@ -169,6 +169,36 @@ Novo módulo com a geração procedural em camadas.
 ### `src/game/boot.js`
 
 Carrega `worldgen-v2.js` depois do BiomeEngine, garantindo que a V2 substitua o gerador anterior sem apagar o arquivo antigo.
+
+---
+
+## Auditoria de implementação
+
+### Corrigido em 2026-06-29
+
+- O fluxo de novo jogo criava estado, HUD e mundo V2, mas o canvas ficava preto porque `src/game/game-loop.js` não exportava mais `gameLoop`; `core/main.js` nunca iniciava o `requestAnimationFrame`.
+- O loop modular foi restaurado com atualização de mundo, ticks do `GameSystems`, render, UI periódica e autosave.
+- O loop agora isola falhas de subsistemas sem derrubar a renderização inteira.
+- `setGoal()` foi restaurado no módulo do loop, pois `checkGoals()` ainda dependia dele.
+- O smoke test passou a validar pixels do canvas, não apenas estado interno.
+- O módulo `living-world` agora registra ponte, armadilha de peixe e coletor de água, normaliza `waterTiles`, expõe helpers usados por save/load e mantém água bloqueante até existir ponte.
+- O painel de crafting mantém compatibilidade com o atributo legado `data-craft-recipe`.
+- O renderer de terreno agora corta a moldura escura dos PNGs, desenha tiles com overdraw e aplica blending por vizinho entre `grass`, `dirt`, `sand`, `stone` e `water`, removendo as frestas pretas visíveis entre tiles.
+
+### Pontos mal feitos que foram encontrados
+
+- A geração V2 foi integrada por override global de `generateWorldFromSeed`; isso funciona, mas torna a ordem de boot crítica e difícil de testar.
+- O smoke anterior aceitava um jogo "funcionando" com HUD e estado válidos, mesmo com canvas totalmente preto.
+- Algumas features do roadmap já apareciam na UI ou nos testes antes de terem contrato completo no módulo responsável.
+- O roadmap descrevia debug e integração, mas não tinha uma seção de status auditado pós-implementação.
+
+### Falta para fechar a geração em nível de produção
+
+- Criar testes diretos para `worldgen-v2` com sementes fixas, validando spawn, distribuição de terrenos, objetos, POIs e camadas.
+- Expor overlays de debug F2-F9 para altura, umidade, temperatura, fertilidade, rocha, biomas, zonas e hidrologia.
+- Trocar a hidrologia simulada por tiles reais de água/margem/lama quando os assets e o renderer estiverem prontos.
+- Substituir POIs de um tile por estruturas multi-tile com colisão, loot e narrativa próprios.
+- Reduzir dependência de globals no pipeline de worldgen, idealmente com um contrato explícito entre gerador, BiomeEngine, living-world e renderer.
 
 ---
 

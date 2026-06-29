@@ -22,6 +22,8 @@
 
   Object.defineProperties(window.Havenfall, {
     state: { configurable: true, enumerable: true, get: () => state },
-    screen: { configurable: true, enumerable: true, get: () => appScreen }
+    screen: { configurable: true, enumerable: true, get: () => appScreen },
+    camera: { configurable: true, enumerable: true, get: () => camera },
+    viewTransform: { configurable: true, enumerable: true, get: () => viewTransform }
   });
 })();
