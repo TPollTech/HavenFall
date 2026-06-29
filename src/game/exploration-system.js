@@ -1,8 +1,11 @@
 'use strict';
 
+const VISIBILITY_MASK_ENABLED = false;
 let lastExplorationVisionSignature = '';
+let poiDiscoveryInitialized = false;
 
 function makeExplorationMatrix(cols, rows) {
+  if (!VISIBILITY_MASK_ENABLED) return [];
   return Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
 }
 
@@ -14,6 +17,15 @@ function ensureExplorationState() {
   state.world.tileSize = state.world.tileSize || TILE;
   state.world.width = state.world.cols * state.world.tileSize;
   state.world.height = state.world.rows * state.world.tileSize;
+
+  if (!VISIBILITY_MASK_ENABLED) {
+    state.world.explorationDisabled = true;
+    state.world.visibleTiles = [];
+    state.world.exploration = [];
+    lastExplorationVisionSignature = 'visibility-disabled';
+    return;
+  }
+
   if (!Array.isArray(state.world.visibleTiles)) state.world.visibleTiles = [];
   if (!Array.isArray(state.world.exploration) || state.world.exploration.length !== state.world.rows || state.world.exploration[0]?.length !== state.world.cols) {
     state.world.exploration = makeExplorationMatrix(state.world.cols, state.world.rows);
@@ -28,6 +40,7 @@ function visionRangeForColonist(c, force = false) {
 }
 
 function explorationVisionSignature() {
+  if (!VISIBILITY_MASK_ENABLED) return 'visibility-disabled';
   if (!state?.colonists?.length) return '';
   return state.colonists
     .map(c => `${c.id}:${Math.round(c.x)},${Math.round(c.y)}:${visionRangeForColonist(c)}`)
@@ -37,6 +50,10 @@ function explorationVisionSignature() {
 function updateExploration(force = false) {
   if (!state?.colonists) return;
   ensureExplorationState();
+  if (!VISIBILITY_MASK_ENABLED) {
+    updatePoiDiscovery();
+    return;
+  }
   clearPreviousVisibleTiles(force);
   const visible = new Set();
   for (const c of state.colonists) {
@@ -53,6 +70,14 @@ function updateExploration(force = false) {
 
 function updateExplorationIfNeeded() {
   if (!state || appScreen !== SCREEN.PLAYING) return;
+  if (!VISIBILITY_MASK_ENABLED) {
+    if (!poiDiscoveryInitialized) {
+      poiDiscoveryInitialized = true;
+      ensureExplorationState();
+      updatePoiDiscovery();
+    }
+    return;
+  }
   ensureExplorationState();
   const signature = explorationVisionSignature();
   if (!signature) return;
@@ -60,6 +85,7 @@ function updateExplorationIfNeeded() {
 }
 
 function clearPreviousVisibleTiles(force = false) {
+  if (!VISIBILITY_MASK_ENABLED) return;
   const previous = Array.isArray(state?.world?.visibleTiles) ? state.world.visibleTiles : [];
   if (force && !previous.length) {
     for (const row of state.world.exploration) {
@@ -75,6 +101,7 @@ function clearPreviousVisibleTiles(force = false) {
 
 function revealAround(cx, cy, radius = 8, visible = null) {
   ensureExplorationState();
+  if (!VISIBILITY_MASK_ENABLED) return;
   const rows = getWorldRows();
   const cols = getWorldCols();
   const r2 = radius * radius;
@@ -89,16 +116,13 @@ function revealAround(cx, cy, radius = 8, visible = null) {
   }
 }
 
-function isTileDiscovered(x, y) { return !!state?.world?.exploration?.[y]?.[x]; }
-function isTileVisible(x, y) { return state?.world?.exploration?.[y]?.[x] === 2; }
+function isTileDiscovered(x, y) { return true; }
+function isTileVisible(x, y) { return true; }
 
 function updatePoiDiscovery() {
   if (!state?.world?.pointsOfInterest) return;
   for (const poi of state.world.pointsOfInterest) {
-    if (!poi.discovered && isTileDiscovered(poi.x, poi.y)) {
-      poi.discovered = true;
-      log(`Ponto descoberto: ${poi.name}.`);
-    }
+    if (!poi.discovered) poi.discovered = true;
   }
 }
 
