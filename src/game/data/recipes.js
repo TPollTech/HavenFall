@@ -18,3 +18,24 @@ const baseRecipeDefs = {
 
 const baseStationLabels = { bench: 'Bancada', forge: 'Forja', stove: 'Fogão', med_station: 'Estação Médica', research_desk: 'Mesa de Pesquisa' };
 const baseNames = ['Lia', 'Téo', 'Nico'];
+
+function normalizeResearchUnlockKeysWhenReady(attempt = 0) {
+  if (typeof researchDefs !== 'object' || typeof itemDefs !== 'object' || typeof recipeDefs !== 'object') {
+    if (attempt < 20) setTimeout(() => normalizeResearchUnlockKeysWhenReady(attempt + 1), 25);
+    return;
+  }
+
+  itemDefs.growing = itemDefs.growing || { label: 'Zona de cultivo', icon: 'icon_warn', kind: 'system', note: 'Ferramenta de zona para plantio automático.' };
+  itemDefs.storage = itemDefs.storage || { label: 'Zona de armazenamento', icon: 'icon_warn', kind: 'system', note: 'Ferramenta de zona para logística de estoque.' };
+
+  if (researchDefs.agriculture) researchDefs.agriculture.unlocks = ['crop', 'growing'];
+  if (researchDefs.storage) researchDefs.storage.unlocks = ['crate', 'storage'];
+  if (researchDefs.preservation) researchDefs.preservation.unlocks = ['smokehouse'];
+  if (researchDefs.thermal_comfort) researchDefs.thermal_comfort.unlocks = ['thermalClothes'];
+  if (recipeDefs.torch) recipeDefs.torch.unlock = 'lighting';
+
+  window.HavenfallContext = window.HavenfallContext || {};
+  window.HavenfallContext.researchUnlockKeysNormalized = true;
+}
+
+setTimeout(() => normalizeResearchUnlockKeysWhenReady(), 0);
