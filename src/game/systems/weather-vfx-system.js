@@ -57,6 +57,10 @@
     return !!state && state.weather === 'chuva';
   }
 
+  function largePanelOpen() {
+    return !!document.querySelector('#anchored-ui-panel.is-active, .modal.show, .world-map-overlay.is-active');
+  }
+
   function profileForQuality() {
     const quality = particleQuality();
     if (quality === 'off') return null;
@@ -110,19 +114,20 @@
     return slow * 0.85;
   }
 
-  function drawMist(profile, bounds, time, wind) {
+  function drawMist(profile, bounds, time, wind, focusFactor) {
     if (!profile?.mist) return;
     const pulse = 0.82 + Math.sin(time * 0.0012 + windSeed) * 0.18;
+    const mist = profile.mist * focusFactor;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const gradient = ctx.createLinearGradient(0, 0, bounds.width, bounds.height);
-    gradient.addColorStop(0, `rgba(93, 132, 160, ${profile.mist * 0.45 * pulse})`);
-    gradient.addColorStop(0.5, `rgba(125, 168, 196, ${profile.mist * pulse})`);
-    gradient.addColorStop(1, `rgba(58, 82, 108, ${profile.mist * 0.55 * pulse})`);
+    gradient.addColorStop(0, `rgba(93, 132, 160, ${mist * 0.45 * pulse})`);
+    gradient.addColorStop(0.5, `rgba(125, 168, 196, ${mist * pulse})`);
+    gradient.addColorStop(1, `rgba(58, 82, 108, ${mist * 0.55 * pulse})`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, bounds.width, bounds.height);
 
-    ctx.globalAlpha = profile.mist * 1.35;
+    ctx.globalAlpha = mist * 1.35;
     ctx.fillStyle = 'rgba(210, 230, 245, .55)';
     const offset = ((time * 0.014) + wind * 90) % 160;
     for (let y = 34; y < bounds.height; y += 92) {
@@ -131,7 +136,7 @@
     ctx.restore();
   }
 
-  function drawRainDrops(profile, bounds, time, wind) {
+  function drawRainDrops(profile, bounds, time, wind, focusFactor) {
     ensureDrops(profile);
     if (!drops.length) return;
 
@@ -139,7 +144,9 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.lineCap = 'round';
 
-    for (const drop of drops) {
+    const skipStride = focusFactor < 0.6 ? 2 : 1;
+    for (let i = 0; i < drops.length; i += skipStride) {
+      const drop = drops[i];
       const layer = drop.layerDef;
       const travelY = ((drop.y + drop.phase + (time * layer.speed * drop.speedJitter) / Math.max(1, bounds.height * 1000)) % 1);
       const windX = wind * layer.drift;
@@ -151,7 +158,7 @@
 
       const length = layer.length * drop.lengthJitter;
       const angleX = wind * (length * 0.72) - layer.drift * 0.055;
-      const alpha = layer.alpha * drop.alphaJitter;
+      const alpha = layer.alpha * drop.alphaJitter * focusFactor;
       ctx.strokeStyle = `rgba(184, 214, 236, ${alpha})`;
       ctx.lineWidth = layer.width;
       ctx.beginPath();
@@ -177,8 +184,8 @@
     return pulse > 0 ? pulse : 0;
   }
 
-  function drawWaterRipples(profile, time) {
-    if (!profile?.ripples || waterQuality() === 'low') return;
+  function drawWaterRipples(profile, time, focusFactor) {
+    if (!profile?.ripples || waterQuality() === 'low' || focusFactor < 0.55) return;
     if (typeof visibleTileBounds !== 'function') return;
 
     const bounds = visibleTileBounds(0);
@@ -201,7 +208,7 @@
         const cx = x * TILE + TILE * (0.22 + hash01(x, y, 21) * 0.56);
         const cy = y * TILE + TILE * (0.24 + hash01(x, y, 22) * 0.52);
         const radius = 4 + alphaPulse * (high ? 13 : 9);
-        ctx.strokeStyle = `rgba(214, 235, 250, ${0.10 + alphaPulse * 0.15})`;
+        ctx.strokeStyle = `rgba(214, 235, 250, ${(0.10 + alphaPulse * 0.15) * focusFactor})`;
         ctx.beginPath();
         ctx.ellipse(cx, cy, radius * 1.22, radius * 0.56, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -215,8 +222,8 @@
     ctx.restore();
   }
 
-  function drawGroundSplashes(profile, bounds, time, wind) {
-    if (!profile?.ripples || particleQuality() !== 'high') return;
+  function drawGroundSplashes(profile, bounds, time, wind, focusFactor) {
+    if (!profile?.ripples || particleQuality() !== 'high' || focusFactor < 0.7) return;
     const count = 16;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -224,7 +231,7 @@
       const phase = hash01(i, 99, 2);
       const t = (time * 0.0024 + phase) % 1;
       if (t > 0.32) continue;
-      const alpha = (1 - t / 0.32) * 0.14;
+      const alpha = (1 - t / 0.32) * 0.14 * focusFactor;
       const x = hash01(i, 17, 4) * bounds.width + wind * 25;
       const y = bounds.height * (0.42 + hash01(i, 17, 5) * 0.56);
       ctx.strokeStyle = `rgba(220, 238, 250, ${alpha})`;
@@ -251,11 +258,12 @@
     const time = performance.now();
     const bounds = screenRainBounds();
     const wind = weatherWind(time);
+    const focusFactor = largePanelOpen() ? 0.42 : 1;
 
-    drawMist(profile, bounds, time, wind);
-    drawWaterRipples(profile, time);
-    drawGroundSplashes(profile, bounds, time, wind);
-    drawRainDrops(profile, bounds, time, wind);
+    drawMist(profile, bounds, time, wind, focusFactor);
+    drawWaterRipples(profile, time, focusFactor);
+    drawGroundSplashes(profile, bounds, time, wind, focusFactor);
+    drawRainDrops(profile, bounds, time, wind, focusFactor);
   }
 
   drawRain = drawRainVfx;
