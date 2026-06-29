@@ -1,14 +1,91 @@
 'use strict';
 
+const SAVE_VERSION = '1.9D-desktop';
+const SAVE_UPDATED_AT_KEY = `${SAVE_KEY}:updatedAt`;
+const DESKTOP_SAVE_SLOT = 'autosave';
+
+function desktopApi() {
+  return window.HavenfallDesktop?.isElectron ? window.HavenfallDesktop : null;
+}
+
 function serialize() {
-  return JSON.stringify({ state, selectedColonistId, version: '1.9D'  });
+  return JSON.stringify({
+    state,
+    selectedColonistId,
+    version: SAVE_VERSION,
+    savedAt: new Date().toISOString(),
+    runtime: desktopApi() ? 'electron' : 'web'
+  });
+}
+
+function markLocalSaveUpdated(timestamp = Date.now()) {
+  try { localStorage.setItem(SAVE_UPDATED_AT_KEY, String(timestamp)); } catch (_) {}
+}
+
+function localSaveUpdatedAt() {
+  const raw = Number(localStorage.getItem(SAVE_UPDATED_AT_KEY) || 0);
+  return Number.isFinite(raw) ? raw : 0;
+}
+
+function readDesktopSavePayload() {
+  const api = desktopApi();
+  if (!api?.readSaveSlot) return null;
+  const info = api.getSaveInfo?.(DESKTOP_SAVE_SLOT);
+  if (!info?.exists) return null;
+  const read = api.readSaveSlot(DESKTOP_SAVE_SLOT);
+  if (!read?.ok || !read.text) return null;
+  return {
+    text: read.text,
+    updatedAtMs: Number(read.updatedAtMs || info.updatedAtMs || 0),
+    path: read.path
+  };
+}
+
+function chooseSavedPayload() {
+  const local = localStorage.getItem(SAVE_KEY);
+  const localUpdated = localSaveUpdatedAt();
+  const desktop = readDesktopSavePayload();
+
+  if (desktop?.text && (!local || desktop.updatedAtMs >= localUpdated)) {
+    try {
+      localStorage.setItem(SAVE_KEY, desktop.text);
+      markLocalSaveUpdated(desktop.updatedAtMs || Date.now());
+    } catch (_) {}
+    return { text: desktop.text, source: 'arquivo desktop', path: desktop.path };
+  }
+
+  if (local) return { text: local, source: 'navegador', path: null };
+  return null;
+}
+
+function writeDesktopSavePayload(payload, manual = false) {
+  const api = desktopApi();
+  if (!api?.writeSaveSlot) return { ok: false, skipped: true };
+  const result = api.writeSaveSlot(DESKTOP_SAVE_SLOT, payload, {
+    manual: !!manual,
+    saveVersion: SAVE_VERSION,
+    colonyName: state?.config?.colonyName || null,
+    seed: state?.config?.seed || null,
+    day: state?.day || null,
+    hour: state?.hour || null
+  });
+  if (manual && result?.ok && api.backupSaveSlot) api.backupSaveSlot(DESKTOP_SAVE_SLOT, 'manual');
+  if (!result?.ok && api.appendLog) api.appendLog('Falha ao salvar jogo no desktop', result);
+  return result || { ok: false };
 }
 
 function saveGame(manual = false) {
   if (!state) return false;
   if (typeof ensureGeologyState === 'function') ensureGeologyState();
-  localStorage.setItem(SAVE_KEY, serialize());
-  if (manual) log('Jogo salvo no navegador.');
+  const payload = serialize();
+  const updatedAt = Date.now();
+  localStorage.setItem(SAVE_KEY, payload);
+  markLocalSaveUpdated(updatedAt);
+  const desktopResult = writeDesktopSavePayload(payload, manual);
+  if (manual) {
+    if (desktopResult?.ok) log('Jogo salvo no desktop e backup manual criado.');
+    else log('Jogo salvo no navegador. O save em arquivo desktop não está disponível.');
+  }
   refreshMenuSaveInfo();
   refreshLoadScreen();
   return true;
@@ -75,6 +152,9 @@ function migrateLoadedState() {
     livingWorld: existingWorld.livingWorld || null,
     geologyLayer: existingWorld.geologyLayer || null,
     roofLayer: existingWorld.roofLayer || null,
+    builtRoofLayer: existingWorld.builtRoofLayer || null,
+    pendingRoofJobs: existingWorld.pendingRoofJobs || [],
+    lightMap: existingWorld.lightMap || null,
     geologyVersion: existingWorld.geologyVersion,
     generationVersion: existingWorld.generationVersion || 'migrated'
   };
@@ -126,23 +206,24 @@ function migrateLoadedState() {
 }
 
 function loadGame() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) {
+  const payload = chooseSavedPayload();
+  if (!payload?.text) {
     if (state) log('Nenhum save encontrado.');
     return false;
   }
   try {
-    const data = JSON.parse(raw);
+    const data = JSON.parse(payload.text);
     state = data.state || {};
     migrateLoadedState();
     selectedColonistId = data.selectedColonistId || state.colonists?.[0]?.id || 1;
     currentBuild = null;
     centerCameraOnSelectedColonist();
-    log('Save carregado.');
+    log(`Save carregado de ${payload.source}.`);
     updateUI(true);
     return true;
   } catch (err) {
     console.error('[Save Load Error]', err);
+    desktopApi()?.appendLog?.('Falha ao carregar save', { error: err.message, source: payload.source, path: payload.path });
     if (state) log('Falha ao carregar o save. Veja o console para detalhes.');
     return false;
   }
