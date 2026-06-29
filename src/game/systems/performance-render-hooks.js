@@ -8,6 +8,8 @@
   const nativeResizeGameCanvas = typeof resizeGameCanvas === 'function' ? resizeGameCanvas : null;
   const nativeVisibleTileBounds = typeof visibleTileBounds === 'function' ? visibleTileBounds : null;
   const nativeDraw = typeof draw === 'function' ? draw : null;
+  const nativeDrawColonist = typeof drawColonist === 'function' ? drawColonist : null;
+  const nativeDrawWolf = typeof drawWolf === 'function' ? drawWolf : null;
 
   function quality() {
     return window.HavenfallSettings?.quality?.() || {};
@@ -50,6 +52,36 @@
       const tuned = window.HavenfallSettings?.renderPadding?.();
       const finalPadding = Number.isFinite(tuned) && padding <= 2 ? tuned : padding;
       return nativeVisibleTileBounds(finalPadding);
+    };
+  }
+
+  if (nativeDrawColonist) {
+    drawColonist = function drawColonistWithShadowQuality(c) {
+      const shadows = quality().shadows || 'simple';
+      if (shadows !== 'off') {
+        ctx.save();
+        ctx.fillStyle = shadows === 'high' ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.18)';
+        ctx.beginPath();
+        ctx.ellipse(c.px, c.py + 24, shadows === 'high' ? 18 : 14, shadows === 'high' ? 7 : 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      nativeDrawColonist(c);
+    };
+  }
+
+  if (nativeDrawWolf) {
+    drawWolf = function drawWolfWithShadowQuality(w) {
+      const shadows = quality().shadows || 'simple';
+      if (shadows !== 'off') {
+        ctx.save();
+        ctx.fillStyle = shadows === 'high' ? 'rgba(0,0,0,.30)' : 'rgba(0,0,0,.18)';
+        ctx.beginPath();
+        ctx.ellipse(w.px, w.py + 23, shadows === 'high' ? 24 : 18, shadows === 'high' ? 8 : 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      nativeDrawWolf(w);
     };
   }
 
