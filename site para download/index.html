@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Baixe o HavenFall Desktop, um colony survival simulator em versão Electron para Windows." />
+  <title>HavenFall Desktop — Download</title>
+  <link rel="icon" type="image/png" href="../logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">HavenFall Desktop Edition</div>
+        <h1>Construa, sobreviva e expanda sua colônia.</h1>
+        <p class="lead">
+          Baixe a versão desktop do HavenFall em Electron para Windows. Esta versão roda fora do navegador,
+          com save local em arquivo, logs, tela cheia e melhor controle de desempenho.
+        </p>
+
+        <div class="actions">
+          <a class="primary-button" id="downloadButton" href="downloads/HavenFall-Desktop-portable.exe" download>
+            Baixar para Windows
+          </a>
+          <a class="secondary-button" href="../docs/ELECTRON_DESKTOP_RUNBOOK.md">
+            Ver instruções
+          </a>
+        </div>
+
+        <div class="release-card" aria-label="Informações da versão">
+          <span>Versão</span>
+          <strong id="versionLabel">1.7.0</strong>
+          <span>Formato</span>
+          <strong>Electron portátil</strong>
+          <span>Plataforma</span>
+          <strong>Windows</strong>
+        </div>
+      </div>
+
+      <div class="hero-panel" aria-label="Prévia do jogo">
+        <div class="window-bar">
+          <span></span><span></span><span></span>
+          <b>HavenFall Desktop</b>
+        </div>
+        <div class="preview-frame">
+          <img src="../menu.png" alt="Tela do HavenFall" />
+        </div>
+      </div>
+    </section>
+
+    <section class="features" aria-label="Recursos da versão desktop">
+      <article>
+        <span class="icon">01</span>
+        <h2>Sem depender do navegador</h2>
+        <p>O jogo abre como aplicativo desktop usando Electron, com janela própria e atalhos como F11 e F12.</p>
+      </article>
+      <article>
+        <span class="icon">02</span>
+        <h2>Save local em arquivo</h2>
+        <p>Os saves ficam em arquivo JSON dentro da pasta de dados do app, com backup manual no desktop.</p>
+      </article>
+      <article>
+        <span class="icon">03</span>
+        <h2>Logs e diagnóstico</h2>
+        <p>A versão desktop cria pasta de logs e facilita encontrar erros para corrigir o jogo com precisão.</p>
+      </article>
+    </section>
+
+    <section class="install">
+      <div>
+        <div class="eyebrow">Como instalar</div>
+        <h2>Instalação simples</h2>
+        <p>
+          Baixe o executável portátil, coloque em uma pasta fixa e abra. Se o Windows mostrar aviso de segurança,
+          confirme que deseja executar o aplicativo.
+        </p>
+      </div>
+      <ol>
+        <li>Baixe o arquivo <strong>HavenFall Desktop</strong>.</li>
+        <li>Salve em uma pasta, por exemplo <strong>Jogos/HavenFall</strong>.</li>
+        <li>Execute o arquivo baixado.</li>
+        <li>Use o menu do jogo para abrir saves e logs.</li>
+      </ol>
+    </section>
+
+    <section class="download-box">
+      <div>
+        <h2>Pronto para jogar?</h2>
+        <p>Esta página já está preparada para apontar para o executável portátil gerado pelo Electron.</p>
+      </div>
+      <a class="primary-button" href="downloads/HavenFall-Desktop-portable.exe" download>Baixar agora</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>HavenFall Desktop Edition</span>
+    <span>TPollTech</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
