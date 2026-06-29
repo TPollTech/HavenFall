@@ -161,7 +161,6 @@
       drawPoiMarkers();
       drawBuildPreview();
       drawGatherSelection();
-      drawNightOverlay();
       window.GameSystems?.drawWorldOverlays(bounds);
       drawFogOfWar(bounds);
       drawRain();
