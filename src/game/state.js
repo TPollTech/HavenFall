@@ -9,7 +9,7 @@ const MAP_SIZES = Object.freeze({
   huge: { label: 'enorme', cols: 132, rows: 96, resourceMultiplier: 1.9, poiCount: 14 },
   giant: { label: 'gigante', cols: 172, rows: 124, resourceMultiplier: 2.55, poiCount: 22, biomeIntent: 'multi' },
   infinite_chunks: { label: 'infinito por chunks', cols: 220, rows: 156, resourceMultiplier: 3.1, poiCount: 30, chunkMode: true, biomeIntent: 'multi' },
-  standard: { label: 'padrÃ£o', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 }
+  standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 }
 });
 
 let viewTransform = { scale: 1, offsetX: 0, offsetY: 0 };
@@ -28,6 +28,7 @@ const SAVE_KEY = 'havenfall-v1-save';
 const SETTINGS_KEY = 'havenfall-v1-settings';
 const SCREEN = Object.freeze({
   MAIN_MENU: 'MAIN_MENU',
+  MULTIPLAYER: 'MULTIPLAYER',
   NEW_GAME_SETUP: 'NEW_GAME_SETUP',
   PLANET_SCAN: 'PLANET_SCAN',
   COLONIST_SELECT: 'COLONIST_SELECT',
@@ -50,6 +51,7 @@ const images = {};
 const dom = {
   screens: {
     main: document.getElementById('mainMenuScreen'),
+    multiplayer: document.getElementById('multiplayerScreen'),
     setup: document.getElementById('newGameSetupScreen'),
     scan: document.getElementById('planetScanScreen'),
     colonists: document.getElementById('colonistSelectScreen'),
@@ -60,9 +62,15 @@ const dom = {
   buttons: {
     newGame: document.getElementById('newGameBtn'),
     continue: document.getElementById('continueBtn'),
+    openMultiplayer: document.getElementById('openMultiplayerBtn'),
     openLoad: document.getElementById('openLoadBtn'),
     openSettings: document.getElementById('openSettingsBtn'),
     exit: document.getElementById('exitBtn'),
+    multiplayerBack: document.getElementById('multiplayerBackBtn'),
+    multiplayerHostNewGame: document.getElementById('multiplayerHostNewGameBtn'),
+    multiplayerHost: document.getElementById('multiplayerHostBtn'),
+    multiplayerJoin: document.getElementById('multiplayerJoinBtn'),
+    multiplayerStop: document.getElementById('multiplayerStopBtn'),
     setupBack: document.getElementById('setupBackBtn'),
     setupNext: document.getElementById('setupNextBtn'),
     scanBack: document.getElementById('scanBackBtn'),
@@ -94,6 +102,8 @@ const dom = {
     resourcesPreset: document.getElementById('resourcesPresetSelect'),
     eventIntensity: document.getElementById('eventIntensitySelect'),
     mapSize: document.getElementById('mapSizeSelect'),
+    multiplayerNick: document.getElementById('multiplayerNickInput'),
+    multiplayerServer: document.getElementById('multiplayerServerInput'),
     uiScale: document.getElementById('uiScaleSelect'),
     autosave: document.getElementById('autosaveSelect')
   },
@@ -122,7 +132,6 @@ const dom = {
   colonistCards: document.getElementById('colonistCards'),
   loadSlot: document.getElementById('loadSlot')
 };
-
 
 let state;
 let appScreen = SCREEN.MAIN_MENU;
