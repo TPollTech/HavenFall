@@ -33,11 +33,15 @@
     return null;
   }
 
-  function selectedWorker(station = null) {
+  function idleColonists(exclude = new Set()) {
+    return (state?.colonists || []).filter(c => !exclude.has(c.id) && !c.task && !c.isUnconscious && c.health > 15 && c.energy > 12);
+  }
+
+  function selectedWorker(station = null, exclude = new Set()) {
     const selected = typeof selectedColonist === 'function' ? selectedColonist() : null;
-    if (selected && !selected.isUnconscious) return selected;
-    const workers = (state?.colonists || []).filter(c => !c.task && !c.isUnconscious && c.health > 15 && c.energy > 12);
-    if (!workers.length) return (state?.colonists || []).find(c => !c.isUnconscious) || null;
+    if (selected && !exclude.has(selected.id) && !selected.task && !selected.isUnconscious && selected.health > 15 && selected.energy > 12) return selected;
+    const workers = idleColonists(exclude);
+    if (!workers.length) return null;
     if (!station) return workers[0];
     return workers.sort((a, b) => Math.abs(a.x - station.x) + Math.abs(a.y - station.y) - (Math.abs(b.x - station.x) + Math.abs(b.y - station.y)))[0];
   }
@@ -66,7 +70,7 @@
 
   function recipeStatus(key, recipe, station, worker) {
     if (!station) return { ok: false, label: 'Sem estação', detail: 'Selecione uma estação de trabalho.' };
-    if (!worker) return { ok: false, label: 'Sem trabalhador', detail: 'Selecione um colono ou aguarde alguém livre.' };
+    if (!worker) return { ok: false, label: 'Sem colono livre', detail: 'Todos estão ocupados, cansados ou incapazes de fabricar agora.' };
     if (typeof recipeUnlocked === 'function' && !recipeUnlocked(key)) return { ok: false, label: 'Bloqueada', detail: `Pesquise ${researchDefs?.[recipe.unlock]?.label || recipe.unlock}.` };
     if (typeof hasRecipeCost === 'function' && !hasRecipeCost(recipe)) return { ok: false, label: 'Faltam recursos', detail: `Precisa de ${itemCostText(recipe.cost, recipe.itemCost)}.` };
     return { ok: true, label: 'Disponível', detail: recipe.desc || 'Receita pronta para fabricação.' };
@@ -84,9 +88,7 @@
   function resourcesSummary() {
     const resources = state?.resources || {};
     const items = state?.items || {};
-    const base = Object.keys(resourceLabels)
-      .map(key => `<span><b>${h(resourceLabels[key])}</b>${h(resources[key] ?? 0)}</span>`)
-      .join('');
+    const base = Object.keys(resourceLabels).map(key => `<span><b>${h(resourceLabels[key])}</b>${h(resources[key] ?? 0)}</span>`).join('');
     const itemCount = Object.values(items).reduce((sum, value) => sum + Number(value || 0), 0);
     return `<div class="craft-resource-strip">${base}<span><b>Itens</b>${itemCount}</span></div>`;
   }
@@ -99,16 +101,11 @@
   }
 
   function renderStations(list, selected) {
-    if (!list.length) {
-      return `<div class="craft-empty-panel"><b>Nenhuma estação construída</b><span>Construa uma Bancada, Forja, Fogão ou Estação Médica para liberar receitas.</span></div>`;
-    }
+    if (!list.length) return `<div class="craft-empty-panel"><b>Nenhuma estação construída</b><span>Construa uma Bancada, Forja, Fogão ou Estação Médica para liberar receitas.</span></div>`;
     return `<div class="craft-station-list">${list.map(o => {
       const active = selected?.id === o.id;
       const count = Object.values(recipeDefs || {}).filter(recipe => recipe.station === o.type).length;
-      return `<button type="button" class="craft-station ${active ? 'is-active' : ''}" data-craft-station-id="${h(o.id)}">
-        <span><b>${h(stationName(o.type))}</b><small>${count} receita${count !== 1 ? 's' : ''}</small></span>
-        <em>${h(o.x)},${h(o.y)}</em>
-      </button>`;
+      return `<button type="button" class="craft-station ${active ? 'is-active' : ''}" data-craft-station-id="${h(o.id)}"><span><b>${h(stationName(o.type))}</b><small>${count} receita${count !== 1 ? 's' : ''}</small></span><em>${h(o.x)},${h(o.y)}</em></button>`;
     }).join('')}</div>`;
   }
 
@@ -116,11 +113,7 @@
     const status = recipeStatus(key, recipe, station, worker);
     const progress = recipeProgress(key);
     const active = uiState.recipeKey === key;
-    return `<button type="button" class="craft-recipe-row ${active ? 'is-selected' : ''} ${status.ok ? '' : 'is-locked'}" data-craft-select-recipe="${h(key)}">
-      <span class="craft-recipe-main"><b>${h(recipe.label)}</b><small>${h(outputText(recipe.output))}</small></span>
-      <span class="craft-recipe-meta"><em>${h(status.label)}</em><small>${h(recipe.duration || 1)}s</small></span>
-      ${progress.pct ? `<i class="craft-mini-progress"><b style="width:${progress.pct}%"></b></i>` : ''}
-    </button>`;
+    return `<button type="button" class="craft-recipe-row ${active ? 'is-selected' : ''} ${status.ok ? '' : 'is-locked'}" data-craft-select-recipe="${h(key)}"><span class="craft-recipe-main"><b>${h(recipe.label)}</b><small>${h(outputText(recipe.output))}</small></span><span class="craft-recipe-meta"><em>${h(status.label)}</em><small>${h(recipe.duration || 1)}s</small></span>${progress.pct ? `<i class="craft-mini-progress"><b style="width:${progress.pct}%"></b></i>` : ''}</button>`;
   }
 
   function renderRecipeList(recipes, station, worker) {
@@ -130,13 +123,11 @@
   }
 
   function renderRequirements(recipe) {
-    const resourceCost = recipe?.cost || {};
-    const itemCost = recipe?.itemCost || {};
-    const resourceRows = Object.entries(resourceCost).map(([key, amount]) => {
+    const resourceRows = Object.entries(recipe?.cost || {}).map(([key, amount]) => {
       const have = Number(state?.resources?.[key] || 0);
       return `<span class="${have >= amount ? 'ok' : 'bad'}"><b>${h(resourceLabels[key] || key)}</b>${have}/${amount}</span>`;
     }).join('');
-    const itemRows = Object.entries(itemCost).map(([key, amount]) => {
+    const itemRows = Object.entries(recipe?.itemCost || {}).map(([key, amount]) => {
       const have = Number(state?.items?.[key] || 0);
       return `<span class="${have >= amount ? 'ok' : 'bad'}"><b>${h(itemDefs?.[key]?.label || key)}</b>${have}/${amount}</span>`;
     }).join('');
@@ -147,27 +138,7 @@
     if (!key || !recipe) return `<div class="craft-detail-card is-empty"><b>Nenhuma receita selecionada</b><span>Escolha uma receita para ver custo, resultado e produção.</span></div>`;
     const status = recipeStatus(key, recipe, station, worker);
     const progress = recipeProgress(key);
-    return `<div class="craft-detail-card">
-      <div class="craft-detail-head">
-        <span><small>Receita selecionada</small><b>${h(recipe.label)}</b></span>
-        <em class="${status.ok ? 'ok' : 'bad'}">${h(status.label)}</em>
-      </div>
-      <p>${h(status.detail)}</p>
-      <div class="craft-detail-grid">
-        <span><b>Resultado</b>${h(outputText(recipe.output))}</span>
-        <span><b>Tempo</b>${h(recipe.duration || 1)}s</span>
-        <span><b>Trabalhador</b>${h(worker?.name || 'Nenhum')}</span>
-        <span><b>Estação</b>${h(station ? `${stationName(station.type)} ${station.x},${station.y}` : 'Nenhuma')}</span>
-      </div>
-      <h4>Materiais</h4>
-      ${renderRequirements(recipe)}
-      ${progress.text ? `<div class="craft-progress-block"><span>${h(progress.text)}${progress.count > 1 ? ` +${progress.count - 1}` : ''}</span><i><b style="width:${progress.pct}%"></b></i></div>` : ''}
-      <div class="craft-actions">
-        <button type="button" data-craft-start="1" ${status.ok ? '' : 'disabled'}>Fabricar 1</button>
-        <button type="button" data-craft-start="3" ${status.ok ? '' : 'disabled'}>Fabricar 3</button>
-        <button type="button" data-craft-start="5" ${status.ok ? '' : 'disabled'}>Fabricar 5</button>
-      </div>
-    </div>`;
+    return `<div class="craft-detail-card"><div class="craft-detail-head"><span><small>Receita selecionada</small><b>${h(recipe.label)}</b></span><em class="${status.ok ? 'ok' : 'bad'}">${h(status.label)}</em></div><p>${h(status.detail)}</p><div class="craft-detail-grid"><span><b>Resultado</b>${h(outputText(recipe.output))}</span><span><b>Tempo</b>${h(recipe.duration || 1)}s</span><span><b>Trabalhador</b>${h(worker?.name || 'Nenhum')}</span><span><b>Estação</b>${h(station ? `${stationName(station.type)} ${station.x},${station.y}` : 'Nenhuma')}</span></div><h4>Materiais</h4>${renderRequirements(recipe)}${progress.text ? `<div class="craft-progress-block"><span>${h(progress.text)}${progress.count > 1 ? ` +${progress.count - 1}` : ''}</span><i><b style="width:${progress.pct}%"></b></i></div>` : ''}<div class="craft-actions"><button type="button" data-craft-start="1" ${status.ok ? '' : 'disabled'}>Fabricar 1</button><button type="button" data-craft-start="3" ${status.ok ? '' : 'disabled'}>Fabricar 3</button><button type="button" data-craft-start="5" ${status.ok ? '' : 'disabled'}>Fabricar 5</button></div></div>`;
   }
 
   function renderQueue() {
@@ -189,19 +160,7 @@
     const recipes = recipeListForStation(selected);
     const selectedKey = ensureSelectedRecipe(recipes);
     const selectedRecipe = selectedKey ? recipeDefs[selectedKey] : null;
-
-    return `<div class="craft-panel">
-      <header class="craft-header">
-        <div><small>PRODUÇÃO</small><h3>Crafting</h3><p>Escolha uma estação, selecione a receita e envie um colono para fabricar.</p></div>
-        <div class="craft-header-status"><span>${h(selected ? stationName(selected.type) : 'Sem estação')}</span><b>${h(stationStatus(selected))}</b></div>
-      </header>
-      ${resourcesSummary()}
-      <div class="craft-layout">
-        <aside class="craft-column craft-stations"><div class="craft-column-title"><b>Estações</b><small>${list.length}</small></div>${renderStations(list, selected)}</aside>
-        <section class="craft-column craft-recipes"><div class="craft-column-title"><b>Receitas</b><input type="search" placeholder="Buscar..." value="${h(uiState.search)}" data-craft-search></div>${renderRecipeList(recipes, selected, worker)}</section>
-        <aside class="craft-column craft-details">${renderDetails(selectedKey, selectedRecipe, selected, worker)}${renderQueue()}</aside>
-      </div>
-    </div>`;
+    return `<div class="craft-panel"><header class="craft-header"><div><small>PRODUÇÃO</small><h3>Crafting</h3><p>Escolha uma estação, selecione a receita e envie um colono livre para fabricar.</p></div><div class="craft-header-status"><span>${h(selected ? stationName(selected.type) : 'Sem estação')}</span><b>${h(stationStatus(selected))}</b></div></header>${resourcesSummary()}<div class="craft-layout"><aside class="craft-column craft-stations"><div class="craft-column-title"><b>Estações</b><small>${list.length}</small></div>${renderStations(list, selected)}</aside><section class="craft-column craft-recipes"><div class="craft-column-title"><b>Receitas</b><input type="search" placeholder="Buscar..." value="${h(uiState.search)}" data-craft-search></div>${renderRecipeList(recipes, selected, worker)}</section><aside class="craft-column craft-details">${renderDetails(selectedKey, selectedRecipe, selected, worker)}${renderQueue()}</aside></div></div>`;
   }
 
   function assignMany(qty) {
@@ -210,14 +169,19 @@
     const recipe = key ? recipeDefs?.[key] : null;
     if (!stationObj || !key || !recipe) return;
     let started = 0;
+    const used = new Set();
     for (let i = 0; i < qty; i++) {
       if (typeof hasRecipeCost === 'function' && !hasRecipeCost(recipe)) break;
-      const worker = selectedWorker(stationObj);
+      const worker = selectedWorker(stationObj, used);
       if (!worker) break;
       assignCraft(worker, key, stationObj);
-      started++;
+      if (worker.task?.type === 'craft') {
+        used.add(worker.id);
+        started++;
+      }
     }
-    if (!started && typeof log === 'function') log('Não foi possível iniciar fabricação agora. Verifique trabalhador, estação e recursos.');
+    if (!started && typeof log === 'function') log('Não foi possível iniciar fabricação agora. Verifique trabalhador livre, estação e recursos.');
+    if (started && typeof log === 'function') log(`${started} fabricação${started > 1 ? 'ões' : ''} iniciada${started > 1 ? 's' : ''}.`);
     if (typeof updateUI === 'function') updateUI(true);
     window.HavenfallUI.refreshDockPanel?.('crafting');
   }
