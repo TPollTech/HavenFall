@@ -13,13 +13,14 @@
     "web": "node server.js",
     "dev:web": "node server.js",
     "assets:process": "node scripts/process-assets.mjs",
+    "icons:prepare": "node scripts/prepare-icons.cjs",
     "test:logic": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
     "check:types": "tsc --noEmit",
-    "dist:win": "electron-builder --win nsis portable",
-    "dist:win:setup": "electron-builder --win nsis",
-    "dist:win:portable": "electron-builder --win portable",
-    "pack:win": "electron-builder --win --dir"
+    "dist:win": "npm run icons:prepare && electron-builder --win nsis portable",
+    "dist:win:setup": "npm run icons:prepare && electron-builder --win nsis",
+    "dist:win:portable": "npm run icons:prepare && electron-builder --win portable",
+    "pack:win": "npm run icons:prepare && electron-builder --win --dir"
   },
   "keywords": [
     "2d",
@@ -62,6 +63,7 @@
       "main": "electron-main.cjs"
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis",
         "portable"
@@ -74,6 +76,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "HavenFall Desktop",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false
     }
   }
