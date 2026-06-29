@@ -7,8 +7,7 @@
 
   const nativeResizeGameCanvas = typeof resizeGameCanvas === 'function' ? resizeGameCanvas : null;
   const nativeVisibleTileBounds = typeof visibleTileBounds === 'function' ? visibleTileBounds : null;
-  const nativeDrawRain = typeof drawRain === 'function' ? drawRain : null;
-  const nativeDrawFogOfWar = typeof drawFogOfWar === 'function' ? drawFogOfWar : null;
+  const nativeDraw = typeof draw === 'function' ? draw : null;
 
   function quality() {
     return window.HavenfallSettings?.quality?.() || {};
@@ -51,6 +50,23 @@
       const tuned = window.HavenfallSettings?.renderPadding?.();
       const finalPadding = Number.isFinite(tuned) && padding <= 2 ? tuned : padding;
       return nativeVisibleTileBounds(finalPadding);
+    };
+  }
+
+  if (nativeDraw) {
+    draw = function drawWithPerformanceStats() {
+      nativeDraw();
+      if (!window.HavenfallSettings?.recordRenderStats) return;
+      const bounds = typeof visibleTileBounds === 'function' ? visibleTileBounds(0) : null;
+      const tilesDrawn = bounds ? Math.max(0, bounds.endX - bounds.startX + 1) * Math.max(0, bounds.endY - bounds.startY + 1) : 0;
+      const visibleObjects = (state?.objects || []).reduce((count, obj) => {
+        const cx = obj.x * TILE + TILE / 2;
+        const cy = obj.y * TILE + TILE / 2;
+        return count + (typeof isWorldPointInView === 'function' && isWorldPointInView(cx, cy) ? 1 : 0);
+      }, 0);
+      const visibleColonists = (state?.colonists || []).filter(c => typeof isWorldPointInView === 'function' && isWorldPointInView(c.px, c.py)).length;
+      const visibleMobs = [...(state?.mobs || []), ...(state?.wolves || [])].filter(m => typeof isWorldPointInView === 'function' && isWorldPointInView(m.px || m.x * TILE, m.py || m.y * TILE)).length;
+      window.HavenfallSettings.recordRenderStats({ tilesDrawn, entitiesDrawn: visibleObjects + visibleColonists + visibleMobs });
     };
   }
 
