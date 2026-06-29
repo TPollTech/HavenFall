@@ -36,19 +36,9 @@
 
   function now() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
   function escapeText(value) { return String(value ?? '').trim(); }
-  function randomId() {
-    return `p_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`;
-  }
-
-  function settings() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
-    catch (_) { return {}; }
-  }
-
-  function saveSettings(next) {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...settings(), ...next })); }
-    catch (_) {}
-  }
+  function randomId() { return `p_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`; }
+  function settings() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (_) { return {}; } }
+  function saveSettings(next) { try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...settings(), ...next })); } catch (_) {} }
 
   function playerId() {
     let id = '';
@@ -68,9 +58,7 @@
     return value.replace(/\/+$/, '');
   }
 
-  function endpoint(path) {
-    return `${session.serverUrl}${path}`;
-  }
+  function endpoint(path) { return `${session.serverUrl}${path}`; }
 
   async function apiGet(path) {
     const res = await fetch(endpoint(path), { cache: 'no-store' });
@@ -79,11 +67,7 @@
   }
 
   async function apiPost(path, payload) {
-    const res = await fetch(endpoint(path), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch(endpoint(path), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new Error(text || `Servidor respondeu ${res.status}`);
@@ -111,10 +95,7 @@
     refreshMenu?.();
   }
 
-  function compactClone(value) {
-    try { return structuredClone(value); }
-    catch (_) { return JSON.parse(JSON.stringify(value)); }
-  }
+  function compactClone(value) { try { return structuredClone(value); } catch (_) { return JSON.parse(JSON.stringify(value)); } }
 
   function compactStateSnapshot() {
     if (!state || state.isPreview || state.runtimeMode === 'menu-preview') return null;
@@ -189,13 +170,8 @@
 
   async function hostAfterSetupIfPending() {
     if (!session.pendingHostAfterSetup) return false;
-    try {
-      await hostCurrentGame({ openSetup: false });
-      return true;
-    } catch (error) {
-      setStatus(`Não consegui iniciar host: ${error.message}`, 'danger');
-      return false;
-    }
+    try { await hostCurrentGame({ openSetup: false }); return true; }
+    catch (error) { setStatus(`Não consegui iniciar host: ${error.message}`, 'danger'); return false; }
   }
 
   async function joinGame() {
@@ -280,10 +256,7 @@
       const nextY = Math.round((nextPy - tile / 2) / tile);
       if (typeof isBlocked === 'function' && isBlocked(nextX, nextY, c)) continue;
       window.HavenfallRuntime?.cancelColonistTask?.(c, 'Controlado por jogador online');
-      c.px = nextPx;
-      c.py = nextPy;
-      c.x = nextX;
-      c.y = nextY;
+      c.px = nextPx; c.py = nextPy; c.x = nextX; c.y = nextY;
       c.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
       c.anim = (Number(c.anim || 0) + dt * 6) % 10;
       c.note = 'Jogador online';
@@ -294,10 +267,7 @@
     if (!session.active) return;
     const t = now();
     try {
-      if (t - session.lastHeartbeatAt > PLAYER_HEARTBEAT_MS) {
-        session.lastHeartbeatAt = t;
-        await heartbeat(session.mode === 'host' ? 'host' : 'visitante');
-      }
+      if (t - session.lastHeartbeatAt > PLAYER_HEARTBEAT_MS) { session.lastHeartbeatAt = t; await heartbeat(session.mode === 'host' ? 'host' : 'visitante'); }
       if (session.mode === 'host') {
         if (t - session.lastHostInputPollAt > HOST_INPUT_POLL_MS) {
           session.lastHostInputPollAt = t;
@@ -312,10 +282,7 @@
           if (snapshot) await apiPost('/api/multiplayer/state', { snapshot });
         }
       } else if (session.mode === 'join') {
-        if (t - session.lastInputAt > INPUT_SEND_INTERVAL_MS) {
-          session.lastInputAt = t;
-          await apiPost('/api/multiplayer/inputs', { id: session.playerId, keys: session.keys });
-        }
+        if (t - session.lastInputAt > INPUT_SEND_INTERVAL_MS) { session.lastInputAt = t; await apiPost('/api/multiplayer/inputs', { id: session.playerId, keys: session.keys }); }
         if (t - session.lastPollAt > JOIN_POLL_INTERVAL_MS) {
           session.lastPollAt = t;
           const payload = await apiGet('/api/multiplayer/state');
@@ -326,26 +293,26 @@
           }
         }
       }
-    } catch (error) {
-      setStatus(`Multiplayer: ${error.message}`, 'danger');
-    }
+    } catch (error) { setStatus(`Multiplayer: ${error.message}`, 'danger'); }
   }
 
-  function refreshMenu() {
-    if (typeof window.refreshMultiplayerMenu === 'function') window.refreshMultiplayerMenu();
+  function refreshMenu() { if (typeof window.refreshMultiplayerMenu === 'function') window.refreshMultiplayerMenu(); }
+
+  function installLifecycle() {
+    if (typeof startNewGame !== 'function' || window.HavenfallContext.multiplayerLifecycleInstalled) return;
+    const nativeStartNewGame = startNewGame;
+    startNewGame = function startNewGameWithMultiplayer(config, selectedColonists) {
+      const result = nativeStartNewGame(config, selectedColonists);
+      setTimeout(() => hostAfterSetupIfPending(), 0);
+      return result;
+    };
+    window.HavenfallContext.multiplayerLifecycleInstalled = true;
   }
 
   window.addEventListener('keydown', event => handleInputEvent(event, true), true);
   window.addEventListener('keyup', event => handleInputEvent(event, false), true);
   window.GameSystems?.registerTick?.('multiplayer', tick, { order: 8, intervalMs: 80 });
+  installLifecycle();
 
-  window.HavenfallMultiplayer = Object.freeze({
-    session,
-    normalizeServerUrl,
-    hostCurrentGame,
-    hostAfterSetupIfPending,
-    joinGame,
-    stopSession,
-    refreshMenu
-  });
+  window.HavenfallMultiplayer = Object.freeze({ session, normalizeServerUrl, hostCurrentGame, hostAfterSetupIfPending, joinGame, stopSession, refreshMenu });
 })();
