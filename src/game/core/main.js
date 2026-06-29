@@ -16,6 +16,11 @@ function bootGame() {
       if (typeof writeNewGameConfig === 'function') writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
 
       state = createInitialState({ ...defaultNewGameConfig, colonyName: defaultNewGameConfig.colonyName, seed: 'preview-menu' });
+      if (window.HavenfallRuntime?.markPreviewState) window.HavenfallRuntime.markPreviewState(state);
+      else {
+        state.isPreview = true;
+        state.runtimeMode = 'menu-preview';
+      }
       activeSession = false;
 
       if (typeof ensureResearchState === 'function') ensureResearchState();
@@ -41,6 +46,7 @@ function bootGame() {
 function handleBootError(err) {
   window.HavenfallContext.gameBooted = false;
   console.error('[Engine Boot Error]:', err);
+  window.HavenfallRuntimeErrors?.unshift?.({ kind: 'boot', message: err?.message || String(err), stack: err?.stack || null, at: new Date().toISOString() });
   const message = 'Falha ao iniciar o jogo. Verifique se os assets e módulos principais foram carregados corretamente.';
   const modal = typeof dom !== 'undefined' ? dom.modal : null;
   const modalText = modal?.querySelector('p');
