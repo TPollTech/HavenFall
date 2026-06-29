@@ -3,112 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Página simples para baixar o HavenFall Desktop para Windows." />
-  <title>Baixar HavenFall Desktop</title>
+  <meta name="description" content="Baixe HavenFall Desktop para Windows." />
+  <title>Baixar HavenFall</title>
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#top" aria-label="HavenFall Download">
-      <img src="../logo.png" alt="" />
-      <span>HavenFall</span>
-    </a>
-    <nav aria-label="Navegação principal">
-      <a href="#download">Download</a>
-      <a href="#instalar">Instalar</a>
-      <a href="#duvidas">Dúvidas</a>
-    </nav>
-  </header>
+  <main class="landing" id="top">
+    <header class="brand-row" aria-label="HavenFall">
+      <img src="../logo.png" alt="HavenFall" />
+      <strong>HavenFall</strong>
+    </header>
 
-  <main id="top">
     <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-text">
-        <p class="tag">Versão desktop para Windows</p>
-        <h1 id="hero-title">Baixe HavenFall Desktop</h1>
-        <p class="lead">
-          Um colony survival simulator em desenvolvimento. Esta versão roda como aplicativo no computador,
-          com save em arquivo local e melhor estabilidade que o navegador.
+      <div class="copy">
+        <p class="tag">Jogo desktop para Windows</p>
+        <h1 id="hero-title">Baixe HavenFall</h1>
+        <p class="description">
+          HavenFall é um jogo de sobrevivência e gerenciamento de colônia. Você lidera colonos em um mundo hostil,
+          coleta recursos, constrói abrigo e tenta manter todos vivos.
         </p>
 
-        <div class="download-card" id="download">
-          <div>
-            <span class="small-label">Arquivo</span>
-            <strong id="fileNameLabel">HavenFall-Desktop-portable.exe</strong>
-            <span class="version-line">Versão <b id="versionLabel">1.7.0</b> · Windows · Portátil</span>
-          </div>
-          <a class="download-button" id="downloadButton" href="downloads/HavenFall-Desktop-portable.exe" download>
-            Baixar agora
-          </a>
-        </div>
+        <a class="download-button" id="downloadButton" href="downloads/HavenFall-Desktop-portable.exe" download>
+          Baixar jogo
+        </a>
 
-        <p class="helper" id="downloadHelper">
-          Não precisa instalar esta página. Ela é um site comum: pode abrir no navegador, hospedar ou mandar o link.
+        <p class="file-line">
+          <span id="fileNameLabel">HavenFall-Desktop-portable.exe</span>
+          <span>Windows · versão <b id="versionLabel">1.7.0</b></span>
         </p>
       </div>
 
-      <aside class="preview" aria-label="Prévia do jogo">
-        <img src="../menu.png" alt="Tela inicial do HavenFall" />
-      </aside>
-    </section>
-
-    <section class="info-grid" aria-label="Informações rápidas">
-      <article>
-        <span>01</span>
-        <h2>Download direto</h2>
-        <p>Um botão principal, sem menus confusos. O arquivo fica na pasta <code>downloads/</code>.</p>
-      </article>
-      <article>
-        <span>02</span>
-        <h2>Site normal</h2>
-        <p>Não usa Electron. É HTML, CSS e JS comum, então abre em qualquer navegador.</p>
-      </article>
-      <article>
-        <span>03</span>
-        <h2>Fácil de hospedar</h2>
-        <p>Dá para publicar em GitHub Pages, Hostinger, Netlify ou qualquer hospedagem estática.</p>
-      </article>
-    </section>
-
-    <section class="panel" id="instalar">
-      <div>
-        <p class="tag">Instalação</p>
-        <h2>Como jogar</h2>
-      </div>
-      <ol class="steps">
-        <li><strong>Baixe</strong> o arquivo do botão principal.</li>
-        <li><strong>Salve</strong> em uma pasta fixa, por exemplo <code>Jogos/HavenFall</code>.</li>
-        <li><strong>Abra</strong> o executável do HavenFall Desktop.</li>
-        <li><strong>Permita</strong> a execução caso o Windows mostre aviso de segurança.</li>
-      </ol>
-    </section>
-
-    <section class="panel compact" id="duvidas">
-      <div>
-        <p class="tag">Dúvidas rápidas</p>
-        <h2>Perguntas comuns</h2>
-      </div>
-      <div class="faq-list">
-        <details open>
-          <summary>Esse site precisa de Electron?</summary>
-          <p>Não. O site é estático e abre no navegador. Electron é só para o jogo baixado.</p>
-        </details>
-        <details>
-          <summary>Onde coloco o executável?</summary>
-          <p>Coloque em <code>site para download/downloads/HavenFall-Desktop-portable.exe</code>.</p>
-        </details>
-        <details>
-          <summary>Posso hospedar essa página?</summary>
-          <p>Sim. Pode subir a pasta inteira em uma hospedagem estática. Só mantenha a pasta <code>downloads</code> junto.</p>
-        </details>
+      <div class="preview" aria-label="Imagem do HavenFall">
+        <img src="../menu.png" alt="Arte de apresentação do HavenFall" />
       </div>
     </section>
   </main>
-
-  <footer>
-    <span>HavenFall Desktop</span>
-    <span>TPollTech</span>
-  </footer>
 
   <script src="script.js"></script>
 </body>
