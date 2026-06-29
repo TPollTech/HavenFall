@@ -63,7 +63,7 @@
   }
 
   function setGameSpeed(speed) {
-    if (!state) return;
+    if (!state || state.isPreview) return;
     state.speed = Number(speed) || 1;
     if (typeof setScreen === 'function') setScreen(SCREEN.PLAYING);
     syncSpeedButtons();
@@ -90,6 +90,34 @@
     generateColonistCandidates(newGameConfig);
     if (typeof activeRecruitmentCandidateIndex === 'number') activeRecruitmentCandidateIndex = 0;
     setScreen(SCREEN.COLONIST_SELECT);
+  }
+
+  function worldMapOverlayOpen() {
+    return !!document.getElementById('worldMapOverlay')?.classList.contains('open');
+  }
+
+  function requestGameExit() {
+    if (window.HavenfallDesktop?.quit) {
+      window.HavenfallDesktop.quit();
+      return;
+    }
+    if (typeof refreshMenuSaveInfo === 'function') refreshMenuSaveInfo();
+    alert('Para sair no navegador, feche a aba do jogo.');
+  }
+
+  function requestDeleteSave() {
+    if (!confirm('Apagar o save atual? Isso remove o save do navegador e, no desktop, também remove o arquivo de save.')) return;
+    const result = typeof deleteGameSave === 'function'
+      ? deleteGameSave()
+      : (() => {
+          localStorage.removeItem(SAVE_KEY);
+          activeSession = false;
+          refreshMenuSaveInfo?.();
+          refreshLoadScreen?.();
+          return { ok: true };
+        })();
+    if (typeof log === 'function') log(result?.ok ? 'Save apagado.' : 'Falha ao apagar o save.');
+    syncSpeedButtons();
   }
 
   function handleDelegatedClick(event) {
@@ -271,6 +299,11 @@
     }
 
     if (event.key === 'Escape') {
+      if (worldMapOverlayOpen()) {
+        event.preventDefault();
+        window.HavenfallWorldMapUI?.close?.();
+        return;
+      }
       if (window.uiManager?.closeCurrentPanel) window.uiManager.closeCurrentPanel();
       if (appScreen === SCREEN.PLAYING) setScreen(SCREEN.PAUSED);
       else if (appScreen === SCREEN.PAUSED) setScreen(SCREEN.PLAYING);
@@ -319,9 +352,9 @@
       writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
       setScreen(SCREEN.NEW_GAME_SETUP);
     });
-    on(dom.buttons.openLoad, 'click', () => setScreen(SCREEN.LOAD_GAME));
+    on(dom.buttons.openLoad, 'click', () => { refreshLoadScreen?.(); setScreen(SCREEN.LOAD_GAME); });
     on(dom.buttons.openSettings, 'click', () => setScreen(SCREEN.SETTINGS));
-    on(dom.buttons.exit, 'click', () => refreshMenuSaveInfo());
+    on(dom.buttons.exit, 'click', requestGameExit);
     on(dom.buttons.setupBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
     on(dom.buttons.setupNext, 'click', openPlanetScanFromSetup);
     on(dom.buttons.scanBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
@@ -358,19 +391,12 @@
         return;
       }
       startNewGame(newGameConfig, colonistCandidates);
+      window.HavenfallRuntime?.markGameplayState?.(state);
       syncSpeedButtons();
     });
     on(dom.buttons.loadBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
     on(dom.buttons.loadSlot, 'click', () => { loadAndPlay(); syncSpeedButtons(); });
-    on(dom.buttons.deleteSave, 'click', () => {
-      if (confirm('Apagar o save local?')) {
-        localStorage.removeItem(SAVE_KEY);
-        activeSession = false;
-        refreshMenuSaveInfo();
-        refreshLoadScreen();
-        syncSpeedButtons();
-      }
-    });
+    on(dom.buttons.deleteSave, 'click', requestDeleteSave);
 
     on(dom.buttons.settingsBack, 'click', goBackFromSettings);
     if (dom.inputs.uiScale) dom.inputs.uiScale.value = settings.uiScale || 'normal';
