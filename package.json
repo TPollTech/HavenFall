@@ -2,14 +2,22 @@
   "name": "havenfall-v1",
   "version": "1.7.0",
   "private": true,
-  "description": "Protótipo 2D survival/colônia com UI fullscreen e código refatorado em módulos menores.",
+  "description": "HavenFall Desktop Edition — survival/colony sim 2D empacotado com Electron.",
+  "main": "electron-main.cjs",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
+    "start": "npm run desktop",
+    "desktop": "electron .",
+    "electron": "electron .",
+    "desktop:dev": "electron . --devtools",
+    "desktop:diagnose": "node scripts/desktop-doctor.cjs",
+    "web": "node server.js",
+    "dev:web": "node server.js",
     "assets:process": "node scripts/process-assets.mjs",
     "test:logic": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "dist:win": "electron-builder --win portable",
+    "pack:win": "electron-builder --win --dir"
   },
   "keywords": [
     "2d",
@@ -17,15 +25,45 @@
     "colony",
     "canvas",
     "game",
-    "menu",
+    "desktop",
+    "electron",
     "seed"
   ],
   "author": "Enzo + ChatGPT",
   "license": "UNLICENSED",
   "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "gifuct-js": "^2.1.2",
     "playwright": "^1.61.1",
     "pngjs": "^7.0.0",
     "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "br.com.tpolltech.havenfall",
+    "productName": "HavenFall Desktop",
+    "artifactName": "HavenFall-Desktop-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.html",
+      "logo.png",
+      "menu.png",
+      "assets/**/*",
+      "src/**/*",
+      "electron-main.cjs",
+      "electron-preload.cjs",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron-main.cjs"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "logo.png"
+    }
   }
 }
