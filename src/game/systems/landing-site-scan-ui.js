@@ -90,18 +90,39 @@
   function renderMarkers(profile) {
     const radar = document.querySelector('.scan-radar');
     if (!radar) return;
+    if (radar.__landingPointerHandler) radar.removeEventListener('pointerdown', radar.__landingPointerHandler, true);
+    radar.__landingPointerHandler = e => selectMarkerNearPointer(radar, e);
+    radar.addEventListener('pointerdown', radar.__landingPointerHandler, true);
     radar.querySelectorAll('.landing-site-marker').forEach(el => el.remove());
     radar.insertAdjacentHTML('beforeend', (profile?.landingSites||[]).map(site => markerHtml(site, profile.selectedLandingSiteId)).join(''));
     const tip = tooltip();
     radar.querySelectorAll('.landing-site-marker').forEach(btn => {
       const site = profile.landingSites.find(s => s.id === btn.dataset.landingSite);
-      btn.addEventListener('click', () => selectLandingSite(site.id));
+      const choose = e => { e.preventDefault(); e.stopPropagation(); selectLandingSite(site.id); };
+      btn.addEventListener('pointerdown', choose);
+      btn.addEventListener('click', choose);
       btn.addEventListener('pointermove', e => {
         tip.innerHTML = `<b>${esc(site.name)}</b><small>${esc(site.labels?.subtitle || '')}<br>Score ${Number(site.difficulty?.score||0)}/100 · ${esc(site.difficulty?.label||'')}</small>`;
         tip.style.left = `${e.clientX + 14}px`; tip.style.top = `${e.clientY + 14}px`; tip.classList.add('show');
       });
       btn.addEventListener('pointerleave', () => tip.classList.remove('show'));
     });
+  }
+
+  function selectMarkerNearPointer(radar, e) {
+    const markers = [...radar.querySelectorAll('.landing-site-marker')];
+    let best = null, bestDist = Infinity;
+    for (const marker of markers) {
+      const rect = marker.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < bestDist) { best = marker; bestDist = dist; }
+    }
+    if (!best || bestDist > 34) return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectLandingSite(best.dataset.landingSite);
   }
 
   function ensureAnalysis() {

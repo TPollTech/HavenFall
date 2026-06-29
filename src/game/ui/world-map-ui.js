@@ -8,6 +8,7 @@
   const TERRAIN = { grass:'#2f8f58', dirt:'#7c5635', stone:'#8a94a3', sand:'#c8933f', water:'#0e7490' };
   const SITE = { current:'#facc15', visited:'#22c55e', known:'#38bdf8', danger:'#ef4444', quest:'#c084fc', unknown:'#94a3b8', locked:'#475569' };
   let selectedMode = 'balanced';
+  let pendingTravelSiteId = null;
   let lastLocalScale = null;
   let lastWorldScale = null;
 
@@ -25,7 +26,7 @@
     const style = document.createElement('style');
     style.id = 'world-map-ui-style';
     style.textContent = `
-      .world-map-overlay{position:fixed;inset:0;z-index:9996;display:none;place-items:center;background:rgba(2,6,23,.72);backdrop-filter:blur(10px)}.world-map-overlay.open{display:grid}.world-map-shell{width:min(1280px,calc(100vw - 28px));height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto 1fr auto;border:1px solid rgba(125,211,252,.22);border-radius:22px;background:linear-gradient(180deg,rgba(15,23,42,.97),rgba(2,6,23,.96));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;color:#e5eefc}.world-map-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid rgba(125,211,252,.14)}.world-map-title h2{margin:0;font-size:22px;color:#fff}.world-map-title small{color:rgba(203,213,225,.76)}.world-map-tabs{display:flex;gap:8px}.world-map-tabs button,.world-map-foot button,.map-mode-btn{border:1px solid rgba(125,211,252,.18);background:rgba(15,23,42,.76);color:#dbeafe;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer}.world-map-tabs button.active,.map-mode-btn.active{border-color:rgba(250,204,21,.55);background:rgba(120,53,15,.28);color:#fef3c7}.world-map-close{border:0;background:rgba(239,68,68,.14);color:#fecaca;border-radius:12px;padding:9px 12px;cursor:pointer}.world-map-body{display:grid;grid-template-columns:minmax(420px,1fr) 360px;gap:14px;min-height:0;padding:14px}.map-viewport{position:relative;min-height:0;border:1px solid rgba(148,163,184,.14);border-radius:18px;background:radial-gradient(circle at 50% 40%,rgba(56,189,248,.11),transparent 36%),rgba(2,6,23,.50);overflow:hidden}.map-viewport canvas{display:block;width:100%;height:100%;min-height:480px}.map-panel{border:1px solid rgba(148,163,184,.14);border-radius:18px;background:rgba(15,23,42,.70);padding:14px;overflow:auto}.map-panel h3{margin:0 0 8px;color:#67e8f9;font-size:12px;letter-spacing:.14em;text-transform:uppercase}.map-panel h2{margin:0;color:#fff}.map-panel p,.map-panel small{color:rgba(203,213,225,.78);line-height:1.45}.map-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.map-stat{border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:9px;background:rgba(2,6,23,.38)}.map-stat small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.09em}.map-stat b{display:block;color:#f8fafc;font-size:16px}.map-list{display:grid;gap:7px;margin-top:10px}.map-list button{display:grid;grid-template-columns:1fr auto;gap:8px;text-align:left;border:1px solid rgba(148,163,184,.12);background:rgba(2,6,23,.36);border-radius:12px;padding:9px;color:#e5eefc;cursor:pointer}.map-list button.active{border-color:rgba(250,204,21,.45);background:rgba(120,53,15,.20)}.map-chip-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.map-chip{border:1px solid rgba(125,211,252,.16);border-radius:999px;background:rgba(15,23,42,.62);padding:5px 8px;font-size:11px;color:rgba(226,232,240,.84)}.map-bars{display:grid;gap:7px}.map-bar{display:grid;grid-template-columns:84px 1fr 32px;gap:8px;align-items:center;font-size:11px}.map-bar i{display:block;height:8px;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);width:var(--v)}.map-bar.danger i{background:linear-gradient(90deg,#facc15,#ef4444)}.map-bar span{height:8px;border-radius:999px;background:rgba(51,65,85,.9);overflow:hidden}.map-actions{display:grid;gap:8px;margin-top:12px}.map-actions button.primary{border-color:rgba(34,197,94,.38);background:rgba(22,101,52,.25);color:#bbf7d0}.map-actions button.danger{border-color:rgba(239,68,68,.36);background:rgba(127,29,29,.25);color:#fecaca}.map-warning{border:1px solid rgba(251,146,60,.28);background:rgba(124,45,18,.18);color:#fed7aa;border-radius:12px;padding:8px;margin:8px 0;font-size:12px}.map-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid rgba(125,211,252,.14)}.map-legend{display:flex;gap:10px;flex-wrap:wrap;color:rgba(203,213,225,.78);font-size:11px}.map-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;background:var(--c)}.map-mode-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0}.local-info{position:absolute;left:14px;top:14px;right:14px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.local-info span{border:1px solid rgba(125,211,252,.16);background:rgba(2,6,23,.62);border-radius:999px;padding:5px 8px;color:rgba(226,232,240,.84);font-size:11px}@media(max-width:940px){.world-map-body{grid-template-columns:1fr}.map-viewport canvas{min-height:360px}.world-map-shell{overflow:auto}.map-panel{max-height:none}.world-map-head{align-items:flex-start;flex-direction:column}.world-map-tabs{width:100%}}
+      .world-map-overlay{position:fixed;inset:0;z-index:9996;display:none;place-items:center;background:rgba(2,6,23,.72);backdrop-filter:blur(10px)}.world-map-overlay.open{display:grid}.world-map-shell{width:min(1280px,calc(100vw - 28px));height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto 1fr auto;border:1px solid rgba(125,211,252,.22);border-radius:22px;background:linear-gradient(180deg,rgba(15,23,42,.97),rgba(2,6,23,.96));box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;color:#e5eefc}.world-map-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid rgba(125,211,252,.14)}.world-map-title h2{margin:0;font-size:22px;color:#fff}.world-map-title small{color:rgba(203,213,225,.76)}.world-map-tabs{display:flex;gap:8px}.world-map-tabs button,.world-map-foot button,.map-mode-btn,.travel-prep-actions button{border:1px solid rgba(125,211,252,.18);background:rgba(15,23,42,.76);color:#dbeafe;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer}.world-map-tabs button.active,.map-mode-btn.active{border-color:rgba(250,204,21,.55);background:rgba(120,53,15,.28);color:#fef3c7}.world-map-close{border:0;background:rgba(239,68,68,.14);color:#fecaca;border-radius:12px;padding:9px 12px;cursor:pointer}.world-map-body{display:grid;grid-template-columns:minmax(420px,1fr) 360px;gap:14px;min-height:0;padding:14px}.map-viewport{position:relative;min-height:0;border:1px solid rgba(148,163,184,.14);border-radius:18px;background:radial-gradient(circle at 50% 40%,rgba(56,189,248,.11),transparent 36%),rgba(2,6,23,.50);overflow:hidden}.map-viewport canvas{display:block;width:100%;height:100%;min-height:480px}.map-panel{border:1px solid rgba(148,163,184,.14);border-radius:18px;background:rgba(15,23,42,.70);padding:14px;overflow:auto}.map-panel h3{margin:0 0 8px;color:#67e8f9;font-size:12px;letter-spacing:.14em;text-transform:uppercase}.map-panel h2{margin:0;color:#fff}.map-panel p,.map-panel small{color:rgba(203,213,225,.78);line-height:1.45}.map-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.map-stat{border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:9px;background:rgba(2,6,23,.38)}.map-stat small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.09em}.map-stat b{display:block;color:#f8fafc;font-size:16px}.map-list{display:grid;gap:7px;margin-top:10px}.map-list button{display:grid;grid-template-columns:1fr auto;gap:8px;text-align:left;border:1px solid rgba(148,163,184,.12);background:rgba(2,6,23,.36);border-radius:12px;padding:9px;color:#e5eefc;cursor:pointer}.map-list button.active{border-color:rgba(250,204,21,.45);background:rgba(120,53,15,.20)}.map-chip-row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.map-chip{border:1px solid rgba(125,211,252,.16);border-radius:999px;background:rgba(15,23,42,.62);padding:5px 8px;font-size:11px;color:rgba(226,232,240,.84)}.map-bars{display:grid;gap:7px}.map-bar{display:grid;grid-template-columns:84px 1fr 32px;gap:8px;align-items:center;font-size:11px}.map-bar i{display:block;height:8px;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);width:var(--v)}.map-bar.danger i{background:linear-gradient(90deg,#facc15,#ef4444)}.map-bar span{height:8px;border-radius:999px;background:rgba(51,65,85,.9);overflow:hidden}.map-actions{display:grid;gap:8px;margin-top:12px}.map-actions button.primary,.travel-prep-actions button.primary{border-color:rgba(34,197,94,.38);background:rgba(22,101,52,.25);color:#bbf7d0}.map-actions button.danger{border-color:rgba(239,68,68,.36);background:rgba(127,29,29,.25);color:#fecaca}.map-warning{border:1px solid rgba(251,146,60,.28);background:rgba(124,45,18,.18);color:#fed7aa;border-radius:12px;padding:8px;margin:8px 0;font-size:12px}.map-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid rgba(125,211,252,.14)}.map-legend{display:flex;gap:10px;flex-wrap:wrap;color:rgba(203,213,225,.78);font-size:11px}.map-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;background:var(--c)}.map-mode-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0}.local-info{position:absolute;left:14px;top:14px;right:14px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.local-info span{border:1px solid rgba(125,211,252,.16);background:rgba(2,6,23,.62);border-radius:999px;padding:5px 8px;color:rgba(226,232,240,.84);font-size:11px}.travel-prep-backdrop{position:absolute;inset:0;z-index:2;display:none;place-items:center;background:rgba(2,6,23,.58);padding:18px}.travel-prep-backdrop.open{display:grid}.travel-prep-modal{width:min(680px,calc(100vw - 44px));max-height:min(760px,calc(100vh - 44px));display:grid;grid-template-rows:auto 1fr auto;border:1px solid rgba(125,211,252,.24);border-radius:18px;background:rgba(15,23,42,.98);box-shadow:0 24px 70px rgba(0,0,0,.52);overflow:hidden}.travel-prep-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid rgba(125,211,252,.14)}.travel-prep-head h2{margin:0;color:#fff;font-size:20px}.travel-prep-head small{color:rgba(203,213,225,.74)}.travel-prep-close{border:0;background:rgba(239,68,68,.14);color:#fecaca;border-radius:12px;padding:8px 10px;cursor:pointer}.travel-prep-body{overflow:auto;padding:14px}.travel-prep-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.travel-prep-list{display:grid;gap:6px;margin-top:8px}.travel-prep-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:9px;background:rgba(2,6,23,.34)}.travel-prep-row b{color:#fff}.travel-prep-row span{color:rgba(203,213,225,.78)}.travel-prep-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 14px;border-top:1px solid rgba(125,211,252,.14)}button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:940px){.world-map-body{grid-template-columns:1fr}.map-viewport canvas{min-height:360px}.world-map-shell{overflow:auto}.map-panel{max-height:none}.world-map-head{align-items:flex-start;flex-direction:column}.world-map-tabs{width:100%}.travel-prep-grid{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
   }
@@ -46,7 +47,8 @@
         </header>
         <main class="world-map-body"><section class="map-viewport" id="worldMapViewport"></section><aside class="map-panel" id="worldMapPanel"></aside></main>
         <footer class="map-foot"><div class="map-legend" id="worldMapLegend"></div><div><button data-map-center>Centralizar Base</button> <button data-map-close>Fechar</button></div></footer>
-      </div>`;
+      </div>
+      <div id="travelPrepBackdrop" class="travel-prep-backdrop" aria-hidden="true"></div>`;
     document.body.appendChild(overlay);
     overlay.addEventListener('click', handleClick);
     overlay.addEventListener('change', handleChange);
@@ -66,6 +68,7 @@
 
   function close() {
     if (state?.ui?.map) state.ui.map.open = false;
+    closeTravelPrep();
     document.getElementById('worldMapOverlay')?.classList.remove('open');
   }
 
@@ -84,6 +87,10 @@
   }
 
   function handleClick(event) {
+    if (event.target?.id === 'travelPrepBackdrop') { closeTravelPrep(); return; }
+    if (event.target.closest?.('[data-travel-prep-close]')) { closeTravelPrep(); return; }
+    const startPrep = event.target.closest?.('[data-travel-prep-start]');
+    if (startPrep) { startPreparedTravel(startPrep.dataset.travelPrepStart); return; }
     const tab = event.target.closest?.('[data-map-tab]');
     if (tab) { setTab(tab.dataset.mapTab); return; }
     if (event.target.closest?.('[data-map-close]')) { close(); return; }
@@ -91,9 +98,14 @@
     const siteBtn = event.target.closest?.('[data-world-site]');
     if (siteBtn) { setSelectedSite(siteBtn.dataset.worldSite); return; }
     const compare = event.target.closest?.('[data-travel-mode]');
-    if (compare) { selectedMode = compare.dataset.travelMode; render(); return; }
+    if (compare) {
+      selectedMode = compare.dataset.travelMode;
+      if (pendingTravelSiteId) renderTravelPrep(pendingTravelSiteId);
+      else render();
+      return;
+    }
     const prepare = event.target.closest?.('[data-prepare-travel]');
-    if (prepare) { confirmTravel(prepare.dataset.prepareTravel); return; }
+    if (prepare) { openTravelPrep(prepare.dataset.prepareTravel); return; }
     const outpost = event.target.closest?.('[data-establish-outpost]');
     if (outpost) { travel()?.establishOutpost?.(outpost.dataset.establishOutpost); render(); return; }
   }
@@ -209,7 +221,11 @@
     const resources = site.resources || {};
     const risks = site.risks || {};
     const current = site.id === wm.currentSiteId;
-    return `<h3>Destino selecionado</h3><h2>${esc(site.name)}</h2><p>${esc(site.labels?.subtitle || site.labels?.biomeLabel || 'Setor detectado por varredura orbital.')}</p><div class="map-chip-row"><span class="map-chip">${esc(site.state || 'known')}</span><span class="map-chip">${esc(site.difficulty?.label || 'Moderado')}</span><span class="map-chip">${esc(site.biomes?.primary || site.archetype || 'setor')}</span></div><div class="map-stat-grid"><div class="map-stat"><small>Distância</small><b>${plan?.distance ?? 0}</b></div><div class="map-stat"><small>Tempo</small><b>${plan?.estimatedHours ?? 0}h</b></div><div class="map-stat"><small>Risco</small><b>${esc(plan?.riskLabel || 'N/A')}</b></div><div class="map-stat"><small>Comida</small><b>${plan?.foodCost ?? 0}</b></div></div><h3>Recursos esperados</h3><div class="map-bars">${resourceBars(resources,false)}</div><h3 style="margin-top:12px">Riscos</h3><div class="map-bars">${resourceBars(risks,true)}</div><h3 style="margin-top:12px">Modo da viagem</h3><div class="map-mode-row">${Object.entries(travel()?.modes || {}).map(([key,mode])=>`<button class="map-mode-btn ${selectedMode===key?'active':''}" data-travel-mode="${key}">${esc(mode.label)}</button>`).join('')}</div>${validation.reasons?.length ? `<div class="map-warning">${validation.reasons.map(esc).join('<br>')}</div>` : ''}${validation.warnings?.length ? `<div class="map-warning">${validation.warnings.map(esc).join('<br>')}</div>` : ''}<div class="map-actions"><button class="primary" data-prepare-travel="${esc(site.id)}" ${current || !validation.ok ? 'disabled' : ''}>Preparar / iniciar expedição</button><button data-establish-outpost="${esc(wm.currentSiteId)}">Estabelecer posto neste setor</button></div><h3 style="margin-top:14px">Locais detectados</h3><div class="map-list">${wm.landingSites.map(s=>`<button data-world-site="${esc(s.id)}" class="${s.id===site.id?'active':''}"><span>${esc(s.name)}</span><b>${esc(s.state||'known')}</b></button>`).join('')}</div>`;
+    return `<h3>Destino selecionado</h3><h2>${esc(site.name)}</h2><p>${esc(site.labels?.subtitle || site.labels?.biomeLabel || 'Setor detectado por varredura orbital.')}</p><div class="map-chip-row"><span class="map-chip">${esc(site.state || 'known')}</span><span class="map-chip">${esc(site.difficulty?.label || 'Moderado')}</span><span class="map-chip">${esc(site.biomes?.primary || site.archetype || 'setor')}</span></div><div class="map-stat-grid"><div class="map-stat"><small>Distância</small><b>${plan?.distance ?? 0}</b></div><div class="map-stat"><small>Tempo</small><b>${plan?.estimatedHours ?? 0}h</b></div><div class="map-stat"><small>Risco</small><b>${esc(plan?.riskLabel || 'N/A')}</b></div><div class="map-stat"><small>Comida</small><b>${plan?.foodCost ?? 0}</b></div></div><h3>Recursos esperados</h3><div class="map-bars">${resourceBars(resources,false)}</div><h3 style="margin-top:12px">Riscos</h3><div class="map-bars">${resourceBars(risks,true)}</div><h3 style="margin-top:12px">Modo da viagem</h3><div class="map-mode-row">${travelModeButtons()}</div>${validation.reasons?.length ? `<div class="map-warning">${validation.reasons.map(esc).join('<br>')}</div>` : ''}${validation.warnings?.length ? `<div class="map-warning">${validation.warnings.map(esc).join('<br>')}</div>` : ''}<div class="map-actions"><button class="primary" data-prepare-travel="${esc(site.id)}" ${current || !validation.ok ? 'disabled' : ''}>Preparar expedição</button><button data-establish-outpost="${esc(wm.currentSiteId)}">Estabelecer posto neste setor</button></div><h3 style="margin-top:14px">Locais detectados</h3><div class="map-list">${wm.landingSites.map(s=>`<button data-world-site="${esc(s.id)}" class="${s.id===site.id?'active':''}"><span>${esc(s.name)}</span><b>${esc(s.state||'known')}</b></button>`).join('')}</div>`;
+  }
+
+  function travelModeButtons() {
+    return Object.entries(travel()?.modes || {}).map(([key,mode]) => `<button class="map-mode-btn ${selectedMode===key?'active':''}" data-travel-mode="${key}">${esc(mode.label)}</button>`).join('');
   }
 
   function resourceBars(src, danger) {
@@ -260,16 +276,61 @@
     if (best && bestD < 34) setSelectedSite(best.id);
   }
 
-  function confirmTravel(siteId) {
+  function openTravelPrep(siteId) {
+    pendingTravelSiteId = siteId;
+    renderTravelPrep(siteId);
+  }
+
+  function closeTravelPrep() {
+    pendingTravelSiteId = null;
+    const modal = document.getElementById('travelPrepBackdrop');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.innerHTML = '';
+    }
+  }
+
+  function renderTravelPrep(siteId) {
+    const backdrop = document.getElementById('travelPrepBackdrop');
+    if (!backdrop) return;
     const plan = travel()?.calculateTravelPlan?.(siteId, { mode: selectedMode });
-    const validation = travel()?.canTravel?.(plan);
-    if (!plan || !validation?.ok) { render(); return; }
-    const warning = validation.warnings?.length ? `\n\nAvisos:\n- ${validation.warnings.join('\n- ')}` : '';
-    const ok = confirm(`Confirmar viagem para ${plan.toSiteName}?\n\nTempo estimado: ${plan.estimatedHours}h\nComida consumida: ${plan.foodCost}\nRisco: ${plan.riskLabel}\nModo: ${plan.modeLabel}\n\nO setor atual será salvo e ficará congelado até seu retorno.${warning}`);
-    if (!ok) return;
+    const validation = travel()?.canTravel?.(plan) || { ok:false, reasons:['Plano indisponível.'], warnings:[] };
+    const colonists = (state?.colonists || []).filter(c => plan?.colonistIds?.includes(c.id) || !plan?.colonistIds);
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    backdrop.innerHTML = `<section class="travel-prep-modal" role="dialog" aria-modal="true">
+      <header class="travel-prep-head"><div><h2>${esc(plan?.toSiteName || 'Expedição')}</h2><small>${esc(plan?.fromSiteId || 'origem')} -> ${esc(plan?.toSiteId || 'destino')}</small></div><button class="travel-prep-close" data-travel-prep-close>Fechar</button></header>
+      <div class="travel-prep-body">
+        <div class="travel-prep-grid">
+          <div class="map-stat"><small>Tempo</small><b>${plan?.estimatedHours ?? 0}h</b></div>
+          <div class="map-stat"><small>Risco</small><b>${esc(plan?.riskLabel || 'N/A')}</b></div>
+          <div class="map-stat"><small>Comida</small><b>${plan?.foodCost ?? 0}</b></div>
+          <div class="map-stat"><small>Evento</small><b>${plan?.eventChance ?? 0}%</b></div>
+        </div>
+        <h3 style="margin-top:14px">Modo da viagem</h3><div class="map-mode-row">${travelModeButtons()}</div>
+        <h3 style="margin-top:14px">Grupo</h3><div class="travel-prep-list">${colonists.map(c => `<div class="travel-prep-row"><b>${esc(c.name)}</b><span>${Math.round(c.health ?? 100)}% vida · ${Math.round(c.energy ?? 100)}% energia</span></div>`).join('') || '<div class="travel-prep-row"><b>Nenhum colono apto</b><span>-</span></div>'}</div>
+        <h3 style="margin-top:14px">Suprimentos</h3><div class="travel-prep-list"><div class="travel-prep-row"><b>Comida</b><span>${plan?.foodCost ?? 0} / ${state?.resources?.food ?? 0}</span></div><div class="travel-prep-row"><b>Remédios</b><span>${plan?.medicineRecommended ?? 0} / ${state?.resources?.medicine ?? 0}</span></div><div class="travel-prep-row"><b>Madeira</b><span>${plan?.supplies?.wood ?? 0} recomendado</span></div></div>
+        ${validation.reasons?.length ? `<div class="map-warning">${validation.reasons.map(esc).join('<br>')}</div>` : ''}
+        ${validation.warnings?.length ? `<div class="map-warning">${validation.warnings.map(esc).join('<br>')}</div>` : ''}
+      </div>
+      <footer class="travel-prep-actions"><button data-travel-prep-close>Cancelar</button><button class="primary" data-travel-prep-start="${esc(siteId)}" ${!validation.ok ? 'disabled' : ''}>Iniciar viagem</button></footer>
+    </section>`;
+  }
+
+  function startPreparedTravel(siteId) {
     const result = travel()?.startTravel?.(siteId, { mode: selectedMode });
+    if (!result?.ok) {
+      renderTravelPrep(siteId);
+      if (typeof log === 'function') log(`Viagem não iniciada: ${(result?.reasons || ['erro desconhecido']).join(' ')}`);
+      return;
+    }
+    closeTravelPrep();
     close();
-    if (!result?.ok) alert(`Viagem não iniciada: ${(result?.reasons || ['erro desconhecido']).join(' ')}`);
+  }
+
+  function confirmTravel(siteId) {
+    openTravelPrep(siteId);
   }
 
   function handleKeyDown(event) {

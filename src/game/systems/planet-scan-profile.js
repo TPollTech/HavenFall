@@ -551,7 +551,7 @@
       selectedLandingSiteId: profile.selectedLandingSiteId,
       selectedLandingSite: profile.selectedLandingSite,
       landingSiteId: profile.selectedLandingSiteId,
-      sectorProfile: selected?.archetype || config.sectorProfile || 'balanced'
+      sectorProfile: config.sectorProfile || 'balanced'
     };
   }
 
@@ -582,7 +582,7 @@
       selectedLandingSiteId: profile.selectedLandingSiteId,
       selectedLandingSite: profile.selectedLandingSite,
       landingSiteId: profile.selectedLandingSiteId,
-      sectorProfile: selected?.archetype || normalized.sectorProfile || 'balanced'
+      sectorProfile: normalized.sectorProfile || 'balanced'
     };
   }
 
@@ -601,7 +601,7 @@
       selectedLandingSiteId: selected.id,
       selectedLandingSite: profile.selectedLandingSite,
       landingSiteId: selected.id,
-      sectorProfile: selected.archetype || ensured.sectorProfile
+      sectorProfile: ensured.sectorProfile || 'balanced'
     };
   }
 

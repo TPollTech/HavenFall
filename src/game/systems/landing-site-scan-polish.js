@@ -104,24 +104,51 @@
 
   function renderMarkers(profile){
     const radar=document.querySelector('.scan-radar'); if(!radar) return;
+    if(radar.__landingPointerHandler) radar.removeEventListener('pointerdown',radar.__landingPointerHandler,true);
+    radar.__landingPointerHandler=ev=>selectMarkerNearPointer(radar,ev);
+    radar.addEventListener('pointerdown',radar.__landingPointerHandler,true);
     radar.querySelectorAll('.landing-site-marker,.landing-site-label').forEach(el=>el.remove());
     const selectedId=profile?.selectedLandingSiteId;
     radar.insertAdjacentHTML('beforeend',(profile?.landingSites||[]).map(site=>{
       const left=clamp(site.globe?.x??.5,.08,.92)*100, top=clamp(site.globe?.y??.5,.08,.92)*100, c=color(site);
       const mc=['landing-site-marker',site.id===selectedId?'selected':'',site.id===hoverId?'hovered':''].filter(Boolean).join(' ');
       const lc=['landing-site-label',site.id===selectedId?'selected':'',site.id===hoverId?'hovered':''].filter(Boolean).join(' ');
-      return `<button type="button" class="${mc}" style="left:${left}%;top:${top}%;--c:${c}" data-landing-site="${esc(site.id)}"></button><span class="${lc}" style="left:${left}%;top:${top}%">${esc(site.name)}</span>`;
+      return `<button type="button" class="${mc}" style="left:${left}%;top:${top}%;--c:${c}" data-landing-site="${esc(site.id)}"></button><span class="${lc}" style="left:${left}%;top:${top}%" data-landing-site="${esc(site.id)}">${esc(site.name)}</span>`;
     }).join(''));
     const tooltip=tip();
     radar.querySelectorAll('.landing-site-marker').forEach(btn=>{
       const site=siteById(profile,btn.dataset.landingSite); if(!site) return;
-      btn.addEventListener('click',()=>selectLandingSite(site.id));
-      btn.addEventListener('pointerenter',()=>{ hoverId=site.id; renderMarkers(profile); });
+      const choose=ev=>{ ev.preventDefault(); ev.stopPropagation(); selectLandingSite(site.id); };
+      btn.addEventListener('pointerdown',choose);
+      btn.addEventListener('click',choose);
+      btn.addEventListener('pointerenter',()=>{ hoverId=site.id; updateHoverClasses(radar); });
       btn.addEventListener('pointermove',ev=>{
         tooltip.innerHTML=`<b>${esc(site.name)}</b><small>${esc(site.labels?.subtitle||'')}<br>Score ${score(site)}/100 · Risco ${avg(site.risks)} · Recursos ${avg(site.resources)}</small>`;
         tooltip.style.left=`${ev.clientX+16}px`; tooltip.style.top=`${ev.clientY+16}px`; tooltip.classList.add('show');
       });
-      btn.addEventListener('pointerleave',()=>{ hoverId=null; tooltip.classList.remove('show'); renderMarkers(profile); });
+      btn.addEventListener('pointerleave',()=>{ hoverId=null; tooltip.classList.remove('show'); updateHoverClasses(radar); });
+    });
+  }
+
+  function selectMarkerNearPointer(radar,ev){
+    const markers=[...radar.querySelectorAll('.landing-site-marker')];
+    let best=null,bestDist=Infinity;
+    for(const marker of markers){
+      const rect=marker.getBoundingClientRect();
+      const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+      const dist=Math.hypot(ev.clientX-cx,ev.clientY-cy);
+      if(dist<bestDist){ best=marker; bestDist=dist; }
+    }
+    if(!best||bestDist>34) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    selectLandingSite(best.dataset.landingSite);
+  }
+
+  function updateHoverClasses(radar=document.querySelector('.scan-radar')){
+    if(!radar) return;
+    radar.querySelectorAll('.landing-site-marker,.landing-site-label').forEach(el=>{
+      el.classList.toggle('hovered',el.dataset?.landingSite===hoverId);
     });
   }
 
@@ -156,7 +183,7 @@
     const warn=tier(site)==='extreme'?'<div class="landing-warning"><b>Alerta orbital:</b> local de alto risco, mas com recompensas fortes.</div>':tier(site)==='hard'?'<div class="landing-warning"><b>Atenção:</b> pouso exigente. Planeje abrigo, comida e defesa.</div>':'';
     panel.innerHTML=`${warn}<div class="landing-hero"><div><h2>${esc(site.name)}</h2><p>${esc(verdict(site))}</p><div class="landing-mini-tags">${[BIOME[site.biomes?.primary]||site.biomes?.primary,site.difficulty?.label,...(site.biomes?.secondary||[]).slice(0,3).map(x=>BIOME[x]||x)].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div></div><div class="landing-score"><small>Score</small><b>${score(site)}</b><small>${esc(site.difficulty?.label||'Moderado')}</small></div></div><div class="landing-grid"><div class="landing-card"><h3>Recursos próximos</h3>${rows(site,RES,false)}</div><div class="landing-card"><h3>Riscos do setor</h3>${rows(site,RISK,true)}</div><div class="landing-card"><h3>Vantagens reais</h3><ul class="landing-list">${(site.positives||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="landing-card"><h3>Problemas esperados</h3><ul class="landing-list">${(site.negatives||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="landing-card full"><h3>Plano recomendado</h3><ul class="landing-list">${plan(site).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="landing-card full"><h3>Prévia aproximada do pouso</h3><div class="landing-preview-wrap"><canvas id="scanLandingPreviewCanvas" class="landing-preview"></canvas><div class="landing-preview-legend">${previewLegend(site)}</div></div><small>Preview leve. O mapa final ainda passa pelo gerador completo.</small></div><div class="landing-card full"><h3>Comparação rápida</h3><div class="landing-compare"><div class="landing-compare-row" style="cursor:default"><b>Local</b><small>Score</small><small>Rec.</small><small>Risco</small></div>${compare(profile,site.id)}</div></div></div>`;
     drawPreview(site);
-    panel.querySelectorAll('[data-landing-site-compare]').forEach(b=>b.addEventListener('click',()=>selectLandingSite(b.dataset.landingSiteCompare)));
+    panel.querySelectorAll('[data-landing-site-compare]').forEach(b=>b.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); selectLandingSite(b.dataset.landingSiteCompare); }));
   }
 
   function metricRows(profile){ const m=profile?.metrics||{}; return [['Densidade geológica',m.geology],['Atividade biológica',m.biology],['Instabilidade climática',m.climate,true],['Ruído atmosférico',m.noise,true],['Integridade orbital',m.landing]].map(([l,v,a])=>{const n=clamp(Math.round(v||0),0,100); return `<div class="scan-data-row"><span>${esc(l)}</span><div class="scan-segments ${a?'amber':''}">${Array.from({length:10},(_,i)=>`<i class="${i<Math.round(n/10)?'on':''}"></i>`).join('')}</div><b>${n}%</b></div>`;}).join('');}

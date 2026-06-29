@@ -72,6 +72,26 @@
     return clamp(value, 0.72, 1.9);
   }
 
+  function compactLandingSite(site) {
+    if (!site) return null;
+    return {
+      id: site.id,
+      name: site.name,
+      archetype: site.archetype,
+      globe: clone(site.globe || {}),
+      labels: clone(site.labels || {}),
+      difficulty: clone(site.difficulty || {}),
+      biomes: clone(site.biomes || {}),
+      resources: clone(site.resources || {}),
+      risks: clone(site.risks || {}),
+      positives: clone(site.positives || []),
+      negatives: clone(site.negatives || []),
+      signatures: clone(site.signatures || []),
+      preview: clone(site.preview || {}),
+      worldgenModifiers: clone(site.worldgenModifiers || {})
+    };
+  }
+
   function currentSiteId() {
     return state?.worldMap?.currentSiteId
       || state?.config?.selectedLandingSiteId
@@ -218,13 +238,16 @@
     if (!state?.worldMap) ensureWorldMap();
     const siteId = currentSiteId();
     if (!siteId) return null;
+    const objects = clone(state.objects || state.world?.objects || []);
+    const world = clone(state.world || {});
+    world.objects = objects;
     return {
       id: siteId,
       siteId,
       generated: true,
-      world: clone(state.world),
+      world,
       terrain: clone(state.terrain || state.world?.terrain),
-      objects: clone(state.objects || []),
+      objects,
       mobs: clone(state.mobs || []),
       wolves: clone(state.wolves || []),
       visitors: clone(state.visitors || []),
@@ -403,11 +426,28 @@
     selectedColonistId = state.colonists?.[0]?.id || selectedColonistId;
   }
 
-  function loadSector(siteId) {
+  function syncConfigToSite(site) {
+    if (!site) return;
+    const selected = compactLandingSite(site);
+    state.config = state.config || {};
+    state.config.selectedLandingSiteId = site.id;
+    state.config.landingSiteId = site.id;
+    state.config.selectedLandingSite = selected;
+    if (state.config.planetScan) {
+      state.config.planetScan.selectedLandingSiteId = site.id;
+      state.config.planetScan.selectedLandingSite = selected;
+    }
+    if (state.world) {
+      state.world.landingSite = selected;
+      state.world.planetScan = state.config.planetScan || state.world.planetScan || null;
+    }
+  }
+
+  function loadSector(siteId, options = {}) {
     const worldMap = ensureWorldMap();
     const site = siteById(siteId);
     if (!worldMap || !site) return false;
-    saveCurrentSector();
+    if (!options.skipSaveCurrent) saveCurrentSector();
     let sector = worldMap.sectors[siteId];
     if (!sector) {
       sector = generateSectorForLandingSite(site);
@@ -417,11 +457,13 @@
     state.world = sector.world;
     state.terrain = sector.terrain || sector.world?.terrain;
     state.objects = sector.objects || sector.world?.objects || [];
+    state.world.objects = state.objects;
     state.mobs = sector.mobs || [];
     state.wolves = sector.wolves || [];
     state.visitors = sector.visitors || [];
     state.world.pointsOfInterest = sector.pointsOfInterest || state.world.pointsOfInterest || [];
     state.world.exploration = sector.exploration || state.world.exploration;
+    syncConfigToSite(site);
     state.worldMap.currentSiteId = siteId;
     state.worldMap.selectedWorldMapSiteId = siteId;
 
@@ -466,7 +508,7 @@
     advanceTime(totalHours);
     applyTravelConsequences(plan, event);
 
-    const loaded = loadSector(toSiteId);
+    const loaded = loadSector(toSiteId, { skipSaveCurrent: true });
     state.activeTravel = null;
     const entry = {
       day: state.day,

@@ -129,6 +129,7 @@ function migrateLoadedState() {
   const existingWorld = state.world || {};
   const cols = existingWorld.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
   const rows = existingWorld.rows || state.terrain?.length || MAP_SIZES.standard.rows;
+  const legacyNaturalRoofLayer = Array.isArray(existingWorld.roofLayer) && typeof existingWorld.roofLayer?.[0]?.[0] === 'boolean';
   state.world = {
     seed: state.config.seed,
     mapSize: state.config.mapSize,
@@ -141,9 +142,16 @@ function migrateLoadedState() {
     width: cols * TILE,
     height: rows * TILE,
     terrain: existingWorld.terrain || state.terrain,
+    objects: existingWorld.objects || state.objects || [],
     spawn: existingWorld.spawn || state.worldMeta?.spawnPoints?.[0] || { x: Math.floor(cols / 2), y: Math.floor(rows / 2) },
     spawnPoints: existingWorld.spawnPoints || state.worldMeta?.spawnPoints || [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }],
     pointsOfInterest: existingWorld.pointsOfInterest || [],
+    planetScan: existingWorld.planetScan || state.config?.planetScan || null,
+    landingSite: existingWorld.landingSite || state.config?.selectedLandingSite || null,
+    worldgenSource: existingWorld.worldgenSource || null,
+    landingRiskProfile: existingWorld.landingRiskProfile || null,
+    landingBiomeIntent: existingWorld.landingBiomeIntent || null,
+    landingNarrative: existingWorld.landingNarrative || null,
     weatherPattern: existingWorld.weatherPattern || state.worldMeta?.weatherPattern || [],
     exploration: existingWorld.exploration,
     visibleTiles: existingWorld.visibleTiles || [],
@@ -151,7 +159,8 @@ function migrateLoadedState() {
     waterDepth: existingWorld.waterDepth || null,
     livingWorld: existingWorld.livingWorld || null,
     geologyLayer: existingWorld.geologyLayer || null,
-    roofLayer: existingWorld.roofLayer || null,
+    naturalRoofLayer: existingWorld.naturalRoofLayer || (legacyNaturalRoofLayer ? existingWorld.roofLayer : null),
+    roofLayer: legacyNaturalRoofLayer ? null : existingWorld.roofLayer || null,
     builtRoofLayer: existingWorld.builtRoofLayer || null,
     pendingRoofJobs: existingWorld.pendingRoofJobs || [],
     lightMap: existingWorld.lightMap || null,
@@ -166,7 +175,8 @@ function migrateLoadedState() {
   if (typeof ensureGeologyState === 'function') ensureGeologyState(state.world);
 
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
-  state.objects = ensureLoadedEntityIds(state.objects || [], 'obj');
+  state.objects = ensureLoadedEntityIds((Array.isArray(state.objects) && state.objects.length ? state.objects : state.world.objects) || [], 'obj');
+  state.world.objects = state.objects;
   state.colonists = ensureLoadedEntityIds(state.colonists || [], 'colonist');
   state.mobs = ensureLoadedEntityIds(state.mobs || [], 'mob');
   state.wolves = ensureLoadedEntityIds(state.wolves || [], 'wolf');

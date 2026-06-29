@@ -344,6 +344,11 @@
     const world = state.world;
     const rows = worldRows(), cols = worldCols();
     const now = performance.now();
+    const legacyNaturalRoofLayer = Array.isArray(world.roofLayer) && world.roofLayer.some(row => row?.some(cell => typeof cell === 'boolean'));
+    if (legacyNaturalRoofLayer) {
+      if (!Array.isArray(world.naturalRoofLayer)) world.naturalRoofLayer = world.roofLayer.map(row => row.map(Boolean));
+      world.roofLayer = null;
+    }
     const alreadyReady = Array.isArray(world.roofLayer) && Array.isArray(world.builtRoofLayer);
     if (alreadyReady && now - roofEnsureTick < 500) return world;
     roofEnsureTick = now;

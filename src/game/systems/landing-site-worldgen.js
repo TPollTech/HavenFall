@@ -239,27 +239,19 @@
   }
 
   function installWorldgenPatch() {
-    if (typeof generateWorldFromSeed !== 'function' || window.HavenfallContext?.landingSiteWorldgenPatched) return;
-    const nativeGenerateWorldFromSeed = generateWorldFromSeed;
-    generateWorldFromSeed = function generateWorldFromLandingSite(config = {}) {
-      const ensured = ensureConfig(config);
-      const site = selectedSite(ensured);
-      const world = nativeGenerateWorldFromSeed(ensured);
-      return site ? applyLandingSite(world, ensured, site) : world;
-    };
     window.HavenfallContext.landingSiteWorldgenPatched = true;
   }
 
   function installStartPatch() {
-    if (typeof startNewGame !== 'function' || window.HavenfallContext?.landingSiteStartPatched) return;
-    const nativeStartNewGame = startNewGame;
-    startNewGame = function startNewGameWithLandingSite(config, selectedColonists) {
-      const ensured = ensureConfig(config);
-      return nativeStartNewGame(ensured, selectedColonists);
-    };
     window.HavenfallContext.landingSiteStartPatched = true;
   }
 
   installWorldgenPatch();
   installStartPatch();
+
+  window.HavenfallLandingSiteWorldgen = Object.freeze({
+    ensureConfig,
+    selectedSite,
+    applyLandingSite
+  });
 })();

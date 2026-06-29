@@ -336,59 +336,55 @@
     return world;
   }
 
+  function applyToWorld(world, config = {}) {
+    const site = activeSite(config, world);
+    return site ? applyPolish(world, config, site) : world;
+  }
+
+  function applyInitialMobs(mobs, world, config = {}, colonists = []) {
+    mobs = mobs || [];
+    const site = activeSite(config, world);
+    if (!site || mobs._landingPolished) return mobs;
+
+    const faunaRisk = Number(site.risks?.fauna || 0);
+    const threatMultiplier = Number(site.worldgenModifiers?.initialThreatMultiplier || 1);
+    const safeRadius = threatMultiplier < 0.85 ? 24 : 16;
+    const passiveBonus = faunaRisk > 55 ? 3 : faunaRisk > 36 ? 2 : 0;
+    const seed = buildLandingSeed(world, site);
+
+    for (let i = 0; i < passiveBonus && mobs.length < 38; i++) {
+      const type = ['rabbit', 'deer', 'goat', 'chicken'][hash(`${seed}|passive|${i}`) % 4];
+      const tile = findFaunaTile(world, seed, type, i, safeRadius);
+      if (!tile) continue;
+      const stats = window.mobStatModifiers?.[type] || { hp: 40 };
+      mobs.push({
+        id: `landing_mob_${type}_${i}_${hash(`${seed}|${type}|${tile.x}|${tile.y}`).toString(36)}`,
+        type,
+        x: tile.x,
+        y: tile.y,
+        px: tile.x * TILE + TILE / 2,
+        py: tile.y * TILE + TILE / 2,
+        dir: noise(seed, tile.x, tile.y, 'dir') > 0.5 ? 'right' : 'left',
+        anim: 0,
+        attackAnimTimer: 0,
+        hitAnimTimer: 0,
+        hp: stats.hp,
+        maxHp: stats.hp,
+        state: 'wander',
+        target: null,
+        landingSiteId: site.id
+      });
+    }
+
+    mobs._landingPolished = true;
+    return mobs;
+  }
+
   function installGenerateWorldPatch() {
-    if (typeof generateWorldFromSeed !== 'function' || window.HavenfallContext?.landingSiteWorldgenPolishPatched) return;
-    const nativeGenerateWorldFromSeed = generateWorldFromSeed;
-    generateWorldFromSeed = function generateWorldFromSeedWithLandingPolish(config = {}) {
-      const ensured = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(config) : config;
-      const world = nativeGenerateWorldFromSeed(ensured);
-      const site = activeSite(ensured, world);
-      return site ? applyPolish(world, ensured, site) : world;
-    };
     window.HavenfallContext.landingSiteWorldgenPolishPatched = true;
   }
 
   function installInitialMobsPatch() {
-    if (typeof generateInitialMobs !== 'function' || window.HavenfallContext?.landingSiteMobsPolishPatched) return;
-    const nativeGenerateInitialMobs = generateInitialMobs;
-    generateInitialMobs = function generateInitialMobsWithLandingBias(world, config = {}, colonists = []) {
-      const mobs = nativeGenerateInitialMobs(world, config, colonists) || [];
-      const site = activeSite(config, world);
-      if (!site || mobs._landingPolished) return mobs;
-
-      const faunaRisk = Number(site.risks?.fauna || 0);
-      const threatMultiplier = Number(site.worldgenModifiers?.initialThreatMultiplier || 1);
-      const safeRadius = threatMultiplier < 0.85 ? 24 : 16;
-      const passiveBonus = faunaRisk > 55 ? 3 : faunaRisk > 36 ? 2 : 0;
-      const seed = buildLandingSeed(world, site);
-
-      for (let i = 0; i < passiveBonus && mobs.length < 38; i++) {
-        const type = ['rabbit', 'deer', 'goat', 'chicken'][hash(`${seed}|passive|${i}`) % 4];
-        const tile = findFaunaTile(world, seed, type, i, safeRadius);
-        if (!tile) continue;
-        const stats = window.mobStatModifiers?.[type] || { hp: 40 };
-        mobs.push({
-          id: `landing_mob_${type}_${i}_${hash(`${seed}|${type}|${tile.x}|${tile.y}`).toString(36)}`,
-          type,
-          x: tile.x,
-          y: tile.y,
-          px: tile.x * TILE + TILE / 2,
-          py: tile.y * TILE + TILE / 2,
-          dir: noise(seed, tile.x, tile.y, 'dir') > 0.5 ? 'right' : 'left',
-          anim: 0,
-          attackAnimTimer: 0,
-          hitAnimTimer: 0,
-          hp: stats.hp,
-          maxHp: stats.hp,
-          state: 'wander',
-          target: null,
-          landingSiteId: site.id
-        });
-      }
-
-      mobs._landingPolished = true;
-      return mobs;
-    };
     window.HavenfallContext.landingSiteMobsPolishPatched = true;
   }
 
@@ -411,6 +407,8 @@
 
   window.HavenfallLandingSiteWorldgenPolish = Object.freeze({
     version: 'landing-site-polish-v2',
-    applyPolish
+    applyPolish,
+    applyToWorld,
+    applyInitialMobs
   });
 })();

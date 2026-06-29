@@ -1,6 +1,7 @@
 'use strict';
 
 function startNewGame(config, selectedColonists) {
+  if (typeof ensurePlanetScanOnConfig === 'function') config = ensurePlanetScanOnConfig(config);
   state = createInitialState(config, selectedColonists);
   ensureResearchState();
   selectedColonistId = state.colonists[0]?.id || 1;
@@ -74,6 +75,7 @@ function isProceduralRuntimeAsset(name) {
 
 function generateWorldFromSeed(config) {
   config = { ...defaultNewGameConfig, ...config };
+  if (typeof ensurePlanetScanOnConfig === 'function') config = ensurePlanetScanOnConfig(config);
   const size = getMapSizeDef(config.mapSize);
   const cols = size.cols;
   const rows = size.rows;
@@ -98,7 +100,7 @@ function generateWorldFromSeed(config) {
   const exploration = makeExplorationMatrix(cols, rows);
   const spawnPoints = makeSpawnPoints(spawn, cols, rows);
 
-  const world = {
+  let world = {
     seed: config.seed,
     mapSize: config.mapSize,
     difficulty: config.difficulty,
@@ -121,7 +123,12 @@ function generateWorldFromSeed(config) {
     generationVersion: '1.8.3-scan'
   };
 
-  return window.BiomeEngine?.applyToWorld ? window.BiomeEngine.applyToWorld(world, config) : world;
+  if (window.BiomeEngine?.applyToWorld) world = window.BiomeEngine.applyToWorld(world, config);
+  const landing = window.HavenfallLandingSiteWorldgen;
+  const site = landing?.selectedSite?.(config);
+  if (site) world = landing.applyLandingSite(world, config, site);
+  if (window.HavenfallLandingSiteWorldgenPolish?.applyToWorld) world = window.HavenfallLandingSiteWorldgenPolish.applyToWorld(world, config);
+  return world;
 }
 
 function planetScanProfile(config) {
@@ -502,12 +509,14 @@ function isWorldCoordInside(x, y, cols, rows) {
 function createInitialState(config = defaultNewGameConfig, selectedColonists = null) {
   config = { ...defaultNewGameConfig, ...config };
   if (!config.seed) config.seed = generateRandomSeed();
+  if (typeof ensurePlanetScanOnConfig === 'function') config = ensurePlanetScanOnConfig(config);
   const world = generateWorldFromSeed(config);
   const spawn = world.spawn;
   const candidates = selectedColonists?.length ? selectedColonists : Array.from({ length: Number(config.colonistCount || 3) }, (_, i) => createColonistCandidate(i, config));
   const colonists = candidates.map((candidate, i) => candidateToColonist(candidate, i + 1, spawn.x + i, spawn.y + 2 + (i % 2)));
   const resources = startingResources(config.resourcesPreset, config.difficulty);
-  const mobs = typeof generateInitialMobs === 'function' ? generateInitialMobs(world, config, colonists) : [];
+  let mobs = typeof generateInitialMobs === 'function' ? generateInitialMobs(world, config, colonists) : [];
+  if (window.HavenfallLandingSiteWorldgenPolish?.applyInitialMobs) mobs = window.HavenfallLandingSiteWorldgenPolish.applyInitialMobs(mobs, world, config, colonists);
   return {
     config,
     world,

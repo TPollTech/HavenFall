@@ -221,7 +221,7 @@
     state.objects = filtered;
   }
 
-  function purgeLooseResourcesOnGeology(layer = state?.world?.geologyLayer, roofLayer = state?.world?.roofLayer) {
+  function purgeLooseResourcesOnGeology(layer = state?.world?.geologyLayer, roofLayer = state?.world?.naturalRoofLayer) {
     if (!state?.world) return 0;
     const source = Array.isArray(state.objects) ? state.objects : state.world.objects || [];
     const filtered = source.filter(obj => !objectInvalidForLayer(obj, layer, roofLayer));
@@ -235,25 +235,25 @@
     if (!world?.terrain) return false;
     const firstApply = world.geologyMassVersion !== VERSION;
     if (!firstApply) {
-      purgeLooseResourcesOnGeology(world.geologyLayer, world.roofLayer);
+      purgeLooseResourcesOnGeology(world.geologyLayer, world.naturalRoofLayer);
       return false;
     }
     const layer = makeDenseLayer(world);
     world.geologyLayer = layer;
-    world.roofLayer = layer.map(row => row.map(rock => !!rock?.solid));
+    world.naturalRoofLayer = layer.map(row => row.map(rock => !!rock?.solid));
     for (let y = 0; y < layer.length; y++) {
       for (let x = 0; x < (layer[y]?.length || 0); x++) {
         if (layer[y][x]?.solid && world.terrain[y]?.[x] !== 'water') world.terrain[y][x] = 'stone';
       }
     }
     world.geologyMassVersion = VERSION;
-    purgeLooseResourcesOnGeology(layer, world.roofLayer);
+    purgeLooseResourcesOnGeology(layer, world.naturalRoofLayer);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     return true;
   }
 
   function cleanupVegetationOnGeology() {
-    purgeLooseResourcesOnGeology(state?.world?.geologyLayer, state?.world?.roofLayer);
+    purgeLooseResourcesOnGeology(state?.world?.geologyLayer, state?.world?.naturalRoofLayer);
   }
 
   function updateGeologyMassPatch() {

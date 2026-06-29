@@ -57,6 +57,10 @@ function removeColonistStatus(c, status) {
 
 function hasRoofAt(x, y) {
   if (!state || !isInside(x, y)) return false;
+  if (state.world?.builtRoofLayer?.[y]?.[x]) return true;
+  if (typeof hasNaturalRoofAt === 'function' && hasNaturalRoofAt(x, y)) return true;
+  const builtCell = state.world?.roofLayer?.[y]?.[x];
+  if (builtCell && typeof builtCell === 'object' && builtCell.built) return true;
   if (roofSet?.has?.(tileKey(x, y))) return true;
 
   const obj = getObjectAt(x, y);
