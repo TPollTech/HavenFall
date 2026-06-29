@@ -20,8 +20,6 @@
     return state.world;
   }
 
-  function key(x, y) { return `${x},${y}`; }
-
   function isBoundaryAt(x, y) {
     const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null;
     if (!obj) return false;
@@ -126,13 +124,16 @@
     return best ? { job: best, route: bestRoute } : null;
   }
 
+  function workHour(c) {
+    const manager = window.ScheduleManager;
+    if (!manager?.getScheduleState) return true;
+    return manager.getScheduleState(c, state?.hour || 0) === manager.SCHEDULE?.WORK;
+  }
+
   function assignRoofJob(c) {
     if (!state || !c || c.task || c.health <= 15 || c.energy <= 14) return false;
     if (typeof taskPriorityValue === 'function' && taskPriorityValue(c, 'build') <= 0) return false;
-    if (typeof ScheduleManager?.getScheduleState === 'function') {
-      const mode = ScheduleManager.getScheduleState(c, state.hour);
-      if (mode !== ScheduleManager.SCHEDULE?.WORK) return false;
-    }
+    if (!workHour(c)) return false;
     const target = nearestRoofJob(c);
     if (!target) return false;
     c.task = { type: 'buildRoof', roofX: target.job.x, roofY: target.job.y, x: target.route.adj.x, y: target.route.adj.y };
