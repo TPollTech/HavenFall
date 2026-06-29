@@ -41,8 +41,9 @@
   }
 
   function readConfig() {
+    const fallback = typeof defaultNewGameConfig !== 'undefined' ? defaultNewGameConfig : {};
     const base = (typeof newGameConfig !== 'undefined' && newGameConfig)
-      || (typeof readNewGameConfigSafe === 'function' ? readNewGameConfigSafe() : defaultNewGameConfig);
+      || (typeof readNewGameConfigSafe === 'function' ? readNewGameConfigSafe() : fallback);
     const cfg = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(base) : base;
     if (typeof newGameConfig !== 'undefined') newGameConfig = cfg;
     return cfg;
@@ -61,7 +62,8 @@
   }
 
   function skillLabel(key) {
-    return COLONIST_SKILL_LABELS?.[key] || key || 'aptidão';
+    const labels = typeof COLONIST_SKILL_LABELS !== 'undefined' ? COLONIST_SKILL_LABELS : null;
+    return labels?.[key] || key || 'aptidão';
   }
 
   function colonistSummary(c, index) {
@@ -85,7 +87,7 @@
     const root = document.getElementById('expeditionBriefingScreen');
     if (!root) return;
     const cfg = readConfig();
-    const candidates = Array.isArray(colonistCandidates) ? colonistCandidates : [];
+    const candidates = typeof colonistCandidates !== 'undefined' && Array.isArray(colonistCandidates) ? colonistCandidates : [];
     const profile = cfg.planetScan || {};
     const risk = typeof setupRiskLabel === 'function' ? setupRiskLabel(cfg) : { label: 'Moderado', note: 'Expedição equilibrada.' };
     const landing = cfg.selectedLandingSite;
@@ -130,14 +132,14 @@
   function activateBriefingScreen() {
     previousScreen = appScreen;
     appScreen = BRIEFING_SCREEN;
-    if (dom?.screens) {
+    if (typeof dom !== 'undefined' && dom?.screens) {
       dom.screens.briefing = document.getElementById('expeditionBriefingScreen');
       Object.entries(dom.screens).forEach(([key, el]) => {
         if (el) el.classList.toggle('active', key === 'briefing');
       });
     }
-    if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('show');
-    if (state) state.paused = true;
+    if (typeof dom !== 'undefined' && dom.pauseOverlay) dom.pauseOverlay.classList.remove('show');
+    if (typeof state !== 'undefined' && state) state.paused = true;
     started = false;
     renderExpeditionBriefing();
   }
