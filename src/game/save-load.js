@@ -1,6 +1,6 @@
 'use strict';
 
-const SAVE_VERSION = '1.9D-desktop';
+const SAVE_VERSION = '1.9E-runtime-stable';
 const SAVE_UPDATED_AT_KEY = `${SAVE_KEY}:updatedAt`;
 const DESKTOP_SAVE_SLOT = 'autosave';
 
@@ -8,22 +8,35 @@ function desktopApi() {
   return window.HavenfallDesktop?.isElectron ? window.HavenfallDesktop : null;
 }
 
+function localGet(key) {
+  try { return localStorage.getItem(key); } catch (_) { return null; }
+}
+
+function localSet(key, value) {
+  try { localStorage.setItem(key, value); return true; } catch (_) { return false; }
+}
+
+function localRemove(key) {
+  try { localStorage.removeItem(key); return true; } catch (_) { return false; }
+}
+
 function serialize() {
+  const runtime = desktopApi() ? 'electron' : 'web';
   return JSON.stringify({
     state,
     selectedColonistId,
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
-    runtime: desktopApi() ? 'electron' : 'web'
+    runtime
   });
 }
 
 function markLocalSaveUpdated(timestamp = Date.now()) {
-  try { localStorage.setItem(SAVE_UPDATED_AT_KEY, String(timestamp)); } catch (_) {}
+  localSet(SAVE_UPDATED_AT_KEY, String(timestamp));
 }
 
 function localSaveUpdatedAt() {
-  const raw = Number(localStorage.getItem(SAVE_UPDATED_AT_KEY) || 0);
+  const raw = Number(localGet(SAVE_UPDATED_AT_KEY) || 0);
   return Number.isFinite(raw) ? raw : 0;
 }
 
@@ -37,25 +50,65 @@ function readDesktopSavePayload() {
   return {
     text: read.text,
     updatedAtMs: Number(read.updatedAtMs || info.updatedAtMs || 0),
-    path: read.path
+    path: read.path,
+    bytes: Number(read.bytes || info.bytes || 0)
+  };
+}
+
+function readLocalSavePayload() {
+  const text = localGet(SAVE_KEY);
+  if (!text) return null;
+  return {
+    text,
+    updatedAtMs: localSaveUpdatedAt(),
+    path: null,
+    bytes: text.length
   };
 }
 
 function chooseSavedPayload() {
-  const local = localStorage.getItem(SAVE_KEY);
-  const localUpdated = localSaveUpdatedAt();
+  const local = readLocalSavePayload();
   const desktop = readDesktopSavePayload();
 
-  if (desktop?.text && (!local || desktop.updatedAtMs >= localUpdated)) {
-    try {
-      localStorage.setItem(SAVE_KEY, desktop.text);
-      markLocalSaveUpdated(desktop.updatedAtMs || Date.now());
-    } catch (_) {}
-    return { text: desktop.text, source: 'arquivo desktop', path: desktop.path };
+  if (desktop?.text && (!local?.text || desktop.updatedAtMs >= local.updatedAtMs)) {
+    localSet(SAVE_KEY, desktop.text);
+    markLocalSaveUpdated(desktop.updatedAtMs || Date.now());
+    return { text: desktop.text, source: 'arquivo desktop', path: desktop.path, bytes: desktop.bytes };
   }
 
-  if (local) return { text: local, source: 'navegador', path: null };
+  if (local?.text) return { text: local.text, source: 'navegador', path: null, bytes: local.bytes };
   return null;
+}
+
+function hasLocalSave() {
+  return !!localGet(SAVE_KEY);
+}
+
+function hasDesktopSave() {
+  const api = desktopApi();
+  if (!api?.getSaveInfo) return false;
+  const info = api.getSaveInfo(DESKTOP_SAVE_SLOT);
+  return !!info?.exists;
+}
+
+function hasAnySave() {
+  return hasDesktopSave() || hasLocalSave();
+}
+
+function getSaveSummary() {
+  const desktop = desktopApi()?.getSaveInfo?.(DESKTOP_SAVE_SLOT) || null;
+  const local = readLocalSavePayload();
+  return {
+    hasAnySave: hasAnySave(),
+    desktopExists: !!desktop?.exists,
+    desktopBytes: Number(desktop?.bytes || 0),
+    desktopUpdatedAt: desktop?.updatedAt || null,
+    desktopPath: desktop?.path || null,
+    localExists: !!local?.text,
+    localBytes: Number(local?.bytes || 0),
+    localUpdatedAtMs: Number(local?.updatedAtMs || 0),
+    runtime: desktopApi() ? 'electron' : 'web'
+  };
 }
 
 function writeDesktopSavePayload(payload, manual = false) {
@@ -67,28 +120,58 @@ function writeDesktopSavePayload(payload, manual = false) {
     colonyName: state?.config?.colonyName || null,
     seed: state?.config?.seed || null,
     day: state?.day || null,
-    hour: state?.hour || null
+    hour: state?.hour || null,
+    runtimeMode: state?.runtimeMode || null
   });
   if (manual && result?.ok && api.backupSaveSlot) api.backupSaveSlot(DESKTOP_SAVE_SLOT, 'manual');
   if (!result?.ok && api.appendLog) api.appendLog('Falha ao salvar jogo no desktop', result);
   return result || { ok: false };
 }
 
+function validateSaveData(data) {
+  const errors = [];
+  const warnings = [];
+  if (!data || typeof data !== 'object') errors.push('Payload do save inválido.');
+  if (!data?.state || typeof data.state !== 'object') errors.push('Save sem state.');
+  if (data?.state) {
+    if (!data.state.world) errors.push('Save sem mundo.');
+    if (!Array.isArray(data.state.terrain) && !Array.isArray(data.state.world?.terrain)) errors.push('Save sem terrain.');
+    if (!Array.isArray(data.state.objects) && !Array.isArray(data.state.world?.objects)) errors.push('Save sem objetos.');
+    if (!Array.isArray(data.state.colonists)) warnings.push('Save sem lista válida de colonos.');
+  }
+  return { ok: errors.length === 0, errors, warnings };
+}
+
 function saveGame(manual = false) {
-  if (!state) return false;
+  if (!state || state.isPreview || state.runtimeMode === 'menu-preview') return false;
   if (typeof ensureGeologyState === 'function') ensureGeologyState();
+  if (window.HavenfallRuntime?.normalizeState) window.HavenfallRuntime.normalizeState(state);
   const payload = serialize();
   const updatedAt = Date.now();
-  localStorage.setItem(SAVE_KEY, payload);
+  localSet(SAVE_KEY, payload);
   markLocalSaveUpdated(updatedAt);
   const desktopResult = writeDesktopSavePayload(payload, manual);
   if (manual) {
     if (desktopResult?.ok) log('Jogo salvo no desktop e backup manual criado.');
     else log('Jogo salvo no navegador. O save em arquivo desktop não está disponível.');
   }
-  refreshMenuSaveInfo();
-  refreshLoadScreen();
+  refreshMenuSaveInfo?.();
+  refreshLoadScreen?.();
   return true;
+}
+
+function deleteGameSave() {
+  const desktopResult = desktopApi()?.deleteSaveSlot?.(DESKTOP_SAVE_SLOT) || { ok: true, skipped: true };
+  localRemove(SAVE_KEY);
+  localRemove(SAVE_UPDATED_AT_KEY);
+  activeSession = false;
+  if (state) {
+    state.runtimeMode = 'menu-preview';
+    state.isPreview = true;
+  }
+  refreshMenuSaveInfo?.();
+  refreshLoadScreen?.();
+  return { ok: desktopResult?.ok !== false, desktop: desktopResult };
 }
 
 function fallbackLoreForPoi(type = 'ruin', index = 0, seed = 'save') {
@@ -212,6 +295,11 @@ function migrateLoadedState() {
   }
 
   for (const c of state.colonists || []) { ensureColonistMeta(c); ensureEquipment(c); }
+  if (window.HavenfallRuntime?.markGameplayState) window.HavenfallRuntime.markGameplayState(state);
+  else {
+    state.isPreview = false;
+    state.runtimeMode = 'gameplay';
+  }
   updateExploration(true);
 }
 
@@ -223,10 +311,17 @@ function loadGame() {
   }
   try {
     const data = JSON.parse(payload.text);
+    const validation = validateSaveData(data);
+    if (!validation.ok) {
+      desktopApi()?.appendLog?.('Save recusado pela validação', { errors: validation.errors, source: payload.source, path: payload.path });
+      if (state) log(`Save inválido: ${validation.errors.join(' ')}`);
+      return false;
+    }
     state = data.state || {};
     migrateLoadedState();
     selectedColonistId = data.selectedColonistId || state.colonists?.[0]?.id || 1;
     currentBuild = null;
+    if (window.HavenfallRuntime?.bumpPathVersion) window.HavenfallRuntime.bumpPathVersion(state, 'load-game');
     centerCameraOnSelectedColonist();
     log(`Save carregado de ${payload.source}.`);
     updateUI(true);
@@ -238,3 +333,33 @@ function loadGame() {
     return false;
   }
 }
+
+(function installSaveAwareSessionFlow() {
+  if (typeof continueFromMenu === 'function' && !window.HavenfallContext?.saveAwareContinueInstalled) {
+    continueFromMenu = function continueFromMenuSaveAware() {
+      if (activeSession && state && state.isPreview !== true) {
+        setScreen(SCREEN.PLAYING);
+        return;
+      }
+      if (!hasAnySave()) {
+        setScreen(SCREEN.LOAD_GAME);
+        return;
+      }
+      loadAndPlay();
+    };
+    window.HavenfallContext.saveAwareContinueInstalled = true;
+  }
+
+  window.HavenfallSaveBackend = Object.freeze({
+    slot: DESKTOP_SAVE_SLOT,
+    hasLocalSave,
+    hasDesktopSave,
+    hasAnySave,
+    getSaveSummary,
+    chooseSavedPayload,
+    saveGame,
+    loadGame,
+    deleteGameSave,
+    validateSaveData
+  });
+})();
