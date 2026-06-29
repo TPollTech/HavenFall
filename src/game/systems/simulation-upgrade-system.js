@@ -21,6 +21,9 @@
   let drawColonistPatched = false;
   let mobPatchInstalled = false;
   let lastFlickerUpdate = 0;
+  let roofPulse = 0;
+  let lightingPulse = 999;
+  let roofEnsureTick = 0;
 
   function num(v, fallback = 0) { v = Number(v); return Number.isFinite(v) ? v : fallback; }
   function clamp01(v) { return Math.max(0, Math.min(1, num(v))); }
@@ -115,14 +118,15 @@
 
   function findAvailableBed(c) {
     if (!state?.objects?.length) return null;
-    const beds = state.objects
-      .filter(bed => isBedAvailableFor(bed, c))
-      .sort((a, b) => {
-        const ownerBiasA = a.ownerId && String(a.ownerId) === String(c.id) ? -100 : 0;
-        const ownerBiasB = b.ownerId && String(b.ownerId) === String(c.id) ? -100 : 0;
-        return ownerBiasA + Math.hypot(c.x - a.x, c.y - a.y) - (ownerBiasB + Math.hypot(c.x - b.x, c.y - b.y));
-      });
-    return beds[0] || null;
+    let best = null;
+    let bestScore = Infinity;
+    for (const bed of state.objects) {
+      if (!isBedAvailableFor(bed, c)) continue;
+      const ownerBias = bed.ownerId && String(bed.ownerId) === String(c.id) ? -100 : 0;
+      const score = ownerBias + Math.hypot(c.x - bed.x, c.y - bed.y);
+      if (score < bestScore) { bestScore = score; best = bed; }
+    }
+    return best;
   }
 
   function shouldSleep(c) {
@@ -243,282 +247,111 @@
 
   function updateAutoSleepSpeed() {
     if (!state || appScreen !== SCREEN.PLAYING) return;
-    state.timeControl = state.timeControl || { manualSpeed: Number(state.speed || 1), autoSleepActive: false };
-    const manual = state.timeControl.manualSpeed || 1;
-    const sleeping = allColonistsSleeping();
-    const can = sleeping && !hasImmediateThreat() && !hasCriticalHunger() && state.weather !== 'tempestade';
-    const expected = Math.max(1, manual * 6);
-
-    if (can) {
-      if (!state.timeControl.autoSleepActive) {
-        state.timeControl.manualSpeed = Math.max(1, Number(state.speed || 1));
-        state.timeControl.autoSleepActive = true;
-        safeLog('Todos estão dormindo. O tempo foi acelerado automaticamente.', 'auto-sleep-start', 0.1);
-      }
-      state.speed = Math.max(1, (state.timeControl.manualSpeed || 1) * 6);
-      return;
+    const canFastForward = allColonistsSleeping() && !hasImmediateThreat() && !hasCriticalHunger();
+    if (canFastForward && state.speed < 3) {
+      state.speed = 3;
+      safeLog('Todos dormem. O tempo acelera automaticamente até alguém acordar.', 'autospeed-sleep', 8);
+    } else if (!canFastForward && state.ai?.lastAutoSpeedNotice === 'sleep' && state.speed > 1) {
+      state.speed = 1;
     }
-
-    if (state.timeControl.autoSleepActive) {
-      state.speed = state.timeControl.manualSpeed || 1;
-      state.timeControl.autoSleepActive = false;
-      safeLog('Alguém acordou ou surgiu risco. Velocidade normal restaurada.', 'auto-sleep-stop', 0.1);
-    } else if (Number(state.speed || 1) <= 4) {
-      state.timeControl.manualSpeed = Number(state.speed || 1);
-    }
-  }
-
-  function reserveObjectFor(c, obj, taskType) {
-    if (!c || !obj?.id) return true;
-    if (obj.reservedBy && String(obj.reservedBy) !== String(c.id)) return false;
-    obj.reservedBy = c.id;
-    const ai = ensureColonyBrain();
-    ai.reservations.objects[obj.id] = c.id;
-    c.ai.currentJob = `${taskType}:${obj.id}`;
-    return true;
-  }
-
-  function patchReservations() {
-    if (window.HavenfallContext?.jobReservationsPatched) return;
-    if (typeof assignBuild === 'function') {
-      const native = assignBuild;
-      assignBuild = function assignBuildReserved(c, bp) {
-        ensureColonistBrain(c);
-        if (!reserveObjectFor(c, bp, 'build')) { c.note = 'Obra já reservada'; return false; }
-        const r = native(c, bp);
-        if (!c.task) { if (bp) bp.reservedBy = null; return false; }
-        c.task.reservedObjId = bp.id;
-        return true;
-      };
-    }
-    if (typeof assignGather === 'function') {
-      const native = assignGather;
-      assignGather = function assignGatherReserved(c, obj) {
-        ensureColonistBrain(c);
-        if (!reserveObjectFor(c, obj, 'gather')) { c.note = 'Recurso já reservado'; return false; }
-        const r = native(c, obj);
-        if (!c.task) { if (obj) obj.reservedBy = null; return false; }
-        c.task.reservedObjId = obj.id;
-        return true;
-      };
-    }
-    if (typeof nearestBlueprint === 'function') {
-      const native = nearestBlueprint;
-      nearestBlueprint = function nearestBlueprintReserved(c) {
-        const list = (state?.objects || [])
-          .filter(o => o.type === 'blueprint' && (!o.reservedBy || String(o.reservedBy) === String(c.id)))
-          .filter(o => {
-            const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(o.x, o.y, c.x, c.y) : { x: o.x, y: o.y };
-            if (!adj) return false;
-            if (c.x === adj.x && c.y === adj.y) return true;
-            const path = typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, o) : [];
-            return Array.isArray(path) && path.length > 0;
-          })
-          .sort((a, b) => Math.hypot(c.x - a.x, c.y - a.y) - Math.hypot(c.x - b.x, c.y - b.y));
-        return list[0] || native(c);
-      };
-    }
-    window.HavenfallContext.jobReservationsPatched = true;
+    if (canFastForward) ensureColonyBrain().lastAutoSpeedNotice = 'sleep';
   }
 
   function updateBrainBefore(c, dt) {
     if (!state || !c) return;
-    patchReservations();
     ensureColonistBrain(c);
-    c.needs.sleep = clamp01((c.energy ?? 80) / 100);
-    c.needs.hunger = clamp01((c.hunger ?? 78) / 100);
-    c.ai.state = c.task?.type === 'sleep' ? (c.sleeping ? 'sleeping' : 'moving_to_bed') : c.task?.type || 'idle';
-    if (!c.task) releaseObjectReservations(c, false);
-    const last = c.ai.lastPos || { px: c.px, py: c.py, x: c.x, y: c.y };
-    const movingTask = !!(c.task && (c.path?.length || ['move', 'build', 'gather', 'mine', 'haul', 'sleep'].includes(c.task.type)));
-    const moved = Math.hypot((c.px || 0) - (last.px || 0), (c.py || 0) - (last.py || 0));
-    if (movingTask && moved < 0.5) c.ai.stuckTimer += dt * Number(state.speed || 1); else c.ai.stuckTimer = 0;
+    const tick = dt * Number(state.speed || 1);
+    c.ai.idleTimer = c.task ? 0 : c.ai.idleTimer + tick;
+    c.ai.jobSearchTimer += tick;
+    const moved = Math.hypot((c.px || 0) - (c.ai.lastPos?.px || 0), (c.py || 0) - (c.ai.lastPos?.py || 0));
+    c.ai.stuckTimer = c.task && moved < 0.2 ? c.ai.stuckTimer + tick : 0;
     c.ai.lastPos = { x: c.x, y: c.y, px: c.px, py: c.py };
-    if (c.ai.stuckTimer > 3.2 && c.task) {
-      releaseObjectReservations(c, c.task.type === 'sleep');
-      c.ai.debug.lastIdleReason = 'stuck_repath';
-      c.note = 'Travado — recalculando trabalho';
-      c.task = null;
-      c.path = [];
-      c.work = 0;
-      c.ai.stuckTimer = 0;
-    }
+    c.ai.state = c.task?.type || 'idle';
   }
 
   function sleepAutoTask(c) {
-    if (shouldSleep(c)) return startSleepUpgraded(c);
-    return false;
+    if (!c || c.task) return false;
+    if (!shouldSleep(c)) return false;
+    return startSleepUpgraded(c);
   }
 
   function patchStartSleep() {
-    if (window.HavenfallContext?.sleepPatched) return;
-    if (typeof startSleep === 'function') {
-      startSleep = startSleepUpgraded;
-      window.startSleep = startSleepUpgraded;
-    }
-    window.HavenfallContext.sleepPatched = true;
+    if (window.HavenfallContext?.startSleepUpgraded || typeof startSleep !== 'function') return;
+    startSleep = startSleepUpgraded;
+    window.HavenfallContext.startSleepUpgraded = true;
   }
 
   function patchSleepingDraw() {
     if (drawColonistPatched || typeof drawColonist !== 'function') return;
-    const native = drawColonist;
-    drawColonist = function drawColonistWithSleep(c) {
-      if (c?.task?.type === 'sleep' && (c.sleeping || c.ai?.state === 'sleeping')) {
-        const x = c.px;
-        const y = c.py + 16;
+    const nativeDrawColonist = drawColonist;
+    drawColonist = function drawColonistSimulation(c) {
+      if (c?.sleeping || c?.animation === 'sleep') {
         ctx.save();
-        ctx.fillStyle = c.isUnconscious ? 'rgba(120,60,60,.78)' : 'rgba(121,199,232,.78)';
-        ctx.strokeStyle = '#162033';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(x, y, 19, 8, 0, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#f4efe4';
-        ctx.font = '900 12px system-ui';
+        ctx.fillStyle = 'rgba(8, 12, 18, .55)';
+        ctx.beginPath(); ctx.ellipse(c.px, c.py + 20, 19, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#c7d2fe';
+        ctx.font = '900 18px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('Zzz', x, y - 18);
+        ctx.fillText('Z', c.px + 16, c.py - 24);
         ctx.restore();
-        return;
       }
-      native(c);
+      nativeDrawColonist(c);
     };
-    window.drawColonist = drawColonist;
     drawColonistPatched = true;
   }
 
+  function patchReservations() {
+    if (window.HavenfallContext?.reservationCleanupInstalled) return;
+    window.HavenfallContext.reservationCleanupInstalled = true;
+    window.releaseColonistReservations = releaseObjectReservations;
+  }
+
   function installMobPatch() {
-    if (mobPatchInstalled) return;
-    if (typeof updatePassiveMob === 'function') updatePassiveMob = updatePassiveStable;
-    if (typeof updateSpider === 'function') updateSpider = updateSpiderStable;
+    if (mobPatchInstalled || typeof updatePassiveMob !== 'function') return;
+    const nativeUpdatePassiveMob = updatePassiveMob;
+    updatePassiveMob = function updatePassiveMobSimulation(mob, dt) {
+      if (!mob) return;
+      mob.ai = mob.ai || {};
+      mob.ai.timer = Number(mob.ai.timer || 0) + dt;
+      if (mob.ai.timer > 1.2 && Math.random() < 0.06) {
+        mob.ai.timer = 0;
+        const radius = WANDER_RADIUS[mob.type] || 4;
+        mob.ai.targetX = clamp(Math.round(mob.x + (Math.random() - 0.5) * radius * 2), 0, worldCols() - 1);
+        mob.ai.targetY = clamp(Math.round(mob.y + (Math.random() - 0.5) * radius * 2), 0, worldRows() - 1);
+      }
+      if (mob.ai.targetX !== undefined && !tileBlocked(mob.ai.targetX, mob.ai.targetY, mob)) {
+        const dx = mob.ai.targetX - mob.x;
+        const dy = mob.ai.targetY - mob.y;
+        const d = Math.hypot(dx, dy);
+        const speed = PASSIVE_SPEED[mob.type] || mob.speed || 22;
+        if (d > 0.08) {
+          mob.x += dx / d * speed * dt / TILE;
+          mob.y += dy / d * speed * dt / TILE;
+          mob.px = mob.x * TILE + TILE / 2;
+          mob.py = mob.y * TILE + TILE / 2;
+          mob.dir = dx < 0 ? 'left' : 'right';
+          mob.anim = (mob.anim || 0) + dt;
+          return;
+        }
+      }
+      nativeUpdatePassiveMob(mob, dt);
+    };
     mobPatchInstalled = true;
-  }
-
-  function ensureMobBrain(mob) {
-    mob.aiTimer = Number(mob.aiTimer ?? (0.3 + Math.random() * 0.8));
-    mob.intentLock = Number(mob.intentLock || 0);
-    mob.stuckTimer = Number(mob.stuckTimer || 0);
-    mob.lastMove = mob.lastMove || { px: mob.px, py: mob.py };
-    mob.home = mob.home || { x: Math.round(mob.x), y: Math.round(mob.y) };
-    return mob;
-  }
-
-  function nearestColonistTo(mob, radius) {
-    let best = null, bestD = Infinity;
-    for (const c of state?.colonists || []) {
-      if (c.isUnconscious) continue;
-      const d = Math.hypot((c.px || c.x * TILE) - mob.px, (c.py || c.y * TILE) - mob.py) / TILE;
-      if (d < bestD && d <= radius) { bestD = d; best = c; }
-    }
-    return best;
-  }
-
-  function freeMobTile(x, y, mob) {
-    if (!inWorld(x, y) || tileBlocked(x, y, mob)) return false;
-    return !(state?.mobs || []).some(other => other !== mob && Math.round(other.x) === x && Math.round(other.y) === y);
-  }
-
-  function chooseStepToward(mob, tx, ty, avoid = false) {
-    const cx = Math.round(mob.x), cy = Math.round(mob.y);
-    const candidates = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]
-      .map(([dx, dy]) => ({ x: cx + dx, y: cy + dy, score: Math.hypot(cx + dx - tx, cy + dy - ty) + Math.random() * 0.08 }))
-      .filter(p => freeMobTile(p.x, p.y, mob));
-    if (!candidates.length) return null;
-    candidates.sort((a, b) => avoid ? b.score - a.score : a.score - b.score);
-    return candidates[0];
-  }
-
-  function chooseWanderTile(mob, radius = 4) {
-    const cx = Math.round(mob.x), cy = Math.round(mob.y);
-    for (let i = 0; i < 16; i++) {
-      const x = clamp(Math.round((mob.home?.x ?? cx) + (Math.random() * 2 - 1) * radius), 1, worldCols() - 2);
-      const y = clamp(Math.round((mob.home?.y ?? cy) + (Math.random() * 2 - 1) * radius), 1, worldRows() - 2);
-      const step = chooseStepToward(mob, x, y, false);
-      if (step) return step;
-    }
-    return null;
-  }
-
-  function setNextTile(mob, tile) {
-    if (!tile) return false;
-    mob.nextTile = { x: tile.x, y: tile.y };
-    mob.moveFrom = { x: Math.round(mob.x), y: Math.round(mob.y), px: mob.px, py: mob.py };
-    mob.moveProgress = 0;
-    return true;
-  }
-
-  function continueMobMove(mob, tick, speed) {
-    if (!mob.nextTile) return false;
-    const tx = mob.nextTile.x * TILE + TILE / 2;
-    const ty = mob.nextTile.y * TILE + TILE / 2;
-    const dx = tx - mob.px;
-    const dy = ty - mob.py;
-    const len = Math.hypot(dx, dy) || 1;
-    if (Math.abs(dx) > Math.abs(dy)) mob.dir = dx > 0 ? 'right' : 'left'; else if (Math.abs(dy) > 1) mob.dir = dy > 0 ? 'down' : 'up';
-    const step = Math.max(2, speed) * tick;
-    if (len <= step) {
-      mob.px = tx; mob.py = ty; mob.x = mob.nextTile.x; mob.y = mob.nextTile.y; mob.nextTile = null; mob.moveProgress = 1;
-    } else {
-      mob.px += dx / len * step;
-      mob.py += dy / len * step;
-      mob.moveProgress = clamp01((mob.moveProgress || 0) + step / TILE);
-    }
-    return true;
-  }
-
-  function updatePassiveStable(mob, tick) {
-    ensureMobBrain(mob);
-    mob.anim = (mob.anim || 0) + tick;
-    if (continueMobMove(mob, tick, PASSIVE_SPEED[mob.type] || 22)) return;
-    mob.aiTimer -= tick;
-    mob.intentLock -= tick;
-    if (mob.aiTimer > 0 && mob.intentLock > 0) return;
-    mob.aiTimer = 0.55 + Math.random() * 0.95;
-    const fleeRadius = ['rabbit','deer','chicken','duck','turkey','squirrel'].includes(mob.type) ? 5 : 2.6;
-    const threat = nearestColonistTo(mob, fleeRadius);
-    if (threat) {
-      mob.state = 'flee';
-      mob.intentLock = 0.7;
-      setNextTile(mob, chooseStepToward(mob, Math.round(threat.x), Math.round(threat.y), true));
-      return;
-    }
-    mob.state = 'wander';
-    mob.intentLock = 0.9 + Math.random() * 0.9;
-    setNextTile(mob, chooseWanderTile(mob, WANDER_RADIUS[mob.type] || 4));
-  }
-
-  function updateSpiderStable(mob, tick) {
-    ensureMobBrain(mob);
-    mob.anim = (mob.anim || 0) + tick;
-    if (continueMobMove(mob, tick, 31)) return;
-    mob.aiTimer -= tick;
-    const night = state.hour < 6 || state.hour > 20;
-    if (!night) { mob.state = 'sleep'; mob.nextTile = null; return; }
-    if (mob.aiTimer > 0 && mob.intentLock > 0) { mob.intentLock -= tick; return; }
-    mob.aiTimer = 0.45 + Math.random() * 0.7;
-    const target = nearestColonistTo(mob, 8);
-    if (target) {
-      mob.state = 'hunt'; mob.intentLock = 0.8;
-      const d = Math.hypot(target.px - mob.px, target.py - mob.py);
-      if (d < 34 && typeof applySpiderSlow === 'function') applySpiderSlow(target, tick, mob);
-      else setNextTile(mob, chooseStepToward(mob, Math.round(target.x), Math.round(target.y), false));
-      return;
-    }
-    mob.state = 'wander'; mob.intentLock = 0.8;
-    setNextTile(mob, chooseWanderTile(mob, 6));
   }
 
   function ensureRoofState() {
     if (!state?.world) return null;
-    const rows = worldRows(), cols = worldCols();
     const world = state.world;
-    const make = fill => Array.from({ length: rows }, () => Array.from({ length: cols }, () => fill));
-    if (!Array.isArray(world.roofLayer) || world.roofLayer.length !== rows || world.roofLayer[0]?.length !== cols) {
-      world.roofLayer = make(null);
-    }
-    if (!Array.isArray(world.builtRoofLayer) || world.builtRoofLayer.length !== rows || world.builtRoofLayer[0]?.length !== cols) {
-      world.builtRoofLayer = make(false);
-    }
+    const rows = worldRows(), cols = worldCols();
+    const now = performance.now();
+    const alreadyReady = Array.isArray(world.roofLayer) && Array.isArray(world.builtRoofLayer);
+    if (alreadyReady && now - roofEnsureTick < 500) return world;
+    roofEnsureTick = now;
+
+    if (!Array.isArray(world.roofLayer)) world.roofLayer = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
+    if (!Array.isArray(world.builtRoofLayer)) world.builtRoofLayer = Array.from({ length: rows }, () => Array.from({ length: cols }, () => false));
     if (!Array.isArray(world.pendingRoofJobs)) world.pendingRoofJobs = [];
+
     for (const job of world.pendingRoofJobs) {
       if (!inWorld(job.x, job.y)) continue;
       const cell = world.roofLayer[job.y][job.x] || { planned: true, built: false, progress: 0, flashTimer: 0 };
@@ -528,8 +361,12 @@
       cell.reservedBy = cell.reservedBy || job.reservedBy || null;
       world.roofLayer[job.y][job.x] = cell;
     }
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      if (world.builtRoofLayer[y][x]) world.roofLayer[y][x] = { ...(world.roofLayer[y][x] || {}), planned: true, built: true, progress: 1, flashTimer: world.roofLayer[y][x]?.flashTimer || 0 };
+
+    if (!world.roofLayerHydratedFromBuilt) {
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        if (world.builtRoofLayer[y][x]) world.roofLayer[y][x] = { ...(world.roofLayer[y][x] || {}), planned: true, built: true, progress: 1, flashTimer: world.roofLayer[y][x]?.flashTimer || 0 };
+      }
+      world.roofLayerHydratedFromBuilt = true;
     }
     return world;
   }
@@ -540,15 +377,17 @@
   function nearestRoofJobFor(c) {
     const world = ensureRoofState();
     if (!world) return null;
-    const candidates = (world.pendingRoofJobs || []).filter(job => inWorld(job.x, job.y) && !roofBuiltAt(job.x, job.y) && (!job.reservedBy || String(job.reservedBy) === String(c.id)));
     let best = null;
-    for (const job of candidates) {
+    let bestScore = Infinity;
+    for (const job of world.pendingRoofJobs || []) {
+      if (!inWorld(job.x, job.y) || roofBuiltAt(job.x, job.y)) continue;
+      if (job.reservedBy && String(job.reservedBy) !== String(c.id)) continue;
       const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(job.x, job.y, c.x, c.y) : { x: job.x, y: job.y };
       if (!adj) continue;
       const path = c.x === adj.x && c.y === adj.y ? [] : (typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y) : []);
       if (c.x !== adj.x || c.y !== adj.y) if (!Array.isArray(path) || !path.length) continue;
       const score = Math.hypot(c.x - job.x, c.y - job.y);
-      if (!best || score < best.score) best = { job, adj, path, score };
+      if (score < bestScore) { bestScore = score; best = { job, adj, path, score }; }
     }
     return best;
   }
@@ -588,6 +427,7 @@
     if (job.progress >= 1) {
       cell.built = true; cell.planned = true; cell.progress = 1; cell.reservedBy = null; cell.flashTimer = 1.0;
       world.builtRoofLayer[task.roofY][task.roofX] = true;
+      world.roofLayerHydratedFromBuilt = false;
       world.pendingRoofJobs = world.pendingRoofJobs.filter(j => j !== job);
       safeLog(`${c.name} concluiu um telhado.`, `roof-built-${task.roofX}-${task.roofY}`, 0.1);
       c.task = null; c.note = 'Telhado concluído'; c.work = 0;
@@ -597,11 +437,25 @@
   }
 
   function roofTick(dt) {
+    const speed = Number(state?.speed || 1);
+    const tick = dt * speed;
+    roofPulse += tick;
+    lightingPulse += tick;
+
+    if (roofPulse < 0.16 && lightingPulse < 0.35) return;
     const world = ensureRoofState();
     if (!world) return;
-    const tick = dt * Number(state?.speed || 1);
-    for (const row of world.roofLayer || []) for (const cell of row || []) if (cell?.flashTimer) cell.flashTimer = Math.max(0, cell.flashTimer - tick);
-    computeLighting();
+
+    if (roofPulse >= 0.16) {
+      const elapsed = roofPulse;
+      roofPulse = 0;
+      for (const row of world.roofLayer || []) for (const cell of row || []) if (cell?.flashTimer) cell.flashTimer = Math.max(0, cell.flashTimer - elapsed);
+    }
+
+    if (lightingPulse >= 0.35 || !world.lightMap) {
+      lightingPulse = 0;
+      computeLighting();
+    }
   }
 
   function ambientLight() {
@@ -615,14 +469,16 @@
   function activeLightSources() {
     const t = performance.now();
     if (t - lastFlickerUpdate > 120) lastFlickerUpdate = t;
-    return (state?.objects || []).map(obj => {
+    const result = [];
+    for (const obj of state?.objects || []) {
       const def = LIGHT_DEFS[obj.type];
-      if (!def) return null;
+      if (!def) continue;
       const active = obj.type === 'forge' || obj.type === 'stove' ? !!(state?.colonists || []).some(c => c.task?.objId === obj.id) : true;
-      if (!active && obj.type !== 'campfire' && obj.type !== 'torch') return null;
+      if (!active && obj.type !== 'campfire' && obj.type !== 'torch') continue;
       const flicker = def.flicker ? 0.92 + (Math.sin(lastFlickerUpdate / 160 + obj.x * 1.7 + obj.y) + 1) * 0.08 : 1;
-      return { ...def, x: obj.x, y: obj.y, intensity: def.intensity * flicker, id: obj.id };
-    }).filter(Boolean);
+      result.push({ ...def, x: obj.x, y: obj.y, intensity: def.intensity * flicker, id: obj.id });
+    }
+    return result;
   }
 
   function computeLighting() {
@@ -630,21 +486,25 @@
     const rows = worldRows(), cols = worldCols();
     const sources = activeLightSources();
     const base = ambientLight();
-    const map = Array.from({ length: rows }, () => Array.from({ length: cols }, () => base));
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      let light = base * (roofBuiltAt(x, y) ? 0.46 : 1);
-      for (const src of sources) {
-        const d = Math.hypot(x - src.x, y - src.y);
-        if (d <= src.radius) light += src.intensity * (1 - d / src.radius);
+    const world = state.world;
+    const map = world.lightMap && world.lightMap.length === rows ? world.lightMap : Array.from({ length: rows }, () => Array.from({ length: cols }, () => base));
+    for (let y = 0; y < rows; y++) {
+      if (!map[y] || map[y].length !== cols) map[y] = Array.from({ length: cols }, () => base);
+      for (let x = 0; x < cols; x++) {
+        let light = base * (roofBuiltAt(x, y) ? 0.46 : 1);
+        for (const src of sources) {
+          const d = Math.hypot(x - src.x, y - src.y);
+          if (d <= src.radius) light += src.intensity * (1 - d / src.radius);
+        }
+        map[y][x] = clamp(light, 0, 1);
       }
-      map[y][x] = clamp(light, 0, 1);
     }
-    state.world.lightMap = map;
+    world.lightMap = map;
   }
 
   function drawRoofAndLightOverlay(bounds = null) {
     if (!state?.world) return;
-    const world = ensureRoofState();
+    const world = state.world.roofLayer ? state.world : ensureRoofState();
     if (!world) return;
     const b = bounds || (typeof visibleTileBounds === 'function' ? visibleTileBounds(2) : { startX: 0, startY: 0, endX: worldCols() - 1, endY: worldRows() - 1 });
     const t = typeof getTileSize === 'function' ? getTileSize() : TILE;
@@ -674,7 +534,7 @@
     ctx.globalCompositeOperation = 'source-over';
     for (let y = b.startY; y <= b.endY; y++) for (let x = b.startX; x <= b.endX; x++) {
       const light = clamp01(lightMap[y]?.[x] ?? ambientLight());
-      const roofed = roofBuiltAt(x, y);
+      const roofed = !!world.roofLayer?.[y]?.[x]?.built;
       const alpha = clamp((1 - light) * (roofed ? 0.78 : 0.55), 0, 0.72);
       if (alpha <= 0.03) continue;
       ctx.fillStyle = `rgba(4, 8, 15, ${alpha.toFixed(3)})`;
@@ -692,8 +552,8 @@
   }
 
   function patchInspectionDebug() {
-    // O painel de inspeção lê os campos abaixo automaticamente em atualizações futuras; os dados já ficam no colono para debug.
-    for (const c of state?.colonists || []) {
+    if (!state?.colonists) return;
+    for (const c of state.colonists) {
       ensureColonistBrain(c);
       c.ai.debug.state = c.ai.state;
       c.ai.debug.currentJob = c.task?.type || c.ai.currentJob || 'nenhum';
@@ -711,7 +571,12 @@
     installMobPatch();
     updateAutoSleepSpeed();
     roofTick(dt);
-    patchInspectionDebug();
+    if (!state._simulationDebugPulse) state._simulationDebugPulse = 0;
+    state._simulationDebugPulse += dt;
+    if (state._simulationDebugPulse > 0.35) {
+      state._simulationDebugPulse = 0;
+      patchInspectionDebug();
+    }
   }
 
   window.HavenfallSimulationUpgrade = Object.freeze({
