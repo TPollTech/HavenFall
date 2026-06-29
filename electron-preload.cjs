@@ -146,6 +146,25 @@ function backupSaveSlot(slot = 'autosave', label = 'manual') {
   }
 }
 
+function deleteSaveSlot(slot = 'autosave') {
+  try {
+    const clean = cleanSlot(slot);
+    const files = [savePath(clean), metaPath(clean)];
+    let deleted = 0;
+    for (const file of files) {
+      if (fs.existsSync(file)) {
+        fs.unlinkSync(file);
+        deleted++;
+      }
+    }
+    appendLog('deleteSaveSlot', { slot: clean, deleted });
+    return { ok: true, slot: clean, deleted, paths: getDesktopPaths() };
+  } catch (error) {
+    appendLog('deleteSaveSlot failed', { slot, error: error.message });
+    return { ok: false, error: error.message };
+  }
+}
+
 function listSaves() {
   try {
     const paths = getDesktopPaths();
@@ -214,6 +233,7 @@ const desktopApi = {
   readSaveSlot,
   writeSaveSlot,
   backupSaveSlot,
+  deleteSaveSlot,
   listSaves,
   appendLog,
   exportDiagnostics,
