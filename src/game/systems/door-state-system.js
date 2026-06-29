@@ -3,7 +3,6 @@
 (() => {
   if (window.HavenfallContext?.doorStateSystemInstalled) return;
   window.HavenfallContext = window.HavenfallContext || {};
-  window.HavenfallContext.doorStateSystemInstalled = true;
 
   const CLOSED = 'closed';
   const OPEN = 'open';
@@ -108,14 +107,23 @@
     }
   }
 
-  const previousOpen = typeof window.openDoorForColonist === 'function' ? window.openDoorForColonist : null;
-  window.openDoorForColonist = function managedDoorOpen(door, colonist = null) {
-    if (!isDoor(door)) return false;
-    if (previousOpen) previousOpen(door, colonist);
-    return openDoor(door, colonist, 'path');
-  };
+  function install(attempt = 0) {
+    if (window.HavenfallContext.doorStateSystemInstalled) return;
+    if (!window.GameSystems && attempt < 80) {
+      setTimeout(() => install(attempt + 1), 80);
+      return;
+    }
+    window.HavenfallContext.doorStateSystemInstalled = true;
+    const previousOpen = typeof window.openDoorForColonist === 'function' ? window.openDoorForColonist : null;
+    window.openDoorForColonist = function managedDoorOpen(door, colonist = null) {
+      if (!isDoor(door)) return false;
+      if (previousOpen) previousOpen(door, colonist);
+      return openDoor(door, colonist, 'path');
+    };
+    window.toggleDoorState = toggleDoorState;
+    window.HavenfallDoorSystem = { openDoor, closeDoor, toggleDoorState, isOpen, canCloseDoor };
+    window.GameSystems?.registerTick?.('doors.auto-close', updateDoors, { order: 18 });
+  }
 
-  window.toggleDoorState = toggleDoorState;
-  window.HavenfallDoorSystem = { openDoor, closeDoor, toggleDoorState, isOpen, canCloseDoor };
-  window.GameSystems?.registerTick?.('doors.auto-close', updateDoors, { order: 18 });
+  install();
 })();
