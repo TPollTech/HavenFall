@@ -21,6 +21,10 @@
     return Math.max(min, Math.min(max, Number(value) || 0));
   }
 
+  function isGameplayReady() {
+    return !!state && state.isPreview !== true && state.runtimeMode !== 'menu-preview' && Array.isArray(state.colonists) && !!state.world;
+  }
+
   function hash(text) {
     if (typeof hashSeed === 'function') return hashSeed(String(text));
     let h = 2166136261;
@@ -94,9 +98,9 @@
 
   function currentSiteId() {
     return state?.worldMap?.currentSiteId
+      || state?.world?.landingSite?.id
       || state?.config?.selectedLandingSiteId
       || state?.config?.landingSiteId
-      || state?.world?.landingSite?.id
       || state?.config?.planetScan?.selectedLandingSiteId
       || state?.config?.planetScan?.landingSites?.[0]?.id
       || 'landing_initial';
@@ -136,14 +140,30 @@
     return 'known';
   }
 
+  function sectorStore() {
+    state.sectors = state.sectors && typeof state.sectors === 'object' ? state.sectors : {};
+    return state.sectors;
+  }
+
+  function attachSectorStore(worldMap, sectors) {
+    Object.defineProperty(worldMap, 'sectors', {
+      value: sectors,
+      enumerable: false,
+      configurable: true,
+      writable: true
+    });
+    return worldMap;
+  }
+
   function enrichLandingSite(site, worldMap, currentSite = null) {
-    const current = currentSite || worldMap?.landingSites?.find(s => s.id === worldMap.currentSiteId) || site;
+    const current = currentSite || site;
     const distance = distanceBetweenSites(current, site);
     const baseRisk = riskAverage(site);
     const riskScore = clamp(Math.round(baseRisk + distance * 4 + (terrainMultiplier(site) - 1) * 28), 0, 100);
     const travelHours = Math.max(6, Math.round(distance * 13 * terrainMultiplier(site)));
     const minFood = Math.max(4, Math.ceil(travelHours / 12) * Math.max(1, state?.colonists?.length || 1));
     const recommendedFood = Math.ceil(minFood * 1.55);
+    const sectors = sectorStore();
     const visited = !!worldMap?.visitedSites?.[site.id]?.visited || !!site.worldState?.visited;
     const currentFlag = site.id === worldMap?.currentSiteId;
     const status = statusForSite(site, worldMap?.currentSiteId, worldMap?.visitedSites || {});
@@ -164,7 +184,7 @@
         requiredTech: site.travel?.requiredTech || null
       },
       worldState: {
-        generated: !!worldMap?.sectors?.[site.id] || !!site.worldState?.generated,
+        generated: !!sectors[site.id] || !!site.worldState?.generated,
         hasBase: !!worldMap?.visitedSites?.[site.id]?.hasBase || !!site.worldState?.hasBase,
         hasOutpost: !!worldMap?.visitedSites?.[site.id]?.hasOutpost || !!site.worldState?.hasOutpost,
         lastVisitedDay: worldMap?.visitedSites?.[site.id]?.lastVisitedDay ?? site.worldState?.lastVisitedDay ?? null,
@@ -188,12 +208,25 @@
       }));
   }
 
-  function ensureWorldMap() {
-    if (!state) return null;
-    const normalized = normalizeLandingSites(state.config || {});
-    const currentId = state.worldMap?.currentSiteId || normalized.selectedId;
+  function ensureWorldMap(options = {}) {
+    if (!isGameplayReady()) return null;
     const previous = state.worldMap || {};
-    const visitedSites = previous.visitedSites || {};
+    const cacheKey = [
+      state.config?.seed,
+      state.config?.selectedLandingSiteId,
+      previous.currentSiteId,
+      Object.keys(state.sectors || {}).length,
+      Object.keys(previous.visitedSites || {}).length,
+      state.day || 1
+    ].join('|');
+    if (!options.refresh && previous._cacheKey === cacheKey && Array.isArray(previous.landingSites)) {
+      attachSectorStore(previous, sectorStore());
+      return previous;
+    }
+
+    const normalized = normalizeLandingSites(state.config || {});
+    const currentId = previous.currentSiteId || normalized.selectedId;
+    const visitedSites = { ...(previous.visitedSites || {}) };
     visitedSites[currentId] = {
       ...(visitedSites[currentId] || {}),
       visited: true,
@@ -202,26 +235,28 @@
       hasBase: true
     };
 
+    const sectors = sectorStore();
     let worldMap = {
       planetSeed: previous.planetSeed || state.config?.seed || normalized.profile?.seed || 'havenfall',
       currentSiteId: currentId,
       selectedWorldMapSiteId: previous.selectedWorldMapSiteId || currentId,
       landingSites: [],
-      routes: previous.routes || [],
+      routes: [],
       visitedSites,
       knownSites: previous.knownSites || {},
-      travelLog: Array.isArray(previous.travelLog) ? previous.travelLog : [],
+      travelLog: Array.isArray(previous.travelLog) ? previous.travelLog.slice(0, 30) : [],
       lastMapTab: previous.lastMapTab || 'local',
       globalExplorationPercent: previous.globalExplorationPercent || 0
     };
+    attachSectorStore(worldMap, sectors);
 
-    worldMap.sectors = previous.sectors || state.sectors || {};
-    worldMap.landingSites = normalized.sites.map(site => enrichLandingSite(site, worldMap));
+    const currentRaw = normalized.sites.find(site => site.id === currentId) || normalized.sites[0];
+    worldMap.landingSites = normalized.sites.map(site => enrichLandingSite(site, worldMap, currentRaw));
     worldMap.routes = buildRoutes(worldMap);
     worldMap.globalExplorationPercent = Math.round((Object.values(worldMap.visitedSites).filter(v => v?.visited).length / Math.max(1, worldMap.landingSites.length)) * 100);
+    Object.defineProperty(worldMap, '_cacheKey', { value: cacheKey, enumerable: false, configurable: true, writable: true });
 
     state.worldMap = worldMap;
-    state.sectors = worldMap.sectors;
     state.activeTravel = state.activeTravel || null;
     state.ui = state.ui || {};
     state.ui.map = state.ui.map || {
@@ -235,8 +270,9 @@
   }
 
   function snapshotCurrentSector() {
-    if (!state?.worldMap) ensureWorldMap();
-    const siteId = currentSiteId();
+    if (!isGameplayReady()) return null;
+    const worldMap = ensureWorldMap();
+    const siteId = worldMap?.currentSiteId || currentSiteId();
     if (!siteId) return null;
     const objects = clone(state.objects || state.world?.objects || []);
     const world = clone(state.world || {});
@@ -260,12 +296,15 @@
   }
 
   function saveCurrentSector() {
+    if (!isGameplayReady()) return null;
     const worldMap = ensureWorldMap();
     const siteId = worldMap?.currentSiteId;
     if (!siteId) return null;
     const sector = snapshotCurrentSector();
-    worldMap.sectors[siteId] = sector;
-    state.sectors = worldMap.sectors;
+    if (!sector) return null;
+    const sectors = sectorStore();
+    sectors[siteId] = sector;
+    attachSectorStore(worldMap, sectors);
     worldMap.visitedSites[siteId] = {
       ...(worldMap.visitedSites[siteId] || {}),
       visited: true,
@@ -366,11 +405,14 @@
       c.hunger = clamp((c.hunger ?? 80) - (foodShortage ? 18 : 5 + plan.estimatedHours * 0.04), 0, 100);
       c.mood = clamp((c.mood ?? 65) - (plan.riskScore >= 70 ? 6 : 2) - (event?.bad ? 5 : 0), 0, 100);
       if (event?.injury && Math.random() < 0.45) c.health = clamp((c.health ?? 100) - event.injury, 1, 100);
-      c.task = null;
-      c.path = [];
-      c.work = 0;
-      c.sleeping = false;
-      c.note = `Viajou para ${plan.toSiteName}`;
+      window.HavenfallRuntime?.cancelColonistTask?.(c, `Viajou para ${plan.toSiteName}`);
+      if (!window.HavenfallRuntime?.cancelColonistTask) {
+        c.task = null;
+        c.path = [];
+        c.work = 0;
+        c.sleeping = false;
+        c.note = `Viajou para ${plan.toSiteName}`;
+      }
     }
   }
 
@@ -411,17 +453,21 @@
 
   function placeColonistsAtSpawn(sector) {
     const spawn = sector?.world?.spawn || sector?.spawn || { x: 5, y: 5 };
+    const tileSize = typeof TILE !== 'undefined' ? TILE : 32;
     const offsets = [[0,2],[1,2],[-1,2],[2,1],[-2,1],[0,3],[1,3],[-1,3]];
     (state.colonists || []).forEach((c, index) => {
       const off = offsets[index % offsets.length];
       c.x = spawn.x + off[0];
       c.y = spawn.y + off[1];
-      c.px = c.x * TILE + TILE / 2;
-      c.py = c.y * TILE + TILE / 2;
-      c.path = [];
-      c.task = null;
-      c.work = 0;
-      c.sleeping = false;
+      c.px = c.x * tileSize + tileSize / 2;
+      c.py = c.y * tileSize + tileSize / 2;
+      window.HavenfallRuntime?.cancelColonistTask?.(c, 'Chegou ao setor');
+      if (!window.HavenfallRuntime?.cancelColonistTask) {
+        c.path = [];
+        c.task = null;
+        c.work = 0;
+        c.sleeping = false;
+      }
     });
     selectedColonistId = state.colonists?.[0]?.id || selectedColonistId;
   }
@@ -448,10 +494,11 @@
     const site = siteById(siteId);
     if (!worldMap || !site) return false;
     if (!options.skipSaveCurrent) saveCurrentSector();
-    let sector = worldMap.sectors[siteId];
+    const sectors = sectorStore();
+    let sector = sectors[siteId];
     if (!sector) {
       sector = generateSectorForLandingSite(site);
-      worldMap.sectors[siteId] = sector;
+      sectors[siteId] = sector;
     }
 
     state.world = sector.world;
@@ -479,13 +526,15 @@
     };
 
     placeColonistsAtSpawn(sector);
+    window.HavenfallRuntime?.normalizeState?.(state);
+    window.HavenfallRuntime?.bumpPathVersion?.(state, 'load-sector');
     if (typeof ensureExplorationState === 'function') ensureExplorationState();
     if (typeof updateExploration === 'function') updateExploration(true);
     if (typeof ensureGeologyState === 'function') ensureGeologyState(state.world);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     if (typeof wallIndexDirty !== 'undefined') wallIndexDirty = true;
     if (typeof centerCameraOnSelectedColonist === 'function') centerCameraOnSelectedColonist();
-    ensureWorldMap();
+    ensureWorldMap({ refresh: true });
     return true;
   }
 
@@ -533,6 +582,7 @@
 
   function establishOutpost(siteId = currentSiteId()) {
     const worldMap = ensureWorldMap();
+    if (!worldMap) return false;
     const cost = { wood: 20, food: 10, stone: 5 };
     const res = state.resources || {};
     const ok = Object.entries(cost).every(([key, value]) => (res[key] || 0) >= value);
@@ -542,32 +592,37 @@
     }
     for (const [key, value] of Object.entries(cost)) res[key] -= value;
     worldMap.visitedSites[siteId] = { ...(worldMap.visitedSites[siteId] || {}), hasOutpost: true, visited: true };
-    ensureWorldMap();
+    ensureWorldMap({ refresh: true });
     if (typeof log === 'function') log('Posto avançado estabelecido neste setor. Rotas futuras ficam mais seguras.');
     if (typeof updateUI === 'function') updateUI(true);
     return true;
   }
 
+  function initializeCurrentSector() {
+    if (!isGameplayReady()) return null;
+    const worldMap = ensureWorldMap({ refresh: true });
+    if (!worldMap) return null;
+    if (!sectorStore()[worldMap.currentSiteId]) saveCurrentSector();
+    return worldMap;
+  }
+
   function installStatePatch() {
-    if (typeof createInitialState === 'function' && !window.HavenfallContext.worldTravelCreateInitialStatePatched) {
-      const nativeCreateInitialState = createInitialState;
-      createInitialState = function createInitialStateWithWorldMap(config, selectedColonists) {
-        const result = nativeCreateInitialState(config, selectedColonists);
-        const previousState = state;
-        state = result;
-        ensureWorldMap();
-        saveCurrentSector();
-        state = previousState;
+    if (typeof startNewGame === 'function' && !window.HavenfallContext.worldTravelStartNewGamePatched) {
+      const nativeStartNewGame = startNewGame;
+      startNewGame = function startNewGameWithWorldTravel(config, selectedColonists) {
+        const result = nativeStartNewGame(config, selectedColonists);
+        if (window.HavenfallRuntime?.markGameplayState) window.HavenfallRuntime.markGameplayState(state);
+        initializeCurrentSector();
         return result;
       };
-      window.HavenfallContext.worldTravelCreateInitialStatePatched = true;
+      window.HavenfallContext.worldTravelStartNewGamePatched = true;
     }
 
     if (typeof loadGame === 'function' && !window.HavenfallContext.worldTravelLoadGamePatched) {
       const nativeLoadGame = loadGame;
       loadGame = function loadGameWithWorldMap() {
         const ok = nativeLoadGame();
-        if (ok) ensureWorldMap();
+        if (ok) initializeCurrentSector();
         return ok;
       };
       window.HavenfallContext.worldTravelLoadGamePatched = true;
@@ -579,6 +634,7 @@
   window.HavenfallWorldTravel = Object.freeze({
     modes: TRAVEL_MODES,
     ensureWorldMap,
+    initializeCurrentSector,
     snapshotCurrentSector,
     saveCurrentSector,
     loadSector,
