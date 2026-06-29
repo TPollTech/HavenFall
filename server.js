@@ -5,6 +5,7 @@ const path = require('path');
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '0.0.0.0';
 const ROOT = __dirname;
+const MULTIPLAYER_STATE_LIMIT_BYTES = 9_000_000;
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -43,7 +44,7 @@ function staticHeaders(contentType) {
   };
 }
 
-function readJsonBody(req, limit = 2_500_000) {
+function readJsonBody(req, limit = MULTIPLAYER_STATE_LIMIT_BYTES) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => {
@@ -159,10 +160,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readJsonBody(req, 32_000);
       const id = cleanPlayerId(body.id);
-      if (!id) {
-        sendJson(res, 400, { ok: false, error: 'player id ausente' });
-        return;
-      }
+      if (!id) { sendJson(res, 400, { ok: false, error: 'player id ausente' }); return; }
       const nick = String(body.nick || 'Jogador').trim().slice(0, 22) || 'Jogador';
       const role = body.role === 'host' ? 'host' : 'visitante';
       const current = multiplayerPlayers.get(id);
@@ -176,9 +174,7 @@ const server = http.createServer(async (req, res) => {
         lastSeen: Date.now()
       });
       sendJson(res, 200, { ok: true, players: activePlayers(), status: multiplayerStatus() });
-    } catch (err) {
-      sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
-    }
+    } catch (err) { sendJson(res, 400, { ok: false, error: err.message || 'json inválido' }); }
     return;
   }
 
@@ -191,60 +187,36 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readJsonBody(req, 32_000);
       const id = cleanPlayerId(body.id);
-      if (!id) {
-        sendJson(res, 400, { ok: false, error: 'player id ausente' });
-        return;
-      }
+      if (!id) { sendJson(res, 400, { ok: false, error: 'player id ausente' }); return; }
       multiplayerInputs.set(id, { keys: cleanKeys(body.keys), lastSeen: Date.now() });
       sendJson(res, 200, { ok: true, inputs: activeInputs() });
-    } catch (err) {
-      sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
-    }
+    } catch (err) { sendJson(res, 400, { ok: false, error: err.message || 'json inválido' }); }
     return;
   }
 
   if (safeUrl === '/api/multiplayer/state' && req.method === 'GET') {
-    sendJson(res, 200, {
-      ok: true,
-      revision: multiplayerRevision,
-      updatedAt: multiplayerUpdatedAt,
-      status: multiplayerStatus(),
-      snapshot: multiplayerSnapshot
-    });
+    sendJson(res, 200, { ok: true, revision: multiplayerRevision, updatedAt: multiplayerUpdatedAt, status: multiplayerStatus(), snapshot: multiplayerSnapshot });
     return;
   }
 
   if (safeUrl === '/api/multiplayer/state' && req.method === 'POST') {
     try {
-      const body = await readJsonBody(req);
-      if (!body || typeof body !== 'object' || !body.snapshot) {
-        sendJson(res, 400, { ok: false, error: 'snapshot ausente' });
-        return;
-      }
+      const body = await readJsonBody(req, MULTIPLAYER_STATE_LIMIT_BYTES);
+      if (!body || typeof body !== 'object' || !body.snapshot) { sendJson(res, 400, { ok: false, error: 'snapshot ausente' }); return; }
       multiplayerSnapshot = body.snapshot;
       multiplayerRevision += 1;
       multiplayerUpdatedAt = new Date().toISOString();
       sendJson(res, 200, { ok: true, revision: multiplayerRevision, updatedAt: multiplayerUpdatedAt, status: multiplayerStatus() });
-    } catch (err) {
-      sendJson(res, 400, { ok: false, error: err.message || 'json inválido' });
-    }
+    } catch (err) { sendJson(res, 400, { ok: false, error: err.message || 'json inválido' }); }
     return;
   }
 
   let filePath = path.join(ROOT, safeUrl === '/' ? 'index.html' : safeUrl);
-  if (!filePath.startsWith(ROOT)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
+  if (!filePath.startsWith(ROOT)) { res.writeHead(403); res.end('Forbidden'); return; }
   fs.readFile(filePath, (err, data) => {
     if (err) {
       fs.readFile(path.join(ROOT, 'index.html'), (fallbackErr, fallback) => {
-        if (fallbackErr) {
-          res.writeHead(404);
-          res.end('Not found');
-          return;
-        }
+        if (fallbackErr) { res.writeHead(404); res.end('Not found'); return; }
         res.writeHead(200, staticHeaders('text/html; charset=utf-8'));
         res.end(fallback);
       });
