@@ -91,5 +91,30 @@
     if (state) state.paused = true;
   };
 
+  function bindOnce(el, eventName, handler) {
+    if (!el || el.dataset.multiplayerBound === '1') return;
+    el.dataset.multiplayerBound = '1';
+    el.addEventListener(eventName, handler);
+  }
+
+  function bindButtons() {
+    bindOnce(dom.buttons?.openMultiplayer, 'click', () => window.openMultiplayerMenu());
+    bindOnce(dom.buttons?.multiplayerBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
+    bindOnce(dom.buttons?.multiplayerHostNewGame, 'click', async () => {
+      try { await window.HavenfallMultiplayer?.hostCurrentGame?.({ openSetup: true }); }
+      catch (error) { window.HavenfallMultiplayer?.session && (window.HavenfallMultiplayer.session.statusText = error.message); refreshMultiplayerMenu(); }
+    });
+    bindOnce(dom.buttons?.multiplayerHost, 'click', async () => {
+      try { await window.HavenfallMultiplayer?.hostCurrentGame?.(); }
+      catch (error) { window.HavenfallMultiplayer?.session && (window.HavenfallMultiplayer.session.statusText = error.message); refreshMultiplayerMenu(); }
+    });
+    bindOnce(dom.buttons?.multiplayerJoin, 'click', async () => {
+      try { await window.HavenfallMultiplayer?.joinGame?.(); }
+      catch (error) { window.HavenfallMultiplayer?.session && (window.HavenfallMultiplayer.session.statusText = error.message); refreshMultiplayerMenu(); }
+    });
+    bindOnce(dom.buttons?.multiplayerStop, 'click', () => window.HavenfallMultiplayer?.stopSession?.());
+  }
+
   injectStyle();
+  bindButtons();
 })();
