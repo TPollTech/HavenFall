@@ -17,6 +17,8 @@
     radial-gradient(circle at 12% 88%, rgba(202, 139, 56, .12), transparent 34%),
     linear-gradient(135deg, #07090d 0%, #111722 52%, #07080b 100%);
   color: var(--text);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(227, 169, 63, .34) transparent;
 }
 
 #newGameSetupScreen.screen.active::before,
@@ -39,6 +41,49 @@
 #colonistSelectScreen > * {
   position: relative;
   z-index: 1;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar,
+#planetScanScreen.screen.active::-webkit-scrollbar,
+#colonistSelectScreen.screen.active::-webkit-scrollbar,
+#planetScanScreen .scan-grid::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-track,
+#planetScanScreen.screen.active::-webkit-scrollbar-track,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-track,
+#planetScanScreen .scan-grid::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-thumb,
+#planetScanScreen.screen.active::-webkit-scrollbar-thumb,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-thumb,
+#planetScanScreen .scan-grid::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(227, 169, 63, .52), rgba(121, 199, 232, .34)) border-box;
+  background-clip: padding-box;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#planetScanScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#planetScanScreen .scan-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(227, 169, 63, .68);
+  background-clip: padding-box;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-corner,
+#planetScanScreen.screen.active::-webkit-scrollbar-corner,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-corner,
+#planetScanScreen .scan-grid::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Remove only the outer modal/card feeling. Inner option panels stay readable. */
@@ -166,17 +211,8 @@
   padding: 16px !important;
   gap: 10px !important;
   scrollbar-width: thin;
-}
-
-#planetScanScreen .scan-grid::-webkit-scrollbar { width: 10px; }
-#planetScanScreen .scan-grid::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, .72);
-  border-radius: 999px;
-}
-#planetScanScreen .scan-grid::-webkit-scrollbar-thumb {
-  background: rgba(125, 211, 252, .34);
-  border: 2px solid rgba(2, 6, 23, .72);
-  border-radius: 999px;
+  scrollbar-color: rgba(227, 169, 63, .34) transparent;
+  scrollbar-gutter: stable;
 }
 
 #planetScanScreen .scan-title-row {
@@ -273,6 +309,7 @@
   #planetScanScreen .scan-grid {
     height: auto !important;
     overflow: visible !important;
+    scrollbar-gutter: auto;
   }
 
   #planetScanScreen .scan-hologram-panel {
