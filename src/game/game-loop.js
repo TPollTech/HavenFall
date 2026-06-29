@@ -2,6 +2,8 @@
 
 const GAME_HOUR_SECONDS_1X = 40;
 const TIME_SPEED = 1 / GAME_HOUR_SECONDS_1X;
+const AUTOSAVE_INTERVAL_SECONDS = 90;
+const UI_REFRESH_INTERVAL_SECONDS = 0.35;
 const loopErrorState = new Set();
 let doorAutoClosePulse = 0;
 
@@ -50,6 +52,7 @@ function safeSystemTick(label, fn) {
 function doorOpenState() { return window.DoorState?.OPEN || 'open'; }
 function doorClosedState() { return window.DoorState?.CLOSED || 'closed'; }
 function doorClock() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
+function isRealGameplay() { return !!state && state.isPreview !== true && state.runtimeMode !== 'menu-preview'; }
 
 function isOpenedDoorObject(obj) {
   return obj?.type === 'door' && (obj.state || doorClosedState()) === doorOpenState();
@@ -86,13 +89,14 @@ function closeDoorObject(obj, reason = 'auto') {
   obj.lastOpenedBy = null;
   obj.closeRequested = false;
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+  window.HavenfallRuntime?.bumpPathVersion?.(state, 'door-close');
   return true;
 }
 
 function updateDoorAutoClose(dt) {
-  if (!state || appScreen !== SCREEN.PLAYING) return;
+  if (!isRealGameplay() || appScreen !== SCREEN.PLAYING) return;
   doorAutoClosePulse += dt * Number(state.speed || 1);
-  if (doorAutoClosePulse < 0.10) return;
+  if (doorAutoClosePulse < 0.18) return;
   doorAutoClosePulse = 0;
   const now = doorClock();
   for (const obj of state.objects || []) {
@@ -106,7 +110,7 @@ function updateDoorAutoClose(dt) {
 }
 
 function updateWorld(dt) {
-  if (!state || appScreen !== SCREEN.PLAYING) return;
+  if (!isRealGameplay() || appScreen !== SCREEN.PLAYING) return;
   const speed = Number(state.speed || 1);
   const tick = dt * speed;
   const previousHour = Math.floor(state.hour || 0);
@@ -154,17 +158,20 @@ function updateWorld(dt) {
       updateColonist(c, dt);
     } catch (err) {
       console.error('[Colonist Update Error]', { colonist: c, task: c?.task, error: err });
-      c.task = null;
-      c.path = [];
-      c.work = 0;
-      c.note = 'Tarefa cancelada por erro de IA';
+      window.HavenfallRuntime?.cancelColonistTask?.(c, 'Tarefa cancelada por erro de IA');
+      if (!window.HavenfallRuntime?.cancelColonistTask) {
+        c.task = null;
+        c.path = [];
+        c.work = 0;
+        c.note = 'Tarefa cancelada por erro de IA';
+      }
     }
   }
   checkGoals();
 }
 
 function randomEvent() {
-  if (!state) return;
+  if (!isRealGameplay()) return;
   const options = ['rain', 'supplies', 'wolf', 'berries', 'ore'];
   const event = options[Math.floor(Math.random() * options.length)];
 
@@ -197,6 +204,7 @@ function randomEvent() {
       if (tile) state.objects.push({ id: uid('obj'), type: 'berry', x: tile.x, y: tile.y });
     }
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    window.HavenfallRuntime?.bumpPathVersion?.(state, 'event-berries');
     log('Frutas silvestres brotaram perto da base.');
     return;
   }
@@ -206,13 +214,14 @@ function randomEvent() {
     if (tile) {
       state.objects.push({ id: uid('obj'), type: 'ore', x: tile.x, y: tile.y });
       if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+      window.HavenfallRuntime?.bumpPathVersion?.(state, 'event-ore');
       log('Um veio de metal foi encontrado em uma área rochosa.');
     }
   }
 }
 
 function freeRandomTile() {
-  if (!state) return null;
+  if (!isRealGameplay()) return null;
   for (let i = 0; i < 140; i++) {
     const x = 2 + Math.floor(Math.random() * Math.max(1, getWorldCols() - 4));
     const y = 2 + Math.floor(Math.random() * Math.max(1, getWorldRows() - 4));
@@ -222,7 +231,7 @@ function freeRandomTile() {
 }
 
 function freeRandomStoneTile() {
-  if (!state) return null;
+  if (!isRealGameplay()) return null;
   for (let i = 0; i < 160; i++) {
     const x = 2 + Math.floor(Math.random() * Math.max(1, getWorldCols() - 4));
     const y = 2 + Math.floor(Math.random() * Math.max(1, getWorldRows() - 4));
@@ -232,7 +241,7 @@ function freeRandomStoneTile() {
 }
 
 function checkGoals() {
-  if (!state) return;
+  if (!isRealGameplay()) return;
   if (typeof ensureResearchState === 'function') ensureResearchState();
   const beds = state.objects.filter(o => o.type === 'bed').length;
   const campfire = state.objects.some(o => o.type === 'campfire');
@@ -264,28 +273,36 @@ function runLoopStep(label, fn) {
   }
 }
 
+function shouldRefreshUi() {
+  return isRealGameplay() && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED || appScreen === SCREEN.LOAD_GAME);
+}
+
+function shouldAutosave() {
+  return isRealGameplay() && settings?.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > AUTOSAVE_INTERVAL_SECONDS;
+}
+
 function gameLoop(now = performance.now()) {
   const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000 || 0));
   lastTime = now;
 
   runLoopStep('world', () => updateWorld(dt));
-  if (window.GameSystems?.tick) {
+  if (isRealGameplay() && window.GameSystems?.tick) {
     window.GameSystems.tick(dt, (label, fn) => safeSystemTick(label, fn));
   }
 
   runLoopStep('camera', () => updateCamera(dt));
 
-  if (state && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
+  if (isRealGameplay() && (appScreen === SCREEN.PLAYING || appScreen === SCREEN.PAUSED)) {
     runLoopStep('draw', draw);
   }
 
   uiTimer += dt;
   autosaveTimer += dt;
-  if (state && uiTimer > 0.25) {
+  if (state && uiTimer > UI_REFRESH_INTERVAL_SECONDS) {
     uiTimer = 0;
-    runLoopStep('ui', () => updateUI());
+    if (shouldRefreshUi()) runLoopStep('ui', () => updateUI());
   }
-  if (state && settings?.autosave !== 'off' && appScreen === SCREEN.PLAYING && autosaveTimer > 15) {
+  if (state && shouldAutosave()) {
     autosaveTimer = 0;
     runLoopStep('autosave', () => saveGame(false));
   }
