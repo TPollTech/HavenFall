@@ -60,6 +60,7 @@ function writeDesktopConfig(next = {}) {
     ...next,
     updatedAt: new Date().toISOString()
   };
+  if (value.saveRoot === null) delete value.saveRoot;
   if (!value.createdAt) value.createdAt = current.createdAt || value.updatedAt;
   writeJsonAtomic(desktopConfigPath(), value);
   return value;
@@ -146,12 +147,10 @@ function resetSaveRoot(options = {}) {
   const before = desktopPaths();
   const defaultRoot = before.defaultSaves;
   const copy = options.migrate === false ? { copied: 0, skipped: 0 } : copySaveFiles(before.saves, defaultRoot);
-  const current = readDesktopConfig();
-  delete current.saveRoot;
-  writeDesktopConfig(current);
+  const config = writeDesktopConfig({ saveRoot: null });
   const paths = desktopPaths();
   appendDesktopLog('save-root reset', { from: before.saves, to: paths.saves, ...copy });
-  return { ok: true, config: readDesktopConfig(), paths, migration: copy };
+  return { ok: true, config, paths, migration: copy };
 }
 
 function loadWindowState() {
