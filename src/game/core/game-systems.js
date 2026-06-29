@@ -18,6 +18,40 @@
 
   const registryVersions = new WeakMap();
   const registryOrderedCache = new WeakMap();
+  const systemStats = new Map();
+  const SYSTEM_WARN_MS = 12;
+  const SYSTEM_BUDGET_MS = 32;
+  const SYSTEM_MAX_COOLDOWN_MS = 1500;
+
+  function perfNow() {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
+
+  function statsFor(id) {
+    const key = String(id);
+    if (!systemStats.has(key)) {
+      systemStats.set(key, {
+        id: key,
+        lastMs: 0,
+        avgMs: 0,
+        maxMs: 0,
+        calls: 0,
+        slowCalls: 0,
+        skipped: 0,
+        cooldownUntil: 0,
+        enabled: true
+      });
+    }
+    return systemStats.get(key);
+  }
+
+  function publishSystemStats() {
+    window.HavenfallPerf = window.HavenfallPerf || {};
+    window.HavenfallPerf.systems = Array.from(systemStats.values())
+      .map(stat => ({ ...stat, cooldownMs: Math.max(0, Math.round((stat.cooldownUntil || 0) - perfNow())) }))
+      .sort((a, b) => b.lastMs - a.lastMs || b.avgMs - a.avgMs)
+      .slice(0, 20);
+  }
 
   function registryVersion(registry) {
     return registryVersions.get(registry) || 0;
@@ -48,7 +82,10 @@
       fn,
       order: Number(options.order ?? 100),
       enabled: options.enabled !== false,
-      type: options.type || null
+      type: options.type || null,
+      critical: options.critical === true,
+      intervalMs: Number(options.intervalMs || 0),
+      nextAt: 0
     });
     touchRegistry(registry);
     return true;
@@ -60,7 +97,10 @@
     const next = !!enabled;
     if (entry.enabled === next) return false;
     entry.enabled = next;
+    const stat = statsFor(id);
+    stat.enabled = next;
     touchRegistry(registry);
+    publishSystemStats();
     return true;
   }
 
@@ -73,9 +113,11 @@
     for (const [id, entry] of registry.entries()) {
       if (!test(id, entry) || entry.enabled === next) continue;
       entry.enabled = next;
+      statsFor(id).enabled = next;
       changed++;
     }
     if (changed) touchRegistry(registry);
+    publishSystemStats();
     return changed;
   }
 
@@ -97,11 +139,41 @@
     return setEnabled(ticks, id, enabled);
   }
 
-  function tick(dt, safeTick = null) {
-    for (const [id, entry] of orderedEntries(ticks)) {
-      if (typeof safeTick === 'function') safeTick(id, () => entry.fn(dt));
-      else entry.fn(dt);
+  function runTickEntry(id, entry, dt, safeTick = null) {
+    const now = perfNow();
+    const stat = statsFor(id);
+    if (entry.intervalMs > 0 && now < entry.nextAt) {
+      stat.skipped++;
+      return;
     }
+    if (!entry.critical && now < stat.cooldownUntil) {
+      stat.skipped++;
+      return;
+    }
+    if (entry.intervalMs > 0) entry.nextAt = now + entry.intervalMs;
+
+    const started = perfNow();
+    if (typeof safeTick === 'function') safeTick(id, () => entry.fn(dt));
+    else entry.fn(dt);
+    const elapsed = perfNow() - started;
+
+    stat.lastMs = Math.round(elapsed * 10) / 10;
+    stat.avgMs = stat.calls ? Math.round((stat.avgMs * 0.85 + elapsed * 0.15) * 10) / 10 : stat.lastMs;
+    stat.maxMs = Math.max(stat.maxMs, stat.lastMs);
+    stat.calls++;
+    stat.enabled = entry.enabled;
+
+    if (elapsed >= SYSTEM_WARN_MS) stat.slowCalls++;
+    if (!entry.critical && elapsed >= SYSTEM_BUDGET_MS) {
+      const cooldown = Math.min(SYSTEM_MAX_COOLDOWN_MS, Math.max(120, Math.round(elapsed * 2.5)));
+      stat.cooldownUntil = perfNow() + cooldown;
+    }
+  }
+
+  function tick(dt, safeTick = null) {
+    const entries = orderedEntries(ticks);
+    for (const [id, entry] of entries) runTickEntry(id, entry, dt, safeTick);
+    publishSystemStats();
   }
 
   function run(registry, ...args) {
@@ -171,7 +243,7 @@
   }
 
   function registerTileRenderer(id, fn, options = {}) {
-    return register(tileRenderers, id, fn, options);
+    return register(tileRenderers, id, options.critical === undefined ? fn : fn, options);
   }
 
   function setTileRendererEnabled(id, enabled) {
@@ -262,12 +334,18 @@
     return true;
   }
 
+  function listTicks() {
+    return orderedEntries(ticks).map(([id, entry]) => ({ id, order: entry.order, enabled: entry.enabled, type: entry.type, critical: !!entry.critical, intervalMs: entry.intervalMs || 0, stats: { ...statsFor(id) } }));
+  }
+
   window.GameSystems = {
     registerTick,
     unregisterTick,
     hasTick,
     setTickEnabled,
     tick,
+    listTicks,
+    systemStats: () => Array.from(systemStats.values()).map(stat => ({ ...stat })),
     registerColonistUpdateGuard,
     runColonistUpdateGuards,
     registerBeforeColonistUpdate,
