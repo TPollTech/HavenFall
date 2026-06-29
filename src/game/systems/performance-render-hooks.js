@@ -125,29 +125,12 @@
     ctx.restore();
   };
 
-  drawFogOfWar = function drawFogOfWarWithQuality(bounds = visibleTileBounds(1)) {
-    if (!state?.world?.exploration) return;
-    const fog = quality().fog || 'medium';
-    ctx.save();
-    for (let y = bounds.startY; y <= bounds.endY; y++) {
-      for (let x = bounds.startX; x <= bounds.endX; x++) {
-        const v = state.world.exploration[y]?.[x] || 0;
-        if (v === 2) continue;
-        const unseen = v === 0;
-        if (fog === 'low') {
-          ctx.fillStyle = unseen ? 'rgba(3, 7, 18, .90)' : 'rgba(4, 8, 13, .52)';
-          ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
-          continue;
-        }
-        ctx.fillStyle = unseen ? 'rgba(3, 7, 18, .86)' : fog === 'high' ? 'rgba(4, 8, 13, .44)' : 'rgba(4, 8, 13, .48)';
-        ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
-        if (unseen && fog === 'high') {
-          ctx.fillStyle = ((x + y) % 2 === 0) ? 'rgba(148, 163, 184, .04)' : 'rgba(15, 23, 42, .035)';
-          ctx.fillRect(x * TILE, y * TILE, TILE + 1, TILE + 1);
-        }
-      }
-    }
-    ctx.restore();
+  drawFogOfWar = function drawFogOfWarDisabledByPerformanceHooks() {
+    return;
+  };
+
+  drawNightOverlay = function drawNightOverlayDisabledByPerformanceHooks() {
+    return;
   };
 
   function drawLowQualityWater(x, y, type) {
