@@ -6,13 +6,13 @@
   window.HavenfallContext.performanceHotfixesInstalled = true;
 
   const PERF = {
-    zoneUiInterval: 0.35,
-    zoneBehaviorInterval: 0.25,
-    autoTaskMinMs: 240,
-    autoTaskJitterMs: 210,
-    looseTargetCacheMs: 220,
-    pathCacheMs: 120,
-    maxPathCacheEntries: 220
+    zoneUiInterval: 0.45,
+    zoneBehaviorInterval: 0.35,
+    autoTaskMinMs: 360,
+    autoTaskJitterMs: 260,
+    looseTargetCacheMs: 420,
+    pathCacheMs: 850,
+    maxPathCacheEntries: 480
   };
 
   function nowMs() {
@@ -88,7 +88,7 @@
     let behaviorTimer = PERF.zoneBehaviorInterval;
 
     window.GameSystems.registerTick('zones', function updateZonesTickOptimized(dt = 0) {
-      if (!state) return;
+      if (!state || state.isPreview) return;
       const step = Math.max(0.016, Number(dt) || 0.016);
 
       uiTimer += step;
@@ -120,7 +120,7 @@
     window.HavenfallContext.autoTaskCooldownInstalled = true;
 
     assignAutoTask = function assignAutoTaskWithCooldown(c) {
-      if (!c) return false;
+      if (!c || state?.isPreview) return false;
       const now = nowMs();
       if (Number(c._nextAutoTaskAt || 0) > now) return false;
       c._nextAutoTaskAt = now + PERF.autoTaskMinMs + Math.random() * PERF.autoTaskJitterMs;
@@ -133,12 +133,15 @@
     const nativeFindLooseHaulTarget = findLooseHaulTarget;
     let cachedAt = 0;
     let cachedTarget = null;
+    let cachedVersion = 0;
     window.HavenfallContext.looseHaulTargetCacheInstalled = true;
 
     findLooseHaulTarget = function findLooseHaulTargetCached() {
       const now = nowMs();
+      const version = Number(state?.pathVersion || 0);
       if (
         cachedTarget &&
+        cachedVersion === version &&
         now - cachedAt < PERF.looseTargetCacheMs &&
         !cachedTarget.reservedBy &&
         state?.objects?.includes?.(cachedTarget)
@@ -148,6 +151,7 @@
 
       cachedTarget = nativeFindLooseHaulTarget();
       cachedAt = now;
+      cachedVersion = version;
       return cachedTarget;
     };
   }
@@ -403,6 +407,7 @@
       const key = cacheKey(type, left, right, top, bottom, img);
       let tileCanvas = tileCache.get(key);
       if (!tileCanvas) {
+        if (tileCache.size > 512) tileCache.clear();
         tileCanvas = buildTileBitmap(type, left, right, top, bottom, img);
         tileCache.set(key, tileCanvas);
       }
@@ -420,7 +425,9 @@
 
     function makeKey(sx, sy, ex, ey, target) {
       const targetKey = target?.id || target?.type || '';
-      return `${sx},${sy}>${ex},${ey}|${targetKey}|${state?.objects?.length || 0}`;
+      const version = Number(state?.pathVersion || 0);
+      const worldKey = state?.world?.seed || state?.config?.seed || 'world';
+      return `${worldKey}|v${version}|${sx},${sy}>${ex},${ey}|${targetKey}`;
     }
 
     function clonePath(path) {
@@ -432,6 +439,10 @@
       pathCache.set(key, { at: nowMs(), path: clonePath(path) });
     }
 
+    function shouldUseDiagonal(cx, cy, dx, dy, target) {
+      return !(dx !== 0 && dy !== 0 && (isBlocked(cx + dx, cy, target) || isBlocked(cx, cy + dy, target)));
+    }
+
     findPath = function findPathFast(startX, startY, endX, endY, target = null) {
       startX = Math.round(startX);
       startY = Math.round(startY);
@@ -440,7 +451,7 @@
 
       const cols = typeof getWorldCols === 'function' ? getWorldCols() : 0;
       const rows = typeof getWorldRows === 'function' ? getWorldRows() : 0;
-      if (endX < 0 || endY < 0 || endX >= cols || endY >= rows) return [];
+      if (!cols || !rows || endX < 0 || endY < 0 || endX >= cols || endY >= rows) return [];
       if (startX === endX && startY === endY) return [];
 
       const key = makeKey(startX, startY, endX, endY, target);
@@ -455,7 +466,8 @@
       const startKey = tileKey(startX, startY);
       const endKey = tileKey(endX, endY);
       const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-      const maxIterations = Math.min(cols * rows, 4000);
+      const manhattan = Math.abs(endX - startX) + Math.abs(endY - startY);
+      const maxIterations = Math.min(cols * rows, Math.max(1200, Math.min(7200, manhattan * 90)));
       let found = false;
       let iterations = 0;
 
@@ -475,9 +487,9 @@
           const dy = dirs[i][1];
           const nx = cx + dx;
           const ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+          if (!shouldUseDiagonal(cx, cy, dx, dy, target)) continue;
           const nKey = tileKey(nx, ny);
-          const diagonal = dx !== 0 && dy !== 0;
-          if (diagonal && (isBlocked(cx + dx, cy, target) || isBlocked(cx, cy + dy, target))) continue;
           if (!came.has(nKey) && !isBlocked(nx, ny, target)) {
             came.set(nKey, currKey);
             queueX.push(nx);
@@ -514,5 +526,5 @@
   installTerrainTileCache();
   installFastFindPath();
 
-  console.info('[Performance] Hotfixes de renderer, terreno, pathfinding, zonas e IA carregados.');
+  console.info('[Performance] Sistemas de renderer, terreno, pathfinding, zonas e IA carregados.');
 })();
