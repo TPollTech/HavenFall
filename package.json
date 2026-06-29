@@ -16,7 +16,9 @@
     "test:logic": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
     "check:types": "tsc --noEmit",
-    "dist:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win nsis portable",
+    "dist:win:setup": "electron-builder --win nsis",
+    "dist:win:portable": "electron-builder --win portable",
     "pack:win": "electron-builder --win --dir"
   },
   "keywords": [
@@ -61,8 +63,18 @@
     },
     "win": {
       "target": [
+        "nsis",
         "portable"
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HavenFall Desktop",
+      "deleteAppDataOnUninstall": false
     }
   }
 }
