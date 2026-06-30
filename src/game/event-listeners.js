@@ -25,6 +25,27 @@
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!el.isContentEditable;
   }
 
+  function withLoading(label, detail, work, options = {}) {
+    const progress = window.HavenfallBootProgress;
+    if (!progress?.set || !progress?.hide) {
+      work();
+      return;
+    }
+    progress.set(label || 'Carregando...', Number(options.start || 12), detail || 'Preparando');
+    setTimeout(() => {
+      try {
+        progress.set(label || 'Carregando...', Number(options.middle || 54), options.middleDetail || detail || 'Processando');
+        work();
+        progress.set(options.doneLabel || 'Concluído', 100, options.doneDetail || 'Pronto');
+        setTimeout(() => progress.hide(), Number(options.hideDelay || 260));
+      } catch (error) {
+        progress.set('Falha no carregamento', 100, error?.message || String(error));
+        console.error(error);
+        throw error;
+      }
+    }, Number(options.delay || 60));
+  }
+
   function syncSpeedButtons() {
     document.querySelectorAll('[data-speed]').forEach(btn => {
       const active = !!state && Number(btn.dataset.speed) === Number(state.speed || 1) && appScreen === SCREEN.PLAYING;
@@ -77,19 +98,23 @@
   }
 
   function openPlanetScanFromSetup() {
-    newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(readNewGameConfig()) : readNewGameConfig();
-    writeNewGameConfig(newGameConfig);
-    if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
-    setScreen(SCREEN.PLANET_SCAN);
+    withLoading('Calculando setor', 'Lendo seed, dificuldade e recursos iniciais', () => {
+      newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(readNewGameConfig()) : readNewGameConfig();
+      writeNewGameConfig(newGameConfig);
+      if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
+      setScreen(SCREEN.PLANET_SCAN);
+    }, { middleDetail: 'Gerando varredura planetária', doneLabel: 'Varredura pronta', doneDetail: 'Setor preparado' });
   }
 
   function continueFromPlanetScan() {
-    newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
-      ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
-      : { ...(newGameConfig || readNewGameConfig()), planetScan: typeof buildPlanetScanWorldgenProfile === 'function' ? buildPlanetScanWorldgenProfile(newGameConfig || readNewGameConfig()) : null };
-    generateColonistCandidates(newGameConfig);
-    if (typeof activeRecruitmentCandidateIndex === 'number') activeRecruitmentCandidateIndex = 0;
-    setScreen(SCREEN.COLONIST_SELECT);
+    withLoading('Preparando colonos', 'Gerando fichas da expedição', () => {
+      newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
+        ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
+        : { ...(newGameConfig || readNewGameConfig()), planetScan: typeof buildPlanetScanWorldgenProfile === 'function' ? buildPlanetScanWorldgenProfile(newGameConfig || readNewGameConfig()) : null };
+      generateColonistCandidates(newGameConfig);
+      if (typeof activeRecruitmentCandidateIndex === 'number') activeRecruitmentCandidateIndex = 0;
+      setScreen(SCREEN.COLONIST_SELECT);
+    }, { middleDetail: 'Calculando perfis, habilidades e cobertura', doneLabel: 'Colonos prontos', doneDetail: 'Seleção preparada' });
   }
 
   function worldMapOverlayOpen() {
@@ -347,7 +372,7 @@
       dom.speedLabel = null;
     }
 
-    on(dom.buttons.continue, 'click', continueFromMenu);
+    on(dom.buttons.continue, 'click', () => withLoading('Carregando continuação', 'Verificando sessão ou save local', () => { continueFromMenu(); syncSpeedButtons(); }, { middleDetail: 'Restaurando estado da colônia', doneLabel: 'Partida pronta', doneDetail: 'Entrando no jogo' }));
     on(dom.buttons.newGame, 'click', () => {
       writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
       setScreen(SCREEN.NEW_GAME_SETUP);
@@ -358,12 +383,12 @@
     on(dom.buttons.setupBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
     on(dom.buttons.setupNext, 'click', openPlanetScanFromSetup);
     on(dom.buttons.scanBack, 'click', () => setScreen(SCREEN.NEW_GAME_SETUP));
-    on(dom.buttons.scanRefresh, 'click', () => {
+    on(dom.buttons.scanRefresh, 'click', () => withLoading('Gerando novo setor', 'Atualizando seed e varredura', () => {
       if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
       newGameConfig = typeof ensurePlanetScanOnConfig === 'function' ? ensurePlanetScanOnConfig(readNewGameConfig()) : readNewGameConfig();
       if (typeof refreshPlanetScan === 'function') refreshPlanetScan(newGameConfig);
       updateSetupSummary();
-    });
+    }, { middleDetail: 'Recalculando assinaturas planetárias', doneLabel: 'Novo setor pronto', doneDetail: 'Leitura atualizada' }));
     on(dom.buttons.scanProceed, 'click', continueFromPlanetScan);
     on(dom.buttons.randomSeed, 'click', () => {
       if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = generateRandomSeed();
@@ -382,20 +407,23 @@
     on(dom.buttons.colonistBack, 'click', () => setScreen(SCREEN.PLANET_SCAN));
     if (dom.buttons.rerollAll) dom.buttons.rerollAll.hidden = true;
     on(dom.buttons.startSelectedGame, 'click', () => {
-      newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
-        ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
-        : (newGameConfig || readNewGameConfig());
       const validation = typeof validateColonistBuilders === 'function' ? validateColonistBuilders() : { ok: true };
       if (!validation.ok) {
         renderColonistSelection?.();
         return;
       }
-      startNewGame(newGameConfig, colonistCandidates);
-      window.HavenfallRuntime?.markGameplayState?.(state);
-      syncSpeedButtons();
+      withLoading('Gerando mundo', 'Criando terreno, biomas e recursos', () => {
+        newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
+          ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
+          : (newGameConfig || readNewGameConfig());
+        window.HavenfallBootProgress?.set?.('Validando seed', 72, 'Aplicando ecossistema, spawn e POIs');
+        startNewGame(newGameConfig, colonistCandidates);
+        window.HavenfallRuntime?.markGameplayState?.(state);
+        syncSpeedButtons();
+      }, { middle: 46, middleDetail: 'Preparando colonos e ponto de pouso', doneLabel: 'Mundo pronto', doneDetail: 'Entrando na colônia', hideDelay: 360 });
     });
     on(dom.buttons.loadBack, 'click', () => setScreen(SCREEN.MAIN_MENU));
-    on(dom.buttons.loadSlot, 'click', () => { loadAndPlay(); syncSpeedButtons(); });
+    on(dom.buttons.loadSlot, 'click', () => withLoading('Carregando save', 'Lendo save local', () => { loadAndPlay(); syncSpeedButtons(); }, { middleDetail: 'Restaurando mundo, colonos e tarefas', doneLabel: 'Save carregado', doneDetail: 'Entrando na colônia' }));
     on(dom.buttons.deleteSave, 'click', requestDeleteSave);
 
     on(dom.buttons.settingsBack, 'click', goBackFromSettings);
@@ -412,8 +440,8 @@
     on(dom.buttons.pause, 'click', () => { setScreen(appScreen === SCREEN.PLAYING ? SCREEN.PAUSED : SCREEN.PLAYING); syncSpeedButtons(); });
     on(dom.buttons.pauseMenu, 'click', () => { setScreen(SCREEN.PAUSED); syncSpeedButtons(); });
     on(dom.buttons.resume, 'click', () => { setScreen(SCREEN.PLAYING); syncSpeedButtons(); });
-    on(dom.buttons.pauseSave, 'click', () => { saveGame(true); updateUI(true); });
-    on(dom.buttons.pauseLoad, 'click', () => { loadAndPlay(); syncSpeedButtons(); });
+    on(dom.buttons.pauseSave, 'click', () => withLoading('Salvando partida', 'Gravando estado da colônia', () => { saveGame(true); updateUI(true); }, { middleDetail: 'Escrevendo save local', doneLabel: 'Partida salva', doneDetail: 'Save atualizado', hideDelay: 220 }));
+    on(dom.buttons.pauseLoad, 'click', () => withLoading('Carregando save', 'Lendo save local', () => { loadAndPlay(); syncSpeedButtons(); }, { middleDetail: 'Restaurando mundo, colonos e tarefas', doneLabel: 'Save carregado', doneDetail: 'Entrando na colônia' }));
     on(dom.buttons.pauseSettings, 'click', () => setScreen(SCREEN.SETTINGS));
     on(dom.buttons.pauseMainMenu, 'click', () => { setScreen(SCREEN.MAIN_MENU); syncSpeedButtons(); });
     on(dom.buttons.modalStart || document.getElementById('modalStartBtn'), 'click', closeEventModalAndPlay);
