@@ -247,6 +247,7 @@ function createAppMenu(win) {
 function createWindow() {
   const state = loadWindowState();
   const windowIconPath = resolveWindowIconPath();
+  let mainFrameLoaded = false;
   const win = new BrowserWindow({
     width: state.width,
     height: state.height,
@@ -292,6 +293,25 @@ function createWindow() {
     if (url !== current && !url.startsWith('file://')) event.preventDefault();
   });
 
+  win.webContents.on('dom-ready', () => {
+    mainFrameLoaded = true;
+    appendDesktopLog('dom-ready', { url: win.webContents.getURL() });
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    mainFrameLoaded = true;
+    appendDesktopLog('did-finish-load', { url: win.webContents.getURL() });
+  });
+
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    appendDesktopLog('did-fail-load', { errorCode, errorDescription, validatedURL, isMainFrame, mainFrameLoaded });
+    if (!isMainFrame) return;
+    setTimeout(() => {
+      if (mainFrameLoaded || win.isDestroyed()) return;
+      dialog.showErrorBox(APP_NAME, `Falha ao abrir index.html: ${errorDescription || errorCode}\n\nCaminho: ${resolveIndexPath()}`);
+    }, 1800);
+  });
+
   win.webContents.on('render-process-gone', (_event, details) => {
     appendDesktopLog('render-process-gone', details);
     dialog.showErrorBox(APP_NAME, `O processo do jogo caiu: ${details.reason || 'erro desconhecido'}. Veja a pasta de logs.`);
@@ -307,8 +327,11 @@ function createWindow() {
   }
 
   win.loadURL(indexUrl).catch(error => {
-    appendDesktopLog('loadURL failed', { message: error.message, indexPath: resolvedIndexPath, indexUrl });
-    dialog.showErrorBox(APP_NAME, `Falha ao abrir index.html: ${error.message}\n\nCaminho: ${resolvedIndexPath}`);
+    appendDesktopLog('loadURL warning', { message: error.message, indexPath: resolvedIndexPath, indexUrl, mainFrameLoaded });
+    setTimeout(() => {
+      if (mainFrameLoaded || win.isDestroyed()) return;
+      dialog.showErrorBox(APP_NAME, `Falha ao abrir index.html: ${error.message}\n\nCaminho: ${resolvedIndexPath}`);
+    }, 1800);
   });
 
   return win;
