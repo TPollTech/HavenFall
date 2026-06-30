@@ -10,7 +10,7 @@ const isDevToolsRequested = process.argv.includes('--devtools') || process.env.H
 const rootDir = __dirname;
 
 app.setName(APP_NAME);
-app.commandLine.appendSwitch('disable-http-cache');
+if (isDevToolsRequested || process.env.HAVENFALL_DISABLE_CACHE === '1') app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
