@@ -134,11 +134,11 @@
       name: 'colony_systems',
       label: 'Zonas, produção, defesa e clima',
       entries: Object.freeze([
-        ['zones','src/game/zones.js'],
+        ['zones','src/game/systems/zones.js'],
         ['advanced_zones','src/game/systems/advanced-zones.js'],
         ['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],
         ['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],
-        ['environment','src/game/environment.js'],
+        ['environment','src/game/systems/environment.js'],
         ['workstations_tools','src/game/workstations-tools.js'],
         ['defense','src/game/defense.js'],
         ['hauling_adv','src/game/hauling-adv.js'],
