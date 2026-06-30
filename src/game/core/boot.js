@@ -6,7 +6,7 @@
       name: 'foundation',
       label: 'Base global e núcleo mínimo',
       entries: Object.freeze([
-        ['state','src/game/state.js'],
+        ['state','src/game/core/state.js'],
         ['id_generator','src/game/core/id-generator.js'],
         ['game_systems','src/game/core/game-systems.js']
       ])
@@ -41,7 +41,7 @@
       entries: Object.freeze([
         ['asset_manifest','assets/manifest.js'],
         ['fire_vfx_manifest','src/game/ui/fire-vfx-manifest.js'],
-        ['asset_audit','src/game/asset-audit.js'],
+        ['asset_audit','src/game/assets/asset-audit.js'],
         ['ecosystem_rules','src/game/data/ecosystem-rules.js'],
         ['world_validator','src/game/systems/world-validator.js']
       ])
@@ -88,7 +88,7 @@
         ['geology_system','src/game/systems/geology-system.js'],
         ['geology_mass_system','src/game/systems/geology-mass-system.js'],
         ['schedule_manager','src/game/systems/schedule-manager.js'],
-        ['world_systems','src/game/world-systems.js'],
+        ['world_systems','src/game/systems/world-systems.js'],
         ['runtime_tasks','src/game/runtime/runtime-tasks.js'],
         ['simulation_balance','src/game/systems/simulation-balance-system.js'],
         ['work_coordination','src/game/systems/work-coordination-system.js'],
