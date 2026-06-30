@@ -101,12 +101,12 @@
       name: 'rendering_and_input',
       label: 'Renderização principal e entrada do canvas',
       entries: Object.freeze([
-        ['renderer','src/game/renderer.js'],
+        ['renderer','src/game/rendering/renderer.js'],
         ['fog_of_war_render_hook','src/game/ui/fog-of-war-render-hook.js'],
         ['geology_backdrop_render_hook','src/game/ui/geology-backdrop-render-hook.js'],
         ['geology_object_render_guard','src/game/ui/geology-object-render-guard.js'],
         ['fire_vfx_render_hooks','src/game/ui/fire-vfx-render-hooks.js'],
-        ['canvas_input_building','src/game/canvas-input-building.js'],
+        ['canvas_input_building','src/game/input/canvas-input-building.js'],
         ['orders_canvas_input_hook','src/game/ui/orders-canvas-input-hook.js'],
         ['hud_ui','src/game/ui/hud-ui.js']
       ])

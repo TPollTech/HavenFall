@@ -467,7 +467,7 @@ test('Bench sprite scale fits adjacent one-tile placement', () => {
     TILE: 48,
     performance: { now: () => 0 }
   });
-  runBrowserScript('src/game/renderer.js', context);
+  runBrowserScript('src/game/rendering/renderer.js', context);
 
   const scale = vm.runInContext("objectScale('bench', { width: 310, height: 224, naturalWidth: 310, naturalHeight: 224 })", context);
   const renderedWidth = 310 * scale;
