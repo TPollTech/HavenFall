@@ -35,6 +35,7 @@
 
   function installFacade(legacy) {
     if (!legacy || window.HavenfallGeologyMassSystem?.version === FINAL_VERSION) return;
+    window.GameSystems?.setTickEnabled?.('geology.mass-patch', false);
 
     function applyDenseGeology(world = state?.world) {
       prepareLegacyVersion(world);
