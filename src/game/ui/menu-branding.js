@@ -3,6 +3,10 @@
 (() => {
   const MENU_BACKGROUND_URL = 'menu.png';
   const MENU_LOGO_URL = 'logo.png';
+  const RUNTIME_EXTENSION_BLUEPRINTS = Object.freeze([
+    { id: 'audio_sfx_system', file: 'src/game/systems/audio-sfx-system.js' },
+    { id: 'work_feedback_system', file: 'src/game/systems/work-feedback-system.js' }
+  ]);
 
   function injectMenuBrandingStyle() {
     if (document.getElementById('havenfall-menu-branding-style')) return;
@@ -58,9 +62,24 @@
     titleWrap.classList.add('has-logo');
   }
 
+  function loadRuntimeExtension(blueprint) {
+    if (!blueprint?.file || document.querySelector(`script[data-blueprint-id="${blueprint.id}"]`)) return;
+    const script = document.createElement('script');
+    script.src = blueprint.file;
+    script.dataset.blueprintId = blueprint.id;
+    script.onerror = () => console.warn(`[Runtime Extension] Falha ao carregar ${blueprint.id}`);
+    document.body.appendChild(script);
+  }
+
+  function installRuntimeFeedbackExtensions() {
+    for (const blueprint of RUNTIME_EXTENSION_BLUEPRINTS) loadRuntimeExtension(blueprint);
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', installMenuBranding, { once: true });
   } else {
     installMenuBranding();
   }
+
+  installRuntimeFeedbackExtensions();
 })();
