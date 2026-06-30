@@ -1,6 +1,8 @@
 'use strict';
 
 (() => {
+  const VEGETATION_OBJECT_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
+
   function pickWeightedTerrain(weights, seed, x, y, fallback = 'grass') {
     const entries = Object.entries(weights || {});
     if (!entries.length) return fallback;
@@ -53,16 +55,30 @@
     return copy;
   }
 
+  function objectMap(world) {
+    const map = new Map();
+    for (const obj of world?.objects || []) {
+      if (!obj) continue;
+      map.set(`${obj.x},${obj.y}`, obj);
+    }
+    return map;
+  }
+
   function applyBiomeTerrain(world, config = {}) {
     if (!world?.terrain || !world.biomes) return world;
     const seed = config.seed || world.seed || 'biome';
     const spawn = world.spawn || { x: 0, y: 0 };
+    const occupied = objectMap(world);
     for (let y = 0; y < world.rows; y++) {
       for (let x = 0; x < world.cols; x++) {
         const biome = BiomeRegistry.get(world.biomes[y]?.[x]);
         if (!biome) continue;
         const distanceToSpawn = Math.hypot(x - spawn.x, y - spawn.y);
         if (distanceToSpawn < 6) continue;
+
+        const obj = occupied.get(`${x},${y}`);
+        if (obj && VEGETATION_OBJECT_TYPES.has(obj.type)) continue;
+
         const current = world.terrain[y][x];
         if (current === 'stone' && biome.id !== 'snow' && worldNoise(seed, x, y, 'preserve-stone') > 0.42) continue;
         if (current === 'sand' && biome.id !== 'desert' && worldNoise(seed, x, y, 'preserve-sand') > 0.55) continue;
@@ -102,7 +118,8 @@
 
     smoothMountainTerrain(world, seed, occupied);
     erodeOversizedStoneCoverage(world, seed, config, occupied);
-    world.mountainGenerationVersion = '3.0-controlled-ridges';
+    removeVegetationFromInvalidMountainTiles(world);
+    world.mountainGenerationVersion = '3.1-controlled-ridges-clean-objects';
     return world;
   }
 
@@ -216,6 +233,16 @@
     return count;
   }
 
+  function removeVegetationFromInvalidMountainTiles(world) {
+    if (!Array.isArray(world?.objects)) return world;
+    world.objects = world.objects.filter(obj => {
+      if (!obj || !VEGETATION_OBJECT_TYPES.has(obj.type)) return true;
+      const tile = world.terrain?.[obj.y]?.[obj.x];
+      return tile !== 'stone' && tile !== 'water';
+    });
+    return world;
+  }
+
   function installBiomeObjectDefs() {
     if (window.HavenfallContext?.biomeObjectDefsInstalled) return;
     window.HavenfallContext = window.HavenfallContext || {};
@@ -311,8 +338,10 @@
     world.biomeDefinitionsVersion = '1.0';
     applyBiomeTerrain(world, config);
     createMountainRanges(world, config);
+    removeVegetationFromInvalidMountainTiles(world);
     decorateExistingObjects(world, seed);
     addBiomeForage(world, seed);
+    removeVegetationFromInvalidMountainTiles(world);
     world.generationVersion = `${world.generationVersion || 'world'}+biomes`;
     return world;
   }
