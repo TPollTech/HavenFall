@@ -55,6 +55,7 @@
       "menu.png",
       "assets/**/*",
       "src/**/*",
+      "node_modules/phaser/dist/phaser.min.js",
       "electron-main.cjs",
       "electron-preload.cjs",
       "package.json"
@@ -81,5 +82,8 @@
       "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false
     }
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
   }
 }
