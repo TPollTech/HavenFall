@@ -245,9 +245,20 @@ function isInside(x, y) {
   return x >= 0 && y >= 0 && x < getWorldCols() && y < getWorldRows();
 }
 
+function terrainTileAt(x, y) {
+  return state?.world?.terrain?.[y]?.[x] || state?.terrain?.[y]?.[x] || null;
+}
+
+function isTerrainBlockedForPath(x, y, target = null) {
+  if (target && target.x === x && target.y === y) return false;
+  const tile = terrainTileAt(x, y);
+  return tile === 'water';
+}
+
 function isBlocked(x, y, target = null) {
   if (!isInside(x, y)) return true;
   if (target && target.x === x && target.y === y) return false;
+  if (isTerrainBlockedForPath(x, y, target)) return true;
 
   const registeredBlock = window.GameSystems?.pathBlocked?.(x, y, target);
   if (registeredBlock !== null && registeredBlock !== undefined) return registeredBlock;

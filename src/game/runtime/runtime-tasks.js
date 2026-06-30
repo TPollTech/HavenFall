@@ -10,12 +10,56 @@
   const MIN_MOVE_DELTA_PX = 0.35;
   const TASK_VALIDATION_MS = 420;
   const TASK_REPATH_MS = 850;
+  const FAILED_TASK_COOLDOWN_MS = 18000;
+  const MAX_FAILED_TASK_MEMORY = 24;
 
   function nowMs() {
     return typeof performance !== 'undefined' ? performance.now() : Date.now();
   }
 
-  function cancel(c, reason) {
+  function taskSignature(task) {
+    if (!task) return '';
+    return [task.type, task.objId, task.poiId, task.wolfId, task.mobId, task.targetId, task.recipeKey, task.x, task.y, task.mineX, task.mineY].join('|');
+  }
+
+  function ensureFailedTaskMemory(c) {
+    if (!c._failedRuntimeTasks || typeof c._failedRuntimeTasks !== 'object') c._failedRuntimeTasks = {};
+    const keys = Object.keys(c._failedRuntimeTasks);
+    if (keys.length > MAX_FAILED_TASK_MEMORY) {
+      keys
+        .sort((a, b) => Number(c._failedRuntimeTasks[a]?.until || 0) - Number(c._failedRuntimeTasks[b]?.until || 0))
+        .slice(0, keys.length - MAX_FAILED_TASK_MEMORY)
+        .forEach(key => delete c._failedRuntimeTasks[key]);
+    }
+    return c._failedRuntimeTasks;
+  }
+
+  function rememberFailedTask(c, task, reason) {
+    if (!c || !task) return;
+    const signature = taskSignature(task);
+    if (!signature) return;
+    const memory = ensureFailedTaskMemory(c);
+    memory[signature] = {
+      until: nowMs() + FAILED_TASK_COOLDOWN_MS,
+      reason: reason || 'falha de tarefa'
+    };
+  }
+
+  function isTaskTemporarilyBlocked(c, task) {
+    if (!c || !task) return false;
+    const memory = ensureFailedTaskMemory(c);
+    const signature = taskSignature(task);
+    const entry = memory[signature];
+    if (!entry) return false;
+    if (Number(entry.until || 0) <= nowMs()) {
+      delete memory[signature];
+      return false;
+    }
+    return entry;
+  }
+
+  function cancel(c, reason, task = c?.task) {
+    if (task && reason) rememberFailedTask(c, task, reason);
     if (window.HavenfallRuntime?.cancelColonistTask) return window.HavenfallRuntime.cancelColonistTask(c, reason);
     c.task = null;
     c.path = [];
@@ -24,9 +68,11 @@
     return true;
   }
 
-  function taskSignature(task) {
-    if (!task) return '';
-    return [task.type, task.objId, task.poiId, task.wolfId, task.mobId, task.targetId, task.recipeKey, task.x, task.y, task.mineX, task.mineY].join('|');
+  function logTaskFailure(c, reason) {
+    const now = nowMs();
+    if (Number(c._nextTaskFailureLogAt || 0) > now) return;
+    c._nextTaskFailureLogAt = now + 4500;
+    if (typeof log === 'function') log(`${c.name || 'Colono'}: ${reason}`);
   }
 
   function objectById(id) {
@@ -66,6 +112,9 @@
 
   function validateTarget(c, task) {
     if (!task) return { ok: true };
+
+    const blocked = isTaskTemporarilyBlocked(c, task);
+    if (blocked) return { ok: false, reason: blocked.reason || 'Tarefa pausada temporariamente após falha.' };
 
     if (task.type === 'move') {
       if (!Number.isFinite(Number(task.x)) || !Number.isFinite(Number(task.y))) return { ok: false, reason: 'Movimento sem destino.' };
@@ -131,7 +180,9 @@
     if (canRepath(c, task, target)) return true;
     if (Number(c._runtimeNoPathSince || 0) <= 0) c._runtimeNoPathSince = nowMs();
     if (nowMs() - c._runtimeNoPathSince > 2400) {
-      cancel(c, 'Tarefa cancelada: destino inacessível.');
+      const reason = 'Tarefa cancelada: destino inacessível.';
+      logTaskFailure(c, reason);
+      cancel(c, reason, task);
       return false;
     }
     return true;
@@ -157,7 +208,9 @@
     if (!shouldValidateTask(c, task)) return;
     const validation = validateTarget(c, task);
     if (!validation.ok) {
-      cancel(c, `Tarefa cancelada: ${validation.reason}`);
+      const reason = `Tarefa cancelada: ${validation.reason}`;
+      logTaskFailure(c, reason);
+      cancel(c, reason, task);
       return;
     }
     preventRemoteExecution(c, task, validation.target);
@@ -178,7 +231,9 @@
     else c._runtimeStuckSeconds = 0;
 
     if (c._runtimeStuckSeconds >= STUCK_CANCEL_SECONDS) {
-      cancel(c, 'Tarefa cancelada: colono ficou preso.');
+      const reason = 'Tarefa cancelada: colono ficou preso.';
+      logTaskFailure(c, reason);
+      cancel(c, reason, c.task);
       return;
     }
 
@@ -192,7 +247,7 @@
   }
 
   function clearAllForSectorTravel() {
-    for (const c of state?.colonists || []) cancel(c, 'Tarefa limpa pela troca de setor');
+    for (const c of state?.colonists || []) cancel(c, 'Tarefa limpa pela troca de setor', c.task);
   }
 
   window.GameSystems?.registerBeforeColonistUpdate?.('runtime-task-validation', beforeColonistUpdate, { order: 5 });
@@ -201,6 +256,8 @@
   window.HavenfallTasks = Object.freeze({
     validateTarget,
     preventRemoteExecution,
+    rememberFailedTask,
+    isTaskTemporarilyBlocked,
     clearAllForSectorTravel
   });
 })();
