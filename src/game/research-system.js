@@ -1,5 +1,13 @@
 'use strict';
 
+const RESEARCH_TIER_COST_FLOORS = Object.freeze({
+  0: 140,
+  1: 300,
+  2: 560,
+  3: 900,
+  4: 1280
+});
+
 function makeResearchState() {
   return {
     unlocked: {},
@@ -9,11 +17,29 @@ function makeResearchState() {
   };
 }
 
+function balancedResearchCost(def) {
+  const tier = Math.max(0, Math.min(4, Number(def?.tier || 0)));
+  const floor = RESEARCH_TIER_COST_FLOORS[tier] || RESEARCH_TIER_COST_FLOORS[4];
+  const original = Math.max(1, Number(def?.cost || 1));
+  const scaled = floor + Math.round(original * (tier + 2));
+  return Math.max(original, scaled);
+}
+
+function normalizeResearchCosts() {
+  for (const def of Object.values(researchDefs || {})) {
+    if (!def || def._balancedCostApplied) continue;
+    def.originalCost = Number(def.cost || 0);
+    def.cost = balancedResearchCost(def);
+    def._balancedCostApplied = true;
+  }
+}
+
 function ensureResearchState() {
   if (!state.research) state.research = makeResearchState();
   state.research.unlocked = state.research.unlocked || {};
   state.research.completed = state.research.completed || [];
   state.research.progress = state.research.progress || 0;
+  normalizeResearchCosts();
 
   for (const key of state.research.completed) {
     if (researchDefs[key]) state.research.unlocked[key] = true;
