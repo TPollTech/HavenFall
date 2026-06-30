@@ -10,10 +10,10 @@
   const MIN_REPEAT_MS = 70;
 
   const RAIN_LAYERS = Object.freeze([
-    { name: 'rain-body', duration: 5.3, type: 'lowpass', frequency: 720, q: 0.45, gain: 0.105, rate: 0.92 },
-    { name: 'rain-sheet', duration: 3.7, type: 'bandpass', frequency: 1450, q: 0.72, gain: 0.075, rate: 1.04 },
-    { name: 'rain-hiss', duration: 4.6, type: 'highpass', frequency: 2400, q: 0.38, gain: 0.035, rate: 1.12 },
-    { name: 'rain-near-drops', duration: 2.9, type: 'bandpass', frequency: 3600, q: 2.4, gain: 0.025, rate: 0.98 }
+    { name: 'rain-body', duration: 5.3, type: 'lowpass', frequency: 720, q: 0.45, baseGain: 0.105, rate: 0.92 },
+    { name: 'rain-sheet', duration: 3.7, type: 'bandpass', frequency: 1450, q: 0.72, baseGain: 0.075, rate: 1.04 },
+    { name: 'rain-hiss', duration: 4.6, type: 'highpass', frequency: 2400, q: 0.38, baseGain: 0.035, rate: 1.12 },
+    { name: 'rain-near-drops', duration: 2.9, type: 'bandpass', frequency: 3600, q: 2.4, baseGain: 0.025, rate: 0.98 }
   ]);
 
   const audioState = {
@@ -121,9 +121,7 @@
       const white = Math.random() * 2 - 1;
       smooth = smooth * 0.986 + white * 0.014;
       const loopTexture = white * 0.62 + smooth * 0.82;
-      data[i] = mode === 'loop'
-        ? loopTexture * 0.72
-        : white * Math.pow(1 - t, 1.6);
+      data[i] = mode === 'loop' ? loopTexture * 0.72 : white * Math.pow(1 - t, 1.6);
     }
 
     if (mode === 'loop') {
@@ -257,19 +255,19 @@
 
     const source = ctx.createBufferSource();
     const filter = ctx.createBiquadFilter();
-    const gain = ctx.createGain();
+    const gainNode = ctx.createGain();
     source.buffer = buffer;
     source.loop = true;
     source.playbackRate.value = definition.rate * randomBetween(0.96, 1.04);
     filter.type = definition.type;
     filter.frequency.value = definition.frequency;
     filter.Q.value = definition.q;
-    gain.gain.value = 0.0001;
+    gainNode.gain.value = 0.0001;
     source.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioState.ambient);
+    filter.connect(gainNode);
+    gainNode.connect(audioState.ambient);
     source.start();
-    return { ...definition, source, filter, gain, target: 0 };
+    return { ...definition, source, filter, gainNode, target: 0 };
   }
 
   function createRainLoop() {
@@ -294,10 +292,10 @@
     const target = active ? clampValue(0.72 + intensity * 0.33, 0.72, 1.12) : 0;
     rain.target = target;
     for (const layer of rain.layers) {
-      layer.target = Math.max(0.0001, layer.gain ? layer.gain.gain.value : 0.0001);
-      const next = active ? Math.max(0.0001, layer.gain * target) : 0.0001;
-      layer.gain.gain.cancelScheduledValues(ctx.currentTime);
-      layer.gain.gain.setTargetAtTime(next, ctx.currentTime, active ? 0.75 : 0.42);
+      const next = active ? Math.max(0.0001, layer.baseGain * target) : 0.0001;
+      layer.target = next;
+      layer.gainNode.gain.cancelScheduledValues(ctx.currentTime);
+      layer.gainNode.gain.setTargetAtTime(next, ctx.currentTime, active ? 0.75 : 0.42);
     }
   }
 
@@ -312,8 +310,8 @@
     if (!ctx) return;
     for (const layer of rain.layers) {
       const movement = 0.88 + Math.random() * 0.24;
-      const next = Math.max(0.0001, layer.gain * rain.target * movement);
-      layer.gain.gain.setTargetAtTime(next, ctx.currentTime, 0.35);
+      const next = Math.max(0.0001, layer.baseGain * rain.target * movement);
+      layer.gainNode.gain.setTargetAtTime(next, ctx.currentTime, 0.35);
     }
   }
 
