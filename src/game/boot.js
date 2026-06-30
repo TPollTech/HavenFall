@@ -76,7 +76,7 @@
         ['biome_desert','src/game/biomes/biome-desert.js'],
         ['biome_snow','src/game/biomes/biome-snow.js'],
         ['biome_engine','src/game/biomes/biome-engine.js'],
-        ['biomes','src/game/biomes.js']
+        ['biomes','src/game/biomes/biomes.js']
       ])
     }),
     Object.freeze({
