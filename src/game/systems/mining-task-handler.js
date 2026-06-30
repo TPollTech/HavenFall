@@ -32,6 +32,7 @@
     c.work += tick * rate;
     c.note = `Minerando ${label}`;
 
+    const rockBeforeHit = { type: rock.type, resource: rock.resource, maxHp: rock.maxHp };
     const result = typeof mineRockAt === 'function'
       ? mineRockAt(task.mineX, task.mineY, tick * 12 * rate)
       : null;
@@ -40,6 +41,12 @@
       const gainText = Object.entries(result.gain || {})
         .map(([k, v]) => `+${v} ${typeof resourceLabel === 'function' ? resourceLabel(k) : k}`)
         .join(', ');
+      window.HavenfallWorkFeedback?.notifyComplete?.(
+        rockBeforeHit.resource === 'metal' ? 'ore' : 'mine',
+        { ...rockBeforeHit, gain: result.gain },
+        task.mineX,
+        task.mineY
+      );
       if (typeof log === 'function') log(`${c.name} minerou ${label}. ${gainText || 'Rocha removida'}.`);
       c.task = null;
       c.note = 'Ocioso';
