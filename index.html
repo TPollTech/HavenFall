@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="src/styles.css" />
   <link rel="stylesheet" href="src/hud_footer.css" />
   <link rel="stylesheet" href="src/pregame-cinematic.css" />
+  <link rel="stylesheet" href="src/game/rendering/phaser/phaser-renderer.css" />
 </head>
 <body>
   <main id="app" class="app-shell">
@@ -172,7 +173,10 @@
           <div class="clock top-center-info"><span id="dayLabel">Dia 1</span><span id="timeLabel">06:00</span><span id="weatherLabel">Tempo limpo</span></div>
           <div class="top-actions"><button id="pauseBtn">Pausar</button><button id="menuPauseBtn" class="secondary">Menu</button></div>
         </header>
-        <section class="gameplay-viewport" aria-label="Área de gameplay"><canvas id="game" aria-label="Mapa do jogo"></canvas></section>
+        <section class="gameplay-viewport" aria-label="Área de gameplay">
+          <div id="phaserGameLayer" aria-hidden="true"></div>
+          <canvas id="game" aria-label="Mapa do jogo"></canvas>
+        </section>
         <footer id="hud" class="bottom-command-panel component-hud">
           <nav id="bottomActionBar" class="hud-block bottom-action-bar component-bottomactionbar" aria-label="Funções de jogabilidade"><div class="bottom-tabs"><button data-tab="build" class="active">Construir</button><button data-tab="resources">Recursos</button><button data-tab="tasks">Tarefas</button><button data-tab="research">Pesquisa</button><button data-tab="crafting">Crafting</button><button data-tab="zones">Zonas</button><button data-tab="colonists">Colonos</button><button data-tab="selected">Selecionado</button><button data-tab="events">Eventos</button></div><div class="speed-inline"><button data-speed="1">1x</button><button data-speed="2">2x</button><button data-speed="3">3x</button></div></nav>
           <div class="bottom-panel-content">
@@ -193,6 +197,7 @@
 
   <div id="pauseOverlay" class="pause-overlay game-popup-modal" aria-hidden="true"><div class="pause-card"><div class="kicker">Pausado</div><h1>Menu</h1><p>Salve, carregue ou ajuste a partida.</p><div class="menu-actions vertical"><button id="resumeBtn">Continuar</button><button id="pauseSaveBtn">Salvar Agora</button><button id="pauseLoadBtn">Carregar Save</button><button id="pauseSettingsBtn" class="secondary">Configurações</button><button id="pauseMainMenuBtn" class="secondary">Voltar ao Menu Principal</button></div></div></div>
 
+  <script src="src/game/rendering/phaser/phaser-renderer-adapter.js"></script>
   <script type="module" src="src/game/core/boot.js"></script>
 </body>
 </html>
