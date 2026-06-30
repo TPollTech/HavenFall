@@ -9,6 +9,12 @@
   const terrainNames = { grass:'Grama', dirt:'Terra', sand:'Areia', stone:'Pedra', water:'Água' };
   const lifeNames = { baby:'Filhote', juvenile:'Jovem', adult:'Adulto', elder:'Idoso' };
   const mobStates = { wander:'Vagando', grazing:'Pastando', sleep:'Dormindo', flee:'Fugindo', hunting:'Caçando', attack:'Atacando', chasing:'Perseguindo', idle:'Parado' };
+  const taskLabels = {
+    move: 'Em deslocamento', gather: 'Coletando', build: 'Construindo', haul: 'Transportando', sleep: 'Dormindo',
+    research: 'Pesquisando', craft: 'Fabricando', mine: 'Minerando', forge: 'Forjando', cook: 'Cozinhando',
+    heal: 'Tratamento médico', inspect: 'Investigando', loot: 'Vasculhando', inspectPoi: 'Investigando ponto',
+    combat: 'Em combate', scare: 'Defesa', leisure: 'Lazer'
+  };
 
   function esc(v){ const s=String(v??''); return typeof escapeHtml==='function'?escapeHtml(s):s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function n(v,f=0){ v=Number(v); return Number.isFinite(v)?v:f; }
@@ -49,8 +55,68 @@
   function lightAtLabel(x,y){ const v=state?.world?.lightMap?.[y]?.[x]; return v===undefined?'—':`${Math.round(n(v)*100)}%`; }
   function resText(g){ return g?Object.entries(g).map(([k,v])=>`${v} ${({wood:'madeira',stone:'pedra',metal:'metal',food:'comida',medicine:'remédio'})[k]||k}`).join(' · '):'—'; }
   function actionList(...ids){ return ids.map(([id,label])=>({id,label})); }
+
+  function colonistTaskLabel(c) {
+    const task = c?.task;
+    if (!task?.type) return 'Ocioso';
+    const base = taskLabels[task.type] || task.type;
+    if (task.type === 'move' && Number.isFinite(Number(task.x)) && Number.isFinite(Number(task.y))) return `${base} para ${Math.round(task.x)}, ${Math.round(task.y)}`;
+    if (task.type === 'sleep') return task.bedId ? 'Dormindo na cama' : 'Descansando onde está';
+    return base;
+  }
+
+  function colonistStatus(c) {
+    const health = n(c?.health, 100);
+    const hunger = n(c?.hunger, 100);
+    const energy = n(c?.energy, 100);
+    const mood = n(c?.mood, 70);
+    if (health <= 20) return { label: 'Saúde crítica', danger: 2 };
+    if (hunger <= 15) return { label: 'Fome crítica', danger: 2 };
+    if (mood <= 10) return { label: 'Humor crítico', danger: 2 };
+    if (health <= 35) return { label: 'Ferido', danger: 1 };
+    if (hunger <= 30) return { label: 'Com fome', danger: 1 };
+    if (mood <= 25) return { label: 'Humor baixo', danger: 1 };
+    if (energy <= 12) return { label: 'Exausto', danger: 1 };
+    if (c?.task?.type === 'sleep') return { label: 'Dormindo', danger: 0 };
+    if (c?.task?.type && c.task.type !== 'move') return { label: 'Trabalhando', danger: 0 };
+    if (energy >= 90) return { label: 'Totalmente descansado', danger: 0 };
+    return { label: 'Estável', danger: 0 };
+  }
+
   function model(){ const t=stateUi.target,e=entity(); if(!t) return null; if(!e&&t.kind!=='tile'&&t.kind!=='rock') return {kind:t.kind,title:'Alvo indisponível',subtitle:'referência perdida',status:'Não está mais disponível',danger:1,bars:[],chips:['desatualizado'],sections:[['Estado',[['Referência',t.id||`${t.x},${t.y}`]]]],actions:actionList(['close','Fechar'])}; if(t.kind==='colonist')return modelColonist(e); if(t.kind==='animal')return modelAnimal(e,false); if(t.kind==='hostile')return modelAnimal(e,true); if(['resource','building','blueprint','item','poi'].includes(t.kind))return modelObject(e,t.kind); if(t.kind==='rock')return modelRock(e,t.x,t.y); return modelTile(t.x,t.y); }
-  function modelColonist(c){ if(typeof ensureColonistMeta==='function')ensureColonistMeta(c); if(typeof ensureEquipment==='function')ensureEquipment(c); const traits=[...(c.physicalTraits||[]),...(c.positiveTraits||[]),...(c.negativeTraits||[])].filter(Boolean); const sk=c.skills||{}, eq=c.equipment||{}; return {kind:'colonist',title:c.name||'Colono',subtitle:`Colono · ${c.role||'sem função'} · ${c.age??'?'} anos`,status:c.note||'Ocioso',danger:(c.health||100)<35?2:(c.hunger||100)<35?1:0,bars:[bar('Saúde',c.health),bar('Fome',c.hunger),bar('Energia',c.energy),bar('Humor',c.mood)],chips:traits.length?traits:['sem traços'],sections:[['Estado atual',[['Tarefa',c.task?.type||c.note||'Ocioso'],['Prioridade',priorityDefs?.[c.priority]?.label||c.priority||'—'],['Local',`${Math.round(c.x)}, ${Math.round(c.y)}`]]],['Habilidades',[['Coleta',sk.coleta??'—'],['Construção',sk.construcao??'—'],['Defesa',sk.defesa??'—'],['Pesquisa',sk.pesquisa??'—'],['Medicina',sk.medicina??'—']]],['Equipamento',[['Ferramenta',itemDefs?.[eq.tool]?.label||eq.tool||'vazio'],['Arma',itemDefs?.[eq.weapon]?.label||eq.weapon||'vazio'],['Apoio',itemDefs?.[eq.offhand]?.label||eq.offhand||'vazio']]]],actions:actionList(['center','Centralizar'],['colonistDetails','Ficha completa'],['close','Fechar'])}; }
+
+  function modelColonist(c){
+    if(typeof ensureColonistMeta==='function')ensureColonistMeta(c);
+    if(typeof ensureEquipment==='function')ensureEquipment(c);
+    const traits=[...(c.physicalTraits||[]),...(c.positiveTraits||[]),...(c.negativeTraits||[])].filter(Boolean);
+    const sk=c.skills||{}, eq=c.equipment||{};
+    const status = colonistStatus(c);
+    const taskLabel = colonistTaskLabel(c);
+    const note = c.note && ![status.label, taskLabel].includes(c.note) ? c.note : null;
+    const currentRows = [
+      ['Estado', status.label],
+      ['Tarefa', taskLabel],
+      ['Prioridade', priorityDefs?.[c.priority]?.label||c.priority||'—'],
+      ['Local', `${Math.round(c.x)}, ${Math.round(c.y)}`]
+    ];
+    if (note) currentRows.push(['Nota', note]);
+    return {
+      kind:'colonist',
+      title:c.name||'Colono',
+      subtitle:`Colono · ${c.role||'sem função'} · ${c.age??'?'} anos`,
+      status:status.label,
+      danger:status.danger,
+      bars:[bar('Saúde',c.health),bar('Fome',c.hunger),bar('Energia',c.energy),bar('Humor',c.mood)],
+      chips:traits.length?traits:['sem traços'],
+      sections:[
+        ['Estado atual', currentRows],
+        ['Habilidades',[['Coleta',sk.coleta??'—'],['Construção',sk.construcao??'—'],['Defesa',sk.defesa??'—'],['Pesquisa',sk.pesquisa??'—'],['Medicina',sk.medicina??'—']]],
+        ['Equipamento',[['Ferramenta',itemDefs?.[eq.tool]?.label||eq.tool||'vazio'],['Arma',itemDefs?.[eq.weapon]?.label||eq.weapon||'vazio'],['Apoio',itemDefs?.[eq.offhand]?.label||eq.offhand||'vazio']]]
+      ],
+      actions:actionList(['center','Centralizar'],['colonistDetails','Ficha completa'],['close','Fechar'])
+    };
+  }
+
   function modelAnimal(m,hostile){ const hp=m.hp??m.health??100,max=m.maxHp??m.maxHealth??100,stage=m.ageStage||m.lifeStage||'adult'; return {kind:hostile?'hostile':'animal',title:m.name||mobNames[m.type]||m.type||'Animal',subtitle:`${hostile?'Hostil':'Animal'} · ${lifeNames[stage]||stage} · ${hostile?'ameaça':'neutro'}`,status:mobStates[m.state]||m.state||'Vagando',danger:hostile?2:hp<max*.35?1:0,bars:[bar('Saúde',hp,max,hostile?'danger':''),bar('Fome',m.hunger??70),bar('Medo',m.fear??0)],chips:[lifeNames[stage]||stage,hostile?'hostil':'selvagem',m.domesticState||'não domesticado'],sections:[['Comportamento',[['Estado',mobStates[m.state]||m.state||'—'],['Espécie',mobNames[m.type]||m.type||'—'],['Local',`${Math.round(m.x)}, ${Math.round(m.y)}`]]],['Leitura',[['Bioma',biomeAtLabel(Math.round(m.x),Math.round(m.y))],['Perigo',hostile?'alto':'baixo'],['Alvo',m.target||'—']]]],actions:actionList(['center','Centralizar'],['close','Fechar'])}; }
   function modelObject(o,kind){ if(kind==='blueprint'){const b=buildDefs?.[o.buildType]||{};return{kind,title:`Planta: ${b.label||o.buildType}`,subtitle:'Construção planejada',status:'Aguardando trabalho',danger:0,bars:[bar('Progresso',o.progress||0,b.work||1)],chips:['blueprint',b.type||'obra'],sections:[['Obra',[['Materiais',typeof itemCostText==='function'?itemCostText(b.cost||{},b.itemCost||{}):'—'],['Local',`${o.x}, ${o.y}`]]]],actions:actionList(['center','Centralizar'],['buildNow','Construir'],['close','Fechar'])};} if(kind==='item'){const it=itemDefs?.[o.itemKey]||{};return{kind,title:it.label||o.lootLabel||o.itemKey||'Item',subtitle:`Item · x${o.amount||1}`,status:o.reservedBy?'Reservado':'Disponível',danger:0,bars:[],chips:['item',it.slot?`equipável`:'coletável'],sections:[['Informações',[['Quantidade',o.amount||1],['Categoria',it.category||it.slot||'geral'],['Local',`${o.x}, ${o.y}`]]]],actions:actionList(['center','Centralizar'],['haulItem','Levar ao estoque'],['close','Fechar'])};} const d=objectDefs?.[o.type]||{},g=d.gather,title=d.name||({oak_tree:'Carvalho',birch_tree:'Bétula',pine_tree:'Pinheiro',palm_tree:'Palmeira',willow_tree:'Salgueiro'})[o.type]||o.type; const isRes=kind==='resource'; const actions=[['center','Centralizar']]; if(isRes&&g)actions.push(['toggleGather',o.markedForGather?'Desmarcar coleta':'Marcar coleta'],['gatherNow','Coletar agora']); if(['bench','forge','stove','med_station','sewing_table','smokehouse','butcher_table'].includes(o.type))actions.push(['openCraft','Abrir estação']); if(d.interactable)actions.push(['inspectPoi',o.inspected?'Examinar':'Investigar']); actions.push(['close','Fechar']); return{kind,title,subtitle:`${isRes?'Recurso natural':d.interactable?'Ponto de interesse':'Construção'} · ${o.type}`,status:o.markedForGather?'Marcado para coleta':o.inspected?'Inspecionado':'Disponível',danger:d.interactable&&!o.inspected?1:0,bars:o.growth!==undefined?[bar('Crescimento',o.growth)]:[],chips:[isRes?'recurso':'construção',d.blocks?'bloqueia':'caminhável',g?'coletável':''],sections:[isRes?['Coleta',[['Produz',resText(g)],['Trabalho',`${d.work||1}`],['Marcado',o.markedForGather?'sim':'não']]]:['Estado',[['Função',({bed:'descanso',campfire:'calor',crate:'armazenamento',research_desk:'pesquisa',forge:'metalurgia',stove:'cozinha',med_station:'tratamento',crop:'plantio'})[o.type]||'objeto'],['Bloqueia',d.blocks?'sim':'não'],['Local',`${o.x}, ${o.y}`]]]],actions:actionList(...actions)}; }
   function modelRock(r,x,y){ const label=typeof geologyLabelAt==='function'?geologyLabelAt(x,y):'Rocha'; return{kind:'rock',title:label,subtitle:'Terreno rochoso · mineração',status:r.markedForMining?'Marcado para mineração':'Disponível',danger:0,bars:[bar('Dureza',r.hardness||70)],chips:['rocha','mineração',r.markedForMining?'marcada':'não marcada'],sections:[['Mineração',[['Local',`${x}, ${y}`],['Bloqueia','sim'],['Minério',r.ore?'possível':'não detectado']]]],actions:actionList(['center','Centralizar'],['mineNow','Minerar'],['toggleMine',r.markedForMining?'Desmarcar':'Marcar'],['close','Fechar'])}; }
@@ -60,7 +126,24 @@
   function selectById(kind,id){ return selectTarget({kind,id}); }
   function clear(){ stateUi.open=false; stateUi.target=null; stateUi.sig=''; selectedWorldObjectId=null; if(state?.ui?.inspection)state.ui.inspection={...state.ui.inspection,open:false,targetKind:null,targetId:null,x:null,y:null}; const p=document.getElementById('inspectionPanel'); if(p){p.classList.remove('show');p.setAttribute('aria-hidden','true');} }
   function ensure(){ styles(); let p=document.getElementById('inspectionPanel'); if(!p){p=document.createElement('aside');p.id='inspectionPanel';p.className='inspection-panel';p.setAttribute('aria-hidden','true');p.addEventListener('click',panelClick);document.body.appendChild(p);} return p; }
-  function styles(){ if(document.getElementById('inspection-panel-styles'))return; const s=document.createElement('style');s.id='inspection-panel-styles';s.textContent='.inspection-panel{position:fixed;left:18px;bottom:104px;width:min(378px,calc(100vw - 36px));max-height:min(56vh,560px);z-index:6200;display:none;overflow:hidden;border:1px solid rgba(121,199,232,.25);border-radius:18px;background:linear-gradient(180deg,rgba(13,21,34,.96),rgba(7,12,20,.94));box-shadow:0 24px 70px rgba(0,0,0,.45);color:#f4efe4;backdrop-filter:blur(10px)}.inspection-panel.show{display:block}.inspection-scroll{max-height:min(56vh,560px);overflow:auto;padding:14px}.inspection-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.09);padding-bottom:10px;margin-bottom:10px}.inspection-k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#79c7e8;font-weight:900}.inspection-title{margin:2px 0;font-size:19px}.inspection-sub{font-size:12px;color:#aeb8c7;font-weight:700}.inspection-close{width:30px;height:30px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#f4efe4;font-weight:900}.inspection-status{padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075);font-size:12px;font-weight:800;margin-bottom:10px}.inspection-bars{display:grid;gap:8px;margin:10px 0}.inspection-bar{display:grid;grid-template-columns:78px 1fr 42px;align-items:center;gap:8px;font-size:12px}.inspection-track{height:8px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}.inspection-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#79c7e8,#9bd36a)}.inspection-fill.warn{background:linear-gradient(90deg,#f4c46b,#e69d42)}.inspection-fill.danger{background:linear-gradient(90deg,#ff6961,#d74e45)}.inspection-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.inspection-chip{border:1px solid rgba(121,199,232,.18);background:rgba(121,199,232,.08);border-radius:99px;padding:5px 8px;font-size:11px;font-weight:800;color:#d9edf7}.inspection-section{border-top:1px solid rgba(255,255,255,.075);padding-top:10px;margin-top:10px}.inspection-section h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#f4c46b}.inspection-row{display:grid;grid-template-columns:110px 1fr;gap:10px;font-size:12px;padding:4px 0}.inspection-row span{color:#9da9b8;font-weight:800}.inspection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.inspection-actions button{border:1px solid rgba(121,199,232,.22);background:rgba(121,199,232,.10);color:#f4efe4;border-radius:10px;padding:8px 10px;font-weight:900}@media(max-width:760px){.inspection-panel{left:10px;right:10px;bottom:92px;width:auto;max-height:44vh}.inspection-scroll{max-height:44vh}.inspection-row{grid-template-columns:92px 1fr}}';document.head.appendChild(s); }
+
+  function styles(){
+    if(document.getElementById('inspection-panel-styles'))return;
+    const s=document.createElement('style');
+    s.id='inspection-panel-styles';
+    s.textContent=`
+      .inspection-panel{position:fixed;left:18px;bottom:104px;width:min(432px,calc(100vw - 36px));max-height:min(68vh,620px);z-index:6200;display:none;overflow:hidden;border:1px solid rgba(121,199,232,.25);border-radius:18px;background:linear-gradient(180deg,rgba(13,21,34,.97),rgba(7,12,20,.95));box-shadow:0 24px 70px rgba(0,0,0,.45);color:#f4efe4;backdrop-filter:blur(10px)}
+      .inspection-panel.show{display:block}.inspection-scroll{max-height:min(68vh,620px);overflow:auto;padding:16px;scrollbar-width:thin;scrollbar-color:rgba(121,199,232,.48) rgba(7,12,20,.92)}
+      .inspection-scroll::-webkit-scrollbar{width:9px}.inspection-scroll::-webkit-scrollbar-track{background:rgba(7,12,20,.92);border-radius:99px}.inspection-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(121,199,232,.72),rgba(58,103,136,.86));border-radius:99px;border:2px solid rgba(7,12,20,.94)}.inspection-scroll::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(151,219,246,.9),rgba(76,128,164,.95))}
+      .inspection-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.09);padding-bottom:12px;margin-bottom:12px}.inspection-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#79c7e8;font-weight:950}.inspection-title{margin:3px 0;font-size:22px;line-height:1.05}.inspection-sub{font-size:13px;color:#aeb8c7;font-weight:800}.inspection-close{width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.075);color:#f4efe4;font-size:22px;font-weight:950;cursor:pointer}.inspection-close:hover{background:rgba(255,255,255,.13)}
+      .inspection-status{padding:12px 14px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.085);font-size:15px;font-weight:950;margin-bottom:12px}.inspection-panel.danger-1 .inspection-status{background:rgba(244,196,107,.13);border-color:rgba(244,196,107,.32);color:#ffd37a}.inspection-panel.danger-2 .inspection-status{background:rgba(255,105,97,.13);border-color:rgba(255,105,97,.36);color:#ff9c94}
+      .inspection-bars{display:grid;gap:10px;margin:12px 0}.inspection-bar{display:grid;grid-template-columns:92px 1fr 48px;align-items:center;gap:10px;font-size:14px}.inspection-bar>span{white-space:nowrap}.inspection-track{height:10px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}.inspection-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#79c7e8,#9bd36a)}.inspection-fill.warn{background:linear-gradient(90deg,#f4c46b,#e69d42)}.inspection-fill.danger{background:linear-gradient(90deg,#ff6961,#d74e45)}
+      .inspection-chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.inspection-chip{border:1px solid rgba(121,199,232,.24);background:rgba(121,199,232,.10);border-radius:99px;padding:6px 10px;font-size:12px;font-weight:900;color:#d9edf7}.inspection-section{border-top:1px solid rgba(255,255,255,.08);padding-top:13px;margin-top:13px}.inspection-section h4{margin:0 0 10px;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:#f4c46b}.inspection-row{display:grid;grid-template-columns:136px 1fr;gap:12px;font-size:14px;padding:5px 0}.inspection-row span{color:#9da9b8;font-weight:900}.inspection-row b{min-width:0;overflow-wrap:anywhere}.inspection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.inspection-actions button{border:1px solid rgba(121,199,232,.22);background:rgba(121,199,232,.10);color:#f4efe4;border-radius:10px;padding:8px 10px;font-weight:950;cursor:pointer}.inspection-actions button:hover{background:rgba(121,199,232,.17)}
+      @media(max-width:760px){.inspection-panel{left:10px;right:10px;bottom:92px;width:auto;max-height:52vh}.inspection-scroll{max-height:52vh}.inspection-row{grid-template-columns:98px 1fr}.inspection-bar{grid-template-columns:76px 1fr 42px}}
+    `;
+    document.head.appendChild(s);
+  }
+
   function kindLabel(k){return({colonist:'colono',animal:'animal',hostile:'ameaça',resource:'recurso',building:'construção',blueprint:'planta',item:'item',poi:'POI',rock:'rocha',tile:'terreno'})[k]||k||'alvo';}
   function barsHtml(b){return b?.length?`<div class="inspection-bars">${b.map(x=>{const tone=x.tone||(x.value<30?'danger':x.value<55?'warn':'');return`<div class="inspection-bar"><span>${esc(x.label)}</span><div class="inspection-track"><div class="inspection-fill ${tone}" style="width:${x.value}%"></div></div><b>${x.value}%</b></div>`}).join('')}</div>`:'';}
   function sectionsHtml(sections){return(sections||[]).map(([title,rows])=>`<section class="inspection-section"><h4>${esc(title)}</h4>${(rows||[]).map(r=>`<div class="inspection-row"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</section>`).join('');}
