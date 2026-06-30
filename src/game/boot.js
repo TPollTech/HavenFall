@@ -1,28 +1,228 @@
 'use strict';
 
 (() => {
-  const core = [
-    ['state','src/game/state.js'],['id_generator','src/game/core/id-generator.js'],['game_systems','src/game/core/game-systems.js'],
-    ['data_research','src/game/data/research.js'],['data_priorities','src/game/data/priorities.js'],['data_objects','src/game/data/objects.js'],['data_buildings','src/game/data/buildings.js'],['data_items','src/game/data/items.js'],['data_recipes','src/game/data/recipes.js'],['definitions','src/game/data/definitions.js'],
-    ['game_state','src/game/core/game-state.js'],['module_boundary','src/game/core/module-boundary.js'],['menu_branding','src/game/ui/menu-branding.js'],
-    ['audio_sfx_system','src/game/systems/audio-sfx-system.js'],['work_feedback_system','src/game/systems/work-feedback-system.js'],
-    ['asset_manifest','assets/manifest.js'],['fire_vfx_manifest','src/game/ui/fire-vfx-manifest.js'],['asset_audit','src/game/asset-audit.js'],
-    ['ecosystem_rules','src/game/data/ecosystem-rules.js'],['world_validator','src/game/systems/world-validator.js'],
-    ['game_setup','src/game/game-setup.js'],['settings_manager','src/game/core/settings-manager.js'],['desktop_save_settings_ui','src/game/ui/desktop-save-settings-ui.js'],['colonist_generation','src/game/colonist-generation.js'],['research_system','src/game/research-system.js'],['research_defs','src/game/research-defs.js'],['colonist_mechanics','src/game/colonist-mechanics.js'],['screen_manager','src/game/screen-manager.js'],['world_generator','src/game/world-generator.js'],['asset_load_guard','src/game/systems/asset-load-guard-system.js'],['runtime_state','src/game/runtime/runtime-state.js'],['runtime_diagnostics','src/game/runtime/runtime-diagnostics.js'],['multiplayer_system','src/game/systems/multiplayer-system.js'],['multiplayer_menu','src/game/ui/multiplayer-menu.js'],['asset_policy','src/game/core/asset-policy.js'],
-    ['biome_registry','src/game/biomes/biome-registry.js'],['biome_forest','src/game/biomes/biome-forest.js'],['biome_desert','src/game/biomes/biome-desert.js'],['biome_snow','src/game/biomes/biome-snow.js'],['biome_engine','src/game/biomes/biome-engine.js'],['biomes','src/game/biomes.js'],
-    ['exploration_system','src/game/exploration-system.js'],['map_pathfinding','src/game/map-pathfinding.js'],['geology_system','src/game/systems/geology-system.js'],['geology_mass_system','src/game/systems/geology-mass-system.js'],['schedule_manager','src/game/systems/schedule-manager.js'],['world_systems','src/game/world-systems.js'],['runtime_tasks','src/game/runtime/runtime-tasks.js'],['simulation_balance','src/game/systems/simulation-balance-system.js'],['work_coordination','src/game/systems/work-coordination-system.js'],['auto_roof','src/game/systems/auto-roof-system.js'],['mining_task_handler','src/game/systems/mining-task-handler.js'],['mining_orders','src/game/systems/mining-orders.js'],
-    ['renderer','src/game/renderer.js'],['fog_of_war_render_hook','src/game/ui/fog-of-war-render-hook.js'],['geology_backdrop_render_hook','src/game/ui/geology-backdrop-render-hook.js'],['geology_object_render_guard','src/game/ui/geology-object-render-guard.js'],['fire_vfx_render_hooks','src/game/ui/fire-vfx-render-hooks.js'],['canvas_input_building','src/game/canvas-input-building.js'],['orders_canvas_input_hook','src/game/ui/orders-canvas-input-hook.js'],['hud_ui','src/game/ui/hud-ui.js'],
-    ['planet_scan_profile','src/game/systems/planet-scan-profile.js'],['planet_globe_renderer','src/game/rendering/planet-globe-renderer.js'],['planet_scan_ui','src/game/ui/planet-scan-ui.js'],['planet_scan_globe_ui','src/game/ui/planet-scan-globe-ui.js'],['landing_site_worldgen','src/game/systems/landing-site-worldgen.js'],['landing_site_scan_ui','src/game/systems/landing-site-scan-ui.js'],['landing_site_scan_polish','src/game/systems/landing-site-scan-polish.js'],['worldgen_cohesion','src/game/systems/worldgen-cohesion-system.js'],['recruitment_dossier_ui','src/game/ui/recruitment-dossier-ui.js'],['recruitment_dossier_layout_ui','src/game/ui/recruitment-dossier-layout-ui.js'],['recruitment_coverage_ui','src/game/ui/recruitment-coverage-ui.js'],['recruitment_render_ui','src/game/ui/recruitment-render-ui.js'],['recruitment_polish_ui','src/game/ui/recruitment-polish-ui.js'],
-    ['zones','src/game/zones.js'],['advanced_zones','src/game/systems/advanced-zones.js'],['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],['environment','src/game/environment.js'],['workstations_tools','src/game/workstations-tools.js'],['defense','src/game/defense.js'],['hauling_adv','src/game/hauling-adv.js'],['climate_adv','src/game/climate-adv.js'],
-    ['mobs','src/game/mobs.js'],['landing_site_worldgen_polish','src/game/systems/landing-site-worldgen-polish.js'],['blood_wolf','src/game/mobs/blood-wolf.js'],['living_world','src/game/systems/living-world.js'],['performance_render_hooks','src/game/systems/performance-render-hooks.js'],['weather_vfx','src/game/systems/weather-vfx-system.js'],['performance_runtime_hooks','src/game/systems/performance-runtime-hooks.js'],
-    ['pawn_core','src/game/rendering/pawns/pawn-core.js'],['pawn_style','src/game/rendering/pawns/pawn-style.js'],['colonist_renderer','src/game/rendering/pawns/colonist-renderer.js'],['npc_renderer','src/game/rendering/pawns/npc-renderer.js'],['animal_renderer','src/game/rendering/pawns/animal-renderer.js'],['hostile_renderer','src/game/rendering/pawns/hostile-renderer.js'],['pawn_renderer','src/game/rendering/pawn-renderer.js'],
-    ['workstation_core','src/game/rendering/workstations/workstation-core.js'],['workstation_style','src/game/rendering/workstations/workstation-style.js'],['workstation_renderer','src/game/rendering/workstations/workstation-renderer.js'],['simple_object_renderer','src/game/rendering/simple-object-renderer.js'],
-    ['mob_interactions','src/game/mob-interactions.js'],['ui_icon_safety','src/game/ui/icon-safety.js'],['research_overlay','src/game/ui/research-overlay.js'],['colonist_modal','src/game/ui/colonist-modal.js'],['inspection_panel','src/game/ui/inspection-panel.js'],['inspection_input_hook','src/game/ui/inspection-input-hook.js'],['ui_manager','src/game/ui/ui-manager.js'],['pause_menu','src/game/ui/pause-menu.js'],['performance_settings_ui','src/game/ui/performance-settings-ui.js'],['performance_settings_navigation','src/game/ui/performance-settings-navigation.js'],
-    ['tab_crafting','src/game/ui/tab-crafting.js'],['tab_zones','src/game/ui/tab-zones.js'],['tab_colonists','src/game/ui/tab-colonists.js'],['tab_tasks','src/game/ui/tab-tasks.js'],['tab_orders','src/game/ui/tab-orders.js'],['tab_schedule','src/game/ui/tab-schedule.js'],['tab_events','src/game/ui/tab-events.js'],['dock_tab_router','src/game/ui/dock-tab-router.js'],['dock_panel_state','src/game/ui/dock-panel-state.js'],['save_load','src/game/save-load.js'],['runtime_save_ui','src/game/runtime/runtime-save-ui.js'],['game_loop','src/game/game-loop.js'],['performance_optimizer','src/game/rendering/performance-optimizer.js'],['event_listeners','src/game/event-listeners.js'],['world_travel_system','src/game/systems/world-travel-system.js'],['world_map_ui','src/game/ui/world-map-ui.js'],
-    ['construction_system','src/game/systems/construction-system.js'],['render_collision_system','src/game/systems/render-collision-system.js'],['colonist_pathing_system','src/game/systems/colonist-pathing-system.js'],['wall_door_renderer','src/game/rendering/wall-door-renderer.js'],['task_reservation_system','src/game/systems/task-reservation-system.js'],['manual_control','src/game/systems/manual-control-system.js'],['escape_action_router','src/game/systems/escape-action-router.js']
-  ].map(([id,file]) => Object.freeze({ id, file }));
+  const BOOT_GROUPS = Object.freeze([
+    Object.freeze({
+      name: 'foundation',
+      label: 'Base global e núcleo mínimo',
+      entries: Object.freeze([
+        ['state','src/game/state.js'],
+        ['id_generator','src/game/core/id-generator.js'],
+        ['game_systems','src/game/core/game-systems.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'data',
+      label: 'Dados e definições estáticas',
+      entries: Object.freeze([
+        ['data_research','src/game/data/research.js'],
+        ['data_priorities','src/game/data/priorities.js'],
+        ['data_objects','src/game/data/objects.js'],
+        ['data_buildings','src/game/data/buildings.js'],
+        ['data_items','src/game/data/items.js'],
+        ['data_recipes','src/game/data/recipes.js'],
+        ['definitions','src/game/data/definitions.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'core_setup',
+      label: 'Estado, menu, áudio e preparação inicial',
+      entries: Object.freeze([
+        ['game_state','src/game/core/game-state.js'],
+        ['module_boundary','src/game/core/module-boundary.js'],
+        ['menu_branding','src/game/ui/menu-branding.js'],
+        ['audio_sfx_system','src/game/systems/audio-sfx-system.js'],
+        ['work_feedback_system','src/game/systems/work-feedback-system.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'assets_and_validation',
+      label: 'Assets, auditoria e regras de mundo',
+      entries: Object.freeze([
+        ['asset_manifest','assets/manifest.js'],
+        ['fire_vfx_manifest','src/game/ui/fire-vfx-manifest.js'],
+        ['asset_audit','src/game/asset-audit.js'],
+        ['ecosystem_rules','src/game/data/ecosystem-rules.js'],
+        ['world_validator','src/game/systems/world-validator.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'session_setup',
+      label: 'Configuração de jogo e menus iniciais',
+      entries: Object.freeze([
+        ['game_setup','src/game/game-setup.js'],
+        ['settings_manager','src/game/core/settings-manager.js'],
+        ['desktop_save_settings_ui','src/game/ui/desktop-save-settings-ui.js'],
+        ['colonist_generation','src/game/colonist-generation.js'],
+        ['research_system','src/game/research-system.js'],
+        ['research_defs','src/game/research-defs.js'],
+        ['colonist_mechanics','src/game/colonist-mechanics.js'],
+        ['screen_manager','src/game/screen-manager.js'],
+        ['world_generator','src/game/world-generator.js'],
+        ['asset_load_guard','src/game/systems/asset-load-guard-system.js'],
+        ['runtime_state','src/game/runtime/runtime-state.js'],
+        ['runtime_diagnostics','src/game/runtime/runtime-diagnostics.js'],
+        ['multiplayer_system','src/game/systems/multiplayer-system.js'],
+        ['multiplayer_menu','src/game/ui/multiplayer-menu.js'],
+        ['asset_policy','src/game/core/asset-policy.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'biomes',
+      label: 'Biomas e composição ambiental',
+      entries: Object.freeze([
+        ['biome_registry','src/game/biomes/biome-registry.js'],
+        ['biome_forest','src/game/biomes/biome-forest.js'],
+        ['biome_desert','src/game/biomes/biome-desert.js'],
+        ['biome_snow','src/game/biomes/biome-snow.js'],
+        ['biome_engine','src/game/biomes/biome-engine.js'],
+        ['biomes','src/game/biomes.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'world_simulation',
+      label: 'Mundo, pathfinding, geologia e tarefas',
+      entries: Object.freeze([
+        ['exploration_system','src/game/exploration-system.js'],
+        ['map_pathfinding','src/game/map-pathfinding.js'],
+        ['geology_system','src/game/systems/geology-system.js'],
+        ['geology_mass_system','src/game/systems/geology-mass-system.js'],
+        ['schedule_manager','src/game/systems/schedule-manager.js'],
+        ['world_systems','src/game/world-systems.js'],
+        ['runtime_tasks','src/game/runtime/runtime-tasks.js'],
+        ['simulation_balance','src/game/systems/simulation-balance-system.js'],
+        ['work_coordination','src/game/systems/work-coordination-system.js'],
+        ['auto_roof','src/game/systems/auto-roof-system.js'],
+        ['mining_task_handler','src/game/systems/mining-task-handler.js'],
+        ['mining_orders','src/game/systems/mining-orders.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'rendering_and_input',
+      label: 'Renderização principal e entrada do canvas',
+      entries: Object.freeze([
+        ['renderer','src/game/renderer.js'],
+        ['fog_of_war_render_hook','src/game/ui/fog-of-war-render-hook.js'],
+        ['geology_backdrop_render_hook','src/game/ui/geology-backdrop-render-hook.js'],
+        ['geology_object_render_guard','src/game/ui/geology-object-render-guard.js'],
+        ['fire_vfx_render_hooks','src/game/ui/fire-vfx-render-hooks.js'],
+        ['canvas_input_building','src/game/canvas-input-building.js'],
+        ['orders_canvas_input_hook','src/game/ui/orders-canvas-input-hook.js'],
+        ['hud_ui','src/game/ui/hud-ui.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'planet_scan_and_landing',
+      label: 'Varredura orbital e escolha de pouso',
+      entries: Object.freeze([
+        ['planet_scan_profile','src/game/systems/planet-scan-profile.js'],
+        ['planet_globe_renderer','src/game/rendering/planet-globe-renderer.js'],
+        ['planet_scan_ui','src/game/ui/planet-scan-ui.js'],
+        ['planet_scan_globe_ui','src/game/ui/planet-scan-globe-ui.js'],
+        ['landing_site_worldgen','src/game/systems/landing-site-worldgen.js'],
+        ['landing_site_scan_ui','src/game/systems/landing-site-scan-ui.js'],
+        ['landing_site_scan_polish','src/game/systems/landing-site-scan-polish.js'],
+        ['worldgen_cohesion','src/game/systems/worldgen-cohesion-system.js'],
+        ['recruitment_dossier_ui','src/game/ui/recruitment-dossier-ui.js'],
+        ['recruitment_dossier_layout_ui','src/game/ui/recruitment-dossier-layout-ui.js'],
+        ['recruitment_coverage_ui','src/game/ui/recruitment-coverage-ui.js'],
+        ['recruitment_render_ui','src/game/ui/recruitment-render-ui.js'],
+        ['recruitment_polish_ui','src/game/ui/recruitment-polish-ui.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'colony_systems',
+      label: 'Zonas, produção, defesa e clima',
+      entries: Object.freeze([
+        ['zones','src/game/zones.js'],
+        ['advanced_zones','src/game/systems/advanced-zones.js'],
+        ['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],
+        ['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],
+        ['environment','src/game/environment.js'],
+        ['workstations_tools','src/game/workstations-tools.js'],
+        ['defense','src/game/defense.js'],
+        ['hauling_adv','src/game/hauling-adv.js'],
+        ['climate_adv','src/game/climate-adv.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'mobs_and_performance',
+      label: 'Criaturas, mundo vivo e performance',
+      entries: Object.freeze([
+        ['mobs','src/game/mobs.js'],
+        ['landing_site_worldgen_polish','src/game/systems/landing-site-worldgen-polish.js'],
+        ['blood_wolf','src/game/mobs/blood-wolf.js'],
+        ['living_world','src/game/systems/living-world.js'],
+        ['performance_render_hooks','src/game/systems/performance-render-hooks.js'],
+        ['weather_vfx','src/game/systems/weather-vfx-system.js'],
+        ['performance_runtime_hooks','src/game/systems/performance-runtime-hooks.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'pawn_rendering',
+      label: 'Renderização de colonos, NPCs e animais',
+      entries: Object.freeze([
+        ['pawn_core','src/game/rendering/pawns/pawn-core.js'],
+        ['pawn_style','src/game/rendering/pawns/pawn-style.js'],
+        ['colonist_renderer','src/game/rendering/pawns/colonist-renderer.js'],
+        ['npc_renderer','src/game/rendering/pawns/npc-renderer.js'],
+        ['animal_renderer','src/game/rendering/pawns/animal-renderer.js'],
+        ['hostile_renderer','src/game/rendering/pawns/hostile-renderer.js'],
+        ['pawn_renderer','src/game/rendering/pawn-renderer.js'],
+        ['workstation_core','src/game/rendering/workstations/workstation-core.js'],
+        ['workstation_style','src/game/rendering/workstations/workstation-style.js'],
+        ['workstation_renderer','src/game/rendering/workstations/workstation-renderer.js'],
+        ['simple_object_renderer','src/game/rendering/simple-object-renderer.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'ui_panels',
+      label: 'Painéis, inspeção e navegação da UI',
+      entries: Object.freeze([
+        ['mob_interactions','src/game/mob-interactions.js'],
+        ['ui_icon_safety','src/game/ui/icon-safety.js'],
+        ['research_overlay','src/game/ui/research-overlay.js'],
+        ['colonist_modal','src/game/ui/colonist-modal.js'],
+        ['inspection_panel','src/game/ui/inspection-panel.js'],
+        ['inspection_input_hook','src/game/ui/inspection-input-hook.js'],
+        ['ui_manager','src/game/ui/ui-manager.js'],
+        ['pause_menu','src/game/ui/pause-menu.js'],
+        ['performance_settings_ui','src/game/ui/performance-settings-ui.js'],
+        ['performance_settings_navigation','src/game/ui/performance-settings-navigation.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'dock_tabs_and_runtime',
+      label: 'Abas do dock, save, loop e controles finais',
+      entries: Object.freeze([
+        ['tab_crafting','src/game/ui/tab-crafting.js'],
+        ['tab_zones','src/game/ui/tab-zones.js'],
+        ['tab_colonists','src/game/ui/tab-colonists.js'],
+        ['tab_tasks','src/game/ui/tab-tasks.js'],
+        ['tab_orders','src/game/ui/tab-orders.js'],
+        ['tab_schedule','src/game/ui/tab-schedule.js'],
+        ['tab_events','src/game/ui/tab-events.js'],
+        ['dock_tab_router','src/game/ui/dock-tab-router.js'],
+        ['dock_panel_state','src/game/ui/dock-panel-state.js'],
+        ['save_load','src/game/save-load.js'],
+        ['runtime_save_ui','src/game/runtime/runtime-save-ui.js'],
+        ['game_loop','src/game/game-loop.js'],
+        ['performance_optimizer','src/game/rendering/performance-optimizer.js'],
+        ['event_listeners','src/game/event-listeners.js'],
+        ['world_travel_system','src/game/systems/world-travel-system.js'],
+        ['world_map_ui','src/game/ui/world-map-ui.js'],
+        ['construction_system','src/game/systems/construction-system.js'],
+        ['render_collision_system','src/game/systems/render-collision-system.js'],
+        ['colonist_pathing_system','src/game/systems/colonist-pathing-system.js'],
+        ['wall_door_renderer','src/game/rendering/wall-door-renderer.js'],
+        ['task_reservation_system','src/game/systems/task-reservation-system.js'],
+        ['manual_control','src/game/systems/manual-control-system.js'],
+        ['escape_action_router','src/game/systems/escape-action-router.js']
+      ])
+    })
+  ]);
 
-  const CORE_BLUEPRINTS = Object.freeze(core);
+  const CORE_BLUEPRINTS = Object.freeze(BOOT_GROUPS.flatMap(group => group.entries).map(([id, file]) => Object.freeze({ id, file })));
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
   const READY_GATES = Object.freeze(['scripts-loaded', 'assets-loaded', 'listeners-ready', 'save-checked', 'menu-ready']);
   const readyLabels = Object.freeze({
@@ -158,7 +358,7 @@
   }
 
   async function bootFromManifest() {
-    window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
+    window.HavenfallBootManifest = Object.freeze({ groups: BOOT_GROUPS, core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
       ensureBootOverlay();
       bootStartedAt = Date.now();
