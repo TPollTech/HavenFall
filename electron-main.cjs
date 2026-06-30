@@ -3,12 +3,11 @@
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 const APP_NAME = 'HavenFall Desktop';
 const isDevToolsRequested = process.argv.includes('--devtools') || process.env.HAVENFALL_DEVTOOLS === '1';
 const rootDir = __dirname;
-const indexPath = path.join(rootDir, 'index.html');
-const windowIconPath = path.join(rootDir, 'logo.png');
 
 app.setName(APP_NAME);
 app.commandLine.appendSwitch('disable-http-cache');
@@ -18,6 +17,48 @@ app.commandLine.appendSwitch('enable-zero-copy');
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
+
+function uniquePaths(paths) {
+  const seen = new Set();
+  return paths
+    .filter(Boolean)
+    .map(p => path.resolve(String(p)))
+    .filter(p => {
+      const key = p.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function appRootCandidates() {
+  const candidates = [
+    rootDir,
+    process.cwd(),
+    typeof app.getAppPath === 'function' ? app.getAppPath() : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar') : null
+  ];
+  return uniquePaths(candidates);
+}
+
+function resolveAppFile(fileName) {
+  for (const base of appRootCandidates()) {
+    const candidate = path.join(base, fileName);
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch (_) {}
+  }
+  return path.join(rootDir, fileName);
+}
+
+function resolveIndexPath() {
+  return resolveAppFile('index.html');
+}
+
+function resolveWindowIconPath() {
+  return resolveAppFile('logo.png');
+}
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -205,6 +246,7 @@ function createAppMenu(win) {
 
 function createWindow() {
   const state = loadWindowState();
+  const windowIconPath = resolveWindowIconPath();
   const win = new BrowserWindow({
     width: state.width,
     height: state.height,
@@ -255,9 +297,18 @@ function createWindow() {
     dialog.showErrorBox(APP_NAME, `O processo do jogo caiu: ${details.reason || 'erro desconhecido'}. Veja a pasta de logs.`);
   });
 
-  win.loadFile(indexPath).catch(error => {
-    appendDesktopLog('loadFile failed', error.message);
-    dialog.showErrorBox(APP_NAME, `Falha ao abrir index.html: ${error.message}`);
+  const resolvedIndexPath = resolveIndexPath();
+  const indexUrl = pathToFileURL(resolvedIndexPath).toString();
+  appendDesktopLog('load index', { indexPath: resolvedIndexPath, indexUrl, exists: fs.existsSync(resolvedIndexPath), candidates: appRootCandidates() });
+
+  if (!fs.existsSync(resolvedIndexPath)) {
+    dialog.showErrorBox(APP_NAME, `index.html não encontrado. Caminho tentado: ${resolvedIndexPath}`);
+    return win;
+  }
+
+  win.loadURL(indexUrl).catch(error => {
+    appendDesktopLog('loadURL failed', { message: error.message, indexPath: resolvedIndexPath, indexUrl });
+    dialog.showErrorBox(APP_NAME, `Falha ao abrir index.html: ${error.message}\n\nCaminho: ${resolvedIndexPath}`);
   });
 
   return win;
@@ -297,7 +348,7 @@ ipcMain.handle('havenfall:quit', () => {
 });
 
 app.whenReady().then(() => {
-  appendDesktopLog('boot', { version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, paths: desktopPaths() });
+  appendDesktopLog('boot', { version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, paths: desktopPaths(), appRoots: appRootCandidates() });
   const win = createWindow();
   app.on('second-instance', () => {
     if (win.isMinimized()) win.restore();
