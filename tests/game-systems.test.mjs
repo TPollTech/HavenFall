@@ -274,7 +274,7 @@ test('Hauling task cannot pick up loose item remotely when path is missing', () 
     invalidateSpatialGrid: () => {},
     log: () => {}
   });
-  runBrowserScript('src/game/hauling-adv.js', context);
+  runBrowserScript('src/game/systems/hauling-adv.js', context);
 
   const colonist = {
     id: 1,

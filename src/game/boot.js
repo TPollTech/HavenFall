@@ -139,10 +139,10 @@
         ['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],
         ['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],
         ['environment','src/game/systems/environment.js'],
-        ['workstations_tools','src/game/workstations-tools.js'],
-        ['defense','src/game/defense.js'],
-        ['hauling_adv','src/game/hauling-adv.js'],
-        ['climate_adv','src/game/climate-adv.js']
+        ['workstations_tools','src/game/systems/workstations-tools.js'],
+        ['defense','src/game/systems/defense.js'],
+        ['hauling_adv','src/game/systems/hauling-adv.js'],
+        ['climate_adv','src/game/systems/climate-adv.js']
       ])
     }),
     Object.freeze({
