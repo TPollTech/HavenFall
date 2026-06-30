@@ -57,7 +57,7 @@
         ['research_system','src/game/research-system.js'],
         ['research_defs','src/game/research-defs.js'],
         ['colonist_mechanics','src/game/colonist-mechanics.js'],
-        ['screen_manager','src/game/screen-manager.js'],
+        ['screen_manager','src/game/ui/screen-manager.js'],
         ['world_generator','src/game/world-generator.js'],
         ['asset_load_guard','src/game/systems/asset-load-guard-system.js'],
         ['runtime_state','src/game/runtime/runtime-state.js'],
