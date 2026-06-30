@@ -1,13 +1,20 @@
 'use strict';
 
 (() => {
-  if (window.HavenfallAudio?.version === 'work-sfx-v1') return;
+  if (window.HavenfallAudio?.version === 'work-sfx-v2') return;
 
-  const AUDIO_VERSION = 'work-sfx-v1';
+  const AUDIO_VERSION = 'work-sfx-v2';
   const MASTER_VOLUME = 0.72;
   const SFX_VOLUME = 0.82;
   const AMBIENT_VOLUME = 0.38;
   const MIN_REPEAT_MS = 70;
+
+  const RAIN_LAYERS = Object.freeze([
+    { name: 'rain-body', duration: 5.3, type: 'lowpass', frequency: 720, q: 0.45, gain: 0.105, rate: 0.92 },
+    { name: 'rain-sheet', duration: 3.7, type: 'bandpass', frequency: 1450, q: 0.72, gain: 0.075, rate: 1.04 },
+    { name: 'rain-hiss', duration: 4.6, type: 'highpass', frequency: 2400, q: 0.38, gain: 0.035, rate: 1.12 },
+    { name: 'rain-near-drops', duration: 2.9, type: 'bandpass', frequency: 3600, q: 2.4, gain: 0.025, rate: 0.98 }
+  ]);
 
   const audioState = {
     ctx: null,
@@ -18,6 +25,8 @@
     unlocked: false,
     lastPlayed: new Map(),
     rain: null,
+    rainModTimer: 0,
+    rainDropTimer: 1.2,
     thunderCooldown: 8
   };
 
@@ -96,19 +105,39 @@
     return min + Math.random() * (max - min);
   }
 
-  function noiseBuffer(duration = 0.18) {
+  function noiseBuffer(duration = 0.18, mode = 'decay') {
     const ctx = audioReady();
     if (!ctx) return null;
-    const key = Math.round(duration * 1000);
+    const key = `${mode}:${Math.round(duration * 1000)}`;
     if (audioState.noiseBuffers.has(key)) return audioState.noiseBuffers.get(key);
 
     const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
     const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
     const data = buffer.getChannelData(0);
+    let smooth = 0;
+
     for (let i = 0; i < length; i++) {
       const t = i / length;
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.6);
+      const white = Math.random() * 2 - 1;
+      smooth = smooth * 0.986 + white * 0.014;
+      const loopTexture = white * 0.62 + smooth * 0.82;
+      data[i] = mode === 'loop'
+        ? loopTexture * 0.72
+        : white * Math.pow(1 - t, 1.6);
     }
+
+    if (mode === 'loop') {
+      const fade = Math.min(Math.floor(ctx.sampleRate * 0.045), Math.floor(length / 3));
+      for (let i = 0; i < fade; i++) {
+        const a = i / fade;
+        const start = data[i];
+        const end = data[length - fade + i];
+        const blended = start * a + end * (1 - a);
+        data[i] = blended;
+        data[length - fade + i] = blended;
+      }
+    }
+
     audioState.noiseBuffers.set(key, buffer);
     return buffer;
   }
@@ -125,35 +154,37 @@
     return gain;
   }
 
-  function playFilteredNoise({ key, duration = 0.18, gain = 0.28, frequency = 900, q = 0.8, type = 'bandpass', cooldownMs = 70 } = {}) {
+  function playFilteredNoise({ key, duration = 0.18, gain = 0.28, frequency = 900, q = 0.8, type = 'bandpass', cooldownMs = 70, destination = null, delay = 0, attack = 0.006, release = null } = {}) {
     if (key && !shouldPlay(key, cooldownMs)) return;
     const ctx = audioReady();
-    const buffer = noiseBuffer(duration);
+    const buffer = noiseBuffer(duration, 'decay');
     if (!ctx || !buffer) return;
 
     const source = ctx.createBufferSource();
     const filter = ctx.createBiquadFilter();
+    const startAt = ctx.currentTime + Math.max(0, delay);
     source.buffer = buffer;
     filter.type = type;
     filter.frequency.value = frequency * randomBetween(0.88, 1.12);
     filter.Q.value = q;
     source.connect(filter);
-    connectWithEnvelope(filter, audioState.sfx, ctx.currentTime, duration, gain, 0.006, duration * 0.45);
-    source.start();
-    source.stop(ctx.currentTime + duration + 0.04);
+    connectWithEnvelope(filter, destination || audioState.sfx, startAt, duration, gain, attack, release ?? duration * 0.45);
+    source.start(startAt);
+    source.stop(startAt + duration + 0.04);
   }
 
-  function playTone({ frequency = 220, endFrequency = null, duration = 0.12, gain = 0.12, type = 'sine', destination = null } = {}) {
+  function playTone({ frequency = 220, endFrequency = null, duration = 0.12, gain = 0.12, type = 'sine', destination = null, delay = 0 } = {}) {
     const ctx = audioReady();
     if (!ctx) return;
 
+    const startAt = ctx.currentTime + Math.max(0, delay);
     const osc = ctx.createOscillator();
     osc.type = type;
-    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-    if (endFrequency) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), ctx.currentTime + duration);
-    connectWithEnvelope(osc, destination || audioState.sfx, ctx.currentTime, duration, gain, 0.004, duration * 0.6);
-    osc.start();
-    osc.stop(ctx.currentTime + duration + 0.04);
+    osc.frequency.setValueAtTime(frequency, startAt);
+    if (endFrequency) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), startAt + duration);
+    connectWithEnvelope(osc, destination || audioState.sfx, startAt, duration, gain, 0.004, duration * 0.6);
+    osc.start(startAt);
+    osc.stop(startAt + duration + 0.04);
   }
 
   function playStoneHit(detail = {}) {
@@ -183,9 +214,16 @@
     playTone({ frequency: randomBetween(720, 980), endFrequency: 420, duration: 0.10, gain: 0.055, type: 'triangle' });
   }
 
+  function playResearchPageTurn() {
+    if (!shouldPlay('research-page-turn', 360)) return;
+    playFilteredNoise({ duration: 0.22, gain: 0.085, frequency: randomBetween(620, 940), q: 0.55, type: 'bandpass', cooldownMs: 0, attack: 0.012, release: 0.16 });
+    playFilteredNoise({ duration: 0.085, gain: 0.052, frequency: randomBetween(1550, 2300), q: 1.35, type: 'bandpass', cooldownMs: 0, delay: 0.055, attack: 0.004, release: 0.045 });
+    playFilteredNoise({ duration: 0.045, gain: 0.03, frequency: randomBetween(2600, 4200), q: 1.9, type: 'highpass', cooldownMs: 0, delay: 0.115, attack: 0.003, release: 0.03 });
+  }
+
   function playSoftWork(kind) {
     const key = `soft-${kind}`;
-    playFilteredNoise({ key, duration: 0.08, gain: 0.12, frequency: kind === 'research' ? 1750 : 900, q: 1.2, cooldownMs: 120 });
+    playFilteredNoise({ key, duration: 0.08, gain: 0.12, frequency: 900, q: 1.2, cooldownMs: 120 });
   }
 
   function playWorkImpact(kind, detail = {}) {
@@ -196,8 +234,9 @@
     if (normalized === 'mine' || normalized === 'stone' || normalized === 'ore') return playStoneHit(detail);
     if (normalized === 'wood' || normalized === 'tree' || normalized === 'gather-wood') return playWoodChop();
     if (normalized === 'scrap' || normalized === 'metal' || normalized === 'forge') return playScrapHit();
+    if (normalized === 'research') return playResearchPageTurn();
     if (normalized === 'build') return playSoftWork('build');
-    if (normalized === 'craft' || normalized === 'cook' || normalized === 'heal' || normalized === 'research') return playSoftWork(normalized);
+    if (normalized === 'craft' || normalized === 'cook' || normalized === 'heal') return playSoftWork(normalized);
     playSoftWork('generic');
   }
 
@@ -207,30 +246,40 @@
     if (normalized === 'mine' || normalized === 'stone' || normalized === 'ore') return playRockBreak(detail);
     if (normalized === 'wood' || normalized === 'tree' || normalized === 'gather-wood') return playWoodBreak();
     if (normalized === 'scrap' || normalized === 'metal') return playScrapHit();
+    if (normalized === 'research') return playResearchPageTurn();
     playTone({ frequency: 440, endFrequency: 620, duration: 0.10, gain: 0.055, type: 'triangle' });
   }
 
-  function createRainLoop() {
+  function createRainLayer(definition) {
     const ctx = audioReady();
-    if (!ctx || audioState.rain) return audioState.rain;
-
-    const buffer = noiseBuffer(2.5);
-    if (!buffer) return null;
+    const buffer = noiseBuffer(definition.duration, 'loop');
+    if (!ctx || !buffer) return null;
 
     const source = ctx.createBufferSource();
     const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
     source.buffer = buffer;
     source.loop = true;
-    filter.type = 'bandpass';
-    filter.frequency.value = 1650;
-    filter.Q.value = 0.55;
+    source.playbackRate.value = definition.rate * randomBetween(0.96, 1.04);
+    filter.type = definition.type;
+    filter.frequency.value = definition.frequency;
+    filter.Q.value = definition.q;
     gain.gain.value = 0.0001;
     source.connect(filter);
     filter.connect(gain);
     gain.connect(audioState.ambient);
     source.start();
-    audioState.rain = { source, gain, filter, target: 0 };
+    return { ...definition, source, filter, gain, target: 0 };
+  }
+
+  function createRainLoop() {
+    const ctx = audioReady();
+    if (!ctx || audioState.rain) return audioState.rain;
+
+    const layers = RAIN_LAYERS.map(createRainLayer).filter(Boolean);
+    if (!layers.length) return null;
+
+    audioState.rain = { layers, target: 0 };
     return audioState.rain;
   }
 
@@ -240,17 +289,50 @@
     if (!ctx) return;
 
     const rain = active ? createRainLoop() : audioState.rain;
-    if (!rain) return;
+    if (!rain?.layers?.length) return;
 
-    const target = active ? clampValue(0.06 + intensity * 0.18, 0.06, 0.28) : 0.0001;
+    const target = active ? clampValue(0.72 + intensity * 0.33, 0.72, 1.12) : 0;
     rain.target = target;
-    rain.gain.gain.cancelScheduledValues(ctx.currentTime);
-    rain.gain.gain.setTargetAtTime(target, ctx.currentTime, active ? 0.55 : 0.35);
+    for (const layer of rain.layers) {
+      layer.target = Math.max(0.0001, layer.gain ? layer.gain.gain.value : 0.0001);
+      const next = active ? Math.max(0.0001, layer.gain * target) : 0.0001;
+      layer.gain.gain.cancelScheduledValues(ctx.currentTime);
+      layer.gain.gain.setTargetAtTime(next, ctx.currentTime, active ? 0.75 : 0.42);
+    }
+  }
+
+  function modulateRainLayers(dt) {
+    const rain = audioState.rain;
+    if (!rain?.layers?.length || rain.target <= 0) return;
+    audioState.rainModTimer -= Math.max(0, dt || 0);
+    if (audioState.rainModTimer > 0) return;
+    audioState.rainModTimer = randomBetween(0.28, 0.52);
+
+    const ctx = audioState.ctx;
+    if (!ctx) return;
+    for (const layer of rain.layers) {
+      const movement = 0.88 + Math.random() * 0.24;
+      const next = Math.max(0.0001, layer.gain * rain.target * movement);
+      layer.gain.gain.setTargetAtTime(next, ctx.currentTime, 0.35);
+    }
+  }
+
+  function playRainCloseDrop() {
+    if (!shouldPlay('rain-close-drop', 155)) return;
+    playFilteredNoise({ duration: 0.045, gain: 0.026, frequency: randomBetween(2600, 4400), q: 2.8, type: 'bandpass', destination: audioState.ambient, cooldownMs: 0, attack: 0.002, release: 0.026 });
+    if (Math.random() < 0.34) playTone({ frequency: randomBetween(760, 1180), endFrequency: randomBetween(420, 620), duration: 0.055, gain: 0.012, type: 'triangle', destination: audioState.ambient });
+  }
+
+  function tickRainDrops(dt) {
+    audioState.rainDropTimer -= Math.max(0, dt || 0);
+    if (audioState.rainDropTimer > 0) return;
+    audioState.rainDropTimer = randomBetween(0.18, 0.55);
+    if (Math.random() < 0.78) playRainCloseDrop();
   }
 
   function playThunder() {
     if (!shouldPlay('thunder', 2500)) return;
-    playFilteredNoise({ key: 'thunder-noise', duration: 1.2, gain: 0.23, frequency: 130, q: 0.5, type: 'lowpass', cooldownMs: 0 });
+    playFilteredNoise({ key: 'thunder-noise', duration: 1.2, gain: 0.23, frequency: 130, q: 0.5, type: 'lowpass', cooldownMs: 0, destination: audioState.ambient });
     playTone({ frequency: 65, endFrequency: 28, duration: 0.95, gain: 0.18, type: 'sawtooth', destination: audioState.ambient });
   }
 
@@ -264,10 +346,13 @@
     setRainActive(raining, raining ? 1 : 0);
     if (!raining) return;
 
+    modulateRainLayers(dt);
+    tickRainDrops(dt);
+
     audioState.thunderCooldown -= Math.max(0, dt || 0);
     if (audioState.thunderCooldown <= 0) {
-      audioState.thunderCooldown = randomBetween(12, 26);
-      if (Math.random() < 0.42) playThunder();
+      audioState.thunderCooldown = randomBetween(14, 32);
+      if (Math.random() < 0.32) playThunder();
     }
   }
 
