@@ -24,13 +24,85 @@
 
   const CORE_BLUEPRINTS = Object.freeze(core);
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
+  const bootLabels = Object.freeze({
+    state: 'Preparando estado base',
+    game_systems: 'Ligando sistemas centrais',
+    asset_manifest: 'Lendo manifesto de assets',
+    world_generator: 'Preparando geração de mundo',
+    asset_load_guard: 'Protegendo carregamento de assets',
+    map_pathfinding: 'Preparando navegação',
+    geology_system: 'Preparando montanhas e mineração',
+    runtime_tasks: 'Preparando tarefas dos colonos',
+    work_coordination: 'Preparando coordenação de trabalho',
+    renderer: 'Preparando renderização',
+    planet_globe_renderer: 'Preparando globo orbital',
+    worldgen_cohesion: 'Preparando validação de mundo',
+    save_load: 'Preparando saves',
+    game_loop: 'Preparando simulação',
+    main: 'Abrindo menu principal'
+  });
 
-  function loadScript(blueprint) {
+  function ensureBootOverlay() {
+    let overlay = document.getElementById('havenfallBootOverlay');
+    if (overlay) return overlay;
+    const style = document.createElement('style');
+    style.id = 'havenfallBootOverlayStyle';
+    style.textContent = `
+      #havenfallBootOverlay{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:radial-gradient(circle at 50% 20%,rgba(74,65,53,.32),rgba(3,5,8,.96) 58%,#02030a);color:#f4efe4;font-family:system-ui,-apple-system,Segoe UI,sans-serif;transition:opacity .32s ease,visibility .32s ease;pointer-events:auto}
+      #havenfallBootOverlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+      #havenfallBootOverlay .boot-card{width:min(520px,calc(100vw - 40px));padding:28px 30px;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:linear-gradient(180deg,rgba(15,18,24,.88),rgba(6,8,12,.78));box-shadow:0 24px 80px rgba(0,0,0,.55);backdrop-filter:blur(10px)}
+      #havenfallBootOverlay .boot-kicker{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#c9d2e7;margin-bottom:8px}
+      #havenfallBootOverlay .boot-title{font-size:34px;font-weight:900;letter-spacing:.10em;margin-bottom:10px}
+      #havenfallBootOverlay .boot-status{min-height:24px;color:#e9dfcf;font-size:15px;margin-bottom:18px}
+      #havenfallBootOverlay .boot-bar{height:10px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+      #havenfallBootOverlay .boot-fill{height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,#d8b879,#f5ead4);transition:width .18s ease}
+      #havenfallBootOverlay .boot-meta{display:flex;justify-content:space-between;gap:16px;margin-top:12px;color:#9da9bd;font-size:12px}
+    `;
+    document.head.appendChild(style);
+    overlay = document.createElement('div');
+    overlay.id = 'havenfallBootOverlay';
+    overlay.innerHTML = `<div class="boot-card"><div class="boot-kicker">HavenFall</div><div class="boot-title">CARREGANDO</div><div id="bootStatusText" class="boot-status">Inicializando motor...</div><div class="boot-bar"><div id="bootProgressFill" class="boot-fill"></div></div><div class="boot-meta"><span id="bootDetailText">Preparando arquivos</span><span id="bootPercentText">0%</span></div></div>`;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function setBootProgress(label, progress, detail = '') {
+    ensureBootOverlay();
+    const pct = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const status = document.getElementById('bootStatusText');
+    const fill = document.getElementById('bootProgressFill');
+    const meta = document.getElementById('bootDetailText');
+    const percent = document.getElementById('bootPercentText');
+    if (status) status.textContent = label || 'Carregando...';
+    if (fill) fill.style.width = `${pct}%`;
+    if (meta) meta.textContent = detail || 'Preparando sistemas';
+    if (percent) percent.textContent = `${pct}%`;
+    window.HavenfallBootProgressState = { label, progress: pct, detail, updatedAt: Date.now() };
+  }
+
+  function hideBootOverlay() {
+    const overlay = document.getElementById('havenfallBootOverlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 420);
+  }
+
+  window.HavenfallBootProgress = Object.freeze({ set: setBootProgress, hide: hideBootOverlay });
+
+  function labelFor(blueprint) {
+    return bootLabels[blueprint.id] || `Carregando ${blueprint.id.replace(/_/g, ' ')}`;
+  }
+
+  function loadScript(blueprint, index = 0, total = 1) {
+    setBootProgress(labelFor(blueprint), (index / Math.max(1, total)) * 82, blueprint.file);
     return new Promise((resolve, reject) => {
       const el = document.createElement('script');
       el.src = blueprint.file;
       el.dataset.blueprintId = blueprint.id;
-      el.onload = () => resolve(blueprint);
+      el.onload = () => {
+        setBootProgress(`${labelFor(blueprint)} concluído`, ((index + 1) / Math.max(1, total)) * 82, blueprint.file);
+        resolve(blueprint);
+      };
       el.onerror = () => reject(new Error(`Falha ao carregar ${blueprint.id}`));
       document.body.appendChild(el);
     });
@@ -39,10 +111,15 @@
   async function bootFromManifest() {
     window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
-      for (const blueprint of CORE_BLUEPRINTS) await loadScript(blueprint);
-      await loadScript(ENTRY_BLUEPRINT);
+      ensureBootOverlay();
+      setBootProgress('Inicializando HavenFall', 2, 'Preparando manifesto');
+      for (let i = 0; i < CORE_BLUEPRINTS.length; i++) await loadScript(CORE_BLUEPRINTS[i], i, CORE_BLUEPRINTS.length + 1);
+      await loadScript(ENTRY_BLUEPRINT, CORE_BLUEPRINTS.length, CORE_BLUEPRINTS.length + 1);
+      setBootProgress('Finalizando abertura', 100, 'Menu principal pronto');
+      setTimeout(hideBootOverlay, 650);
     } catch (error) {
       console.error(error);
+      setBootProgress('Falha ao iniciar HavenFall', 100, error.message || String(error));
       const box = document.createElement('div');
       box.textContent = `Falha ao iniciar Havenfall: ${error.message || error}`;
       box.style.cssText = 'position:fixed;inset:20px;z-index:9999;display:grid;place-items:center;background:#080b10;color:#f4efe4;font:16px system-ui;text-align:center;padding:24px;';
