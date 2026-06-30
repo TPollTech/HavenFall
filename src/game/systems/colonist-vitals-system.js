@@ -40,8 +40,9 @@
     const type = taskType(c);
     if (!type || type === 'idle') return true;
     if (type === 'sleep') return false;
+    if (type === 'move') return false;
     if (type === 'combat' || type === 'scare') return false;
-    return ['move', 'gather', 'build', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine'].includes(type);
+    return ['gather', 'build', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine'].includes(type);
   }
 
   function isWorkingTask(type) {
@@ -120,12 +121,13 @@
     c.task = { type: 'sleep', x: c.x, y: c.y, reason, floorRest: true };
     c.path = [];
     c.work = 0;
-    c.note = 'Descansando no chão';
+    c.note = 'Descansando onde está';
     return true;
   }
 
   function shouldForceRest(c) {
     if (!c || c.isUnconscious || c.task?.type === 'sleep') return false;
+    if (c.task?.type === 'move') return false;
     if (c.energy <= ENERGY.EMERGENCY) return taskInterruptibleForRest(c);
     if (!c.task && c.energy < ENERGY.SLEEP_AT) return true;
     if (c.energy < ENERGY.SLEEP_AT && taskInterruptibleForRest(c)) return true;
@@ -149,7 +151,7 @@
     const rate = hasBed ? ENERGY.SLEEP_BED : ENERGY.SLEEP_FLOOR;
     c.energy = safeClamp(Number(c.energy || 0) + tick * rate, 0, 100);
     c.mood = safeClamp(Number(c.mood || 0) + tick * (hasBed ? 0.28 : 0.12), 0, 100);
-    c.note = hasBed ? 'Dormindo na cama' : 'Descansando no chão';
+    c.note = hasBed ? 'Dormindo na cama' : 'Descansando onde está';
     wakeIfRested(c);
     return true;
   }
@@ -217,7 +219,7 @@
         startRest(c, 'tired');
       } else {
         const assigned = typeof assignAutoTask === 'function' ? assignAutoTask(c) : false;
-        if (!assigned && c.priority !== 'defense' && Math.random() < 0.0015 * speed && typeof randomWander === 'function') randomWander(c);
+        if (!assigned && c.priority !== 'defense' && c.energy > ENERGY.LOW && Math.random() < 0.0015 * speed && typeof randomWander === 'function') randomWander(c);
       }
     }
 
@@ -240,6 +242,6 @@
     ENERGY,
     startRest,
     original,
-    version: 'main-energy-balance'
+    version: 'main-energy-balance-no-spawn-lock'
   });
 })();
