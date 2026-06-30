@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -98,7 +98,7 @@ test('Gather priority only auto-assigns marked resources', () => {
     log: () => {},
     nearestMarkedMine: () => null
   });
-  runBrowserScript('src/game/world-systems.js', context);
+  runBrowserScript('src/game/systems/world-systems.js', context);
 
   const colonist = { id: 1, name: 'Ana', x: 0, y: 0 };
   assert.equal(context.canDoPriorityTask(colonist, 'gather'), false);
@@ -141,7 +141,7 @@ test('Handle priority can haul loose items to a built storage depot', () => {
     findPath: () => [],
     dist: (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by)
   });
-  runBrowserScript('src/game/world-systems.js', context);
+  runBrowserScript('src/game/systems/world-systems.js', context);
 
   const colonist = { id: 1, name: 'Lia', x: 1, y: 1 };
   assert.equal(context.canDoPriorityTask(colonist, 'handle'), true);
@@ -451,7 +451,7 @@ test('Forge uses its own workstation sprite instead of fire or stove fallback', 
   });
   context.window = context;
   runBrowserScript('src/game/data/objects.js', context);
-  runBrowserScript('src/game/asset-audit.js', context);
+  runBrowserScript('src/game/assets/asset-audit.js', context);
 
   const forgeImg = vm.runInContext('baseObjectDefs.forge.img', context);
   const campfireImg = vm.runInContext('baseObjectDefs.campfire.img', context);
@@ -539,3 +539,4 @@ test('GameState manages resources, items and object indexes', () => {
   assert.deepEqual(context.state.objects, []);
   assert.equal(invalidations, 2);
 });
+
