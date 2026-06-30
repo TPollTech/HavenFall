@@ -10,10 +10,12 @@
   const terrainCache = new Map();
   const objectChunkIndex = new Map();
   const renderBuckets = [];
+
   let terrainCacheWorldRef = null;
   let terrainCacheTerrainRef = null;
   let terrainCacheSignature = '';
   let terrainCacheVersion = 1;
+
   let indexedObjectsRef = null;
   let indexedObjectsLength = -1;
   let indexedObjectsSignature = '';
@@ -24,7 +26,6 @@
     draw: typeof draw === 'function' ? draw : null,
     resizeGameCanvas: typeof resizeGameCanvas === 'function' ? resizeGameCanvas : null,
     drawTile: typeof drawTile === 'function' ? drawTile : null,
-    drawColonist: typeof drawColonist === 'function' ? drawColonist : null,
     drawRain: typeof drawRain === 'function' ? drawRain : null,
     invalidateSpatialGrid: typeof invalidateSpatialGrid === 'function' ? invalidateSpatialGrid : null
   };
@@ -44,23 +45,14 @@
     const fog = setting('graphics.fogQuality', 'medium');
     const water = setting('graphics.waterQuality', 'medium');
     const targetFPS = setting('video.targetFPS', 60);
-    const renderScale = Number(window.HavenfallSettings?.renderScale?.() || setting('video.renderScale', 1) || 1);
-    const farZoom = zoom < 0.82;
-    const strategicZoom = zoom < 0.62;
 
     return {
       zoom,
       renderDistance,
       renderPadding: Number(window.HavenfallSettings?.renderPadding?.() ?? ({ short: 0, medium: 2, long: 4, very_long: 7 }[renderDistance] ?? 2)),
-      renderScale,
       targetFPS,
-      farZoom,
-      strategicZoom,
       drawTerrainBlends: zoom >= 0.86 && renderDistance !== 'short',
       drawTileHooks: zoom >= 0.9 && renderDistance !== 'short',
-      drawNames: zoom >= 1.0,
-      drawTinyBars: zoom >= 0.92,
-      drawEquipment: zoom >= 0.92,
       drawRain: particles !== 'off' && zoom >= 0.62,
       drawFog: fog !== 'low' || zoom >= 0.72,
       water,
@@ -115,29 +107,6 @@
     return chunks;
   }
 
-  function resetTerrainCacheIfNeeded(q) {
-    const signature = [
-      state?.world?.seed || '',
-      state?.world?.cols || getWorldCols(),
-      state?.world?.rows || getWorldRows(),
-      q.drawTerrainBlends ? 'blend' : 'flat',
-      q.water,
-      q.renderDistance
-    ].join('|');
-
-    if (terrainCacheWorldRef === state?.world && terrainCacheTerrainRef === state?.terrain && terrainCacheSignature === signature) return;
-    terrainCache.clear();
-    terrainCacheWorldRef = state?.world;
-    terrainCacheTerrainRef = state?.terrain;
-    terrainCacheSignature = signature;
-    terrainCacheVersion++;
-  }
-
-  function invalidateTerrainChunks() {
-    terrainCache.clear();
-    terrainCacheVersion++;
-  }
-
   function terrainColor(type) {
     return ({
       grass: '#586d2d',
@@ -166,7 +135,6 @@
     const sw = img.naturalWidth || img.width || TILE;
     const sh = img.naturalHeight || img.height || TILE;
     const crop = Math.max(0, Math.min(14, Math.floor(Math.min(sw, sh) * 0.055)));
-    const size = TILE + 2.8;
     targetCtx.drawImage(
       img,
       crop,
@@ -175,8 +143,8 @@
       Math.max(1, sh - crop * 2),
       x * TILE - 1.4,
       y * TILE - 1.4,
-      size,
-      size
+      TILE + 2.8,
+      TILE + 2.8
     );
   }
 
@@ -231,6 +199,29 @@
     if (right && right !== type) drawBlendStripTo(targetCtx, x, y, 'right', right);
     if (top && top !== type) drawBlendStripTo(targetCtx, x, y, 'top', top);
     if (bottom && bottom !== type) drawBlendStripTo(targetCtx, x, y, 'bottom', bottom);
+  }
+
+  function resetTerrainCacheIfNeeded(q) {
+    const signature = [
+      state?.world?.seed || '',
+      state?.world?.cols || getWorldCols(),
+      state?.world?.rows || getWorldRows(),
+      q.drawTerrainBlends ? 'blend' : 'flat',
+      q.water,
+      q.renderDistance
+    ].join('|');
+
+    if (terrainCacheWorldRef === state?.world && terrainCacheTerrainRef === state?.terrain && terrainCacheSignature === signature) return;
+    terrainCache.clear();
+    terrainCacheWorldRef = state?.world;
+    terrainCacheTerrainRef = state?.terrain;
+    terrainCacheSignature = signature;
+    terrainCacheVersion++;
+  }
+
+  function invalidateTerrainChunks() {
+    terrainCache.clear();
+    terrainCacheVersion++;
   }
 
   function renderTerrainChunk(cx, cy, q) {
@@ -357,6 +348,95 @@
     return true;
   }
 
+  function actorWorldX(actor) {
+    return Number.isFinite(Number(actor?.px)) ? Number(actor.px) : Number(actor?.x || 0) * TILE + TILE / 2;
+  }
+
+  function actorWorldY(actor) {
+    return Number.isFinite(Number(actor?.py)) ? Number(actor.py) : Number(actor?.y || 0) * TILE + TILE / 2;
+  }
+
+  function actorDepth(actor) {
+    return actorWorldY(actor) / TILE;
+  }
+
+  function addActors(bucketState, list, kind, seen) {
+    if (!Array.isArray(list)) return 0;
+    let added = 0;
+    for (let i = 0; i < list.length; i++) {
+      const actor = list[i];
+      if (!actor) continue;
+      const key = actor.id ? `${kind}:${actor.id}` : actor;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const px = actorWorldX(actor);
+      const py = actorWorldY(actor);
+      if (!isWorldPointInView(px, py)) continue;
+      if (pushBucket(bucketState, actorDepth(actor), { kind, data: actor })) added++;
+    }
+    return added;
+  }
+
+  function drawGenericActor(actor, label = '') {
+    const x = actorWorldX(actor);
+    const y = actorWorldY(actor);
+    const appearance = actor?.appearance || {};
+    const body = appearance.clothes || appearance.cloth || actor?.cloth || '#735c3f';
+    const skin = appearance.skin || '#c98f65';
+    const hair = appearance.hair || '#2c1b13';
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 20, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = body;
+    ctx.fillRect(x - 8, y - 2, 16, 23);
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hair;
+    ctx.fillRect(x - 7, y - 17, 14, 6);
+    ctx.restore();
+
+    if (actor?.name && typeof drawName === 'function') drawName(actor.name, x, y - 38);
+    else if (label && typeof drawName === 'function') drawName(label, x, y - 38);
+  }
+
+  function drawActor(item) {
+    const actor = item?.data;
+    if (!actor) return;
+
+    if (item.kind === 'colonist') {
+      if (typeof drawColonist === 'function') drawColonist(actor);
+      else drawGenericActor(actor, actor.name || 'Colono');
+      return;
+    }
+
+    if (item.kind === 'wolf') {
+      if (typeof drawWolf === 'function') drawWolf(actor);
+      else if (window.HavenfallPawnRenderer?.drawWolf?.(actor)) return;
+      else drawGenericActor(actor, 'Lobo');
+      return;
+    }
+
+    if (item.kind === 'mob') {
+      if (typeof drawMob === 'function' && drawMob(actor)) return;
+      if (window.HavenfallPawnRenderer?.drawMob?.(actor)) return;
+      if (window.HavenfallAnimalRenderer?.drawMob?.(actor)) return;
+      if (window.HavenfallHostileRenderer?.drawMob?.(actor)) return;
+      drawGenericActor(actor, actor.name || actor.type || 'Mob');
+      return;
+    }
+
+    if (item.kind === 'npc') {
+      if (window.HavenfallPawnRenderer?.drawNpc?.(actor)) return;
+      if (window.HavenfallNpcRenderer?.drawNpc?.(actor)) return;
+      drawGenericActor(actor, actor.name || actor.kind || 'NPC');
+    }
+  }
+
   function optimizedResizeGameCanvas(force = false) {
     measureRendererLayout(force);
 
@@ -368,6 +448,7 @@
 
     const width = Math.max(320, Math.floor(internal.width || cssWidth));
     const height = Math.max(240, Math.floor(internal.height || cssHeight));
+    const renderScale = Math.max(0.45, Number(internal.scale || 1));
 
     canvas.style.width = `${cssWidth}px`;
     canvas.style.height = `${cssHeight}px`;
@@ -379,7 +460,8 @@
       invalidateTerrainChunks();
     }
 
-    viewTransform.scale = camera.zoom;
+    ctx.imageSmoothingEnabled = renderScale >= 0.75;
+    viewTransform.scale = camera.zoom * renderScale;
     clampCamera();
     const safe = cameraSafeViewport();
     viewTransform.offsetX = width / 2 - camera.x * viewTransform.scale;
@@ -390,36 +472,6 @@
     const q = quality();
     drawTerrainTileTo(ctx, x, y, type, q);
     if (q.drawTileHooks) window.GameSystems?.drawTileRenderers?.(x, y, type);
-  }
-
-  function optimizedDrawColonist(c) {
-    if (!c) return;
-    const q = quality();
-    const selected = c.id === selectedColonistId;
-
-    if (selected) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(155, 211, 106, .28)';
-      ctx.strokeStyle = '#9bd36a';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(c.px, c.py + 19, 18, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    const moving = c.path && c.path.length;
-    const frame = moving ? Math.floor(c.anim * 8) % 4 : 0;
-    let dir = c.dir;
-    let flip = false;
-    if ((c.sprite === 'colonistB' || c.sprite === 'colonistC') && dir === 'left') { dir = 'right'; flip = true; }
-    const img = images[`${c.sprite}_${dir}_${frame}`] || images[`${c.sprite}_down_0`];
-    drawAsset(img, c.px, c.py + 24, 0.48, 0.5, 1, flip);
-
-    if ((selected || q.drawEquipment) && typeof drawEquipmentBadge === 'function') drawEquipmentBadge(c);
-    if (selected || q.drawTinyBars) drawTinyBars(c);
-    if (selected || q.drawNames) drawName(c.name, c.px, c.py - 38);
   }
 
   function optimizedDrawRain() {
@@ -455,8 +507,8 @@
 
     const bucketState = makeBucketState(bounds);
     let entitiesDrawn = 0;
-    const objects = visibleObjects(bounds);
 
+    const objects = visibleObjects(bounds);
     for (let i = 0; i < objects.length; i++) {
       const obj = objects[i];
       if (!obj || !isTileDiscovered(obj.x, obj.y)) continue;
@@ -465,26 +517,19 @@
       if (isWorldPointInView(cx, cy)) pushBucket(bucketState, obj.y, { kind: 'obj', data: obj });
     }
 
-    const wolves = state.wolves || [];
-    for (let i = 0; i < wolves.length; i++) {
-      const wolf = wolves[i];
-      if (isWorldPointInView(wolf.px, wolf.py)) pushBucket(bucketState, wolf.py / TILE, { kind: 'wolf', data: wolf });
-    }
-
-    const colonists = state.colonists || [];
-    for (let i = 0; i < colonists.length; i++) {
-      const c = colonists[i];
-      if (isWorldPointInView(c.px, c.py)) pushBucket(bucketState, c.py / TILE, { kind: 'colonist', data: c });
-    }
+    const seenActors = new Set();
+    entitiesDrawn += addActors(bucketState, state?.wolves, 'wolf', seenActors);
+    entitiesDrawn += addActors(bucketState, state?.mobs, 'mob', seenActors);
+    entitiesDrawn += addActors(bucketState, state?.visitors, 'npc', seenActors);
+    entitiesDrawn += addActors(bucketState, state?.npcs, 'npc', seenActors);
+    entitiesDrawn += addActors(bucketState, state?.colonists, 'colonist', seenActors);
 
     for (let b = 0; b < bucketState.count; b++) {
       const bucket = bucketState.buckets[b];
       for (let i = 0; i < bucket.length; i++) {
         const item = bucket[i];
         if (item.kind === 'obj') drawObject(item.data);
-        else if (item.kind === 'wolf') drawWolf(item.data);
-        else if (item.kind === 'colonist') optimizedDrawColonist(item.data);
-        entitiesDrawn++;
+        else drawActor(item);
       }
     }
 
@@ -532,7 +577,11 @@
         terrainChunks: terrainCache.size,
         indexedObjectChunks: objectChunkIndex.size,
         chunkTiles: CHUNK_TILES,
-        signature: terrainCacheSignature
+        signature: terrainCacheSignature,
+        visitors: state?.visitors?.length || 0,
+        mobs: state?.mobs?.length || 0,
+        wolves: state?.wolves?.length || 0,
+        colonists: state?.colonists?.length || 0
       };
     },
     original
@@ -540,7 +589,6 @@
 
   resizeGameCanvas = optimizedResizeGameCanvas;
   drawTile = optimizedDrawTile;
-  drawColonist = optimizedDrawColonist;
   drawRain = optimizedDrawRain;
   draw = optimizedDraw;
 })();
