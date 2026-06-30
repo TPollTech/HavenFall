@@ -32,17 +32,71 @@
     return entries.map(([key, value]) => `+${value} ${typeof resourceLabel === 'function' ? resourceLabel(key) : key}`).join(', ');
   }
 
-  function spawnRubbleFromObject(obj) {
-    if (!obj || obj.type === 'rubble') return;
-    state.objects.push({
-      id: uid('obj'),
-      type: 'rubble',
-      x: obj.x,
-      y: obj.y,
-      amount: 1,
-      sourceType: obj.type,
-      reservedBy: null
-    });
+  function dominantMaterial(obj, def = null) {
+    if (obj?.wallMaterial) return obj.wallMaterial;
+    if (obj?.material) return obj.material;
+    if (def?.wallMaterial) return def.wallMaterial;
+    if (def?.material) return def.material;
+
+    const cost = def?.cost || {};
+    const wood = Number(cost.wood || 0);
+    const stone = Number(cost.stone || 0);
+    const metal = Number(cost.metal || 0);
+
+    if (wood >= stone && wood >= metal && wood > 0) return 'wood';
+    if (stone >= wood && stone >= metal && stone > 0) return 'stone';
+    if (metal >= wood && metal >= stone && metal > 0) return 'metal';
+
+    if (['wall', 'door', 'bed', 'crate'].includes(obj?.type)) return 'wood';
+    return 'debris';
+  }
+
+  function looseResidueFromObject(obj, def = null) {
+    const material = dominantMaterial(obj, def);
+    const cost = def?.cost || {};
+
+    if (material === 'wood') {
+      return {
+        id: uid('obj'),
+        type: 'logs',
+        x: obj.x,
+        y: obj.y,
+        amount: Math.max(1, Math.min(3, Math.floor(Number(cost.wood || 4) * 0.25))),
+        sourceType: obj.type,
+        sourceMaterial: 'wood',
+        reservedBy: null
+      };
+    }
+
+    if (material === 'stone' || material === 'metal') {
+      return {
+        id: uid('obj'),
+        type: 'rubble',
+        x: obj.x,
+        y: obj.y,
+        amount: 1,
+        sourceType: obj.type,
+        sourceMaterial: material,
+        reservedBy: null
+      };
+    }
+
+    return null;
+  }
+
+  function spawnResidueFromObject(obj, def = null) {
+    if (!obj || obj.type === 'rubble' || obj.type === 'logs') return null;
+    const residue = looseResidueFromObject(obj, def);
+    if (!residue) return null;
+    state.objects.push(residue);
+    return residue;
+  }
+
+  function residueText(residue) {
+    if (!residue) return 'Nenhum resíduo foi gerado.';
+    if (residue.type === 'logs') return 'Sobras de madeira ficaram no local.';
+    if (residue.sourceMaterial === 'metal') return 'Sucata metálica ficou para descarte.';
+    return 'Entulho ficou para descarte.';
   }
 
   function handleDeconstructToRubble(c, task, tick) {
@@ -64,9 +118,9 @@
     const refund = refundFromCost(def?.cost || {}, 0.5);
     if (Object.keys(refund).length && typeof addResources === 'function') addResources(refund);
     state.objects = state.objects.filter(o => o.id !== obj.id);
-    spawnRubbleFromObject(obj);
+    const residue = spawnResidueFromObject(obj, def);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-    log(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}. Entulho gerado para descarte.`);
+    log(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}. ${residueText(residue)}`);
     c.task = null;
     c.note = 'Ocioso';
     c.work = 0;
