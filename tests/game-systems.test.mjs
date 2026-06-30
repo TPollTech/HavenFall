@@ -405,7 +405,7 @@ test('New game config clamps setup values and keeps planet scan stable', () => {
     },
     SETTINGS_KEY: 'test-settings'
   });
-  runBrowserScript('src/game/game-setup.js', context);
+  runBrowserScript('src/game/core/game-setup.js', context);
   runBrowserScript('src/game/systems/planet-scan-profile.js', context);
 
   const config = context.ensurePlanetScanOnConfig({

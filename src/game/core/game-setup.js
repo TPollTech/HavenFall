@@ -126,6 +126,31 @@ function normalizeNewGameConfig(config = {}) {
   };
 }
 
+function labelMapSize(value) {
+  return ({
+    large: 'Grande',
+    huge: 'Enorme',
+    giant: 'Gigante',
+    infinite_chunks: 'Infinito por chunks'
+  })[value] || value || 'Mapa';
+}
+
+function labelEventIntensity(value) {
+  return ({
+    low: 'Baixa',
+    normal: 'Normal',
+    high: 'Alta'
+  })[value] || value || 'Normal';
+}
+
+function labelResourcesPreset(value) {
+  return ({
+    scarce: 'Escassos',
+    standard: 'Padrão',
+    rich: 'Abundantes'
+  })[value] || value || 'Padrão';
+}
+
 function readNewGameConfig() {
   const previous = (typeof newGameConfig !== 'undefined' && newGameConfig) ? newGameConfig : {};
   const raw = normalizeNewGameConfig({
