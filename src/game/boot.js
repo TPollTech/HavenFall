@@ -149,7 +149,7 @@
       name: 'mobs_and_performance',
       label: 'Criaturas, mundo vivo e performance',
       entries: Object.freeze([
-        ['mobs','src/game/mobs.js'],
+        ['mobs','src/game/mobs/mobs.js'],
         ['landing_site_worldgen_polish','src/game/systems/landing-site-worldgen-polish.js'],
         ['blood_wolf','src/game/mobs/blood-wolf.js'],
         ['living_world','src/game/systems/living-world.js'],
@@ -179,7 +179,7 @@
       name: 'ui_panels',
       label: 'Painéis, inspeção e navegação da UI',
       entries: Object.freeze([
-        ['mob_interactions','src/game/mob-interactions.js'],
+        ['mob_interactions','src/game/systems/mob-interactions.js'],
         ['ui_icon_safety','src/game/ui/icon-safety.js'],
         ['research_overlay','src/game/ui/research-overlay.js'],
         ['colonist_modal','src/game/ui/colonist-modal.js'],
