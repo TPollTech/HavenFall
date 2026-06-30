@@ -2,6 +2,8 @@
 
 let currentZoneTool = null;
 let zoneDragActive = false;
+let zoneDragStart = null;
+let zoneDragEnd = null;
 
 const zoneDefs = Object.freeze({
   storage: {
@@ -65,6 +67,23 @@ const zoneSystem = {
     if (!zoneType || zoneType === 'none') delete zones.grid[key];
     else if (zoneDefs[zoneType]) zones.grid[key] = zoneType;
     return true;
+  },
+
+  setZoneRect(startX, startY, endX, endY, zoneType) {
+    const zones = this.ensureState();
+    if (!zones) return 0;
+    const minX = Math.min(startX, endX);
+    const maxX = Math.max(startX, endX);
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+    let changed = 0;
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const before = this.getZoneAt(x, y);
+        if (this.setZone(x, y, zoneType) && this.getZoneAt(x, y) !== before) changed++;
+      }
+    }
+    return changed;
   },
 
   clearAll() {
@@ -140,20 +159,32 @@ const zoneSystem = {
 
 window.zoneSystem = zoneSystem;
 
+function zoneDefForOverlay(type) {
+  return window.HavenfallZones?.getZoneDef?.(type) || zoneDefs[type] || null;
+}
+
+function fallbackZoneDef(type) {
+  return zoneDefForOverlay(type) || zoneDefs.storage;
+}
+
+function zoneToolExists(tool) {
+  return tool === 'none' || !!zoneDefForOverlay(tool);
+}
+
 function zoneLabel(type) {
-  return zoneDefs[type]?.label || type || 'Sem zona';
+  return zoneDefForOverlay(type)?.label || type || 'Sem zona';
 }
 
 function zoneToolLabel() {
   if (!currentZoneTool) return 'nenhuma ferramenta ativa';
   if (currentZoneTool === 'none') return 'apagando zonas';
-  return `marcando ${zoneDefs[currentZoneTool]?.label?.toLowerCase() || currentZoneTool}`;
+  return `marcando ${zoneDefForOverlay(currentZoneTool)?.label?.toLowerCase() || currentZoneTool}`;
 }
 
 function clearZoneTool(reason = '') {
   if (!currentZoneTool && !zoneDragActive) return;
   currentZoneTool = null;
-  zoneDragActive = false;
+  clearZoneSelection();
   updateZonePanel();
   updateZonesModal();
   if (reason && typeof log === 'function') log(`Ferramenta de zona desativada${reason ? `: ${reason}` : ''}.`);
@@ -207,7 +238,7 @@ function updateZonePanel() {
 }
 
 function setZoneTool(tool) {
-  if (tool !== 'none' && !zoneDefs[tool]) return;
+  if (!zoneToolExists(tool)) return;
   currentZoneTool = currentZoneTool === tool ? null : tool;
   currentBuild = null;
   updateZonePanel();
@@ -256,6 +287,7 @@ function openZonesModal() {
   modal.classList.add('show');
   modal.setAttribute('aria-hidden', 'false');
   updateZonesModal();
+  if (typeof updateUI === 'function') updateUI(true);
 }
 
 function closeZonesModal() {
@@ -263,6 +295,8 @@ function closeZonesModal() {
   if (!modal) return;
   modal.classList.remove('show');
   modal.setAttribute('aria-hidden', 'true');
+  clearZoneTool();
+  if (typeof updateUI === 'function') updateUI(true);
 }
 
 function updateZonesModal() {
@@ -274,7 +308,7 @@ function updateZonesModal() {
         <div>
           <div class="kicker">Gerenciamento</div>
           <h3>Zonas da colônia</h3>
-          <p class="empty">Escolha uma ferramenta e pinte no mapa. Escolher construção desativa a zona automaticamente.</p>
+          <p class="empty">Escolha uma ferramenta e clique/arraste no mapa para marcar uma área inteira. Solte para confirmar.</p>
         </div>
         <button class="colonist-modal-close" data-close-zones-modal>Fechar</button>
       </header>
@@ -287,6 +321,7 @@ function updateZonesModal() {
       </div>
       <div class="subtle-box"><b>Ferramenta ativa:</b> ${zoneToolLabel()}</div>
       <ul class="zones-help-list">
+        <li><b>Como usar:</b> clique e arraste no mapa; soltar o mouse aplica a zona na área selecionada.</li>
         <li><b>Armazenamento:</b> recebe toras soltas automaticamente.</li>
         <li><b>Descarte:</b> reservada para lixo, carcaças e itens indesejados nas próximas simulações.</li>
         <li><b>Casa:</b> define o núcleo da base.</li>
@@ -305,16 +340,60 @@ function zoneTileFromEvent(event) {
   return tile;
 }
 
-function paintZoneFromEvent(event) {
+function clearZoneSelection() {
+  zoneDragActive = false;
+  zoneDragStart = null;
+  zoneDragEnd = null;
+}
+
+function updateZoneDragFromEvent(event) {
+  const tile = zoneTileFromEvent(event);
+  if (!tile) return false;
+  zoneDragEnd = { x: tile.x, y: tile.y };
+  if (typeof updateUI === 'function') updateUI(true);
+  return true;
+}
+
+function beginZoneSelectionFromEvent(event) {
   if (!currentZoneTool || appScreen !== SCREEN.PLAYING || !state) return false;
   const tile = zoneTileFromEvent(event);
   if (!tile) return false;
-  const changed = zoneSystem.setZone(tile.x, tile.y, currentZoneTool);
-  if (changed) {
-    updateZonePanel();
-    updateZonesModal();
-  }
-  return changed;
+  zoneDragActive = true;
+  zoneDragStart = { x: tile.x, y: tile.y };
+  zoneDragEnd = { x: tile.x, y: tile.y };
+  if (typeof updateUI === 'function') updateUI(true);
+  return true;
+}
+
+function zoneSelectionBounds() {
+  if (!zoneDragStart || !zoneDragEnd) return null;
+  return {
+    minX: Math.min(zoneDragStart.x, zoneDragEnd.x),
+    maxX: Math.max(zoneDragStart.x, zoneDragEnd.x),
+    minY: Math.min(zoneDragStart.y, zoneDragEnd.y),
+    maxY: Math.max(zoneDragStart.y, zoneDragEnd.y)
+  };
+}
+
+function finishZoneSelectionFromEvent(event = null) {
+  if (!zoneDragActive || !currentZoneTool) return false;
+  if (event) updateZoneDragFromEvent(event);
+  const bounds = zoneSelectionBounds();
+  clearZoneSelection();
+  if (!bounds) return false;
+  const changed = zoneSystem.setZoneRect(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, currentZoneTool);
+  updateZonePanel();
+  updateZonesModal();
+  if (typeof updateUI === 'function') updateUI(true);
+  return changed >= 0;
+}
+
+function zonesModalOpen() {
+  return document.getElementById('zones-modal')?.classList.contains('show') === true;
+}
+
+function shouldShowZonesOverlay() {
+  return !!currentZoneTool || zoneDragActive || zonesModalOpen();
 }
 
 function stopCanvasEvent(event) {
@@ -329,30 +408,32 @@ function installZoneInput() {
 
   canvas.addEventListener('mousedown', event => {
     if (event.button !== 0 || !currentZoneTool) return;
-    if (paintZoneFromEvent(event)) {
-      zoneDragActive = true;
+    if (beginZoneSelectionFromEvent(event)) {
       stopCanvasEvent(event);
     }
   }, true);
 
   canvas.addEventListener('mousemove', event => {
     if (!zoneDragActive || !currentZoneTool) return;
-    if (paintZoneFromEvent(event)) stopCanvasEvent(event);
+    if (updateZoneDragFromEvent(event)) stopCanvasEvent(event);
   }, true);
 
   canvas.addEventListener('mouseup', event => {
     if (!zoneDragActive) return;
-    zoneDragActive = false;
+    finishZoneSelectionFromEvent(event);
     stopCanvasEvent(event);
-    if (typeof updateUI === 'function') updateUI(true);
+  }, true);
+
+  window.addEventListener('mouseup', event => {
+    if (!zoneDragActive) return;
+    finishZoneSelectionFromEvent(event);
+    stopCanvasEvent(event);
   }, true);
 
   canvas.addEventListener('click', event => {
     if (!currentZoneTool) return;
     stopCanvasEvent(event);
   }, true);
-
-  canvas.addEventListener('mouseleave', () => { zoneDragActive = false; }, true);
 }
 
 function installZoneButtons() {
@@ -375,21 +456,53 @@ function installZoneButtons() {
   });
 }
 
+function drawZoneSelectionPreview() {
+  const bounds = zoneSelectionBounds();
+  if (!bounds || !currentZoneTool) return;
+  const def = currentZoneTool === 'none'
+    ? { fill: 'rgba(248, 113, 113, .14)', stroke: 'rgba(248, 113, 113, .86)' }
+    : fallbackZoneDef(currentZoneTool);
+  const x = bounds.minX * TILE;
+  const y = bounds.minY * TILE;
+  const w = (bounds.maxX - bounds.minX + 1) * TILE;
+  const h = (bounds.maxY - bounds.minY + 1) * TILE;
+  ctx.save();
+  ctx.fillStyle = def.fill;
+  ctx.strokeStyle = def.stroke;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 4]);
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+  ctx.restore();
+}
+
 function drawZonesOverlay() {
-  if (!state || !zoneSystem.count()) return;
+  if (!state) return;
+  const showExistingZones = shouldShowZonesOverlay() && zoneSystem.count() > 0;
+  const showPreview = zoneDragActive && zoneDragStart && zoneDragEnd;
+  if (!showExistingZones && !showPreview) return;
   ctx.save();
   ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
   ctx.scale(viewTransform.scale, viewTransform.scale);
-  for (const tile of zoneSystem.entries()) {
-    if (!isTileDiscovered(tile.x, tile.y)) continue;
-    const def = zoneDefs[tile.type] || zoneDefs.storage;
-    ctx.fillStyle = def.fill;
-    ctx.strokeStyle = def.stroke;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE);
-    ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+  if (showExistingZones) {
+    for (const tile of zoneSystem.entries()) {
+      if (!isTileDiscovered(tile.x, tile.y)) continue;
+      const def = fallbackZoneDef(tile.type);
+      ctx.fillStyle = def.fill;
+      ctx.strokeStyle = def.stroke;
+      ctx.lineWidth = tile.type === 'allowed' ? 1 : 2;
+      ctx.setLineDash(tile.type === 'home' ? [] : [5, 5]);
+      ctx.fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE);
+      ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+      if (tile.type === 'growing' && viewTransform.scale >= 0.55) {
+        ctx.fillStyle = 'rgba(187,247,208,.78)';
+        ctx.font = '900 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌱', tile.x * TILE + TILE / 2, tile.y * TILE + TILE / 2 + 4);
+      }
+    }
   }
+  if (showPreview) drawZoneSelectionPreview();
   ctx.restore();
 }
 

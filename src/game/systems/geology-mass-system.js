@@ -12,8 +12,10 @@
     sandstone: { hp: 112, resource: 'stone', yield: 5, mineSpeed: 1.2, insulation: 0.38 },
     iron: { hp: 170, resource: 'metal', yield: 5, mineSpeed: 0.9, insulation: 0.48 }
   });
-  const LOOSE_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs', 'rock', 'ore']);
-  const TALL_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
+  const TREE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree']);
+  const LOOSE_RESOURCE_TYPES = new Set([...TREE_TYPES, 'bush', 'berry', 'herbs', 'mushrooms', 'sapling', 'invasive_weed', 'dry_twigs', 'logs', 'rock', 'ore']);
+  const TALL_RESOURCE_TYPES = new Set([...TREE_TYPES, 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
+  const GEOLOGY_FORBIDDEN_TYPES = new Set([...LOOSE_RESOURCE_TYPES, 'ruin', 'cache', 'supply_crate', 'rubble']);
 
   function noise(seed, x, y, salt) {
     if (typeof worldNoise === 'function') return worldNoise(seed, x, y, salt);
@@ -182,21 +184,24 @@
   }
 
   function objectInvalidForLayer(obj, layer, roofLayer = null) {
-    if (!obj || !LOOSE_RESOURCE_TYPES.has(obj.type)) return false;
+    if (!obj || !GEOLOGY_FORBIDDEN_TYPES.has(obj.type)) return false;
     const x = Math.round(obj.x);
     const y = Math.round(obj.y);
     if (hasSolidRock(layer, x, y) || roofLayer?.[y]?.[x]) return true;
     return TALL_RESOURCE_TYPES.has(obj.type) && (hasSolidNear(layer, x, y - 1, 1) || hasSolidNear(layer, x, y, 1));
   }
 
-  function purgeLooseResourcesOnGeology(layer = state?.world?.geologyLayer, roofLayer = state?.world?.naturalRoofLayer) {
-    if (!state?.world) return 0;
-    const source = Array.isArray(state.objects) ? state.objects : state.world.objects || [];
-    const filtered = source.filter(obj => !objectInvalidForLayer(obj, layer, roofLayer));
+  function purgeLooseResourcesOnGeology(target = state?.world, roofLayer = null) {
+    const world = target?.terrain || target?.objects ? target : state?.world;
+    const layer = target?.terrain || target?.objects ? target.geologyLayer : target;
+    const activeRoofLayer = target?.terrain || target?.objects ? target.naturalRoofLayer : roofLayer;
+    if (!world || !Array.isArray(layer)) return 0;
+    const source = Array.isArray(world.objects) ? world.objects : [];
+    const filtered = source.filter(obj => !objectInvalidForLayer(obj, layer, activeRoofLayer));
     const removed = source.length - filtered.length;
-    if (removed > 0 || state.world.objects !== filtered || state.objects !== filtered) {
-      state.world.objects = filtered;
-      state.objects = filtered;
+    if (removed > 0 || world.objects !== filtered) {
+      world.objects = filtered;
+      if (state?.world === world) state.objects = filtered;
       if (removed > 0 && typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     }
     return removed;
@@ -206,7 +211,7 @@
     if (!world?.terrain) return false;
     if (String(world.geologyMassVersion || '').startsWith(VERSION)) {
       world.geologyMassVersion = VERSION;
-      purgeLooseResourcesOnGeology(world.geologyLayer, world.naturalRoofLayer);
+      purgeLooseResourcesOnGeology(world);
       return false;
     }
     const layer = makeDenseLayer(world);
@@ -214,13 +219,13 @@
     world.naturalRoofLayer = layer.map(row => row.map(rock => !!rock?.solid));
     for (let y = 0; y < layer.length; y++) for (let x = 0; x < (layer[y]?.length || 0); x++) if (layer[y][x]?.solid && world.terrain[y]?.[x] !== 'water') world.terrain[y][x] = 'stone';
     world.geologyMassVersion = VERSION;
-    purgeLooseResourcesOnGeology(layer, world.naturalRoofLayer);
+    purgeLooseResourcesOnGeology(world);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     return true;
   }
 
   function cleanupVegetationOnGeology() {
-    return purgeLooseResourcesOnGeology(state?.world?.geologyLayer, state?.world?.naturalRoofLayer);
+    return purgeLooseResourcesOnGeology(state?.world);
   }
 
   function updateGeologyMassSystem() {

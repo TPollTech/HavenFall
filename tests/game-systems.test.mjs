@@ -434,6 +434,94 @@ test('New game config clamps setup values and keeps planet scan stable', () => {
   assert.equal(changed.planetScan.sectorProfile, 'rock');
 });
 
+test('World generator preserves validator failures in world metadata', () => {
+  const context = createContext({
+    console,
+    TILE: 48,
+    defaultNewGameConfig: { seed: 'TEST', mapSize: 'large', difficulty: 'normal' },
+    getMapSizeDef: () => ({ cols: 8, rows: 8, resourceMultiplier: 1 }),
+    hashSeed: text => String(text).split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) >>> 0,
+    seededRandom: () => () => 0.5,
+    createTerrainMap: (cols, rows) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => 'grass')),
+    chooseSpawnPoint: () => ({ x: 4, y: 4 }),
+    carveSpawnClearing: () => {},
+    generateResourceFields: () => {},
+    generatePointsOfInterest: () => [],
+    placeStartingCamp: () => {},
+    makeExplorationMatrix: (cols, rows) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0)),
+    makeSpawnPoints: spawn => [spawn],
+    generateWeatherPattern: () => [],
+    HavenfallEcosystemRules: {},
+    HavenfallWorldValidator: {
+      validateWorld(world) {
+        world.validationVersion = 'validator-test';
+        world.validationReport = { version: 'validator-test', fixCount: 1, errorCount: 1, fixes: ['fix'], errors: ['erro real'] };
+        return {
+          world,
+          valid: false,
+          playable: false,
+          fixCount: 1,
+          errorCount: 1,
+          fixes: ['fix'],
+          errors: ['erro real']
+        };
+      }
+    }
+  });
+  context.window = context;
+  runBrowserScript('src/game/systems/world-generator.js', context);
+
+  const world = context.generateWorldFromSeed({ seed: 'TEST', mapSize: 'large', difficulty: 'normal' });
+
+  assert.equal(world.validated, false);
+  assert.equal(world.validationVersion, 'validator-test');
+  assert.equal(world.validationReport.valid, false);
+  assert.equal(world.validationReport.playable, false);
+  assert.equal(world.validationReport.errorCount, 1);
+  assert.deepEqual(world.validationReport.errors, ['erro real']);
+});
+
+test('Dense geology purge removes loose resources from mountain tiles before gameplay', () => {
+  let invalidations = 0;
+  const context = createContext({
+    state: { world: null, objects: [] },
+    GameSystems: { registerTick() {} },
+    worldNoise: () => 0.5,
+    invalidateSpatialGrid: () => { invalidations += 1; }
+  });
+  runBrowserScript('src/game/systems/geology-mass-system.js', context);
+
+  const solid = { solid: true, mineable: true };
+  const world = {
+    cols: 8,
+    rows: 8,
+    terrain: Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => 'grass')),
+    geologyLayer: Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => null)),
+    naturalRoofLayer: Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => false)),
+    objects: [
+      { id: 'tree-on-rock', type: 'tree', x: 2, y: 2 },
+      { id: 'variant-near-rock', type: 'oak_tree', x: 3, y: 2 },
+      { id: 'logs-under-roof', type: 'logs', x: 5, y: 5 },
+      { id: 'supply-crate-on-rock', type: 'supply_crate', x: 1, y: 1 },
+      { id: 'cache-under-roof', type: 'cache', x: 4, y: 4 },
+      { id: 'rubble-on-rock', type: 'rubble', x: 1, y: 2 },
+      { id: 'safe-berry', type: 'berry', x: 6, y: 6 }
+    ]
+  };
+  world.geologyLayer[1][1] = solid;
+  world.geologyLayer[2][1] = solid;
+  world.geologyLayer[2][2] = solid;
+  world.geologyLayer[2][4] = solid;
+  world.naturalRoofLayer[4][4] = true;
+  world.naturalRoofLayer[5][5] = true;
+
+  const removed = context.HavenfallGeologyMassSystem.purgeLooseResourcesOnGeology(world);
+
+  assert.equal(removed, 6);
+  assert.deepEqual(world.objects.map(obj => obj.id), ['safe-berry']);
+  assert.equal(invalidations, 1);
+});
+
 test('Forge uses its own workstation sprite instead of fire or stove fallback', () => {
   const context = createContext({
     assetNames: ['campfire', 'stove', 'icon_warn'],

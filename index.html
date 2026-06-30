@@ -9,8 +9,182 @@
   <link rel="stylesheet" href="src/hud_footer.css" />
   <link rel="stylesheet" href="src/pregame-cinematic.css" />
   <link rel="stylesheet" href="src/game/rendering/phaser/phaser-renderer.css" />
+  <style id="havenfallBootOverlayStyle">
+    #havenfallBootOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+      overflow: hidden;
+      color: #f4efe4;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #05070b;
+      transition: opacity .24s ease, visibility .24s ease;
+      pointer-events: auto;
+    }
+    #havenfallBootOverlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #havenfallBootOverlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(3,7,12,.38), rgba(3,7,12,.90)),
+        url("menu.png") center / cover no-repeat;
+      background-size: 46px 46px, 46px 46px, auto, cover;
+      filter: saturate(.75) contrast(1.08);
+      transform: scale(1.02);
+    }
+    #havenfallBootOverlay::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(2,5,10,.42), rgba(2,5,10,.76)),
+        radial-gradient(circle at 50% 42%, rgba(120, 167, 170, .22), transparent 34%);
+      pointer-events: none;
+    }
+    #havenfallBootOverlay .boot-card {
+      position: relative;
+      z-index: 1;
+      width: min(760px, calc(100vw - 40px));
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 22px;
+      align-items: center;
+      padding: 24px;
+      border: 1px solid rgba(227,169,63,.30);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(12,17,25,.94), rgba(5,8,14,.94));
+      box-shadow: 0 30px 90px rgba(0,0,0,.62), inset 0 0 0 1px rgba(255,255,255,.045);
+      backdrop-filter: blur(10px);
+    }
+    #havenfallBootOverlay .boot-emblem {
+      width: 118px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(227,169,63,.34);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(26,32,42,.86), rgba(8,12,18,.92));
+      box-shadow: inset 0 0 34px rgba(227,169,63,.08);
+    }
+    #havenfallBootOverlay .boot-emblem img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.55));
+    }
+    #havenfallBootOverlay .boot-content {
+      min-width: 0;
+    }
+    #havenfallBootOverlay .boot-kicker {
+      margin-bottom: 7px;
+      color: #e3a93f;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+    #havenfallBootOverlay .boot-title {
+      margin: 0 0 10px;
+      color: #fff4d9;
+      font-size: clamp(38px, 7vw, 72px);
+      font-weight: 950;
+      line-height: .9;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 4px 0 rgba(0,0,0,.42);
+    }
+    #havenfallBootOverlay .boot-status {
+      min-height: 24px;
+      margin-bottom: 16px;
+      color: #dce7ee;
+      font-size: 15px;
+      font-weight: 760;
+    }
+    #havenfallBootOverlay .boot-bar {
+      height: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      background: rgba(0,0,0,.42);
+      box-shadow: inset 0 0 16px rgba(0,0,0,.55);
+    }
+    #havenfallBootOverlay .boot-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #56d7d0, #e3a93f 62%, #fff4d9);
+      box-shadow: 0 0 18px rgba(86,215,208,.26);
+      transition: width .18s ease;
+    }
+    #havenfallBootOverlay .boot-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 11px;
+      color: #9da9bd;
+      font-size: 12px;
+      font-weight: 760;
+    }
+    #havenfallBootOverlay .boot-meta span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 620px) {
+      #havenfallBootOverlay {
+        padding: 18px;
+      }
+      #havenfallBootOverlay .boot-card {
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 18px;
+      }
+      #havenfallBootOverlay .boot-emblem {
+        width: 84px;
+      }
+      #havenfallBootOverlay .boot-emblem img {
+        width: 58px;
+        height: 58px;
+      }
+      #havenfallBootOverlay .boot-title {
+        font-size: 40px;
+      }
+      #havenfallBootOverlay .boot-meta {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #havenfallBootOverlay .boot-meta span:first-child {
+        white-space: normal;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="havenfallBootOverlay" role="status" aria-live="polite" aria-label="Carregando HavenFall">
+    <div class="boot-card">
+      <div class="boot-emblem" aria-hidden="true"><img src="logo.png" alt="" /></div>
+      <div class="boot-content">
+        <div class="boot-kicker">HavenFall</div>
+        <h1 class="boot-title">Carregando</h1>
+        <div id="bootStatusText" class="boot-status">Inicializando motor...</div>
+        <div class="boot-bar" aria-hidden="true"><div id="bootProgressFill" class="boot-fill"></div></div>
+        <div class="boot-meta"><span id="bootDetailText">Preparando arquivos</span><span id="bootPercentText">0%</span></div>
+      </div>
+    </div>
+  </div>
   <main id="app" class="app-shell">
     <section id="mainMenuScreen" class="screen menu-screen main-menu-classic active" data-screen="MAIN_MENU">
       <div class="main-menu-bg" aria-hidden="true"></div>
@@ -111,7 +285,7 @@
                 <label>Colonos iniciais<input id="colonist-count" type="number" min="1" max="8" value="3" inputmode="numeric" /></label>
                 <label>Recursos iniciais<select id="resourcesPresetSelect"><option value="scarce">Escassos</option><option value="standard" selected>Padrão</option><option value="rich">Abundantes</option></select></label>
                 <label><span class="field-label-with-help">Intensidade de eventos <span class="setup-help" title="Define a frequência de ataques, doenças e tempestades." aria-label="Define a frequência de ataques, doenças e tempestades.">?</span></span><select id="eventIntensitySelect"><option value="low">Baixa</option><option value="normal" selected>Normal</option><option value="high">Alta</option></select></label>
-                <label class="setup-wide-field">Tamanho do mapa<select id="mapSizeSelect"><option value="large">Grande · Vale expandido</option><option value="huge">Enorme · Fronteira selvagem</option><option value="giant" selected>Gigante · Múltiplos Biomas</option><option value="infinite_chunks">Infinito (Chunks)</option></select></label>
+                <label class="setup-wide-field">Tamanho do mapa<select id="mapSizeSelect"><option value="large" selected>Grande · Vale expandido</option><option value="huge">Enorme · Fronteira selvagem</option><option value="giant">Gigante · Múltiplos Biomas</option><option value="infinite_chunks">Infinito (Chunks)</option></select></label>
               </div>
             </div>
           </section>

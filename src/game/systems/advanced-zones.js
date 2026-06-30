@@ -41,6 +41,10 @@
   const baseZoneDefs = typeof zoneDefs !== 'undefined' ? zoneDefs : {};
   const allZoneDefs = () => ({ ...baseZoneDefs, ...advancedZoneDefs });
 
+  window.HavenfallZones = window.HavenfallZones || {};
+  window.HavenfallZones.getZoneDef = type => allZoneDefs()[type] || null;
+  window.HavenfallZones.getAllZoneDefs = allZoneDefs;
+
   const nativeEnsureState = zoneSystem.ensureState.bind(zoneSystem);
   zoneSystem.ensureState = function ensureAdvancedZoneState() {
     const zones = nativeEnsureState();
@@ -469,7 +473,7 @@
           <div>
             <div class="kicker">Gerenciamento</div>
             <h3>Zonas da colônia</h3>
-            <p class="empty">Pinte áreas funcionais. Estoque e descarte já alimentam a logística automática.</p>
+            <p class="empty">Escolha uma ferramenta e clique/arraste no mapa para marcar uma área inteira. Solte para confirmar.</p>
           </div>
           <button class="colonist-modal-close" data-close-zones-modal>Fechar</button>
         </header>
@@ -483,6 +487,7 @@
         <div class="subtle-box"><b>Ferramenta ativa:</b> ${zoneToolLabel()}</div>
         ${zoneAdvancedControlsHtml()}
         <ul class="zones-help-list">
+          <li><b>Como usar:</b> clique e arraste no mapa; soltar o mouse aplica a zona na área selecionada.</li>
           <li><b>Estoque:</b> recebe toras e itens soltos respeitando filtros.</li>
           <li><b>Descarte:</b> recebe entulho gerado por desconstrução.</li>
           <li><b>Cultivo:</b> colonos com Manusear ativo plantam a cultura selecionada.</li>
@@ -491,7 +496,7 @@
         </ul>
       </article>
     `;
-    document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.datasetZoneTool === currentZoneTool || btn.dataset.zoneTool === currentZoneTool));
+    document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.zoneTool === currentZoneTool));
   };
 
   function storageFilterSummary() {
@@ -676,28 +681,9 @@
 
   const nativeDrawZonesOverlay = drawZonesOverlay;
   drawZonesOverlay = function advancedDrawZonesOverlay() {
-    if (!state || !zoneSystem.count()) return;
-    ctx.save();
-    ctx.translate(viewTransform.offsetX, viewTransform.offsetY);
-    ctx.scale(viewTransform.scale, viewTransform.scale);
-    for (const tile of zoneSystem.entries()) {
-      if (!isTileDiscovered(tile.x, tile.y)) continue;
-      const def = zoneDefFor(tile.type);
-      ctx.fillStyle = def.fill;
-      ctx.strokeStyle = def.stroke;
-      ctx.lineWidth = tile.type === 'allowed' ? 1 : 2;
-      ctx.setLineDash(tile.type === 'home' ? [] : [5, 5]);
-      ctx.fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE);
-      ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
-      if (tile.type === 'growing') {
-        ctx.fillStyle = 'rgba(187,247,208,.78)';
-        ctx.font = '900 10px system-ui';
-        ctx.textAlign = 'center';
-        ctx.fillText('🌱', tile.x * TILE + TILE / 2, tile.y * TILE + TILE / 2 + 4);
-      }
-    }
-    ctx.restore();
+    nativeDrawZonesOverlay();
   };
+  window.GameSystems?.registerDrawOverlay('zones', drawZonesOverlay, { order: 20 });
 
   window.zoneSystem = zoneSystem;
   window.storageFilterDefs = storageFilterDefs;

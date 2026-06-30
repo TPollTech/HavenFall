@@ -7,7 +7,7 @@ var defaultNewGameConfig = Object.freeze({
   colonistCount: 3,
   resourcesPreset: 'standard',
   eventIntensity: 'normal',
-  mapSize: 'giant',
+  mapSize: 'large',
   sectorProfile: 'balanced',
   landingPriority: 'safe',
   planetScan: null,

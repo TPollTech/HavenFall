@@ -454,6 +454,9 @@
     protectObjectTiles(world);
     sanitizeObjects(world);
     refreshWorldReferences(world);
+    window.HavenfallGeologyMassSystem?.applyDenseGeology?.(world);
+    sanitizeObjects(world);
+    refreshWorldReferences(world);
     world.worldgenCohesionVersion = VERSION;
     world.generationVersion = `${world.generationVersion || 'world'}+cohesion+ecosystem`;
     currentWorld = null;

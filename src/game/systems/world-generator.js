@@ -146,9 +146,17 @@ function generateWorldFromSeed(config) {
       if (typeof console?.warn === 'function') console.warn(errLog);
     }
 
-    // Marca o mundo como validado
-    world.validated = true;
-    world.validationVersion = '1.0-ecosystem';
+    world.validated = result.valid === true && result.errorCount === 0;
+    world.validationVersion = result.world?.validationVersion || window.HavenfallWorldValidator?.version || 'world-validator';
+    world.validationReport = {
+      ...(world.validationReport || {}),
+      valid: world.validated,
+      playable: result.playable === true,
+      fixCount: result.fixCount || 0,
+      errorCount: result.errorCount || 0,
+      fixes: Array.isArray(result.fixes) ? result.fixes.slice(0, 40) : world.validationReport?.fixes || [],
+      errors: Array.isArray(result.errors) ? result.errors.slice(0, 20) : world.validationReport?.errors || []
+    };
   } else {
     if (typeof console?.warn === 'function') console.warn('[WorldValidator] EcosystemRules ou WorldValidator não carregados. Pulei validação.');
   }

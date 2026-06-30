@@ -215,6 +215,12 @@ const server = http.createServer(async (req, res) => {
   if (!filePath.startsWith(ROOT)) { res.writeHead(403); res.end('Forbidden'); return; }
   fs.readFile(filePath, (err, data) => {
     if (err) {
+      if (path.extname(filePath)) {
+        res.writeHead(404, staticHeaders('text/plain; charset=utf-8'));
+        res.end('Not found');
+        return;
+      }
+
       fs.readFile(path.join(ROOT, 'index.html'), (fallbackErr, fallback) => {
         if (fallbackErr) { res.writeHead(404); res.end('Not found'); return; }
         res.writeHead(200, staticHeaders('text/html; charset=utf-8'));

@@ -489,17 +489,41 @@
     return true;
   }
 
+  function hasCurrentDrawBridge() {
+    const draw = readGlobalFunction('draw');
+    return typeof draw === 'function' && draw.__havenfallPhaserBridge === true;
+  }
+
+  function ensureDrawBridge() {
+    if (hasCurrentDrawBridge()) {
+      drawBridgeInstalled = true;
+      return true;
+    }
+
+    drawBridgeInstalled = false;
+    return installDrawBridge();
+  }
+
   function installWhenReady() {
     const startedAt = Date.now();
+    let warnedMissingDraw = false;
     const tick = () => {
-      if (installDrawBridge()) return;
+      const installed = ensureDrawBridge();
+      if (installed && hasCurrentDrawBridge()) return;
       if (Date.now() - startedAt > 30000) {
+        if (warnedMissingDraw) return;
+        warnedMissingDraw = true;
         warnOnce('Não encontrei draw() para instalar o bridge Phaser. Fallback Canvas mantido.');
         return;
       }
       requestAnimationFrame(tick);
     };
     tick();
+
+    window.setInterval(() => {
+      if (!optIn()) return;
+      ensureDrawBridge();
+    }, 750);
   }
 
   function isActive() {

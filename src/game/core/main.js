@@ -46,7 +46,14 @@ function bootGame() {
       if (typeof writeNewGameConfig === 'function') writeNewGameConfig({ ...defaultNewGameConfig, seed: generateRandomSeed() });
 
       bootStatus('Criando prévia do menu', 92, 'Gerando estado visual sem gameplay ativa');
-      state = createInitialState({ ...defaultNewGameConfig, colonyName: defaultNewGameConfig.colonyName, seed: 'preview-menu' });
+      state = createInitialState({
+        ...defaultNewGameConfig,
+        colonyName: defaultNewGameConfig.colonyName,
+        seed: 'preview-menu',
+        mapSize: 'large',
+        eventIntensity: 'low',
+        resourcesPreset: 'standard'
+      });
       if (window.HavenfallRuntime?.markPreviewState) window.HavenfallRuntime.markPreviewState(state);
       else {
         state.isPreview = true;
