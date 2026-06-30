@@ -234,11 +234,13 @@
     'menu-ready': 'menu interativo'
   });
   const completedGates = new Set();
+  const bootTimings = [];
   let bootFinished = false;
   let bootStartedAt = Date.now();
   let pendingNoticeTimer = null;
   let bootOverlayTimer = null;
   let bootOverlayStarted = false;
+  let loadedScriptCount = 0;
   let lastBootProgress = { label: 'Inicializando motor...', progress: 0, detail: 'Preparando arquivos' };
 
   const bootLabels = Object.freeze({
@@ -320,17 +322,17 @@
     return overlay;
   }
 
+  function pendingGateLabels() {
+    return READY_GATES.filter(gate => !completedGates.has(gate)).map(gate => readyLabels[gate] || gate);
+  }
+
   function setBootProgress(label, progress, detail = '') {
     const requested = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
     const pct = bootFinished ? requested : Math.min(requested, 96);
     lastBootProgress = { label, progress: pct, detail };
-    window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), updatedAt: Date.now() };
+    window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), timings: bootTimings.slice(), updatedAt: Date.now() };
     ensureBootOverlay(false);
     syncBootOverlay(lastBootProgress);
-  }
-
-  function pendingGateLabels() {
-    return READY_GATES.filter(gate => !completedGates.has(gate)).map(gate => readyLabels[gate] || gate);
   }
 
   function refreshPendingNotice() {
@@ -385,18 +387,73 @@
     return bootLabels[blueprint.id] || `Carregando ${blueprint.id.replace(/_/g, ' ')}`;
   }
 
-  function loadScript(blueprint, index = 0, total = 1) {
-    setBootProgress(labelFor(blueprint), (index / Math.max(1, total)) * 82, blueprint.file);
+  function scriptProgress(total) {
+    return (loadedScriptCount / Math.max(1, total)) * 82;
+  }
+
+  function recordTiming(name, label, startedAt, count) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    bootTimings.push({ name, label, count, durationMs });
+    window.HavenfallBootTimings = bootTimings.slice();
+  }
+
+  function createScriptElement(blueprint, groupName, total, resolve, reject) {
+    const el = document.createElement('script');
+    el.async = false;
+    el.src = blueprint.file;
+    el.dataset.blueprintId = blueprint.id;
+    el.dataset.bootGroup = groupName || 'single';
+    el.onload = () => {
+      loadedScriptCount += 1;
+      setBootProgress(`${labelFor(blueprint)} concluído`, scriptProgress(total), blueprint.file);
+      resolve(blueprint);
+    };
+    el.onerror = () => reject(new Error(`Falha ao carregar ${blueprint.id}`));
+    return el;
+  }
+
+  function loadScript(blueprint, total = CORE_BLUEPRINTS.length + 1) {
+    setBootProgress(labelFor(blueprint), scriptProgress(total), blueprint.file);
+    const startedAt = performance.now();
     return new Promise((resolve, reject) => {
-      const el = document.createElement('script');
-      el.src = blueprint.file;
-      el.dataset.blueprintId = blueprint.id;
-      el.onload = () => {
-        setBootProgress(`${labelFor(blueprint)} concluído`, ((index + 1) / Math.max(1, total)) * 82, blueprint.file);
-        resolve(blueprint);
+      document.body.appendChild(createScriptElement(blueprint, 'entry', total, resolve, reject));
+    }).then(result => {
+      recordTiming(blueprint.id, labelFor(blueprint), startedAt, 1);
+      return result;
+    });
+  }
+
+  function loadScriptGroup(group, total = CORE_BLUEPRINTS.length + 1) {
+    const blueprints = group.entries.map(([id, file]) => Object.freeze({ id, file }));
+    if (!blueprints.length) return Promise.resolve([]);
+
+    const startedAt = performance.now();
+    setBootProgress(group.label || `Carregando ${group.name}`, scriptProgress(total), `${blueprints.length} módulo(s)`);
+
+    return new Promise((resolve, reject) => {
+      let remaining = blueprints.length;
+      let rejected = false;
+      const loaded = [];
+
+      const onLoaded = blueprint => {
+        if (rejected) return;
+        loaded.push(blueprint);
+        remaining -= 1;
+        if (remaining === 0) resolve(loaded);
       };
-      el.onerror = () => reject(new Error(`Falha ao carregar ${blueprint.id}`));
-      document.body.appendChild(el);
+
+      const onError = error => {
+        if (rejected) return;
+        rejected = true;
+        reject(error);
+      };
+
+      for (const blueprint of blueprints) {
+        document.body.appendChild(createScriptElement(blueprint, group.name, total, onLoaded, onError));
+      }
+    }).then(result => {
+      recordTiming(group.name, group.label, startedAt, blueprints.length);
+      return result;
     });
   }
 
@@ -407,8 +464,8 @@
       bootStartedAt = Date.now();
       pendingNoticeTimer = setInterval(refreshPendingNotice, 900);
       setBootProgress('Inicializando HavenFall', 2, 'Preparando manifesto');
-      for (let i = 0; i < CORE_BLUEPRINTS.length; i++) await loadScript(CORE_BLUEPRINTS[i], i, CORE_BLUEPRINTS.length + 1);
-      await loadScript(ENTRY_BLUEPRINT, CORE_BLUEPRINTS.length, CORE_BLUEPRINTS.length + 1);
+      for (const group of BOOT_GROUPS) await loadScriptGroup(group, CORE_BLUEPRINTS.length + 1);
+      await loadScript(ENTRY_BLUEPRINT, CORE_BLUEPRINTS.length + 1);
       markBootGate('scripts-loaded', 'Todos os módulos foram carregados');
     } catch (error) {
       if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
