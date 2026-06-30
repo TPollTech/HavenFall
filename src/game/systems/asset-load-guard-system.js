@@ -6,9 +6,16 @@
   window.HavenfallContext.assetLoadGuardInstalled = true;
 
   const FALLBACK_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
-  const ESSENTIAL_TIMEOUT_MS = 1400;
-  const BACKGROUND_TIMEOUT_MS = 2600;
-  const BACKGROUND_BATCH_SIZE = 24;
+  const ESSENTIAL_TIMEOUT_MS = 650;
+  const BACKGROUND_TIMEOUT_MS = 1800;
+  const BACKGROUND_BATCH_SIZE = 32;
+  const BACKGROUND_BATCH_DELAY_MS = 24;
+  const CRITICAL_BOOT_ASSETS = Object.freeze([
+    'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
+    'tree', 'bush', 'rock', 'logs', 'berry', 'crop_patch',
+    'bed_single', 'crate_wood', 'campfire',
+    'icon_food', 'icon_wood', 'icon_stone', 'icon_metal', 'icon_warn'
+  ]);
 
   function fallbackImage(name, src) {
     const img = new Image();
@@ -37,12 +44,8 @@
     return typeof isProceduralRuntimeAsset === 'function' && isProceduralRuntimeAsset(name);
   }
 
-  function isEssentialManifestAsset(name) {
-    const entry = manifestEntry(name);
-    if (!entry) return false;
-    if (shouldSkipAsset(name)) return false;
-    if (entry.category === 'ui' || entry.category === 'vfx') return true;
-    return ['tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone'].includes(String(name));
+  function isCriticalBootAsset(name) {
+    return CRITICAL_BOOT_ASSETS.includes(String(name || ''));
   }
 
   function unique(list) {
@@ -83,6 +86,8 @@
         report.missing.push({ name, src, reason: 'error' });
         finish({ ok: false, name, src, reason: 'error' });
       };
+      img.decoding = 'async';
+      img.loading = 'eager';
       img.src = src;
     });
   }
@@ -97,14 +102,17 @@
   }
 
   function essentialAssetNames() {
-    return unique([
-      ...baseAssetNames(),
-      ...manifestAssetNames().filter(isEssentialManifestAsset)
-    ]);
+    const base = baseAssetNames();
+    const critical = manifestAssetNames().filter(name => isCriticalBootAsset(name) && !shouldSkipAsset(name));
+    return unique([...base.filter(isCriticalBootAsset), ...critical]);
   }
 
   function backgroundAssetJobs(report) {
     const essential = new Set(essentialAssetNames());
+    const baseJobs = baseAssetNames()
+      .filter(name => !essential.has(name) && !shouldSkipAsset(name))
+      .map(name => ({ name, src: assetSource(name), key: name }));
+
     const manifestJobs = manifestAssetNames()
       .filter(name => !essential.has(name) && !shouldSkipAsset(name))
       .map(name => ({ name, src: assetSource(name), key: name }));
@@ -113,8 +121,18 @@
       .filter(([key, animation]) => !shouldSkipAsset(key) && !shouldSkipAsset(animation?.key))
       .map(([key, animation]) => ({ name: key, src: animationSource(animation), key: `vfx:${key}` }));
 
-    report.backgroundTotal = manifestJobs.length + animationJobs.length;
-    return [...manifestJobs, ...animationJobs];
+    const jobsByKey = new Map([...baseJobs, ...manifestJobs, ...animationJobs].map(job => [job.key, job]));
+    const jobs = [...jobsByKey.values()];
+    report.backgroundTotal = jobs.length;
+    return jobs;
+  }
+
+  function scheduleBackgroundTick(callback, delay = BACKGROUND_BATCH_DELAY_MS) {
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(callback, { timeout: Math.max(250, delay * 8) });
+      return;
+    }
+    setTimeout(callback, delay);
   }
 
   function runBackgroundAssetLoad(report) {
@@ -131,7 +149,7 @@
       Promise.all(slice.map(job => loadImageSafe(job.name, job.src, job.key, report, BACKGROUND_TIMEOUT_MS))).finally(() => {
         report.backgroundLoaded = Math.min(index, jobs.length);
         window.HavenfallAssetLoadReport = report;
-        if (index < jobs.length) setTimeout(tick, 40);
+        if (index < jobs.length) scheduleBackgroundTick(tick);
         else {
           report.backgroundFinishedAt = new Date().toISOString();
           if (report.missing.length) console.warn(`[Assets] ${report.missing.length} asset(s) ausente(s). O jogo continuou com placeholders.`, report.missing.slice(0, 40));
@@ -140,12 +158,12 @@
       });
     };
 
-    setTimeout(tick, 160);
+    scheduleBackgroundTick(tick, 120);
   }
 
   function guardedLoadImages() {
     const report = {
-      version: 'asset-load-guard-v2-lazy-manifest',
+      version: 'asset-load-guard-v3-fast-boot',
       startedAt: new Date().toISOString(),
       loaded: 0,
       missing: [],
@@ -174,7 +192,7 @@
   }
 
   window.HavenfallAssetLoadGuard = Object.freeze({
-    version: 'asset-load-guard-v2-lazy-manifest',
+    version: 'asset-load-guard-v3-fast-boot',
     guardedLoadImages,
     runBackgroundAssetLoad,
     essentialAssetNames,
