@@ -24,6 +24,19 @@
 
   const CORE_BLUEPRINTS = Object.freeze(core);
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
+  const READY_GATES = Object.freeze(['scripts-loaded', 'assets-loaded', 'listeners-ready', 'save-checked', 'menu-ready']);
+  const readyLabels = Object.freeze({
+    'scripts-loaded': 'scripts do jogo',
+    'assets-loaded': 'assets',
+    'listeners-ready': 'controles e botões',
+    'save-checked': 'verificação de save',
+    'menu-ready': 'menu interativo'
+  });
+  const completedGates = new Set();
+  let bootFinished = false;
+  let bootStartedAt = Date.now();
+  let pendingNoticeTimer = null;
+
   const bootLabels = Object.freeze({
     state: 'Preparando estado base',
     game_systems: 'Ligando sistemas centrais',
@@ -48,7 +61,7 @@
     const style = document.createElement('style');
     style.id = 'havenfallBootOverlayStyle';
     style.textContent = `
-      #havenfallBootOverlay{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:radial-gradient(circle at 50% 20%,rgba(74,65,53,.32),rgba(3,5,8,.96) 58%,#02030a);color:#f4efe4;font-family:system-ui,-apple-system,Segoe UI,sans-serif;transition:opacity .32s ease,visibility .32s ease;pointer-events:auto}
+      #havenfallBootOverlay{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:radial-gradient(circle at 50% 20%,rgba(74,65,53,.32),rgba(3,5,8,.96) 58%,#02030a);color:#f4efe4;font-family:system-ui,-apple-system,Segoe UI,sans-serif;transition:opacity .24s ease,visibility .24s ease;pointer-events:auto}
       #havenfallBootOverlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
       #havenfallBootOverlay .boot-card{width:min(520px,calc(100vw - 40px));padding:28px 30px;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:linear-gradient(180deg,rgba(15,18,24,.88),rgba(6,8,12,.78));box-shadow:0 24px 80px rgba(0,0,0,.55);backdrop-filter:blur(10px)}
       #havenfallBootOverlay .boot-kicker{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#c9d2e7;margin-bottom:8px}
@@ -68,7 +81,8 @@
 
   function setBootProgress(label, progress, detail = '') {
     ensureBootOverlay();
-    const pct = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const requested = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const pct = bootFinished ? requested : Math.min(requested, 96);
     const status = document.getElementById('bootStatusText');
     const fill = document.getElementById('bootProgressFill');
     const meta = document.getElementById('bootDetailText');
@@ -77,17 +91,52 @@
     if (fill) fill.style.width = `${pct}%`;
     if (meta) meta.textContent = detail || 'Preparando sistemas';
     if (percent) percent.textContent = `${pct}%`;
-    window.HavenfallBootProgressState = { label, progress: pct, detail, updatedAt: Date.now() };
+    window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), updatedAt: Date.now() };
+  }
+
+  function pendingGateLabels() {
+    return READY_GATES.filter(gate => !completedGates.has(gate)).map(gate => readyLabels[gate] || gate);
+  }
+
+  function refreshPendingNotice() {
+    if (bootFinished) return;
+    const pending = pendingGateLabels();
+    if (!pending.length) return;
+    const elapsed = Date.now() - bootStartedAt;
+    const label = elapsed > 4500 ? 'Ainda carregando...' : 'Finalizando abertura';
+    setBootProgress(label, 96, `Aguardando: ${pending.join(', ')}`);
   }
 
   function hideBootOverlay() {
     const overlay = document.getElementById('havenfallBootOverlay');
     if (!overlay) return;
     overlay.classList.add('hidden');
-    setTimeout(() => overlay.remove(), 420);
+    setTimeout(() => overlay.remove(), 260);
   }
 
-  window.HavenfallBootProgress = Object.freeze({ set: setBootProgress, hide: hideBootOverlay });
+  function finishIfReady() {
+    if (bootFinished) return;
+    const pending = pendingGateLabels();
+    if (pending.length) {
+      refreshPendingNotice();
+      return;
+    }
+    bootFinished = true;
+    if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
+    setBootProgress('Menu pronto', 100, 'Tudo carregado e interativo');
+    requestAnimationFrame(() => setTimeout(hideBootOverlay, 180));
+  }
+
+  function markBootGate(gate, detail = '') {
+    if (!gate) return;
+    completedGates.add(gate);
+    const readyCount = READY_GATES.filter(item => completedGates.has(item)).length;
+    const progress = 82 + readyCount * (14 / READY_GATES.length);
+    setBootProgress(`Pronto: ${readyLabels[gate] || gate}`, progress, detail || 'Etapa concluída');
+    finishIfReady();
+  }
+
+  window.HavenfallBootProgress = Object.freeze({ set: setBootProgress, hide: hideBootOverlay, mark: markBootGate, pending: pendingGateLabels });
 
   function labelFor(blueprint) {
     return bootLabels[blueprint.id] || `Carregando ${blueprint.id.replace(/_/g, ' ')}`;
@@ -112,12 +161,14 @@
     window.HavenfallBootManifest = Object.freeze({ core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
       ensureBootOverlay();
+      bootStartedAt = Date.now();
+      pendingNoticeTimer = setInterval(refreshPendingNotice, 900);
       setBootProgress('Inicializando HavenFall', 2, 'Preparando manifesto');
       for (let i = 0; i < CORE_BLUEPRINTS.length; i++) await loadScript(CORE_BLUEPRINTS[i], i, CORE_BLUEPRINTS.length + 1);
       await loadScript(ENTRY_BLUEPRINT, CORE_BLUEPRINTS.length, CORE_BLUEPRINTS.length + 1);
-      setBootProgress('Finalizando abertura', 100, 'Menu principal pronto');
-      setTimeout(hideBootOverlay, 650);
+      markBootGate('scripts-loaded', 'Todos os módulos foram carregados');
     } catch (error) {
+      if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
       console.error(error);
       setBootProgress('Falha ao iniciar HavenFall', 100, error.message || String(error));
       const box = document.createElement('div');
