@@ -1,0 +1,382 @@
+'use strict';
+
+(() => {
+  const BOOT_GROUPS = Object.freeze([
+    Object.freeze({
+      name: 'foundation',
+      label: 'Base global e núcleo mínimo',
+      entries: Object.freeze([
+        ['state','src/game/core/state.js'],
+        ['id_generator','src/game/core/id-generator.js'],
+        ['game_systems','src/game/core/game-systems.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'data',
+      label: 'Dados e definições estáticas',
+      entries: Object.freeze([
+        ['data_research','src/game/data/research.js'],
+        ['data_priorities','src/game/data/priorities.js'],
+        ['data_objects','src/game/data/objects.js'],
+        ['data_buildings','src/game/data/buildings.js'],
+        ['data_items','src/game/data/items.js'],
+        ['data_recipes','src/game/data/recipes.js'],
+        ['definitions','src/game/data/definitions.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'core_setup',
+      label: 'Estado, menu, áudio e preparação inicial',
+      entries: Object.freeze([
+        ['game_state','src/game/core/game-state.js'],
+        ['module_boundary','src/game/core/module-boundary.js'],
+        ['menu_branding','src/game/ui/menu-branding.js'],
+        ['audio_sfx_system','src/game/systems/audio-sfx-system.js'],
+        ['work_feedback_system','src/game/systems/work-feedback-system.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'assets_and_validation',
+      label: 'Assets, auditoria e regras de mundo',
+      entries: Object.freeze([
+        ['asset_manifest','assets/manifest.js'],
+        ['fire_vfx_manifest','src/game/ui/fire-vfx-manifest.js'],
+        ['asset_audit','src/game/assets/asset-audit.js'],
+        ['ecosystem_rules','src/game/data/ecosystem-rules.js'],
+        ['world_validator','src/game/systems/world-validator.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'session_setup',
+      label: 'Configuração de jogo e menus iniciais',
+      entries: Object.freeze([
+        ['game_setup','src/game/core/game-setup.js'],
+        ['settings_manager','src/game/core/settings-manager.js'],
+        ['desktop_save_settings_ui','src/game/ui/desktop-save-settings-ui.js'],
+        ['colonist_generation','src/game/systems/colonist-generation.js'],
+        ['research_system','src/game/systems/research-system.js'],
+        ['research_defs','src/game/data/research-defs.js'],
+        ['colonist_mechanics','src/game/systems/colonist-mechanics.js'],
+        ['screen_manager','src/game/ui/screen-manager.js'],
+        ['world_generator','src/game/systems/world-generator.js'],
+        ['asset_load_guard','src/game/systems/asset-load-guard-system.js'],
+        ['runtime_state','src/game/runtime/runtime-state.js'],
+        ['runtime_diagnostics','src/game/runtime/runtime-diagnostics.js'],
+        ['multiplayer_system','src/game/systems/multiplayer-system.js'],
+        ['multiplayer_menu','src/game/ui/multiplayer-menu.js'],
+        ['asset_policy','src/game/core/asset-policy.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'biomes',
+      label: 'Biomas e composição ambiental',
+      entries: Object.freeze([
+        ['biome_registry','src/game/biomes/biome-registry.js'],
+        ['biome_forest','src/game/biomes/biome-forest.js'],
+        ['biome_desert','src/game/biomes/biome-desert.js'],
+        ['biome_snow','src/game/biomes/biome-snow.js'],
+        ['biome_engine','src/game/biomes/biome-engine.js'],
+        ['biomes','src/game/biomes/biomes.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'world_simulation',
+      label: 'Mundo, pathfinding, geologia e tarefas',
+      entries: Object.freeze([
+        ['exploration_system','src/game/systems/exploration-system.js'],
+        ['map_pathfinding','src/game/systems/map-pathfinding.js'],
+        ['geology_system','src/game/systems/geology-system.js'],
+        ['geology_mass_system','src/game/systems/geology-mass-system.js'],
+        ['schedule_manager','src/game/systems/schedule-manager.js'],
+        ['world_systems','src/game/world-systems.js'],
+        ['runtime_tasks','src/game/runtime/runtime-tasks.js'],
+        ['simulation_balance','src/game/systems/simulation-balance-system.js'],
+        ['work_coordination','src/game/systems/work-coordination-system.js'],
+        ['auto_roof','src/game/systems/auto-roof-system.js'],
+        ['mining_task_handler','src/game/systems/mining-task-handler.js'],
+        ['mining_orders','src/game/systems/mining-orders.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'rendering_and_input',
+      label: 'Renderização principal e entrada do canvas',
+      entries: Object.freeze([
+        ['renderer','src/game/rendering/renderer.js'],
+        ['fog_of_war_render_hook','src/game/ui/fog-of-war-render-hook.js'],
+        ['geology_backdrop_render_hook','src/game/ui/geology-backdrop-render-hook.js'],
+        ['geology_object_render_guard','src/game/ui/geology-object-render-guard.js'],
+        ['fire_vfx_render_hooks','src/game/ui/fire-vfx-render-hooks.js'],
+        ['canvas_input_building','src/game/input/canvas-input-building.js'],
+        ['orders_canvas_input_hook','src/game/ui/orders-canvas-input-hook.js'],
+        ['hud_ui','src/game/ui/hud-ui.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'planet_scan_and_landing',
+      label: 'Varredura orbital e escolha de pouso',
+      entries: Object.freeze([
+        ['planet_scan_profile','src/game/systems/planet-scan-profile.js'],
+        ['planet_globe_renderer','src/game/rendering/planet-globe-renderer.js'],
+        ['planet_scan_ui','src/game/ui/planet-scan-ui.js'],
+        ['planet_scan_globe_ui','src/game/ui/planet-scan-globe-ui.js'],
+        ['landing_site_worldgen','src/game/systems/landing-site-worldgen.js'],
+        ['landing_site_scan_ui','src/game/systems/landing-site-scan-ui.js'],
+        ['landing_site_scan_polish','src/game/systems/landing-site-scan-polish.js'],
+        ['worldgen_cohesion','src/game/systems/worldgen-cohesion-system.js'],
+        ['recruitment_dossier_ui','src/game/ui/recruitment-dossier-ui.js'],
+        ['recruitment_dossier_layout_ui','src/game/ui/recruitment-dossier-layout-ui.js'],
+        ['recruitment_coverage_ui','src/game/ui/recruitment-coverage-ui.js'],
+        ['recruitment_render_ui','src/game/ui/recruitment-render-ui.js'],
+        ['recruitment_polish_ui','src/game/ui/recruitment-polish-ui.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'colony_systems',
+      label: 'Zonas, produção, defesa e clima',
+      entries: Object.freeze([
+        ['zones','src/game/systems/zones.js'],
+        ['advanced_zones','src/game/systems/advanced-zones.js'],
+        ['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],
+        ['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],
+        ['environment','src/game/systems/environment.js'],
+        ['workstations_tools','src/game/systems/workstations-tools.js'],
+        ['defense','src/game/systems/defense.js'],
+        ['hauling_adv','src/game/systems/hauling-adv.js'],
+        ['climate_adv','src/game/systems/climate-adv.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'mobs_and_performance',
+      label: 'Criaturas, mundo vivo e performance',
+      entries: Object.freeze([
+        ['mobs','src/game/mobs/mobs.js'],
+        ['landing_site_worldgen_polish','src/game/systems/landing-site-worldgen-polish.js'],
+        ['blood_wolf','src/game/mobs/blood-wolf.js'],
+        ['living_world','src/game/systems/living-world.js'],
+        ['performance_render_hooks','src/game/systems/performance-render-hooks.js'],
+        ['weather_vfx','src/game/systems/weather-vfx-system.js'],
+        ['performance_runtime_hooks','src/game/systems/performance-runtime-hooks.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'pawn_rendering',
+      label: 'Renderização de colonos, NPCs e animais',
+      entries: Object.freeze([
+        ['pawn_core','src/game/rendering/pawns/pawn-core.js'],
+        ['pawn_style','src/game/rendering/pawns/pawn-style.js'],
+        ['colonist_renderer','src/game/rendering/pawns/colonist-renderer.js'],
+        ['npc_renderer','src/game/rendering/pawns/npc-renderer.js'],
+        ['animal_renderer','src/game/rendering/pawns/animal-renderer.js'],
+        ['hostile_renderer','src/game/rendering/pawns/hostile-renderer.js'],
+        ['pawn_renderer','src/game/rendering/pawn-renderer.js'],
+        ['workstation_core','src/game/rendering/workstations/workstation-core.js'],
+        ['workstation_style','src/game/rendering/workstations/workstation-style.js'],
+        ['workstation_renderer','src/game/rendering/workstations/workstation-renderer.js'],
+        ['simple_object_renderer','src/game/rendering/simple-object-renderer.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'ui_panels',
+      label: 'Painéis, inspeção e navegação da UI',
+      entries: Object.freeze([
+        ['mob_interactions','src/game/systems/mob-interactions.js'],
+        ['ui_icon_safety','src/game/ui/icon-safety.js'],
+        ['research_overlay','src/game/ui/research-overlay.js'],
+        ['colonist_modal','src/game/ui/colonist-modal.js'],
+        ['inspection_panel','src/game/ui/inspection-panel.js'],
+        ['inspection_input_hook','src/game/ui/inspection-input-hook.js'],
+        ['ui_manager','src/game/ui/ui-manager.js'],
+        ['pause_menu','src/game/ui/pause-menu.js'],
+        ['performance_settings_ui','src/game/ui/performance-settings-ui.js'],
+        ['performance_settings_navigation','src/game/ui/performance-settings-navigation.js']
+      ])
+    }),
+    Object.freeze({
+      name: 'dock_tabs_and_runtime',
+      label: 'Abas do dock, save, loop e controles finais',
+      entries: Object.freeze([
+        ['tab_crafting','src/game/ui/tab-crafting.js'],
+        ['tab_zones','src/game/ui/tab-zones.js'],
+        ['tab_colonists','src/game/ui/tab-colonists.js'],
+        ['tab_tasks','src/game/ui/tab-tasks.js'],
+        ['tab_orders','src/game/ui/tab-orders.js'],
+        ['tab_schedule','src/game/ui/tab-schedule.js'],
+        ['tab_events','src/game/ui/tab-events.js'],
+        ['dock_tab_router','src/game/ui/dock-tab-router.js'],
+        ['dock_panel_state','src/game/ui/dock-panel-state.js'],
+        ['save_load','src/game/runtime/save-load.js'],
+        ['runtime_save_ui','src/game/runtime/runtime-save-ui.js'],
+        ['game_loop','src/game/runtime/game-loop.js'],
+        ['performance_optimizer','src/game/rendering/performance-optimizer.js'],
+        ['event_listeners','src/game/input/event-listeners.js'],
+        ['world_travel_system','src/game/systems/world-travel-system.js'],
+        ['world_map_ui','src/game/ui/world-map-ui.js'],
+        ['construction_system','src/game/systems/construction-system.js'],
+        ['render_collision_system','src/game/systems/render-collision-system.js'],
+        ['colonist_pathing_system','src/game/systems/colonist-pathing-system.js'],
+        ['wall_door_renderer','src/game/rendering/wall-door-renderer.js'],
+        ['task_reservation_system','src/game/systems/task-reservation-system.js'],
+        ['manual_control','src/game/systems/manual-control-system.js'],
+        ['escape_action_router','src/game/systems/escape-action-router.js']
+      ])
+    })
+  ]);
+
+  const CORE_BLUEPRINTS = Object.freeze(BOOT_GROUPS.flatMap(group => group.entries).map(([id, file]) => Object.freeze({ id, file })));
+  const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
+  const READY_GATES = Object.freeze(['scripts-loaded', 'assets-loaded', 'listeners-ready', 'save-checked', 'menu-ready']);
+  const readyLabels = Object.freeze({
+    'scripts-loaded': 'scripts do jogo',
+    'assets-loaded': 'assets',
+    'listeners-ready': 'controles e botões',
+    'save-checked': 'verificação de save',
+    'menu-ready': 'menu interativo'
+  });
+  const completedGates = new Set();
+  let bootFinished = false;
+  let bootStartedAt = Date.now();
+  let pendingNoticeTimer = null;
+
+  const bootLabels = Object.freeze({
+    state: 'Preparando estado base',
+    game_systems: 'Ligando sistemas centrais',
+    asset_manifest: 'Lendo manifesto de assets',
+    world_generator: 'Preparando geração de mundo',
+    asset_load_guard: 'Protegendo carregamento de assets',
+    map_pathfinding: 'Preparando navegação',
+    geology_system: 'Preparando montanhas e mineração',
+    runtime_tasks: 'Preparando tarefas dos colonos',
+    work_coordination: 'Preparando coordenação de trabalho',
+    renderer: 'Preparando renderização',
+    planet_globe_renderer: 'Preparando globo orbital',
+    worldgen_cohesion: 'Preparando validação de mundo',
+    save_load: 'Preparando saves',
+    game_loop: 'Preparando simulação',
+    main: 'Abrindo menu principal'
+  });
+
+  function ensureBootOverlay() {
+    let overlay = document.getElementById('havenfallBootOverlay');
+    if (overlay) return overlay;
+    const style = document.createElement('style');
+    style.id = 'havenfallBootOverlayStyle';
+    style.textContent = `
+      #havenfallBootOverlay{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:radial-gradient(circle at 50% 20%,rgba(74,65,53,.32),rgba(3,5,8,.96) 58%,#02030a);color:#f4efe4;font-family:system-ui,-apple-system,Segoe UI,sans-serif;transition:opacity .24s ease,visibility .24s ease;pointer-events:auto}
+      #havenfallBootOverlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+      #havenfallBootOverlay .boot-card{width:min(520px,calc(100vw - 40px));padding:28px 30px;border:1px solid rgba(255,255,255,.14);border-radius:22px;background:linear-gradient(180deg,rgba(15,18,24,.88),rgba(6,8,12,.78));box-shadow:0 24px 80px rgba(0,0,0,.55);backdrop-filter:blur(10px)}
+      #havenfallBootOverlay .boot-kicker{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#c9d2e7;margin-bottom:8px}
+      #havenfallBootOverlay .boot-title{font-size:34px;font-weight:900;letter-spacing:.10em;margin-bottom:10px}
+      #havenfallBootOverlay .boot-status{min-height:24px;color:#e9dfcf;font-size:15px;margin-bottom:18px}
+      #havenfallBootOverlay .boot-bar{height:10px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+      #havenfallBootOverlay .boot-fill{height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,#d8b879,#f5ead4);transition:width .18s ease}
+      #havenfallBootOverlay .boot-meta{display:flex;justify-content:space-between;gap:16px;margin-top:12px;color:#9da9bd;font-size:12px}
+    `;
+    document.head.appendChild(style);
+    overlay = document.createElement('div');
+    overlay.id = 'havenfallBootOverlay';
+    overlay.innerHTML = `<div class="boot-card"><div class="boot-kicker">HavenFall</div><div class="boot-title">CARREGANDO</div><div id="bootStatusText" class="boot-status">Inicializando motor...</div><div class="boot-bar"><div id="bootProgressFill" class="boot-fill"></div></div><div class="boot-meta"><span id="bootDetailText">Preparando arquivos</span><span id="bootPercentText">0%</span></div></div>`;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function setBootProgress(label, progress, detail = '') {
+    ensureBootOverlay();
+    const requested = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const pct = bootFinished ? requested : Math.min(requested, 96);
+    const status = document.getElementById('bootStatusText');
+    const fill = document.getElementById('bootProgressFill');
+    const meta = document.getElementById('bootDetailText');
+    const percent = document.getElementById('bootPercentText');
+    if (status) status.textContent = label || 'Carregando...';
+    if (fill) fill.style.width = `${pct}%`;
+    if (meta) meta.textContent = detail || 'Preparando sistemas';
+    if (percent) percent.textContent = `${pct}%`;
+    window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), updatedAt: Date.now() };
+  }
+
+  function pendingGateLabels() {
+    return READY_GATES.filter(gate => !completedGates.has(gate)).map(gate => readyLabels[gate] || gate);
+  }
+
+  function refreshPendingNotice() {
+    if (bootFinished) return;
+    const pending = pendingGateLabels();
+    if (!pending.length) return;
+    const elapsed = Date.now() - bootStartedAt;
+    const label = elapsed > 4500 ? 'Ainda carregando...' : 'Finalizando abertura';
+    setBootProgress(label, 96, `Aguardando: ${pending.join(', ')}`);
+  }
+
+  function hideBootOverlay() {
+    const overlay = document.getElementById('havenfallBootOverlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 260);
+  }
+
+  function finishIfReady() {
+    if (bootFinished) return;
+    const pending = pendingGateLabels();
+    if (pending.length) {
+      refreshPendingNotice();
+      return;
+    }
+    bootFinished = true;
+    if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
+    setBootProgress('Menu pronto', 100, 'Tudo carregado e interativo');
+    requestAnimationFrame(() => setTimeout(hideBootOverlay, 180));
+  }
+
+  function markBootGate(gate, detail = '') {
+    if (!gate) return;
+    completedGates.add(gate);
+    const readyCount = READY_GATES.filter(item => completedGates.has(item)).length;
+    const progress = 82 + readyCount * (14 / READY_GATES.length);
+    setBootProgress(`Pronto: ${readyLabels[gate] || gate}`, progress, detail || 'Etapa concluída');
+    finishIfReady();
+  }
+
+  window.HavenfallBootProgress = Object.freeze({ set: setBootProgress, hide: hideBootOverlay, mark: markBootGate, pending: pendingGateLabels });
+
+  function labelFor(blueprint) {
+    return bootLabels[blueprint.id] || `Carregando ${blueprint.id.replace(/_/g, ' ')}`;
+  }
+
+  function loadScript(blueprint, index = 0, total = 1) {
+    setBootProgress(labelFor(blueprint), (index / Math.max(1, total)) * 82, blueprint.file);
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = blueprint.file;
+      el.dataset.blueprintId = blueprint.id;
+      el.onload = () => {
+        setBootProgress(`${labelFor(blueprint)} concluído`, ((index + 1) / Math.max(1, total)) * 82, blueprint.file);
+        resolve(blueprint);
+      };
+      el.onerror = () => reject(new Error(`Falha ao carregar ${blueprint.id}`));
+      document.body.appendChild(el);
+    });
+  }
+
+  async function bootFromManifest() {
+    window.HavenfallBootManifest = Object.freeze({ groups: BOOT_GROUPS, core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
+    try {
+      ensureBootOverlay();
+      bootStartedAt = Date.now();
+      pendingNoticeTimer = setInterval(refreshPendingNotice, 900);
+      setBootProgress('Inicializando HavenFall', 2, 'Preparando manifesto');
+      for (let i = 0; i < CORE_BLUEPRINTS.length; i++) await loadScript(CORE_BLUEPRINTS[i], i, CORE_BLUEPRINTS.length + 1);
+      await loadScript(ENTRY_BLUEPRINT, CORE_BLUEPRINTS.length, CORE_BLUEPRINTS.length + 1);
+      markBootGate('scripts-loaded', 'Todos os módulos foram carregados');
+    } catch (error) {
+      if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
+      console.error(error);
+      setBootProgress('Falha ao iniciar HavenFall', 100, error.message || String(error));
+      const box = document.createElement('div');
+      box.textContent = `Falha ao iniciar Havenfall: ${error.message || error}`;
+      box.style.cssText = 'position:fixed;inset:20px;z-index:9999;display:grid;place-items:center;background:#080b10;color:#f4efe4;font:16px system-ui;text-align:center;padding:24px;';
+      document.body.appendChild(box);
+    }
+  }
+
+  bootFromManifest();
+})();
