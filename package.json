@@ -16,6 +16,7 @@
     "icons:prepare": "node scripts/prepare-icons.cjs",
     "test:logic": "node --test tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
+    "test:smoke:phaser": "node tests/smoke-phaser.mjs",
     "check:types": "tsc --noEmit",
     "dist:win": "npm run icons:prepare && electron-builder --win nsis portable",
     "dist:win:setup": "npm run icons:prepare && electron-builder --win nsis",
