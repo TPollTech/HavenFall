@@ -126,17 +126,49 @@
     return false;
   }
 
+  function needsRecovery(c) {
+    return Number(c?.energy ?? 100) < 34 || Number(c?.mood ?? 100) < 18 || Number(c?.hunger ?? 100) < 24 || Number(c?.health ?? 100) < 25;
+  }
+
+  function occupiedByOtherColonist(x, y, colonist) {
+    return (state?.colonists || []).some(other => other !== colonist && other.x === x && other.y === y);
+  }
+
+  function localIdleMove(c) {
+    const tries = [[1,0],[-1,0],[0,1],[0,-1], [1,1], [-1,1], [1,-1], [-1,-1]].sort(() => Math.random() - 0.5);
+    for (const [dx, dy] of tries) {
+      const nx = c.x + dx;
+      const ny = c.y + dy;
+      if (isBlocked(nx, ny) || occupiedByOtherColonist(nx, ny, c)) continue;
+      assignMove(c, nx, ny);
+      c.note = 'Caminhando por perto';
+      return true;
+    }
+    c.note = 'Aguardando no local';
+    return true;
+  }
+
+  function baseAnchorMove(c) {
+    const anchors = (state.objects || []).filter(o => ['campfire', 'crate', 'bed', 'research_desk'].includes(o.type));
+    if (!anchors.length) return localIdleMove(c);
+    const sorted = anchors.sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y));
+    for (const anchor of sorted.slice(0, 4)) {
+      const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(anchor.x, anchor.y, c.x, c.y) : null;
+      if (!adj || isBlocked(adj.x, adj.y) || occupiedByOtherColonist(adj.x, adj.y, c)) continue;
+      assignMove(c, adj.x, adj.y);
+      c.note = 'Reposicionando perto da base';
+      return true;
+    }
+    return localIdleMove(c);
+  }
+
   function calmIdle(c) {
     if (!c || c.task || appScreen !== SCREEN.PLAYING) return false;
+    if (needsRecovery(c)) { c.note = 'Recuperando necessidades'; return true; }
     if (workExists()) { c.note = 'Aguardando designação lógica'; return true; }
     c.idlePulse = (c.idlePulse || 0) + 1;
-    if (c.idlePulse % 240 !== 0) { c.note = 'Aguardando na base'; return true; }
-    const anchors = (state.objects || []).filter(o => ['campfire', 'crate', 'bed', 'research_desk'].includes(o.type));
-    const anchor = anchors.sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0] || state.world?.spawn;
-    const adj = anchor && typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(anchor.x, anchor.y, c.x, c.y) : null;
-    if (adj && !isBlocked(adj.x, adj.y)) { assignMove(c, adj.x, adj.y); c.note = 'Reposicionando perto da base'; }
-    else c.note = 'Aguardando na base';
-    return true;
+    if (c.idlePulse % 240 !== 0) { c.note = 'Aguardando no local'; return true; }
+    return baseAnchorMove(c);
   }
 
   function installOverrides() {
