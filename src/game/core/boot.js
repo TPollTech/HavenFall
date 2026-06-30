@@ -225,6 +225,7 @@
   const CORE_BLUEPRINTS = Object.freeze(BOOT_GROUPS.flatMap(group => group.entries).map(([id, file]) => Object.freeze({ id, file })));
   const ENTRY_BLUEPRINT = Object.freeze({ id: 'main', file: 'src/game/core/main.js' });
   const READY_GATES = Object.freeze(['scripts-loaded', 'assets-loaded', 'listeners-ready', 'save-checked', 'menu-ready']);
+  const BOOT_OVERLAY_DELAY_MS = 900;
   const readyLabels = Object.freeze({
     'scripts-loaded': 'scripts do jogo',
     'assets-loaded': 'assets',
@@ -236,6 +237,9 @@
   let bootFinished = false;
   let bootStartedAt = Date.now();
   let pendingNoticeTimer = null;
+  let bootOverlayTimer = null;
+  let bootOverlayStarted = false;
+  let lastBootProgress = { label: 'Inicializando motor...', progress: 0, detail: 'Preparando arquivos' };
 
   const bootLabels = Object.freeze({
     state: 'Preparando estado base',
@@ -255,7 +259,7 @@
     main: 'Abrindo menu principal'
   });
 
-  function ensureBootOverlay() {
+  function createBootOverlay() {
     let overlay = document.getElementById('havenfallBootOverlay');
     if (overlay) return overlay;
     const style = document.createElement('style');
@@ -279,19 +283,50 @@
     return overlay;
   }
 
-  function setBootProgress(label, progress, detail = '') {
-    ensureBootOverlay();
-    const requested = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
-    const pct = bootFinished ? requested : Math.min(requested, 96);
+  function syncBootOverlay(snapshot = lastBootProgress) {
+    const overlay = document.getElementById('havenfallBootOverlay');
+    if (!overlay) return;
     const status = document.getElementById('bootStatusText');
     const fill = document.getElementById('bootProgressFill');
     const meta = document.getElementById('bootDetailText');
     const percent = document.getElementById('bootPercentText');
-    if (status) status.textContent = label || 'Carregando...';
-    if (fill) fill.style.width = `${pct}%`;
-    if (meta) meta.textContent = detail || 'Preparando sistemas';
-    if (percent) percent.textContent = `${pct}%`;
+    if (status) status.textContent = snapshot.label || 'Carregando...';
+    if (fill) fill.style.width = `${snapshot.progress || 0}%`;
+    if (meta) meta.textContent = snapshot.detail || 'Preparando sistemas';
+    if (percent) percent.textContent = `${snapshot.progress || 0}%`;
+  }
+
+  function ensureBootOverlay(force = false) {
+    if (bootFinished) return null;
+    let overlay = document.getElementById('havenfallBootOverlay');
+    if (overlay) return overlay;
+
+    if (!force && !bootOverlayStarted) {
+      if (!bootOverlayTimer) {
+        bootOverlayTimer = setTimeout(() => {
+          bootOverlayTimer = null;
+          if (bootFinished) return;
+          bootOverlayStarted = true;
+          createBootOverlay();
+          syncBootOverlay();
+        }, BOOT_OVERLAY_DELAY_MS);
+      }
+      return null;
+    }
+
+    bootOverlayStarted = true;
+    overlay = createBootOverlay();
+    syncBootOverlay();
+    return overlay;
+  }
+
+  function setBootProgress(label, progress, detail = '') {
+    const requested = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const pct = bootFinished ? requested : Math.min(requested, 96);
+    lastBootProgress = { label, progress: pct, detail };
     window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), updatedAt: Date.now() };
+    ensureBootOverlay(false);
+    syncBootOverlay(lastBootProgress);
   }
 
   function pendingGateLabels() {
@@ -308,6 +343,10 @@
   }
 
   function hideBootOverlay() {
+    if (bootOverlayTimer) {
+      clearTimeout(bootOverlayTimer);
+      bootOverlayTimer = null;
+    }
     const overlay = document.getElementById('havenfallBootOverlay');
     if (!overlay) return;
     overlay.classList.add('hidden');
@@ -323,6 +362,10 @@
     }
     bootFinished = true;
     if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
+    if (bootOverlayTimer) {
+      clearTimeout(bootOverlayTimer);
+      bootOverlayTimer = null;
+    }
     setBootProgress('Menu pronto', 100, 'Tudo carregado e interativo');
     requestAnimationFrame(() => setTimeout(hideBootOverlay, 180));
   }
@@ -360,7 +403,7 @@
   async function bootFromManifest() {
     window.HavenfallBootManifest = Object.freeze({ groups: BOOT_GROUPS, core: CORE_BLUEPRINTS, entry: ENTRY_BLUEPRINT });
     try {
-      ensureBootOverlay();
+      ensureBootOverlay(false);
       bootStartedAt = Date.now();
       pendingNoticeTimer = setInterval(refreshPendingNotice, 900);
       setBootProgress('Inicializando HavenFall', 2, 'Preparando manifesto');
@@ -370,6 +413,7 @@
     } catch (error) {
       if (pendingNoticeTimer) clearInterval(pendingNoticeTimer);
       console.error(error);
+      ensureBootOverlay(true);
       setBootProgress('Falha ao iniciar HavenFall', 100, error.message || String(error));
       const box = document.createElement('div');
       box.textContent = `Falha ao iniciar Havenfall: ${error.message || error}`;
