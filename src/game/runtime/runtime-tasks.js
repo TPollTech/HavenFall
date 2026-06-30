@@ -68,11 +68,20 @@
     return true;
   }
 
+  function shortFailureReason(reason) {
+    return String(reason || 'Tarefa falhou.')
+      .replace(/^Tarefa cancelada:\s*/i, '')
+      .replace(/\.$/, '');
+  }
+
   function logTaskFailure(c, reason) {
     const now = nowMs();
-    if (Number(c._nextTaskFailureLogAt || 0) > now) return;
-    c._nextTaskFailureLogAt = now + 4500;
-    if (typeof log === 'function') log(`${c.name || 'Colono'}: ${reason}`);
+    const mayLog = Number(c._nextTaskFailureLogAt || 0) <= now;
+    if (mayLog) {
+      c._nextTaskFailureLogAt = now + 4500;
+      if (typeof log === 'function') log(`${c.name || 'Colono'}: ${reason}`);
+    }
+    window.HavenfallWorkFeedback?.notifyProblem?.(shortFailureReason(reason), c, { kind: 'warning' });
   }
 
   function objectById(id) {
