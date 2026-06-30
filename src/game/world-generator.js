@@ -128,6 +128,31 @@ function generateWorldFromSeed(config) {
   const site = landing?.selectedSite?.(config);
   if (site) world = landing.applyLandingSite(world, config, site);
   if (window.HavenfallLandingSiteWorldgenPolish?.applyToWorld) world = window.HavenfallLandingSiteWorldgenPolish.applyToWorld(world, config);
+
+  // ============================================================
+  // PIPELINE FINAL: Validar e corrigir o mundo (steps 8-12)
+  // ============================================================
+  if (window.HavenfallEcosystemRules && window.HavenfallWorldValidator) {
+    const result = window.HavenfallWorldValidator.validateWorld(world, config);
+    world = result.world;
+
+    if (result.fixCount > 0) {
+      const fixLog = `[WorldValidator] ${result.fixCount} correção(ões) aplicada(s).`;
+      if (typeof console?.log === 'function') console.log(fixLog, result.fixes.join(' | '));
+    }
+
+    if (result.errorCount > 0) {
+      const errLog = `[WorldValidator] ${result.errorCount} erro(s): ${result.errors.join(' | ')}`;
+      if (typeof console?.warn === 'function') console.warn(errLog);
+    }
+
+    // Marca o mundo como validado
+    world.validated = true;
+    world.validationVersion = '1.0-ecosystem';
+  } else {
+    if (typeof console?.warn === 'function') console.warn('[WorldValidator] EcosystemRules ou WorldValidator não carregados. Pulei validação.');
+  }
+
   return world;
 }
 
@@ -382,6 +407,7 @@ function applyPlanetScanResourceMultipliers(counts, config) {
 }
 
 function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
+  const rules = window.HavenfallEcosystemRules;
   const minDist = type === 'ore' ? 13 : type === 'rock' ? 7 : 5;
   for (let i = 0; i < 160; i++) {
     const x = 2 + Math.floor(rand() * (cols - 4));
@@ -389,12 +415,10 @@ function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
     const t = terrain[y][x];
     const d = Math.hypot(x - spawn.x, y - spawn.y);
     if (d < minDist) continue;
-    if (type === 'tree' && !['grass', 'dirt'].includes(t)) continue;
-    if (type === 'bush' && !['grass', 'dirt'].includes(t)) continue;
-    if (type === 'berry' && t !== 'grass') continue;
-    if (type === 'rock' && !['stone', 'dirt', 'grass'].includes(t)) continue;
-    if (type === 'ore' && t !== 'stone' && worldNoise(seed, x, y, 'ore') < 0.72) continue;
-    if (type === 'logs' && !['grass', 'dirt'].includes(t)) continue;
+    // Usa ecosystem-rules em vez de regras hardcoded
+    if (rules && !rules.canObjectExistOnTile(type, t)) continue;
+    // Ore tem chance extra (só aparece em stone se o noise permitir)
+    if (type === 'ore' && t !== 'stone' && t !== 'rock' && worldNoise(seed, x, y, 'ore') < 0.72) continue;
     return { x, y };
   }
   return null;

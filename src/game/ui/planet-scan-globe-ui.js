@@ -21,6 +21,14 @@
     maxPanFactor: 0.34
   });
 
+  const MARKER_COLORS = Object.freeze({
+    safe: '#22c55e',
+    favorable: '#86efac',
+    moderate: '#38bdf8',
+    hard: '#fb923c',
+    extreme: '#ef4444'
+  });
+
   const view = {
     zoom: 1,
     panX: 0,
@@ -87,6 +95,7 @@
           linear-gradient(180deg, rgba(2,6,23,.95), rgba(7,10,24,.98));
         box-shadow: inset 0 0 0 1px rgba(148,163,184,.14);
         overflow: hidden;
+        position: relative;
       }
 
       .planet-scan-screen .scan-radar.dragging {
@@ -100,12 +109,14 @@
       }
 
       .planet-scan-screen .scan-planet-canvas {
+        position: absolute;
         inset: 0;
         z-index: 1;
         width: 100%;
         height: 100%;
         opacity: 1;
         filter: saturate(1.08) contrast(1.04);
+        pointer-events: none;
       }
 
       .planet-scan-screen .scan-sector-label {
@@ -191,6 +202,103 @@
         backdrop-filter: blur(8px);
       }
 
+      /* Marcadores clicáveis que acompanham zoom/pan */
+      .globe-marker-container {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        overflow: visible;
+      }
+
+      .globe-spawn-marker {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.82);
+        background: radial-gradient(circle, #fff 0 15%, var(--c, #38bdf8) 28% 58%, rgba(56,189,248,.12) 70%);
+        box-shadow: 0 0 20px var(--c, #38bdf8);
+        cursor: pointer;
+        pointer-events: all;
+        transform: translate(-50%, -50%);
+        transition: width .16s, height .16s, filter .16s;
+        animation: globeMarkerPulse 2.6s ease-in-out infinite;
+      }
+
+      .globe-spawn-marker:hover {
+        width: 25px;
+        height: 25px;
+        filter: brightness(1.25);
+      }
+
+      .globe-spawn-marker.selected {
+        width: 32px;
+        height: 32px;
+        border-color: #fff7ed;
+        background: radial-gradient(circle, #fff7ed 0 14%, #facc15 26% 54%, rgba(250,204,21,.16) 70%);
+        box-shadow: 0 0 36px rgba(250,204,21,.95), 0 0 0 8px rgba(250,204,21,.08);
+      }
+
+      .globe-spawn-marker.selected::after {
+        content: '';
+        position: absolute;
+        inset: -13px;
+        border-radius: inherit;
+        border: 2px solid rgba(250,204,21,.52);
+        animation: globeMarkerRing 1.8s ease-out infinite;
+      }
+
+      .globe-spawn-label {
+        position: absolute;
+        color: rgba(226,232,240,.86);
+        font-size: 10px;
+        font-weight: 800;
+        text-shadow: 0 2px 8px rgba(0,0,0,.85);
+        white-space: nowrap;
+        pointer-events: none;
+        transform: translate(-50%, 12px);
+        opacity: 0;
+        transition: opacity .12s;
+      }
+
+      .globe-spawn-label.visible {
+        opacity: 1;
+      }
+
+      .globe-tooltip {
+        position: fixed;
+        z-index: 99999;
+        max-width: 280px;
+        min-width: 220px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .12s, transform .12s;
+        transform: translateY(4px);
+        border: 1px solid rgba(125,211,252,.28);
+        background: linear-gradient(180deg, rgba(2,6,23,.96), rgba(15,23,42,.96));
+        border-radius: 14px;
+        padding: 12px;
+        box-shadow: 0 18px 42px rgba(0,0,0,.48);
+        color: #e5eefc;
+      }
+
+      .globe-tooltip.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .globe-tooltip b { display: block; color: #fff; margin-bottom: 3px; }
+      .globe-tooltip small { display: block; color: rgba(203,213,225,.78); line-height: 1.45; }
+
+      @keyframes globeMarkerPulse {
+        50% { filter: brightness(1.18); transform: translate(-50%, -50%) scale(1.08); }
+      }
+      @keyframes globeMarkerRing {
+        from { transform: scale(.86); opacity: .82; }
+        to { transform: scale(1.24); opacity: 0; }
+      }
+
       @media (max-width: 900px) {
         .planet-scan-screen .scan-hologram-panel { min-height: 410px; }
         .planet-scan-screen .scan-radar { min-height: 360px; height: 420px; }
@@ -271,6 +379,119 @@
     if (label) label.textContent = `${Math.round(view.zoom * 100)}%`;
   }
 
+  function esc(v) {
+    if (typeof escapeHtml === 'function') return escapeHtml(v);
+    return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&','<':'<','>':'>','"':'"',"'":'&#039;'}[ch]));
+  }
+
+  function siteTier(site) {
+    return site?.difficulty?.tier || 'moderate';
+  }
+
+  function siteColor(site) {
+    return MARKER_COLORS[siteTier(site)] || MARKER_COLORS.moderate;
+  }
+
+  function avgScore(obj) {
+    const vals = Object.values(obj || {});
+    return Math.round(vals.reduce((s, v) => s + Number(v || 0), 0) / Math.max(1, vals.length));
+  }
+
+  function ensureMarkerContainer(radar) {
+    let container = radar.querySelector('.globe-marker-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'globe-marker-container';
+      radar.appendChild(container);
+    }
+    return container;
+  }
+
+  function ensureTooltip() {
+    let el = document.getElementById('globeMarkerTooltip');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'globeMarkerTooltip';
+      el.className = 'globe-tooltip';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function renderMarkers(sites, selectedId, scale) {
+    const radar = document.querySelector('.scan-radar');
+    if (!radar || !scale) return;
+
+    const container = ensureMarkerContainer(radar);
+    container.innerHTML = '';
+    const renderer = window.HavenfallPlanetGlobeRenderer;
+    if (!renderer?.pointForSite) return;
+
+    const tooltip = ensureTooltip();
+    const canvas = document.getElementById('scanPlanetCanvas');
+
+    sites.forEach(site => {
+      // Usa o MESMO pointForSite do renderer com o MESMO scale
+      // Isso garante posição pixel-perfeita igual ao canvas
+      const p = renderer.pointForSite(site, scale);
+      const isSelected = site.id === selectedId;
+      const c = siteColor(site);
+      const tier = siteTier(site);
+
+      // Cria o marcador (bolinha clicável)
+      const marker = document.createElement('button');
+      marker.type = 'button';
+      marker.className = `globe-spawn-marker ${tier}${isSelected ? ' selected' : ''}`;
+      marker.style.left = p.x + 'px';
+      marker.style.top = p.y + 'px';
+      marker.style.setProperty('--c', c);
+      marker.dataset.siteId = site.id;
+      marker.setAttribute('aria-label', `Selecionar ${site.name}`);
+
+      // Cria o label
+      const label = document.createElement('span');
+      label.className = `globe-spawn-label${isSelected || sites.length <= 12 ? ' visible' : ''}`;
+      label.style.left = p.x + 'px';
+      label.style.top = p.y + 'px';
+      label.textContent = site.name;
+
+      // Evento de seleção
+      const selectSite = ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (typeof window.selectLandingSite === 'function') {
+          window.selectLandingSite(site.id);
+        }
+      };
+
+      marker.addEventListener('pointerdown', selectSite);
+      marker.addEventListener('click', selectSite);
+
+      // Hover: tooltip + label
+      marker.addEventListener('pointerenter', () => {
+        if (!label.classList.contains('visible')) label.classList.add('visible');
+        const score = Number(site.difficulty?.score || 0);
+        tooltip.innerHTML = `<b>${esc(site.name)}</b><small>${esc(site.labels?.subtitle || '')}<br>Score ${score}/100 · Risco ${avgScore(site.risks)} · Recursos ${avgScore(site.resources)}</small>`;
+      });
+
+      marker.addEventListener('pointermove', ev => {
+        tooltip.style.left = (ev.clientX + 16) + 'px';
+        tooltip.style.top = (ev.clientY + 16) + 'px';
+        tooltip.classList.add('show');
+      });
+
+      marker.addEventListener('pointerleave', () => {
+        tooltip.classList.remove('show');
+        if (!label.classList.contains('visible') && !isSelected) {
+          label.classList.remove('visible');
+        }
+      });
+
+      container.appendChild(marker);
+      container.appendChild(label);
+    });
+  }
+
   function renderScanGlobe() {
     injectStyle();
     const canvas = document.getElementById('scanPlanetCanvas');
@@ -281,6 +502,11 @@
     ensureGlobeControls(radar);
     installInteraction();
 
+    // Remove marcadores HTML legados de outros sistemas
+    if (radar) {
+      radar.querySelectorAll('.landing-site-marker, .landing-site-label').forEach(el => el.remove());
+    }
+
     const cfg = activeConfig();
     const preview = renderer.createScanPreview(cfg, cfg.planetScan || null);
     const selected = preview.landingSites?.[0] || null;
@@ -288,9 +514,9 @@
     clampPan(canvas);
     const width = Math.max(canvas.width || 1, 1);
     const height = Math.max(canvas.height || 1, 1);
-    const detailZoom = view.zoom >= 1.18;
 
-    renderer.drawGlobe(canvas, preview, selected, {
+    // drawGlobe RETORNA o scale! Usamos ele para posicionar os marcadores
+    const scale = renderer.drawGlobe(canvas, preview, selected, {
       minWidth: 520,
       minHeight: 492,
       minRadius: 150,
@@ -299,10 +525,15 @@
       centerX: 0.5 + view.panX / width,
       centerY: 0.5 + view.panY / height,
       showRoutes: false,
-      showLabels: detailZoom,
-      showGlyphs: true,
+      showLabels: false,
+      showGlyphs: false,
       seed: cfg.seed || 'havenfall-scan'
     });
+
+    // Renderiza marcadores HTML usando o MESMO scale do desenho
+    const sites = preview.landingSites || [];
+    const selectedId = selected?.id || null;
+    renderMarkers(sites, selectedId, scale);
 
     updateZoomLabel();
     return true;
@@ -321,6 +552,7 @@
     }, { passive: false });
 
     radar.addEventListener('pointerdown', event => {
+      if (event.target.closest?.('.globe-spawn-marker')) return;
       if (event.target.closest?.('.scan-globe-controls')) return;
       view.dragging = true;
       view.dragStartX = event.clientX;
@@ -353,6 +585,7 @@
     });
 
     radar.addEventListener('click', event => {
+      if (event.target.closest?.('.globe-spawn-marker')) return;
       const button = event.target.closest?.('[data-scan-zoom]');
       if (!button) return;
       const action = button.dataset.scanZoom;
@@ -363,10 +596,25 @@
   }
 
   function patchRefresh() {
-    if (typeof window.refreshPlanetScan !== 'function' || window.refreshPlanetScan.__havenfallGlobePatched) return;
     const original = window.refreshPlanetScan;
+    if (typeof original !== 'function') return;
+    if (original.__havenfallGlobePatched) return;
+
     function patchedRefreshPlanetScan(config = null) {
+      const isRefresh = config === undefined || config === null;
       const result = original(config);
+
+      const radar = document.querySelector('.scan-radar');
+      if (radar) {
+        radar.querySelectorAll('.landing-site-marker, .landing-site-label').forEach(el => el.remove());
+      }
+
+      if (isRefresh) {
+        view.zoom = 1;
+        view.panX = 0;
+        view.panY = 0;
+      }
+
       renameCopy();
       renderScanGlobe();
       return result;
@@ -375,11 +623,66 @@
     window.refreshPlanetScan = patchedRefreshPlanetScan;
   }
 
+  function ensureLastPatch() {
+    const current = window.refreshPlanetScan;
+    if (current && !current.__havenfallGlobePatched) {
+      patchRefresh();
+    }
+  }
+
+  function silenceLegacySystems() {
+    // Bloqueia drawPlanet do sistema legado (landing-site-scan-polish)
+    if (typeof window.drawPlanet === 'function' && !window.drawPlanet.__havenfallSilenced) {
+      const original = window.drawPlanet;
+      window.drawPlanet = function(...args) {
+        const canvas = document.getElementById('scanPlanetCanvas');
+        if (canvas && canvas.parentElement?.classList.contains('scan-radar')) {
+          return;
+        }
+        return original(...args);
+      };
+      window.drawPlanet.__havenfallSilenced = true;
+    }
+
+    // Bloqueia ensureCanvas do sistema legado que força 520x520
+    // e também adiciona scan-atmosphere e scan-orbit-ring que poluem o radar
+    if (typeof window.ensureCanvas === 'function' && !window.ensureCanvas.__havenfallSilenced) {
+      const original = window.ensureCanvas;
+      window.ensureCanvas = function(...args) {
+        const canvas = document.getElementById('scanPlanetCanvas');
+        if (canvas && canvas.parentElement?.classList.contains('scan-radar')) {
+          return canvas; // Retorna o canvas existente sem modificar
+        }
+        return original(...args);
+      };
+      window.ensureCanvas.__havenfallSilenced = true;
+    }
+
+    // Remove elementos atmosféricos e rings que o polish adiciona
+    // e conflitam com o fundo do novo globo
+    const radar = document.querySelector('.scan-radar');
+    if (radar) {
+      radar.querySelectorAll('.scan-atmosphere, .scan-orbit-ring').forEach(el => el.remove());
+    }
+  }
+
   function refreshNow() {
     refreshQueued = false;
     injectStyle();
     renameCopy();
+    silenceLegacySystems();
     patchRefresh();
+    renderScanGlobe();
+  }
+
+  function hardRefreshWithReset() {
+    injectStyle();
+    renameCopy();
+    silenceLegacySystems();
+    patchRefresh();
+    view.zoom = 1;
+    view.panX = 0;
+    view.panY = 0;
     renderScanGlobe();
   }
 
@@ -389,15 +692,33 @@
     requestAnimationFrame(refreshNow);
   }
 
-  document.addEventListener('DOMContentLoaded', queueRefresh);
+  function watchRefreshButton() {
+    const btn = document.getElementById('scanRefreshBtn');
+    if (btn && !btn.__havenfallWatched) {
+      btn.__havenfallWatched = true;
+      btn.addEventListener('click', () => {
+        setTimeout(hardRefreshWithReset, 50);
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    queueRefresh();
+    watchRefreshButton();
+  });
   window.addEventListener('resize', () => {
     if (document.getElementById('planetScanScreen')?.classList.contains('active')) queueRefresh();
   });
 
   if (document.documentElement) {
-    const observer = new MutationObserver(queueRefresh);
+    const observer = new MutationObserver(() => {
+      queueRefresh();
+      ensureLastPatch();
+      watchRefreshButton();
+    });
     observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
 
   queueRefresh();
+  watchRefreshButton();
 })();
