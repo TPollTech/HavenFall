@@ -1,11 +1,13 @@
 'use strict';
 
 (() => {
-  if (window.HavenfallWorkFeedback?.version === 'work-feedback-v2') return;
+  if (window.HavenfallWorkFeedback?.version === 'work-feedback-v3') return;
 
   const activities = new Map();
   const sparks = [];
+  const notices = [];
   const MAX_SPARKS = 70;
+  const MAX_NOTICES = 12;
   const profiles = {
     mine: { interval: 0.5, color: '#f1d28a', sound: 'stone' },
     ore: { interval: 0.5, color: '#ffd08a', sound: 'ore' },
@@ -30,6 +32,12 @@
 
   function tileCenter(x, y) {
     return { x: Number(x || 0) * TILE + TILE / 2, y: Number(y || 0) * TILE + TILE / 2 };
+  }
+
+  function sourcePoint(source) {
+    if (source && Number.isFinite(Number(source.px)) && Number.isFinite(Number(source.py))) return { x: Number(source.px), y: Number(source.py) };
+    if (source && Number.isFinite(Number(source.x)) && Number.isFinite(Number(source.y))) return tileCenter(source.x, source.y);
+    return tileCenter(state?.spawn?.x || state?.world?.spawn?.x || 0, state?.spawn?.y || state?.world?.spawn?.y || 0);
   }
 
   function particleQuality() {
@@ -132,6 +140,13 @@
       if (s.age >= s.life) sparks.splice(i, 1);
     }
 
+    for (let i = notices.length - 1; i >= 0; i--) {
+      const n = notices[i];
+      n.age += dt || 0;
+      n.y -= 8 * (dt || 0);
+      if (n.age >= n.life) notices.splice(i, 1);
+    }
+
     if (!playing()) {
       activities.clear();
       return;
@@ -177,6 +192,27 @@
     ctx.restore();
   }
 
+  function drawNoticeLayer() {
+    if (!notices.length) return;
+    ctx.save();
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const n of notices) {
+      const alpha = Math.max(0, 1 - n.age / Math.max(0.001, n.life));
+      const text = n.text.length > 56 ? `${n.text.slice(0, 53)}...` : n.text;
+      const w = Math.min(360, ctx.measureText(text).width + 20);
+      ctx.globalAlpha = alpha * 0.88;
+      ctx.fillStyle = 'rgba(20, 12, 10, .82)';
+      ctx.fillRect(n.x - w / 2, n.y - 16, w, 24);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = n.kind === 'error' ? '#fecaca' : '#fde68a';
+      ctx.fillText(text, n.x, n.y - 4);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   function drawActivity(activity, c) {
     const target = activity.target;
     const profile = profiles[target.kind] || profiles.gather;
@@ -219,6 +255,7 @@
       if (typeof isWorldPointInView === 'function' && !isWorldPointInView(c.px, c.py, TILE * 2)) continue;
       drawActivity(activity, c);
     }
+    drawNoticeLayer();
   }
 
   function notifyComplete(kind, detail = {}, x = null, y = null) {
@@ -230,7 +267,21 @@
     }
   }
 
-  window.HavenfallWorkFeedback = { version: 'work-feedback-v2', notifyComplete, activities, sparks };
+  function notifyProblem(text, source = null, options = {}) {
+    if (!text) return;
+    const point = sourcePoint(source);
+    if (notices.length >= MAX_NOTICES) notices.shift();
+    notices.push({
+      text: String(text),
+      x: point.x,
+      y: point.y - 42,
+      age: 0,
+      life: Number(options.life || 3.2),
+      kind: options.kind || 'warning'
+    });
+  }
+
+  window.HavenfallWorkFeedback = { version: 'work-feedback-v3', notifyComplete, notifyProblem, activities, sparks, notices };
   window.GameSystems?.registerTick('work:feedback', updateColonyWork, { order: 74, type: 'visual-feedback' });
   window.GameSystems?.registerWorldOverlay('work:feedback-overlay', drawWorkLayer, { order: 72, type: 'visual-feedback' });
 })();
