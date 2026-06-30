@@ -181,20 +181,31 @@
     return c.task?.type === 'heal';
   }
 
-  function assignRecoverySleep(c, reason = 'Recuperando energia') {
+  function safeStartSleep(c, reason = 'Indo dormir') {
     if (!c || c.task) return false;
-    if (typeof startSleep === 'function') {
-      startSleep(c);
-      if (c.task?.type === 'sleep') {
+    const bed = nearestObjectOfType('bed', c);
+    if (bed) {
+      const route = routeToObject(c, bed);
+      if (route) {
+        c.task = { type: 'sleep', x: route.adj.x, y: route.adj.y, bedId: bed.id };
+        c.path = route.path;
+        c.work = 0;
         c.note = reason;
         return true;
       }
+      blockedUntil.set(keyOf(bed), timeKey() + 900);
     }
-    c.task = { type: 'sleep', x: c.x, y: c.y, recovery: true };
+    c.task = { type: 'sleep', x: c.x, y: c.y, recovery: true, noReachableBed: !!bed };
     c.path = [];
     c.work = 0;
-    c.note = reason;
+    c.note = bed ? 'Descansando no chão (cama inacessível)' : 'Descansando no chão';
     return true;
+  }
+
+  function assignRecoverySleep(c, reason = 'Recuperando energia') {
+    if (!c || c.task) return false;
+    if (safeStartSleep(c, reason)) return true;
+    return false;
   }
 
   function assignRecoveryLeisure(c, reason = 'Recuperando humor') {
@@ -315,6 +326,10 @@
 
   function installOverrides() {
     window.assignMarkedGatherTasks = assignAllMarked;
+    if (!window.HavenfallContext.workCoordinationSleepPatched && typeof startSleep === 'function') {
+      startSleep = c => safeStartSleep(c);
+      window.HavenfallContext.workCoordinationSleepPatched = true;
+    }
     if (!window.HavenfallContext.workCoordinationWanderPatched && typeof randomWander === 'function') {
       randomWander = c => calmIdle(c);
       window.HavenfallContext.workCoordinationWanderPatched = true;
@@ -331,7 +346,7 @@
     assignAllMarked();
   }
 
-  window.HavenfallWorkCoordinator = { assignMarkedGatherTasks: assignAllMarked, assignMarkedResource, assignUsefulIdleGather, calmIdle, workExists, needsRecovery, handleRecoveryNeed, reservations };
+  window.HavenfallWorkCoordinator = { assignMarkedGatherTasks: assignAllMarked, assignMarkedResource, assignUsefulIdleGather, safeStartSleep, calmIdle, workExists, needsRecovery, handleRecoveryNeed, reservations };
   window.GameSystems?.registerTaskHandler?.('gather', 'work-coordination.gather', handleGather, { order: 1 });
   window.GameSystems?.registerAutoTaskProvider?.('work-coordination.marked-gather', assignMarkedResource, { order: 1 });
   window.GameSystems?.registerTick?.('work-coordination', tick, { order: 21 });
