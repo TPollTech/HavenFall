@@ -2,13 +2,26 @@
 
 window.HavenfallContext = window.HavenfallContext || {};
 
+function loadCoreExtension(file, id) {
+  if (!file || document.querySelector(`script[data-blueprint-id="${id}"]`)) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = file;
+    el.dataset.blueprintId = id;
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error(`Falha ao carregar ${id}`));
+    document.body.appendChild(el);
+  });
+}
+
 function bootGame() {
   if (window.HavenfallContext.gameBooted) {
     console.warn('[Engine] Boot já executado. Chamada redundante ignorada.');
     return;
   }
 
-  loadImages()
+  loadCoreExtension('src/game/systems/colonist-vitals-system.js', 'colonist_vitals')
+    .then(() => loadImages())
     .then(() => {
       window.HavenfallContext.gameBooted = true;
 
