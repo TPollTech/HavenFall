@@ -50,7 +50,7 @@
       name: 'session_setup',
       label: 'Configuração de jogo e menus iniciais',
       entries: Object.freeze([
-        ['game_setup','src/game/game-setup.js'],
+        ['game_setup','src/game/core/game-setup.js'],
         ['settings_manager','src/game/core/settings-manager.js'],
         ['desktop_save_settings_ui','src/game/ui/desktop-save-settings-ui.js'],
         ['colonist_generation','src/game/colonist-generation.js'],
