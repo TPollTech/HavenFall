@@ -8,6 +8,7 @@
   const VERSION = 'worldgen-cohesion-v1';
   const CAMP_TYPES = new Set(['campfire', 'crate', 'logs', 'stockpile']);
   const RESOURCE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs', 'logs', 'rock', 'ore']);
+  const VEGETATION_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
   const POI_TYPES = new Set(['ruin', 'cache', 'supply_crate']);
   const NATURAL_GROUND = ['grass', 'dirt', 'sand'];
 
@@ -83,12 +84,13 @@
     if (occupied.has(k)) return null;
     if (terrain(world, x, y) === 'water') setTerrain(world, x, y, 'dirt');
     const obj = {
-      id: `${type}_${hash(`${world.seed}|cohesion|${type}|${x}|${y}|${world.objects.length}`).toString(36)}`,
+      id: `${type}_${hash(`${world.seed}|cohesion|${type}|${x}|${y}|${world.objects?.length || 0}`).toString(36)}`,
       type,
       x,
       y,
       ...extra
     };
+    world.objects = Array.isArray(world.objects) ? world.objects : [];
     world.objects.push(obj);
     occupied.add(k);
     return obj;
@@ -180,8 +182,10 @@
     for (const rep of replacements) setTerrain(world, rep.x, rep.y, rep.type === 'stone' ? 'dirt' : rep.type);
 
     const copy = world.terrain.map(row => row.slice());
+    const occupied = occupiedSet(world);
     for (let y = 1; y < world.rows - 1; y++) {
       for (let x = 1; x < world.cols - 1; x++) {
+        if (occupied.has(key(x, y))) continue;
         const t = terrain(world, x, y);
         const waterN = neighborCount(world, x, y, 'water', 1);
         if (t === 'water' && waterN <= 1) copy[y][x] = dominantNeighborGround(world, x, y, 'dirt') === 'stone' ? 'dirt' : dominantNeighborGround(world, x, y, 'dirt');
@@ -195,8 +199,10 @@
 
   function addWaterBanks(world) {
     const copy = world.terrain.map(row => row.slice());
+    const occupied = occupiedSet(world);
     for (let y = 1; y < world.rows - 1; y++) {
       for (let x = 1; x < world.cols - 1; x++) {
+        if (occupied.has(key(x, y))) continue;
         if (terrain(world, x, y) === 'water') continue;
         const waterN = neighborCount(world, x, y, 'water', 1);
         if (!waterN) continue;
@@ -247,9 +253,11 @@
   function smoothTerrainMasses(world) {
     for (let pass = 0; pass < 2; pass++) {
       const copy = world.terrain.map(row => row.slice());
+      const occupied = occupiedSet(world);
       for (let y = 1; y < world.rows - 1; y++) {
         for (let x = 1; x < world.cols - 1; x++) {
           if (distanceToSpawn(world, x, y) < 9) continue;
+          if (occupied.has(key(x, y))) continue;
           const t = terrain(world, x, y);
           const stoneN = neighborCount(world, x, y, 'stone', 1);
           const sandN = neighborCount(world, x, y, 'sand', 1);
@@ -274,6 +282,7 @@
       const k = key(obj.x, obj.y);
       if (occupied.has(k)) return false;
       const tile = terrain(world, obj.x, obj.y);
+      if (VEGETATION_TYPES.has(obj.type) && !NATURAL_GROUND.includes(tile)) return false;
       if (tile === 'water' && !POI_TYPES.has(obj.type)) return false;
       if (RESOURCE_TYPES.has(obj.type) && Math.hypot(obj.x - spawn.x, obj.y - spawn.y) < 7.5 && !CAMP_TYPES.has(obj.type)) return false;
       occupied.add(k);
