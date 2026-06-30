@@ -4,10 +4,18 @@
   if (window.HavenfallAudio?.version === 'work-sfx-v2') return;
 
   const AUDIO_VERSION = 'work-sfx-v2';
-  const MASTER_VOLUME = 0.72;
-  const SFX_VOLUME = 0.82;
-  const AMBIENT_VOLUME = 0.38;
+  const BASE_MASTER_VOLUME = 0.72;
+  const BASE_SFX_VOLUME = 0.82;
+  const BASE_AMBIENT_VOLUME = 0.38;
   const MIN_REPEAT_MS = 70;
+  const DEFAULT_AUDIO_SETTINGS = Object.freeze({
+    enabled: 'on',
+    masterVolume: 0.8,
+    sfxVolume: 0.85,
+    ambientVolume: 0.55,
+    uiVolume: 0.7,
+    rain: 'normal'
+  });
 
   const RAIN_LAYERS = Object.freeze([
     { name: 'rain-body', duration: 5.3, type: 'lowpass', frequency: 720, q: 0.45, baseGain: 0.105, rate: 0.92 },
@@ -42,6 +50,38 @@
     return window.AudioContext || window.webkitAudioContext || null;
   }
 
+  function audioSettings(input = null) {
+    const source = input || window.HavenfallSettings?.getSettings?.()?.audio || (typeof settings !== 'undefined' ? settings?.audio : null);
+    if (source === 'off') return { ...DEFAULT_AUDIO_SETTINGS, enabled: 'off' };
+    if (!source || typeof source !== 'object') return { ...DEFAULT_AUDIO_SETTINGS };
+    return { ...DEFAULT_AUDIO_SETTINGS, ...source };
+  }
+
+  function numberSetting(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? clampValue(n, 0, 1) : fallback;
+  }
+
+  function applySettings(nextAudio = null) {
+    const audio = audioSettings(nextAudio);
+    const legacyMuted = typeof settings !== 'undefined' && !!settings?.muteAudio;
+    const muted = audio.enabled === 'off' || legacyMuted;
+
+    if (audioState.master) audioState.master.gain.value = muted ? 0 : BASE_MASTER_VOLUME * numberSetting(audio.masterVolume, DEFAULT_AUDIO_SETTINGS.masterVolume);
+    if (audioState.sfx) audioState.sfx.gain.value = BASE_SFX_VOLUME * numberSetting(audio.sfxVolume, DEFAULT_AUDIO_SETTINGS.sfxVolume);
+    if (audioState.ambient) audioState.ambient.gain.value = BASE_AMBIENT_VOLUME * numberSetting(audio.ambientVolume, DEFAULT_AUDIO_SETTINGS.ambientVolume);
+
+    if ((muted || audio.rain === 'off') && audioState.rain?.layers?.length && audioState.ctx) {
+      audioState.rain.target = 0;
+      for (const layer of audioState.rain.layers) {
+        layer.target = 0.0001;
+        layer.gainNode.gain.cancelScheduledValues(audioState.ctx.currentTime);
+        layer.gainNode.gain.setTargetAtTime(0.0001, audioState.ctx.currentTime, 0.35);
+      }
+    }
+    return audio;
+  }
+
   function ensureContext() {
     if (audioState.ctx) return audioState.ctx;
     const AudioCtor = getAudioContextCtor();
@@ -52,10 +92,6 @@
     const sfx = ctx.createGain();
     const ambient = ctx.createGain();
 
-    master.gain.value = MASTER_VOLUME;
-    sfx.gain.value = SFX_VOLUME;
-    ambient.gain.value = AMBIENT_VOLUME;
-
     sfx.connect(master);
     ambient.connect(master);
     master.connect(ctx.destination);
@@ -64,6 +100,7 @@
     audioState.master = master;
     audioState.sfx = sfx;
     audioState.ambient = ambient;
+    applySettings();
     return ctx;
   }
 
@@ -82,13 +119,15 @@
   }
 
   function isAudioMuted() {
-    const currentSettings = typeof settings !== 'undefined' ? settings : null;
-    return currentSettings?.audio === 'off' || !!currentSettings?.muteAudio;
+    const audio = audioSettings();
+    const legacyMuted = typeof settings !== 'undefined' && !!settings?.muteAudio;
+    return audio.enabled === 'off' || legacyMuted;
   }
 
   function audioReady() {
     const ctx = ensureContext();
     if (!ctx) return null;
+    applySettings();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     return ctx;
   }
@@ -233,7 +272,7 @@
     if (normalized === 'wood' || normalized === 'tree' || normalized === 'gather-wood') return playWoodChop();
     if (normalized === 'scrap' || normalized === 'metal' || normalized === 'forge') return playScrapHit();
     if (normalized === 'research') return playResearchPageTurn();
-    if (normalized === 'build') return playSoftWork('build');
+    if (normalized === 'build' || normalized === 'deconstruct') return playSoftWork('build');
     if (normalized === 'craft' || normalized === 'cook' || normalized === 'heal') return playSoftWork(normalized);
     playSoftWork('generic');
   }
@@ -243,8 +282,13 @@
     const normalized = String(kind || '').toLowerCase();
     if (normalized === 'mine' || normalized === 'stone' || normalized === 'ore') return playRockBreak(detail);
     if (normalized === 'wood' || normalized === 'tree' || normalized === 'gather-wood') return playWoodBreak();
-    if (normalized === 'scrap' || normalized === 'metal') return playScrapHit();
+    if (normalized === 'scrap' || normalized === 'metal' || normalized === 'forge') return playScrapHit();
     if (normalized === 'research') return playResearchPageTurn();
+    if (normalized === 'build' || normalized === 'deconstruct') {
+      playSoftWork('build');
+      return playTone({ frequency: 320, endFrequency: 520, duration: 0.09, gain: 0.045, type: 'triangle' });
+    }
+    if (normalized === 'craft' || normalized === 'cook' || normalized === 'heal' || normalized === 'gather') return playSoftWork(normalized);
     playTone({ frequency: 440, endFrequency: 620, duration: 0.10, gain: 0.055, type: 'triangle' });
   }
 
@@ -282,7 +326,9 @@
   }
 
   function setRainActive(active, intensity = 1) {
-    if (isAudioMuted()) active = false;
+    const audio = applySettings();
+    if (isAudioMuted() || audio.rain === 'off') active = false;
+    if (active && audio.rain === 'reduced') intensity *= 0.45;
     const ctx = active ? audioReady() : audioState.ctx;
     if (!ctx) return;
 
@@ -363,6 +409,7 @@
     playWorkComplete,
     setRainActive,
     tickWeatherAudio,
+    applySettings,
     isReady: () => !!audioState.ctx && audioState.ctx.state !== 'closed'
   };
 

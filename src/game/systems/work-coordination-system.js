@@ -12,6 +12,7 @@
   function keyOf(obj) { return obj?.id || `${obj?.type}:${obj?.x},${obj?.y}`; }
   function timeKey() { return (state?.day || 0) * 24000 + Math.floor((state?.hour || 0) * 1000); }
   function priority(c, key) { return typeof taskPriorityValue === 'function' ? taskPriorityValue(c, key) : 2; }
+  function clampValue(value, min, max) { return Math.max(min, Math.min(max, Number(value) || 0)); }
 
   function workHour(c) {
     const manager = window.ScheduleManager;
@@ -20,7 +21,9 @@
   }
 
   function canWork(c, key = 'gather') {
-    return !!state && !!c && !c.task && c.health > 15 && c.energy > 14 && workHour(c) && priority(c, key) > 0;
+    if (!state || !c || c.task || c.health <= 15 || c.energy <= 14 || c.hunger <= 16 || c.mood <= 8 || priority(c, key) <= 0) return false;
+    if (workHour(c)) return true;
+    return key === 'gather' && workExists() && c.energy > 28 && c.mood > 16;
   }
 
   function cleanup() {
@@ -86,8 +89,15 @@
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   }
 
+  function gatherFeedbackKind(obj, def) {
+    const gather = def?.gather || {};
+    if (obj?.type === 'tree' || obj?.type === 'logs' || gather.wood) return 'wood';
+    return 'gather';
+  }
+
   function finishGather(c, obj, def) {
     addResources(def.gather);
+    window.HavenfallWorkFeedback?.notifyComplete?.(gatherFeedbackKind(obj, def), { objectType: obj.type, gain: def.gather }, obj.x, obj.y);
     const next = (state.objects || []).filter(o => o.id !== obj.id);
     if (obj.type === 'tree') next.push({ id: uid('obj'), type: 'logs', x: obj.x, y: obj.y });
     if (obj.type === 'crop') next.push({ id: uid('obj'), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
@@ -127,7 +137,87 @@
   }
 
   function needsRecovery(c) {
-    return Number(c?.energy ?? 100) < 34 || Number(c?.mood ?? 100) < 18 || Number(c?.hunger ?? 100) < 24 || Number(c?.health ?? 100) < 25;
+    return Number(c?.energy ?? 100) < 22 || Number(c?.mood ?? 100) < 10 || Number(c?.hunger ?? 100) < 24 || Number(c?.health ?? 100) < 25;
+  }
+
+  function consumeEmergencyFood(c) {
+    if (!state?.resources || Number(c?.hunger ?? 100) >= 24 || Number(state.resources.food || 0) <= 0) return false;
+    state.resources.food -= 1;
+    c.hunger = clampValue((c.hunger ?? 0) + 44, 0, 100);
+    c.mood = clampValue((c.mood ?? 0) + 4, 0, 100);
+    c.note = 'Comeu uma refeição rápida';
+    if (typeof log === 'function') log(`${c.name} comeu uma refeição rápida.`);
+    return true;
+  }
+
+  function nearestObjectOfType(type, c) {
+    return (state?.objects || [])
+      .filter(obj => obj.type === type)
+      .sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0] || null;
+  }
+
+  function assignRecoveryHeal(c) {
+    if (Number(c?.health ?? 100) >= 25 || Number(state?.resources?.medicine || 0) <= 0 || typeof assignHeal !== 'function') return false;
+    const station = nearestObjectOfType('med_station', c);
+    if (!station) return false;
+    assignHeal(c, station);
+    return c.task?.type === 'heal';
+  }
+
+  function assignRecoverySleep(c, reason = 'Recuperando energia') {
+    if (!c || c.task) return false;
+    if (typeof startSleep === 'function') {
+      startSleep(c);
+      if (c.task?.type === 'sleep') {
+        c.note = reason;
+        return true;
+      }
+    }
+    c.task = { type: 'sleep', x: c.x, y: c.y, recovery: true };
+    c.path = [];
+    c.work = 0;
+    c.note = reason;
+    return true;
+  }
+
+  function assignRecoveryLeisure(c, reason = 'Recuperando humor') {
+    if (!c || c.task) return false;
+    const target = nearestObjectOfType('campfire', c);
+    if (!target) {
+      c.mood = clampValue((c.mood ?? 0) + 0.04, 0, 100);
+      c.note = 'Respirando para recuperar humor';
+      return localIdleMove(c);
+    }
+    const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(target.x, target.y, c.x, c.y) : null;
+    if (!adj) return baseAnchorMove(c);
+    const already = c.x === adj.x && c.y === adj.y;
+    const path = already ? [] : (typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, target) : []);
+    if (!already && (!Array.isArray(path) || path.length === 0)) return baseAnchorMove(c);
+    c.task = { type: 'leisure', x: adj.x, y: adj.y, objId: target.id, recovery: true };
+    c.path = path;
+    c.work = 0;
+    c.note = reason;
+    return true;
+  }
+
+  function handleRecoveryNeed(c, options = {}) {
+    if (!c || c.task) return false;
+    const allowSoft = !!options.allowSoft;
+    const energy = Number(c.energy ?? 100);
+    const mood = Number(c.mood ?? 100);
+    const hunger = Number(c.hunger ?? 100);
+    const health = Number(c.health ?? 100);
+
+    if (hunger < 24 && consumeEmergencyFood(c)) return true;
+    if (health < 25 && assignRecoveryHeal(c)) return true;
+    if (health < 18) return assignRecoverySleep(c, 'Recuperando ferimentos');
+    if (energy < 22) return assignRecoverySleep(c, 'Recuperando energia crítica');
+    if (mood < 10) return assignRecoveryLeisure(c, 'Recuperando humor crítico');
+
+    if (!allowSoft) return false;
+    if (energy < 34) return assignRecoverySleep(c, 'Recuperando energia');
+    if (mood < 28) return assignRecoveryLeisure(c, 'Recuperando humor');
+    return false;
   }
 
   function occupiedByOtherColonist(x, y, colonist) {
@@ -164,8 +254,11 @@
 
   function calmIdle(c) {
     if (!c || c.task || appScreen !== SCREEN.PLAYING) return false;
-    if (needsRecovery(c)) { c.note = 'Recuperando necessidades'; return true; }
-    if (workExists()) { c.note = 'Aguardando designação lógica'; return true; }
+    if (handleRecoveryNeed(c, { allowSoft: false })) return true;
+    const hasWork = workExists();
+    if (hasWork && workHour(c) && c.energy > 22 && c.mood > 10) { c.note = 'Aguardando designação lógica'; return true; }
+    if (handleRecoveryNeed(c, { allowSoft: true })) return true;
+    if (hasWork) { c.note = workHour(c) ? 'Aguardando designação lógica' : 'Fora do horário de trabalho'; return true; }
     c.idlePulse = (c.idlePulse || 0) + 1;
     if (c.idlePulse % 240 !== 0) { c.note = 'Aguardando no local'; return true; }
     return baseAnchorMove(c);
@@ -189,7 +282,7 @@
     assignAllMarked();
   }
 
-  window.HavenfallWorkCoordinator = { assignMarkedGatherTasks: assignAllMarked, assignMarkedResource, calmIdle, workExists, reservations };
+  window.HavenfallWorkCoordinator = { assignMarkedGatherTasks: assignAllMarked, assignMarkedResource, calmIdle, workExists, needsRecovery, handleRecoveryNeed, reservations };
   window.GameSystems?.registerTaskHandler?.('gather', 'work-coordination.gather', handleGather, { order: 1 });
   window.GameSystems?.registerAutoTaskProvider?.('work-coordination.marked-gather', assignMarkedResource, { order: 1 });
   window.GameSystems?.registerTick?.('work-coordination', tick, { order: 21 });

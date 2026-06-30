@@ -117,6 +117,7 @@
 
     const refund = refundFromCost(def?.cost || {}, 0.5);
     if (Object.keys(refund).length && typeof addResources === 'function') addResources(refund);
+    window.HavenfallWorkFeedback?.notifyComplete?.('deconstruct', { objectType: obj.type, refund }, obj.x, obj.y);
     state.objects = state.objects.filter(o => o.id !== obj.id);
     const residue = spawnResidueFromObject(obj, def);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();

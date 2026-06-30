@@ -39,6 +39,14 @@
       controlMode: 'auto',
       interact: 'KeyE',
       map: 'KeyM'
+    },
+    audio: {
+      enabled: 'on',
+      masterVolume: 0.8,
+      sfxVolume: 0.85,
+      ambientVolume: 0.55,
+      uiVolume: 0.7,
+      rain: 'normal'
     }
   });
 
@@ -120,6 +128,9 @@
 
   function normalizeSettings(input = {}) {
     const merged = mergeSettings(defaultSettings, input);
+    if (!isPlainObject(merged.audio)) {
+      merged.audio = { ...defaultSettings.audio, enabled: merged.audio === 'off' ? 'off' : 'on' };
+    }
     merged.uiScale = allowed(merged.uiScale, ['compact', 'normal', 'large'], 'normal');
     merged.autosave = allowed(merged.autosave, ['on', 'off'], 'on');
     merged.showGrid = !!merged.showGrid;
@@ -147,6 +158,12 @@
     merged.interface.fpsOverlay = allowed(merged.interface.fpsOverlay, ['off', 'fps', 'full'], 'off');
     merged.interface.density = allowed(merged.interface.density, ['compact', 'normal', 'comfortable'], 'normal');
     merged.interface.fontSize = allowed(merged.interface.fontSize, ['small', 'normal', 'large', 'huge'], 'normal');
+    merged.audio.enabled = allowed(merged.audio.enabled, ['on', 'off'], 'on');
+    merged.audio.masterVolume = clampNumber(merged.audio.masterVolume, 0, 1, defaultSettings.audio.masterVolume);
+    merged.audio.sfxVolume = clampNumber(merged.audio.sfxVolume, 0, 1, defaultSettings.audio.sfxVolume);
+    merged.audio.ambientVolume = clampNumber(merged.audio.ambientVolume, 0, 1, defaultSettings.audio.ambientVolume);
+    merged.audio.uiVolume = clampNumber(merged.audio.uiVolume, 0, 1, defaultSettings.audio.uiVolume);
+    merged.audio.rain = allowed(merged.audio.rain, ['normal', 'reduced', 'off'], 'normal');
     return merged;
   }
 
@@ -289,6 +306,7 @@
     document.body.classList.toggle('hf-no-ui-animations', currentSettings.graphics.uiAnimations === 'off');
     document.body.classList.toggle('hf-reduced-ui-animations', currentSettings.graphics.uiAnimations === 'reduced');
     if (!options.skipDisplayMode) applyDisplayMode(currentSettings.video.displayMode);
+    window.HavenfallAudio?.applySettings?.(currentSettings.audio);
     if (typeof resizeGameCanvas === 'function') resizeGameCanvas(true);
     return currentSettings;
   }

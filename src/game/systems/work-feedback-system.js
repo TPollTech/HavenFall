@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  if (window.HavenfallWorkFeedback?.version === 'work-feedback-v1') return;
+  if (window.HavenfallWorkFeedback?.version === 'work-feedback-v2') return;
 
   const activities = new Map();
   const sparks = [];
@@ -14,7 +14,10 @@
     forge: { interval: 0.5, color: '#ffd1bb', sound: 'forge' },
     research: { interval: 0.85, color: '#e8ebff', sound: 'research' },
     craft: { interval: 0.7, color: '#dff6ff', sound: 'craft' },
-    gather: { interval: 0.75, color: '#ddf5aa', sound: 'gather' }
+    cook: { interval: 0.72, color: '#ffd28a', sound: 'cook' },
+    heal: { interval: 0.78, color: '#b7f7df', sound: 'heal' },
+    gather: { interval: 0.75, color: '#ddf5aa', sound: 'gather' },
+    deconstruct: { interval: 0.52, color: '#fca5a5', sound: 'build' }
   };
 
   function playing() {
@@ -27,6 +30,32 @@
 
   function tileCenter(x, y) {
     return { x: Number(x || 0) * TILE + TILE / 2, y: Number(y || 0) * TILE + TILE / 2 };
+  }
+
+  function particleQuality() {
+    const fallback = typeof settings !== 'undefined' ? settings?.graphics?.particles || 'medium' : 'medium';
+    return window.HavenfallSettings?.get?.('graphics.particles', fallback) || fallback;
+  }
+
+  function gatherKind(obj) {
+    const gather = objectDefs?.[obj?.type]?.gather || {};
+    if (obj?.type === 'tree' || obj?.type === 'logs' || gather.wood) return 'wood';
+    return 'gather';
+  }
+
+  function stationProgress(task, c, o) {
+    if (!task) return 0;
+    if (task.type === 'craft') {
+      const duration = recipeDefs?.[task.recipeKey]?.duration || objectDefs?.[o?.type]?.work || 1;
+      return Number(c.work || 0) / Math.max(0.1, Number(duration || 1));
+    }
+    if (task.type === 'research') {
+      const key = state?.research?.current;
+      const cost = researchDefs?.[key]?.cost || 1;
+      return Number(state?.research?.progress || 0) / Math.max(1, Number(cost || 1));
+    }
+    const work = objectDefs?.[o?.type]?.work || 1;
+    return Number(c.work || 0) / Math.max(0.1, Number(work || 1));
   }
 
   function taskKey(task) {
@@ -48,9 +77,8 @@
     if (task.type === 'gather') {
       const o = obj(task.objId);
       if (!o) return null;
-      const kind = o.type === 'tree' || o.type === 'logs' ? 'wood' : 'gather';
       const def = objectDefs?.[o.type];
-      return { kind, x: o.x, y: o.y, detail: { objectType: o.type }, progress: def?.work ? Number(c.work || 0) / def.work : 0 };
+      return { kind: gatherKind(o), x: o.x, y: o.y, detail: { objectType: o.type }, progress: def?.work ? Number(c.work || 0) / def.work : 0 };
     }
 
     if (task.type === 'build') {
@@ -63,7 +91,15 @@
     if (task.type === 'forge' || task.type === 'research' || task.type === 'craft' || task.type === 'cook' || task.type === 'heal') {
       const o = obj(task.objId);
       if (!o) return null;
-      return { kind: profiles[task.type] ? task.type : 'craft', x: o.x, y: o.y, detail: { objectType: o.type, recipeKey: task.recipeKey }, progress: Number(c.work || 0) % 1 };
+      return { kind: profiles[task.type] ? task.type : 'craft', x: o.x, y: o.y, detail: { objectType: o.type, recipeKey: task.recipeKey, researchKey: state?.research?.current }, progress: stationProgress(task, c, o) };
+    }
+
+    if (task.type === 'deconstruct') {
+      const o = obj(task.objId);
+      if (!o) return null;
+      const def = objectDefs?.[o.type] || {};
+      const work = Math.max(2, Number(def.work || 4) * 0.65);
+      return { kind: 'deconstruct', x: o.x, y: o.y, detail: { objectType: o.type }, progress: Number(c.work || 0) / work };
     }
 
     return null;
@@ -77,8 +113,10 @@
   }
 
   function addSparks(x, y, color, strong = false) {
+    const quality = particleQuality();
+    if (quality === 'off') return;
     if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
-    const count = strong ? 5 : 3;
+    const count = quality === 'low' ? (strong ? 3 : 1) : (strong ? 5 : 3);
     for (let i = 0; i < count; i++) {
       sparks.push({ x, y, dx: (Math.random() - 0.5) * 26, dy: -Math.random() * 22, age: 0, life: strong ? 0.42 : 0.28, color });
     }
@@ -143,10 +181,12 @@
     const target = activity.target;
     const profile = profiles[target.kind] || profiles.gather;
     const p = tileCenter(target.x, target.y);
-    const angle = Math.atan2(p.y - c.py, p.x - c.px);
+    const cx = Number.isFinite(Number(c.px)) ? Number(c.px) : Number(c.x || 0) * TILE + TILE / 2;
+    const cy = Number.isFinite(Number(c.py)) ? Number(c.py) : Number(c.y || 0) * TILE + TILE / 2;
+    const angle = Math.atan2(p.y - cy, p.x - cx);
     const swing = Math.sin(activity.pulse * 11) * 0.55;
-    const hx = c.px + Math.cos(angle) * 13;
-    const hy = c.py + Math.sin(angle) * 13 + 9;
+    const hx = cx + Math.cos(angle) * 13;
+    const hy = cy + Math.sin(angle) * 13 + 9;
     const tx = hx + Math.cos(angle + swing) * 24;
     const ty = hy + Math.sin(angle + swing) * 24;
 
@@ -164,9 +204,9 @@
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(0,0,0,.58)';
-    ctx.fillRect(c.px - 19, c.py - 47, 38, 5);
+    ctx.fillRect(cx - 19, cy - 47, 38, 5);
     ctx.fillStyle = profile.color;
-    ctx.fillRect(c.px - 19, c.py - 47, 38 * Math.max(0, Math.min(1, activity.progress || 0)), 5);
+    ctx.fillRect(cx - 19, cy - 47, 38 * Math.max(0, Math.min(1, activity.progress || 0)), 5);
     ctx.restore();
   }
 
@@ -190,7 +230,7 @@
     }
   }
 
-  window.HavenfallWorkFeedback = { version: 'work-feedback-v1', notifyComplete, activities, sparks };
+  window.HavenfallWorkFeedback = { version: 'work-feedback-v2', notifyComplete, activities, sparks };
   window.GameSystems?.registerTick('work:feedback', updateColonyWork, { order: 74, type: 'visual-feedback' });
   window.GameSystems?.registerWorldOverlay('work:feedback-overlay', drawWorkLayer, { order: 72, type: 'visual-feedback' });
 })();

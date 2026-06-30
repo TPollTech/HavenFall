@@ -228,6 +228,7 @@ function handleDeconstructTask(c, task, tick) {
 
   const refund = refundFromCost(def?.cost || {}, 0.5);
   if (Object.keys(refund).length && typeof addResources === 'function') addResources(refund);
+  window.HavenfallWorkFeedback?.notifyComplete?.('deconstruct', { objectType: obj.type, refund }, obj.x, obj.y);
   state.objects = state.objects.filter(o => o.id !== obj.id);
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   log(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}.`);

@@ -1,5 +1,23 @@
 # Roadmap — Animações de Trabalho + Sons do HavenFall
 
+## Auditoria 2026-06-30
+
+Estado real encontrado:
+
+- Os arquivos `audio-sfx-system.js` e `work-feedback-system.js` existiam, mas o carregamento principal estava fragil: dependia do `menu-branding.js` injetar scripts em paralelo. Agora os dois sistemas entram pelo manifesto oficial em `src/game/boot.js`, com o `menu-branding.js` apenas como fallback.
+- O feedback de mineracao estava parcialmente integrado; as demais tarefas tinham feedback durante o trabalho, mas varias conclusoes terminavam em silencio. Agora coleta, construcao, craft, forja, pesquisa, cozinha, cura e desconstrucao chamam `HavenfallWorkFeedback.notifyComplete(...)`.
+- O progresso visual de tarefas em bancadas usava `c.work % 1`, o que nao representava o progresso real. Agora usa duracao da receita, custo da pesquisa ou `work` da estacao/objeto.
+- O sistema de audio tinha volumes fixos. Agora `settings.audio` existe, e o mixer respeita audio ligado/desligado, volume geral, SFX, ambiente, UI reservado e chuva normal/reduzida/desligada.
+- O feedback visual agora respeita `graphics.particles` para reduzir ou desligar particulas.
+
+Ainda pendente:
+
+- Fallback para arquivos reais em `assets/audio`.
+- Sons de UI nos botoes principais.
+- Variacoes visuais/sonoras mais profundas por ferramenta equipada; hoje a ferramenta equipada aparece no pawn, mas o perfil procedural do trabalho ainda e por tipo de tarefa.
+
+---
+
 ## Objetivo
 
 Implementar um sistema leve, modular e reaproveitável para dar vida aos NPCs/colonos durante tarefas de trabalho, no estilo de feedback visual de jogos como RimWorld: o personagem fica no tile correto, olha para o alvo, executa uma animação curta de ferramenta, solta partículas, toca som contextual e mostra progresso.
@@ -114,10 +132,10 @@ Isso toca som de quebra e solta uma explosão curta de partículas no tile miner
 Arquivo alterado:
 
 ```text
-src/game/ui/menu-branding.js
+src/game/boot.js
 ```
 
-Os novos sistemas entram no runtime por carregamento controlado de extensão:
+Os novos sistemas entram no runtime pelo manifesto oficial de boot:
 
 ```text
 audio_sfx_system
@@ -126,13 +144,15 @@ work_feedback_system
 
 Eles se registram no `GameSystems`, sem duplicar o loop principal.
 
+Nota de auditoria: `src/game/ui/menu-branding.js` permanece apenas como fallback para evitar regressao em carregamentos antigos; o caminho correto agora e `src/game/boot.js`.
+
 ---
 
 ## Fase 2 — Próximo passo recomendado
 
 ### 1. Finalização por tarefa além da mineração
 
-Adicionar notificação de conclusão para:
+Status 2026-06-30: concluido na auditoria. As notificacoes foram adicionadas para:
 
 - árvore derrubada;
 - coleta de berry/crop;
@@ -262,8 +282,8 @@ Nada de animações gigantes por enquanto. O foco é clareza, performance e sens
 - [x] O sistema não depende de arquivos `.wav` para funcionar.
 - [x] O sistema registra ticks e overlays pelo `GameSystems`.
 - [x] O sistema limita partículas para proteger FPS.
-- [ ] Conclusão sonora/visual para todas as tarefas não-mineração.
-- [ ] Sliders de volume no menu de configurações.
+- [x] Conclusão sonora/visual para todas as tarefas não-mineração.
+- [x] Sliders de volume no menu de configurações.
 - [ ] Fallback para arquivos reais em `assets/audio`.
 - [ ] Variações por ferramenta equipada.
 - [ ] Sons de UI integrados aos botões principais.
@@ -282,8 +302,8 @@ src/game/systems/work-feedback-system.js
 src/game/systems/mining-task-handler.js
   └─ mineração real + notificação de conclusão
 
-src/game/ui/menu-branding.js
-  └─ carregamento das extensões de runtime
+src/game/boot.js
+  └─ carregamento oficial dos sistemas no runtime
 ```
 
 Essa estrutura deixa o HavenFall pronto para evoluir de forma limpa, sem criar arquivos de hotfix, patch ou duplicação de lógica.

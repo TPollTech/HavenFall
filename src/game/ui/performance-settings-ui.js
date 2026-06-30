@@ -53,6 +53,7 @@
     const screen = document.getElementById('settingsScreen');
     if (!screen || !window.HavenfallSettings) return;
     const s = settingsNow();
+    const audio = s.audio || {};
     const activePreset = window.HavenfallSettings?.presets?.[s.graphics?.preset]?.label || (s.graphics?.preset === 'custom' ? 'Personalizado' : 'Médio');
 
     screen.innerHTML = `<div class="game-settings-shell">
@@ -60,7 +61,7 @@
         <div class="game-settings-title-block">
           <span class="game-settings-kicker">HAVENFALL · SISTEMA</span>
           <h1>CONFIGURAÇÕES</h1>
-          <p>Vídeo, gráficos e desempenho aplicados em tempo real.</p>
+          <p>Vídeo, gráficos, áudio e desempenho aplicados em tempo real.</p>
         </div>
         <div class="game-settings-header-status">
           <span>PERFIL ATIVO</span>
@@ -86,6 +87,7 @@
           <nav class="game-settings-tabs" aria-label="Categorias de configurações">
             <button type="button" data-settings-anchor="videoGroup">Vídeo</button>
             <button type="button" data-settings-anchor="graphicsGroup">Gráficos</button>
+            <button type="button" data-settings-anchor="audioGroup">Áudio</button>
             <button type="button" data-settings-anchor="performanceGroup">Desempenho</button>
             <button type="button" data-settings-anchor="interfaceGroup">Interface</button>
           </nav>
@@ -113,8 +115,20 @@
               </div>
             </section>
 
+            <section id="audioGroup" class="game-settings-group">
+              <div class="game-group-title"><span>03</span><div><b>Áudio</b><small>Volume, SFX e ambiente procedural</small></div></div>
+              <div class="game-setting-list">
+                ${fieldSelect('Áudio', 'audio.enabled', audio.enabled || 'on', [['on','Ligado'], ['off','Desligado']])}
+                ${fieldSlider('Volume geral', 'audio.masterVolume', audio.masterVolume ?? 0.8, 0, 1, 0.05)}
+                ${fieldSlider('Volume SFX', 'audio.sfxVolume', audio.sfxVolume ?? 0.85, 0, 1, 0.05, 'Impactos, conclusoes de trabalho e efeitos curtos.')}
+                ${fieldSlider('Volume ambiente', 'audio.ambientVolume', audio.ambientVolume ?? 0.55, 0, 1, 0.05, 'Chuva, trovao e loops de ambiente.')}
+                ${fieldSlider('Volume UI', 'audio.uiVolume', audio.uiVolume ?? 0.7, 0, 1, 0.05, 'Reservado para botoes e confirmacoes de interface.')}
+                ${fieldSelect('Chuva', 'audio.rain', audio.rain || 'normal', [['normal','Normal'], ['reduced','Reduzida'], ['off','Desligada']])}
+              </div>
+            </section>
+
             <section id="performanceGroup" class="game-settings-group">
-              <div class="game-group-title"><span>03</span><div><b>Desempenho</b><small>Simulação, entidades e mundo vivo</small></div></div>
+              <div class="game-group-title"><span>04</span><div><b>Desempenho</b><small>Simulação, entidades e mundo vivo</small></div></div>
               <div class="game-setting-list">
                 ${fieldSelect('Distância de renderização', 'performance.renderDistance', s.performance.renderDistance, [['short','Curta'], ['medium','Média'], ['long','Longa'], ['very_long','Muito longa']], 'Muda quantos tiles/objetos entram no draw.')}
                 ${fieldSelect('Mundo vivo', 'performance.livingWorldUpdateRate', s.performance.livingWorldUpdateRate, [['low','Baixo'], ['medium','Médio'], ['high','Alto']], 'Base para reduzir frequência dos sistemas ecológicos.')}
@@ -126,7 +140,7 @@
             </section>
 
             <section id="interfaceGroup" class="game-settings-group">
-              <div class="game-group-title"><span>04</span><div><b>Interface e diagnóstico</b><small>HUD, escala e medidores</small></div></div>
+              <div class="game-group-title"><span>05</span><div><b>Interface e diagnóstico</b><small>HUD, escala e medidores</small></div></div>
               <div class="game-setting-list">
                 ${fieldSelect('Escala da interface', 'uiScale', s.uiScale, [['compact','Compacta'], ['normal','Normal'], ['large','Grande']])}
                 ${fieldSelect('Densidade da interface', 'interface.density', s.interface.density, [['compact','Compacta'], ['normal','Normal'], ['comfortable','Confortável']])}
@@ -162,6 +176,7 @@
 
   function valueForInput(input) {
     if (input.type === 'checkbox') return !!input.checked;
+    if (input.dataset.settingSlider === 'true') return Number(input.value);
     if (input.dataset.performanceSetting === 'video.renderScale') return Number(input.value);
     if (input.dataset.performanceSetting === 'video.targetFPS' && input.value !== 'unlimited') return Number(input.value);
     return input.value;
@@ -174,7 +189,7 @@
     window.HavenfallSettings.set(path, valueForInput(input));
     if (!['graphics.preset'].includes(path) && path.startsWith('graphics.')) window.HavenfallSettings.set('graphics.preset', 'custom');
     const label = document.querySelector(`[data-setting-value="${path}"]`);
-    if (label && path === 'video.renderScale') label.textContent = `${Math.round(Number(input.value) * 100)}%`;
+    if (label && input.dataset.settingSlider === 'true') label.textContent = `${Math.round(Number(input.value) * 100)}%`;
     showDebugGrid = !!settings?.showGrid;
     setStatus('Aplicado e salvo.');
     if (typeof updateUI === 'function') updateUI(true);

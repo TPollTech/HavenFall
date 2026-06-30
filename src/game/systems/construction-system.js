@@ -100,7 +100,31 @@
   function mouseMove(event) { if (!drag || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag.current = tile; try { mouseTile = tile; } catch (_) {} if (tile.x !== drag.start.x || tile.y !== drag.start.y || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5) drag.active = true; }
   function mouseUp(event) { if (event.button !== 0 || !drag || !currentBuild) return; const selection = drag; drag = null; if (!selection.active) return; event.preventDefault(); event.stopPropagation(); suppressNextClick = true; placeRect(currentBuild, selection.start, selection.current); }
 
-  function buildTaskHandler(c, task, tick) { const bp = state?.objects?.find(o => o.id === task.objId && o.type === 'blueprint'); if (!bp) return false; const def = buildDefs?.[bp.buildType]; if (!def) { c.task = null; c.work = 0; c.note = 'Ocioso'; return true; } bp.progress = (bp.progress || 0) + tick * workRate(c, 'build'); c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`; if (bp.progress >= def.work) { bp.type = def.type; if (bp.type === 'crop') bp.growth = 0; applyBuildMetadata(bp, def); delete bp.buildType; delete bp.progress; if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid(); if (typeof log === 'function') log(`${c.name} terminou: ${def.label}.`); c.task = null; c.work = 0; c.note = 'Ocioso'; } return true; }
+  function buildTaskHandler(c, task, tick) {
+    const bp = state?.objects?.find(o => o.id === task.objId && o.type === 'blueprint');
+    if (!bp) return false;
+    const buildType = bp.buildType;
+    const def = buildDefs?.[buildType];
+    if (!def) { c.task = null; c.work = 0; c.note = 'Ocioso'; return true; }
+    bp.progress = (bp.progress || 0) + tick * workRate(c, 'build');
+    c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`;
+    if (bp.progress >= def.work) {
+      const x = bp.x;
+      const y = bp.y;
+      bp.type = def.type;
+      if (bp.type === 'crop') bp.growth = 0;
+      applyBuildMetadata(bp, def);
+      delete bp.buildType;
+      delete bp.progress;
+      window.HavenfallWorkFeedback?.notifyComplete?.('build', { buildType, objectType: def.type }, x, y);
+      if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+      if (typeof log === 'function') log(`${c.name} terminou: ${def.label}.`);
+      c.task = null;
+      c.work = 0;
+      c.note = 'Ocioso';
+    }
+    return true;
+  }
   function updateUIWrapper(force = false) { if (originalUpdateUI) originalUpdateUI(force); installBuildButtons(); if (typeof dom !== 'undefined' && dom?.buildStatus) dom.buildStatus.textContent = currentBuild ? `Construindo: ${buildDefs[currentBuild]?.label || currentBuild}. Clique ou arraste.` : 'Nenhuma construção selecionada.'; document.querySelectorAll('[data-build]').forEach(btn => { const key = btn.dataset.build; if (!buildDefs?.[key]) return; btn.classList.toggle('active', key === currentBuild); btn.title = `${buildDefs[key].label} · ${buildCostText(key)}`; }); }
 
   function install() {

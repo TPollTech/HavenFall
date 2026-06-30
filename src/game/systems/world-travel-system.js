@@ -12,6 +12,101 @@
     loaded: { label: 'Carregada', time: 1.55, risk: 1.18, food: 1.45, fatigue: 1.25, capacity: 1.7 }
   });
 
+  const WORLD_MAP_VERSION = 'world-map-globe-v2';
+  const WORLD_SITE_TARGETS = Object.freeze({ large: 16, huge: 20, giant: 26, infinite_chunks: 34 });
+  const DISCOVERY_TEMPLATES = Object.freeze([
+    {
+      type: 'mine',
+      archetype: 'rocky_valley',
+      label: 'Mina',
+      names: ['Mina Antiga', 'Veio de Ferro', 'Pedreira Profunda', 'Corte Mineral'],
+      subtitle: 'Sinal mineral forte - bom para pedra e metal',
+      primary: 'rock',
+      secondary: ['geology', 'mine'],
+      resources: { wood: 22, food: 24, stone: 88, metal: 82, medicine: 18, water: 20 },
+      risks: { fauna: 20, weather: 36, disease: 16, raids: 28, terrain: 66 },
+      buildSpace: 38,
+      fertility: 18,
+      modifiers: { treeMultiplier: 0.50, rockMultiplier: 1.70, oreMultiplier: 1.95, berryMultiplier: 0.48, riverChance: 0.08, mountainChance: 0.70, ruinChance: 0.10, spawnClearingRadius: 5, initialThreatMultiplier: 1.00, poiMultiplier: 1.12 },
+      signatures: ['falha_geologica', 'eco_metalico']
+    },
+    {
+      type: 'dungeon',
+      archetype: 'ancient_ruins',
+      label: 'Dungeon',
+      names: ['Complexo Soterrado', 'Cripta Industrial', 'Galeria Lacrada', 'Tunel Antigo'],
+      subtitle: 'Estrutura enterrada - loot alto e ameacas provaveis',
+      primary: 'rock',
+      secondary: ['ruins', 'dungeon'],
+      resources: { wood: 28, food: 24, stone: 62, metal: 78, medicine: 30, water: 24 },
+      risks: { fauna: 34, weather: 36, disease: 30, raids: 72, terrain: 64 },
+      buildSpace: 34,
+      fertility: 20,
+      modifiers: { treeMultiplier: 0.66, rockMultiplier: 1.22, oreMultiplier: 1.38, berryMultiplier: 0.55, riverChance: 0.10, mountainChance: 0.36, ruinChance: 0.76, spawnClearingRadius: 4, initialThreatMultiplier: 1.48, poiMultiplier: 1.80 },
+      signatures: ['ruina_detectada', 'eco_metalico']
+    },
+    {
+      type: 'outpost',
+      archetype: 'ancient_ruins',
+      label: 'Construcao',
+      names: ['Posto Quebrado', 'Torre de Radio', 'Estacao de Bombeamento', 'Armazem Remoto'],
+      subtitle: 'Construcao abandonada - sucata e abrigo possiveis',
+      primary: 'rock',
+      secondary: ['ruins', 'scrap'],
+      resources: { wood: 42, food: 36, stone: 54, metal: 64, medicine: 38, water: 30 },
+      risks: { fauna: 26, weather: 34, disease: 22, raids: 48, terrain: 42 },
+      buildSpace: 58,
+      fertility: 34,
+      modifiers: { treeMultiplier: 0.88, rockMultiplier: 1.10, oreMultiplier: 1.20, berryMultiplier: 0.75, riverChance: 0.13, mountainChance: 0.25, ruinChance: 0.62, spawnClearingRadius: 7, initialThreatMultiplier: 1.12, poiMultiplier: 1.55 },
+      signatures: ['ruina_detectada', 'eco_metalico']
+    },
+    {
+      type: 'grove',
+      archetype: 'dense_forest',
+      label: 'Bosque',
+      names: ['Bosque de Caca', 'Mata de Ervas', 'Vale de Frutas', 'Copa Fechada'],
+      subtitle: 'Biossinal denso - comida, madeira e remedios',
+      primary: 'forest',
+      secondary: ['fauna', 'fertile'],
+      resources: { wood: 90, food: 78, stone: 26, metal: 16, medicine: 72, water: 46 },
+      risks: { fauna: 58, weather: 34, disease: 26, raids: 18, terrain: 42 },
+      buildSpace: 38,
+      fertility: 86,
+      modifiers: { treeMultiplier: 1.68, rockMultiplier: 0.68, oreMultiplier: 0.62, berryMultiplier: 1.60, riverChance: 0.24, mountainChance: 0.08, ruinChance: 0.08, spawnClearingRadius: 6, initialThreatMultiplier: 1.18, poiMultiplier: 0.95 },
+      signatures: ['atividade_biologica', 'zona_fertil']
+    },
+    {
+      type: 'water',
+      archetype: 'riverbank',
+      label: 'Agua',
+      names: ['Delta Raso', 'Lagoa Turva', 'Fonte Mineral', 'Curva do Rio'],
+      subtitle: 'Agua detectada - fertilidade alta e risco de umidade',
+      primary: 'water',
+      secondary: ['riverbank', 'fertile'],
+      resources: { wood: 58, food: 72, stone: 34, metal: 20, medicine: 48, water: 92 },
+      risks: { fauna: 38, weather: 54, disease: 52, raids: 16, terrain: 44 },
+      buildSpace: 44,
+      fertility: 90,
+      modifiers: { treeMultiplier: 1.20, rockMultiplier: 0.72, oreMultiplier: 0.70, berryMultiplier: 1.40, riverChance: 0.92, mountainChance: 0.07, ruinChance: 0.08, spawnClearingRadius: 7, initialThreatMultiplier: 0.94, poiMultiplier: 1.00 },
+      signatures: ['bacia_hidrica', 'zona_fertil']
+    },
+    {
+      type: 'danger',
+      archetype: 'extreme',
+      label: 'Anomalia',
+      names: ['Fenda Vermelha', 'Marco Hostil', 'Planicie Queimada', 'Zona de Ruido'],
+      subtitle: 'Assinatura instavel - risco alto e recompensa rara',
+      primary: 'desert',
+      secondary: ['rock', 'anomaly'],
+      resources: { wood: 22, food: 24, stone: 76, metal: 88, medicine: 24, water: 16 },
+      risks: { fauna: 62, weather: 80, disease: 44, raids: 76, terrain: 78 },
+      buildSpace: 30,
+      fertility: 16,
+      modifiers: { treeMultiplier: 0.52, rockMultiplier: 1.48, oreMultiplier: 1.95, berryMultiplier: 0.52, riverChance: 0.06, mountainChance: 0.48, ruinChance: 0.50, spawnClearingRadius: 4, initialThreatMultiplier: 1.72, poiMultiplier: 1.50 },
+      signatures: ['instabilidade_climatica', 'ruina_detectada', 'falha_geologica']
+    }
+  ]);
+
   function clone(value) {
     try { return structuredClone(value); }
     catch (_) { return JSON.parse(JSON.stringify(value)); }
@@ -50,6 +145,165 @@
     return 'Extremo';
   }
 
+  function seededUnit(seed, salt) {
+    return (hash(`${seed}|${salt}`) % 10000) / 10000;
+  }
+
+  function varySeeded(value, seed, salt, amount = 10) {
+    return clamp(Math.round(Number(value || 0) + (seededUnit(seed, salt) - 0.5) * amount * 2), 0, 100);
+  }
+
+  function averageValues(obj, keys) {
+    const values = keys.map(key => Number(obj?.[key] || 0));
+    return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+  }
+
+  function discoveryDifficulty(resources, risks, buildSpace, fertility) {
+    const resourceScore = averageValues(resources, ['wood', 'food', 'stone', 'metal', 'medicine', 'water']);
+    const riskScore = averageValues(risks, ['fauna', 'weather', 'disease', 'raids', 'terrain']);
+    const score = clamp(Math.round(resourceScore * 0.36 + (100 - riskScore) * 0.34 + Number(buildSpace || 0) * 0.16 + Number(fertility || 0) * 0.14 - riskScore * 0.26), 0, 100);
+    if (score <= 25 || riskScore >= 72) return { tier: 'extreme', label: 'Extremo', score };
+    if (score <= 45) return { tier: 'hard', label: 'Dificil', score };
+    if (score <= 65) return { tier: 'moderate', label: 'Moderado', score };
+    if (score <= 80) return { tier: 'safe', label: 'Seguro', score };
+    return { tier: 'favorable', label: 'Muito favoravel', score };
+  }
+
+  function discoveryPoint(seed, index, existing, minDistance = 0.075) {
+    for (let attempt = 0; attempt < 180; attempt++) {
+      const angle = seededUnit(seed, `point-a-${index}-${attempt}`) * Math.PI * 2;
+      const radius = Math.sqrt(seededUnit(seed, `point-r-${index}-${attempt}`)) * 0.47;
+      const x = clamp(0.5 + Math.cos(angle) * radius, 0.045, 0.955);
+      const y = clamp(0.5 + Math.sin(angle) * radius * 0.92, 0.045, 0.955);
+      if (existing.every(site => Math.hypot(Number(site.globe?.x ?? 0.5) - x, Number(site.globe?.y ?? 0.5) - y) >= minDistance)) {
+        return { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 };
+      }
+    }
+    const angle = seededUnit(seed, `point-fallback-a-${index}`) * Math.PI * 2;
+    const radius = 0.18 + seededUnit(seed, `point-fallback-r-${index}`) * 0.30;
+    return {
+      x: Math.round(clamp(0.5 + Math.cos(angle) * radius, 0.05, 0.95) * 1000) / 1000,
+      y: Math.round(clamp(0.5 + Math.sin(angle) * radius * 0.9, 0.05, 0.95) * 1000) / 1000
+    };
+  }
+
+  function makeDiscoverySignatures(template, seed, index, risks) {
+    const signatureInfo = {
+      falha_geologica: { name: 'Falha geologica', kind: 'geology', biome: 'rock', positive: 'Mais pedra e minerio', negative: 'Terreno irregular' },
+      eco_metalico: { name: 'Eco metalico', kind: 'metal', biome: 'rock', positive: 'Metal e sucata proximos', negative: 'Sinal pode atrair risco' },
+      ruina_detectada: { name: 'Ruina detectada', kind: 'ruin', biome: 'rock', positive: 'Loot e estruturas antigas', negative: 'Ameacas possiveis' },
+      atividade_biologica: { name: 'Atividade biologica', kind: 'fauna', biome: 'forest', positive: 'Mais caca e frutas', negative: 'Fauna mais ativa' },
+      zona_fertil: { name: 'Zona fertil', kind: 'fertile', biome: 'forest', positive: 'Solo bom para plantio', negative: 'Vegetacao densa' },
+      bacia_hidrica: { name: 'Bacia hidrica', kind: 'water', biome: 'water', positive: 'Agua e fertilidade', negative: 'Risco de doenca' },
+      instabilidade_climatica: { name: 'Instabilidade climatica', kind: 'weather', biome: 'desert', positive: 'Recursos raros expostos', negative: 'Clima agressivo' }
+    };
+    const risk = averageValues(risks, ['fauna', 'weather', 'disease', 'raids', 'terrain']);
+    return (template.signatures || []).slice(0, 3).map((key, i) => {
+      const info = signatureInfo[key] || signatureInfo.eco_metalico;
+      return {
+        id: `world_sig_${index}_${i}_${hash(`${seed}|sig|${key}`).toString(36).slice(0, 3)}`,
+        key,
+        kind: info.kind,
+        name: `${info.name} ${String(i + 1).padStart(2, '0')}`,
+        biome: info.biome,
+        risk: risk > 68 ? 'elevado' : risk > 42 ? 'moderado' : 'baixo',
+        positive: info.positive,
+        negative: info.negative
+      };
+    });
+  }
+
+  function makeDiscoverySite(config, index, existing) {
+    const baseSeed = `${config?.seed || 'havenfall'}|world-discovery|${index}`;
+    const template = DISCOVERY_TEMPLATES[hash(`${baseSeed}|template`) % DISCOVERY_TEMPLATES.length];
+    const point = discoveryPoint(baseSeed, index, existing, existing.length > 24 ? 0.052 : 0.07);
+    const resources = {};
+    const risks = {};
+    for (const key of ['wood', 'food', 'stone', 'metal', 'medicine', 'water']) resources[key] = varySeeded(template.resources[key], baseSeed, `res-${key}`, 9);
+    for (const key of ['fauna', 'weather', 'disease', 'raids', 'terrain']) risks[key] = varySeeded(template.risks[key], baseSeed, `risk-${key}`, 8);
+    const buildSpace = varySeeded(template.buildSpace, baseSeed, 'build-space', 9);
+    const fertility = varySeeded(template.fertility, baseSeed, 'fertility', 9);
+    const difficulty = discoveryDifficulty(resources, risks, buildSpace, fertility);
+    const name = template.names[hash(`${baseSeed}|name`) % template.names.length];
+    const id = `world_${template.type}_${String(index + 1).padStart(2, '0')}_${hash(`${baseSeed}|id`).toString(36).slice(0, 5)}`;
+    return {
+      id,
+      name,
+      archetype: template.archetype,
+      discoveryType: template.type,
+      discoveryLabel: template.label,
+      globe: {
+        x: point.x,
+        y: point.y,
+        hemisphere: `${point.y < 0.5 ? 'north' : 'south'}${point.x < 0.5 ? 'west' : 'east'}`,
+        visible: true
+      },
+      labels: {
+        title: name,
+        subtitle: template.subtitle,
+        biomeLabel: template.label,
+        siteTypeLabel: template.label
+      },
+      difficulty,
+      biomes: {
+        primary: template.primary,
+        secondary: template.secondary,
+        mix: {
+          forest: clamp(Math.round(resources.wood * 0.5), 0, 100),
+          meadow: clamp(Math.round((resources.food + resources.medicine) * 0.22), 0, 100),
+          rock: clamp(Math.round((resources.stone + resources.metal) * 0.35), 0, 100),
+          water: clamp(Math.round(resources.water * 0.48), 0, 100),
+          ruins: clamp(Math.round(risks.raids * 0.22), 0, 100),
+          desert: template.primary === 'desert' ? 48 : clamp(Math.round(risks.weather * 0.14), 0, 32),
+          snow: template.primary === 'snow' ? 42 : 0
+        }
+      },
+      resources,
+      risks,
+      buildSpace,
+      fertility,
+      positives: [
+        resources.metal > 68 ? 'Potencial alto de metal.' : null,
+        resources.food > 68 ? 'Comida promissora.' : null,
+        resources.water > 68 ? 'Agua abundante.' : null,
+        template.type === 'outpost' ? 'Estruturas reaproveitaveis.' : null,
+        template.type === 'dungeon' ? 'Loot raro possivel.' : null
+      ].filter(Boolean).slice(0, 4),
+      negatives: [
+        risks.raids > 60 ? 'Ameacas inteligentes provaveis.' : null,
+        risks.terrain > 62 ? 'Terreno dificil.' : null,
+        risks.weather > 62 ? 'Clima instavel.' : null,
+        risks.disease > 48 ? 'Risco sanitario.' : null
+      ].filter(Boolean).slice(0, 4),
+      signatures: makeDiscoverySignatures(template, baseSeed, index, risks),
+      worldgenModifiers: { ...template.modifiers },
+      preview: {
+        seed: `${baseSeed}|preview`,
+        thumbnail: null,
+        terrainSample: []
+      },
+      travel: { discovered: true }
+    };
+  }
+
+  function expandedSiteTarget(config, baseCount) {
+    const size = config?.mapSize || 'giant';
+    const baseTarget = WORLD_SITE_TARGETS[size] || 20;
+    const priorityBonus = config?.landingPriority === 'exploration' ? 4 : 0;
+    return Math.max(baseCount, baseTarget + priorityBonus);
+  }
+
+  function expandWorldSites(config, sites) {
+    const output = sites.map(site => ({
+      discoveryType: site.discoveryType || 'landing',
+      discoveryLabel: site.discoveryLabel || site.labels?.siteTypeLabel || 'Pouso',
+      ...site
+    }));
+    const target = expandedSiteTarget(config, output.length);
+    for (let i = output.length; i < target; i++) output.push(makeDiscoverySite(config, i, output));
+    return output;
+  }
+
   function distanceBetweenSites(a, b) {
     if (!a || !b) return 1;
     const ax = Number(a.globe?.x ?? 0.5);
@@ -82,6 +336,8 @@
       id: site.id,
       name: site.name,
       archetype: site.archetype,
+      discoveryType: site.discoveryType || 'landing',
+      discoveryLabel: site.discoveryLabel || site.labels?.siteTypeLabel || null,
       globe: clone(site.globe || {}),
       labels: clone(site.labels || {}),
       difficulty: clone(site.difficulty || {}),
@@ -126,7 +382,7 @@
         preview: { terrainSample: [] }
       });
     }
-    return { profile, sites, selectedId };
+    return { profile, sites: expandWorldSites(config, sites), selectedId };
   }
 
   function statusForSite(site, currentId, visitedSites = {}) {
@@ -196,22 +452,64 @@
   }
 
   function buildRoutes(worldMap) {
-    const current = worldMap.landingSites.find(site => site.id === worldMap.currentSiteId) || worldMap.landingSites[0];
-    return worldMap.landingSites
-      .filter(site => site.id !== current?.id)
-      .map(site => ({
-        from: current?.id,
-        to: site.id,
-        distance: Math.round(distanceBetweenSites(current, site) * 10) / 10,
-        risk: riskAverage(site),
-        known: site.state !== 'unknown' && site.state !== 'locked'
-      }));
+    const sites = worldMap?.landingSites || [];
+    if (sites.length < 2) return [];
+    const routes = new Map();
+    const seed = `${worldMap.planetSeed || 'havenfall'}|routes|${WORLD_MAP_VERSION}`;
+
+    function routeKey(a, b) {
+      return [a.id, b.id].sort().join('->');
+    }
+
+    function addRoute(a, b, roadType = 'trail') {
+      if (!a || !b || a.id === b.id) return;
+      const key = routeKey(a, b);
+      if (routes.has(key)) return;
+      const distance = distanceBetweenSites(a, b);
+      const risk = Math.round((riskAverage(a) + riskAverage(b)) / 2);
+      routes.set(key, {
+        from: a.id,
+        to: b.id,
+        distance: Math.round(distance * 10) / 10,
+        risk,
+        known: !['unknown', 'locked'].includes(a.state) && !['unknown', 'locked'].includes(b.state),
+        roadType: distance > 3.1 ? 'long' : roadType
+      });
+    }
+
+    const ordered = [...sites].sort((a, b) => (a.globe?.x || 0) - (b.globe?.x || 0) || (a.globe?.y || 0) - (b.globe?.y || 0));
+    for (let i = 1; i < ordered.length; i++) {
+      const site = ordered[i];
+      const nearestPrevious = ordered.slice(0, i).sort((a, b) => distanceBetweenSites(site, a) - distanceBetweenSites(site, b))[0];
+      addRoute(site, nearestPrevious, 'road');
+    }
+
+    for (const site of sites) {
+      const neighbors = sites
+        .filter(other => other.id !== site.id)
+        .sort((a, b) => distanceBetweenSites(site, a) - distanceBetweenSites(site, b));
+      const linkCount = site.id === worldMap.currentSiteId ? 4 : 2;
+      for (const neighbor of neighbors.slice(0, linkCount)) addRoute(site, neighbor, neighbor.state === 'danger' ? 'hazard' : 'trail');
+    }
+
+    const extras = Math.ceil(sites.length * 0.42);
+    for (let i = 0; i < extras; i++) {
+      const a = sites[hash(`${seed}|extra-a|${i}`) % sites.length];
+      const b = sites[hash(`${seed}|extra-b|${i}`) % sites.length];
+      if (!a || !b || a.id === b.id) continue;
+      const distance = distanceBetweenSites(a, b);
+      const roll = seededUnit(seed, `extra-roll-${i}`);
+      if (distance <= 3.6 || roll > 0.58) addRoute(a, b, roll > 0.72 ? 'road' : 'trail');
+    }
+
+    return [...routes.values()].sort((a, b) => a.distance - b.distance || a.from.localeCompare(b.from));
   }
 
   function ensureWorldMap(options = {}) {
     if (!isGameplayReady()) return null;
     const previous = state.worldMap || {};
     const cacheKey = [
+      WORLD_MAP_VERSION,
       state.config?.seed,
       state.config?.selectedLandingSiteId,
       previous.currentSiteId,
@@ -431,6 +729,15 @@
     const sectorConfig = typeof selectLandingSiteInConfig === 'function'
       ? selectLandingSiteInConfig({ ...(state.config || {}) }, site.id)
       : { ...(state.config || {}), selectedLandingSiteId: site.id, selectedLandingSite: site, landingSiteId: site.id };
+    const compact = compactLandingSite(site);
+    sectorConfig.selectedLandingSiteId = site.id;
+    sectorConfig.landingSiteId = site.id;
+    sectorConfig.selectedLandingSite = compact;
+    sectorConfig.planetScan = sectorConfig.planetScan || {};
+    sectorConfig.planetScan.selectedLandingSiteId = site.id;
+    sectorConfig.planetScan.selectedLandingSite = compact;
+    sectorConfig.planetScan.landingSites = Array.isArray(sectorConfig.planetScan.landingSites) ? sectorConfig.planetScan.landingSites : [];
+    if (!sectorConfig.planetScan.landingSites.some(entry => entry.id === site.id)) sectorConfig.planetScan.landingSites.push(compact);
     const world = generateWorldFromSeed(sectorConfig);
     const mobs = typeof generateInitialMobs === 'function' ? generateInitialMobs(world, sectorConfig, state.colonists || []) : [];
     return {
@@ -482,6 +789,8 @@
     if (state.config.planetScan) {
       state.config.planetScan.selectedLandingSiteId = site.id;
       state.config.planetScan.selectedLandingSite = selected;
+      state.config.planetScan.landingSites = Array.isArray(state.config.planetScan.landingSites) ? state.config.planetScan.landingSites : [];
+      if (!state.config.planetScan.landingSites.some(entry => entry.id === site.id)) state.config.planetScan.landingSites.push(selected);
     }
     if (state.world) {
       state.world.landingSite = selected;

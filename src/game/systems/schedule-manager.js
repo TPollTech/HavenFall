@@ -59,6 +59,23 @@
     return ['move','gather','build','research','craft','haul','inspect','loot','inspectPoi','forge','cook'].includes(type);
   }
 
+  function hasExplicitWorkPending() {
+    return !!window.HavenfallWorkCoordinator?.workExists?.();
+  }
+
+  function canDeferLeisureForWork(c) {
+    return Number(c?.energy ?? 100) > 28
+      && Number(c?.mood ?? 100) > 16
+      && Number(c?.hunger ?? 100) > 24
+      && Number(c?.health ?? 100) > 20
+      && hasExplicitWorkPending();
+  }
+
+  function isWorkTask(c) {
+    const type = c?.task?.type;
+    return ['gather','mine','build','buildRoof','haul','deconstruct','research','craft','forge','cook','inspect','loot','inspectPoi'].includes(type);
+  }
+
   function nearestLeisureObject(c) {
     if (!state?.objects?.length) return null;
     return state.objects
@@ -110,6 +127,8 @@
 
     if (mode === SCHEDULE.LEISURE) {
       if (c.task?.type === 'sleep' && c.energy < 35) return false;
+      if (isWorkTask(c) && canDeferLeisureForWork(c)) return false;
+      if (!c.task && canDeferLeisureForWork(c)) return false;
       if (c.task?.type !== 'leisure' && isInterruptibleForSchedule(c)) {
         assignLeisure(c);
         return true;
@@ -155,7 +174,8 @@
     getScheduleState,
     setScheduleState,
     cycleScheduleState,
-    normalizeHour
+    normalizeHour,
+    assignLeisure
   };
 
   window.updateScheduleManagerTick = updateScheduleManagerTick;

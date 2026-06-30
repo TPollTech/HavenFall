@@ -9,6 +9,23 @@ function assignMove(c, x, y) {
   return true;
 }
 
+function notifyWorkComplete(kind, detail = {}, x = null, y = null) {
+  window.HavenfallWorkFeedback?.notifyComplete?.(kind, detail, x, y);
+}
+
+function feedbackKindForGatherObject(obj, def = null) {
+  const gather = def?.gather || objectDefs?.[obj?.type]?.gather || {};
+  if (obj?.type === 'tree' || obj?.type === 'logs' || gather.wood) return 'wood';
+  return 'gather';
+}
+
+function feedbackKindForRecipe(recipe, station = null) {
+  if (recipe?.station === 'forge' || station?.type === 'forge') return 'forge';
+  if (recipe?.station === 'stove' || recipe?.station === 'smokehouse' || station?.type === 'stove' || station?.type === 'smokehouse') return 'cook';
+  if (recipe?.station === 'med_station' || station?.type === 'med_station') return 'heal';
+  return 'craft';
+}
+
 function assignGather(c, obj) {
   if (!objectDefs[obj.type]?.gather) return;
   const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y);
@@ -460,9 +477,11 @@ function handleTaskAtTarget(c, tick) {
     const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(task.mineX, task.mineY) : 'rocha';
     c.work += tick * workRate(c, 'gather');
     c.note = `Minerando ${label}`;
+    const rockBeforeHit = { type: rock.type, resource: rock.resource, maxHp: rock.maxHp };
     const result = typeof mineRockAt === 'function' ? mineRockAt(task.mineX, task.mineY, tick * 12 * workRate(c, 'gather')) : null;
     if (result?.removed) {
       const gainText = Object.entries(result.gain || {}).map(([k, v]) => `+${v} ${resourceLabel(k)}`).join(', ');
+      notifyWorkComplete(rockBeforeHit.resource === 'metal' ? 'ore' : 'mine', { ...rockBeforeHit, gain: result.gain }, task.mineX, task.mineY);
       log(`${c.name} minerou ${label}. ${gainText || 'Rocha removida'}.`);
       c.task = null;
       c.note = 'Ocioso';
@@ -479,6 +498,7 @@ function handleTaskAtTarget(c, tick) {
     c.note = `Coletando ${def.name} ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
       addResources(def.gather);
+      notifyWorkComplete(feedbackKindForGatherObject(obj, def), { objectType: obj.type, gain: def.gather }, obj.x, obj.y);
       state.objects = state.objects.filter(o => o.id !== obj.id);
       if (obj.type === 'tree') state.objects.push({ id: uid('obj'), type: 'logs', x: obj.x, y: obj.y });
       if (obj.type === 'crop') state.objects.push({ id: uid('obj'), type: 'crop', x: obj.x, y: obj.y, growth: 0 });
@@ -503,6 +523,7 @@ function handleTaskAtTarget(c, tick) {
       payRecipeCost(recipe);
       addRecipeOutput(recipe.output);
       autoEquipCraftedItem(c, recipe.output);
+      notifyWorkComplete(feedbackKindForRecipe(recipe, station), { recipeKey: task.recipeKey, output: recipe.output, station: station.type }, station.x, station.y);
       log(`${c.name} fabricou ${recipe.label}. Resultado: ${outputText(recipe.output)}.`);
       c.mood = clamp(c.mood + 2, 0, 100);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
@@ -527,6 +548,7 @@ function handleTaskAtTarget(c, tick) {
     if (c.work >= def.work) {
       payCost(input);
       addResources(output);
+      notifyWorkComplete('forge', { objectType: forge.type, input, output }, forge.x, forge.y);
       log(`${c.name} transformou ${input.stone} pedras em ${output.metal} metal.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }
@@ -546,6 +568,7 @@ function handleTaskAtTarget(c, tick) {
     c.note = `Pesquisando ${def.label} ${Math.floor((state.research.progress / def.cost) * 100)}%`;
     if (state.research.progress >= def.cost) {
       unlockResearch(key);
+      notifyWorkComplete('research', { researchKey: key }, desk.x, desk.y);
       c.mood = clamp(c.mood + 5, 0, 100);
       c.task = null; c.note = 'Pesquisa concluída'; c.work = 0;
     }
@@ -567,6 +590,7 @@ function handleTaskAtTarget(c, tick) {
       payCost(def.cook.input);
       addResources(def.cook.output);
       c.mood = clamp(c.mood + 4, 0, 100);
+      notifyWorkComplete('cook', { objectType: stove.type, input: def.cook.input, output: def.cook.output }, stove.x, stove.y);
       log(`${c.name} preparou refeições no fogão.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }
@@ -588,6 +612,7 @@ function handleTaskAtTarget(c, tick) {
       payCost(def.heal.input);
       c.health = clamp(c.health + def.heal.amount, 0, 100);
       c.mood = clamp(c.mood + 3, 0, 100);
+      notifyWorkComplete('heal', { objectType: station.type, input: def.heal.input, amount: def.heal.amount }, station.x, station.y);
       log(`${c.name} recebeu tratamento médico.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }
@@ -598,13 +623,17 @@ function handleTaskAtTarget(c, tick) {
     const bp = state.objects.find(o => o.id === task.objId && o.type === 'blueprint');
     if (!bp) { c.task = null; c.note = 'Ocioso'; return; }
     bp.progress = (bp.progress || 0) + tick * workRate(c, 'build');
-    const def = buildDefs[bp.buildType];
+    const buildType = bp.buildType;
+    const def = buildDefs[buildType];
     c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`;
     if (bp.progress >= def.work) {
+      const x = bp.x;
+      const y = bp.y;
       bp.type = def.type;
       bp.growth = bp.type === 'crop' ? 0 : undefined;
       delete bp.buildType;
       delete bp.progress;
+      notifyWorkComplete('build', { buildType, objectType: def.type }, x, y);
       log(`${c.name} terminou: ${def.label}.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }

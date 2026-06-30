@@ -72,7 +72,10 @@
   }
 
   function installRuntimeFeedbackExtensions() {
-    for (const blueprint of RUNTIME_EXTENSION_BLUEPRINTS) loadRuntimeExtension(blueprint);
+    const bootIds = new Set((window.HavenfallBootManifest?.core || []).map(blueprint => blueprint.id));
+    for (const blueprint of RUNTIME_EXTENSION_BLUEPRINTS) {
+      if (!bootIds.has(blueprint.id)) loadRuntimeExtension(blueprint);
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -81,5 +84,6 @@
     installMenuBranding();
   }
 
-  installRuntimeFeedbackExtensions();
+  if (document.body) installRuntimeFeedbackExtensions();
+  else document.addEventListener('DOMContentLoaded', installRuntimeFeedbackExtensions, { once: true });
 })();
