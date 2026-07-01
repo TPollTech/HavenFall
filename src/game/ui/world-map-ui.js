@@ -172,7 +172,7 @@
       if (discovered && state.world?.exploration?.[y]?.[x] === 1) { c.fillStyle = 'rgba(2,6,23,.38)'; c.fillRect(ox + x * scale, oy + y * scale, Math.ceil(scale), Math.ceil(scale)); }
     }
     const filters = state.ui?.map?.filters || {};
-    if (filters.resources !== false) drawObjects(c, scale, ox, oy, new Set(['tree','bush','berry','rock','ore','logs']), '#fde68a');
+    if (filters.resources !== false) drawObjects(c, scale, ox, oy, new Set(['tree','bush','berry','rock','ore','logs','cactus','oak_tree','birch_tree','pine_tree','palm_tree','willow_tree']), '#fde68a');
     if (filters.buildings !== false) drawObjects(c, scale, ox, oy, new Set(['campfire','crate','bed','wall','door','table','stove','forge','research_desk','crafting_bench']), '#f8fafc');
     if (filters.poi !== false) drawObjects(c, scale, ox, oy, new Set(['ruin','cache','supply_crate']), '#c084fc', 2.4);
     if (filters.threats !== false) for (const m of [...(state.mobs||[]), ...(state.wolves||[])]) dot(c, m.x, m.y, scale, ox, oy, '#ef4444', 2.7);

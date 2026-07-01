@@ -7,7 +7,7 @@
     tileFloor: 'sand',
     terrainWeights: { sand: 0.76, dirt: 0.18, stone: 0.06 },
     trees: ['palm_tree'],
-    forageables: ['dry_twigs'],
+    forageables: ['dry_twigs', 'cactus'],
     objects: {
       treeDensity: 0.18,
       berryDensity: 0.05,

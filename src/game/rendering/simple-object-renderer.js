@@ -88,6 +88,16 @@
     ctx.fill();
   }
 
+  function drawCactus(x, y) {
+    shadow(x, y, 18, 6);
+    roundRect(x - 8, y - 24, 16, 38, 7, '#3f8f4d', '#1f4f2b', 1.4);
+    roundRect(x - 18, y - 10, 10, 20, 5, '#4aa35b', '#1f4f2b', 1.2);
+    roundRect(x + 8, y - 16, 10, 18, 5, '#4aa35b', '#1f4f2b', 1.2);
+    line(x - 10, y - 4, x - 10, y + 7, '#1f4f2b', 1.6);
+    line(x + 10, y - 8, x + 10, y + 1, '#1f4f2b', 1.6);
+    line(x, y - 18, x, y + 9, '#74c476', 1.2);
+  }
+
   function drawRuin(x, y) {
     shadow(x, y, 25, 8);
     roundRect(x - 23, y - 18, 18, 34, 2, '#68625a', '#2f2c27', 1.5);
@@ -153,7 +163,7 @@
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const supported = ['bed', 'crate', 'campfire', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile'].includes(type);
+    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile'].includes(type);
     if (!supported) return false;
 
     const p = anchor(obj);
@@ -163,6 +173,7 @@
     else if (type === 'crate') drawCrate(p.x, p.y, true);
     else if (type === 'supply_crate' || type === 'cache') drawCrate(p.x, p.y, true);
     else if (type === 'campfire') drawCampfire(p.x, p.y);
+    else if (type === 'cactus') drawCactus(p.x, p.y);
     else if (type === 'ruin') drawRuin(p.x, p.y);
     else if (type === 'ore') drawOre(p.x, p.y);
     else if (type === 'bridge') drawBridge(p.x, p.y);

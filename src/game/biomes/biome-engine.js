@@ -1,8 +1,52 @@
 'use strict';
 
 (() => {
-  const VEGETATION_OBJECT_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
+  const VEGETATION_OBJECT_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
+  const TALL_VEGETATION_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus']);
   const DEFAULT_CHUNK_SIZE = 32;
+
+  function terrainAt(world, x, y) {
+    return world?.terrain?.[y]?.[x] || 'grass';
+  }
+
+  function insideWorld(world, x, y, margin = 1) {
+    return !!world && x >= margin && y >= margin && x < world.cols - margin && y < world.rows - margin;
+  }
+
+  function ecosystemAllows(type, tile) {
+    if (!tile) return false;
+    const rules = window.HavenfallEcosystemRules;
+    if (typeof rules?.canObjectExistOnTile === 'function') return !!rules.canObjectExistOnTile(type, tile);
+    if (type === 'cactus') return tile === 'sand' || tile === 'dirt';
+    return tile !== 'water';
+  }
+
+  function biomeLocalRatio(world, x, y, biomeId, radius = 2) {
+    let same = 0;
+    let total = 0;
+    for (let yy = y - radius; yy <= y + radius; yy++) {
+      for (let xx = x - radius; xx <= x + radius; xx++) {
+        if (!insideWorld(world, xx, yy, 0)) continue;
+        total++;
+        if (world.biomes?.[yy]?.[xx] === biomeId) same++;
+      }
+    }
+    return total ? same / total : 0;
+  }
+
+  function occupiedSet(world) {
+    return new Set((world?.objects || []).filter(Boolean).map(obj => `${obj.x},${obj.y}`));
+  }
+
+  function addBiomeObject(world, type, x, y, seed) {
+    if (!insideWorld(world, x, y, 1)) return null;
+    const id = typeof worldUid === 'function'
+      ? worldUid(type, world.objects.length, seed)
+      : `${type}_${x}_${y}_${world.objects.length}`;
+    const obj = { id, type, x, y };
+    world.objects.push(obj);
+    return obj;
+  }
 
   function pickWeightedTerrain(weights, seed, x, y, fallback = 'grass') {
     const entries = Object.entries(weights || {});
@@ -337,6 +381,7 @@
     objectDefs.herbs = { name: 'ervas medicinais', img: 'res_herbs', blocks: false, gather: { medicine: 1 }, work: 2.0 };
     objectDefs.mushrooms = { name: 'cogumelos', img: 'res_berries', blocks: false, gather: { food: 4 }, work: 2.2 };
     objectDefs.dry_twigs = { name: 'gravetos secos', img: 'logs', blocks: false, gather: { wood: 3 }, work: 1.2 };
+    objectDefs.cactus = { name: 'cacto', img: 'tree', blocks: true, gather: { food: 2, wood: 1 }, work: 1.8, respawn: false };
     window.HavenfallContext.biomeObjectDefsInstalled = true;
   }
 
@@ -351,7 +396,21 @@
         const pick = variants[Math.floor(worldNoise(seed, obj.x, obj.y, 'tree-variant') * variants.length)] || 'tree';
         if (objectDefs[pick]) obj.type = pick;
       }
-      if (obj.type === 'berry' && biome.id === 'desert' && worldNoise(seed, obj.x, obj.y, 'desert-berry') > 0.12) obj.type = 'dry_twigs';
+      if (biome.id === 'desert') {
+        if (['oak_tree', 'birch_tree', 'pine_tree', 'willow_tree'].includes(obj.type)) obj.type = worldNoise(seed, obj.x, obj.y, 'desert-woodland') > 0.80 ? 'cactus' : 'palm_tree';
+        if (obj.type === 'bush') obj.type = worldNoise(seed, obj.x, obj.y, 'desert-bush') > 0.22 ? 'cactus' : 'dry_twigs';
+        if (obj.type === 'berry') obj.type = worldNoise(seed, obj.x, obj.y, 'desert-berry') > 0.38 ? 'cactus' : 'dry_twigs';
+        if (obj.type === 'herbs' || obj.type === 'mushrooms') obj.type = 'dry_twigs';
+      } else if (biome.id === 'snow') {
+        if (['tree', 'oak_tree', 'birch_tree', 'willow_tree'].includes(obj.type)) obj.type = 'pine_tree';
+        if (obj.type === 'bush' && worldNoise(seed, obj.x, obj.y, 'snow-bush') > 0.45) obj.type = 'dry_twigs';
+        if (obj.type === 'berry' && worldNoise(seed, obj.x, obj.y, 'snow-berry') > 0.34) obj.type = 'herbs';
+      } else if (biome.id === 'forest') {
+        if (obj.type === 'palm_tree' || obj.type === 'cactus') {
+          const variants = biome.trees || ['oak_tree'];
+          obj.type = variants[Math.floor(worldNoise(seed, obj.x, obj.y, 'forest-tree-repair') * variants.length)] || 'oak_tree';
+        }
+      }
     }
   }
 
@@ -364,7 +423,7 @@
       for (let i = 0; i < amount; i++) {
         const type = biome.forageables[Math.floor(worldNoise(seed, i, biome.id.length, `${biome.id}-forage-type`) * biome.forageables.length)] || null;
         if (!type || !objectDefs[type]) continue;
-        const tile = randomBiomeTile(world, biome.id, seed, i, `${biome.id}-${type}`);
+        const tile = randomBiomeTile(world, biome.id, seed, i, `${biome.id}-${type}`, (x, y) => ecosystemAllows(type, terrainAt(world, x, y)) && biomeLocalRatio(world, x, y, biome.id, 1) >= 0.34);
         if (!tile) continue;
         const key = `${tile.x},${tile.y}`;
         if (occupied.has(key)) continue;
@@ -374,15 +433,116 @@
     }
   }
 
-  function randomBiomeTile(world, biomeId, seed, index, salt) {
+  function randomBiomeTile(world, biomeId, seed, index, salt, predicate = null) {
     for (let tries = 0; tries < 60; tries++) {
       const x = 2 + Math.floor(worldNoise(seed, index, tries, `${salt}-x`) * Math.max(1, world.cols - 4));
       const y = 2 + Math.floor(worldNoise(seed, tries, index, `${salt}-y`) * Math.max(1, world.rows - 4));
       if (world.biomes[y]?.[x] !== biomeId) continue;
       if (world.terrain[y]?.[x] === 'stone' && biomeId !== 'snow') continue;
+      if (predicate && !predicate(x, y)) continue;
       return { x, y };
     }
     return null;
+  }
+
+  function countBiomeArea(world, biomeId) {
+    let count = 0;
+    for (let y = 0; y < world.rows; y++) {
+      for (let x = 0; x < world.cols; x++) {
+        if (world.biomes?.[y]?.[x] === biomeId) count++;
+      }
+    }
+    return count;
+  }
+
+  function countBiomeObjects(world, biomeId, type) {
+    let count = 0;
+    for (const obj of world.objects || []) {
+      if (!obj || obj.type !== type) continue;
+      if (world.biomes?.[obj.y]?.[obj.x] === biomeId) count++;
+    }
+    return count;
+  }
+
+  function rebalanceBiomeTerrain(world, seed) {
+    const occupied = occupiedSet(world);
+    const spawn = world.spawn || { x: 0, y: 0 };
+    for (let y = 1; y < world.rows - 1; y++) {
+      for (let x = 1; x < world.cols - 1; x++) {
+        if (occupied.has(`${x},${y}`)) continue;
+        if (Math.hypot(x - spawn.x, y - spawn.y) < 8) continue;
+        const biomeId = world.biomes?.[y]?.[x];
+        const current = terrainAt(world, x, y);
+        const localRatio = biomeLocalRatio(world, x, y, biomeId, 2);
+        if (biomeId === 'desert' && current === 'grass' && localRatio >= 0.55 && worldNoise(seed, x, y, 'desert-sand-repair') > 0.24) world.terrain[y][x] = 'sand';
+        else if (biomeId === 'forest' && current === 'sand' && localRatio >= 0.55) world.terrain[y][x] = worldNoise(seed, x, y, 'forest-ground-repair') > 0.45 ? 'grass' : 'dirt';
+        else if (biomeId === 'snow' && current === 'sand' && localRatio >= 0.45) world.terrain[y][x] = worldNoise(seed, x, y, 'snow-ground-repair') > 0.42 ? 'stone' : 'dirt';
+      }
+    }
+  }
+
+  function canPlaceBiomeResource(world, biomeId, type, x, y, occupied) {
+    if (!insideWorld(world, x, y, 1)) return false;
+    if (world.biomes?.[y]?.[x] !== biomeId) return false;
+    if (occupied.has(`${x},${y}`)) return false;
+    if (!ecosystemAllows(type, terrainAt(world, x, y))) return false;
+    if (world.spawn && Math.hypot(x - world.spawn.x, y - world.spawn.y) < 8) return false;
+    if (biomeLocalRatio(world, x, y, biomeId, 2) < (biomeId === 'desert' ? 0.46 : 0.34)) return false;
+    for (const obj of world.objects || []) {
+      if (!obj) continue;
+      const d = Math.hypot(obj.x - x, obj.y - y);
+      if (TALL_VEGETATION_TYPES.has(type) && TALL_VEGETATION_TYPES.has(obj.type) && d < 2) return false;
+      if (obj.type === type && d < 1.5) return false;
+    }
+    return true;
+  }
+
+  function ensureBiomeResourceCount(world, biomeId, type, amount, seed) {
+    if (amount <= 0) return 0;
+    const occupied = occupiedSet(world);
+    let placed = 0;
+    for (let i = 0; i < amount; i++) {
+      const tile = randomBiomeTile(world, biomeId, seed, i + placed, `${biomeId}-${type}-signature`, (x, y) => canPlaceBiomeResource(world, biomeId, type, x, y, occupied));
+      if (!tile) break;
+      if (!addBiomeObject(world, type, tile.x, tile.y, seed)) break;
+      occupied.add(`${tile.x},${tile.y}`);
+      placed++;
+    }
+    return placed;
+  }
+
+  function rebalanceBiomeResources(world, seed) {
+    const plans = [
+      { biomeId: 'forest', type: 'berry', density: 0.0016, min: 4 },
+      { biomeId: 'forest', type: 'herbs', density: 0.0012, min: 4 },
+      { biomeId: 'desert', type: 'cactus', density: 0.0030, min: 8 },
+      { biomeId: 'desert', type: 'palm_tree', density: 0.0010, min: 3 },
+      { biomeId: 'desert', type: 'dry_twigs', density: 0.0014, min: 4 },
+      { biomeId: 'snow', type: 'pine_tree', density: 0.0014, min: 3 },
+      { biomeId: 'snow', type: 'dry_twigs', density: 0.0014, min: 4 }
+    ];
+    for (const plan of plans) {
+      const area = countBiomeArea(world, plan.biomeId);
+      if (!area) continue;
+      const target = Math.max(plan.min, Math.floor(area * plan.density));
+      const existing = countBiomeObjects(world, plan.biomeId, plan.type);
+      if (existing < target) ensureBiomeResourceCount(world, plan.biomeId, plan.type, target - existing, `${seed}|${plan.biomeId}|${plan.type}`);
+    }
+  }
+
+  function rebalanceWorld(world, config = {}) {
+    if (!world?.biomes || world.biomeRebalanceVersion === '2.1-terrain-signatures') return world;
+    installBiomeObjectDefs();
+    const seed = config.seed || world.seed || 'biome-rebalance';
+    world.objects = Array.isArray(world.objects) ? world.objects : [];
+    rebalanceBiomeTerrain(world, seed);
+    removeVegetationFromInvalidMountainTiles(world);
+    decorateExistingObjects(world, `${seed}|rebalance`);
+    rebalanceBiomeResources(world, `${seed}|rebalance`);
+    removeVegetationFromInvalidMountainTiles(world);
+    world.biomeRebalanceVersion = '2.1-terrain-signatures';
+    world.generationVersion = `${world.generationVersion || 'world'}+biome-signatures`;
+    return world;
   }
 
   function getBiomeIdAt(worldOrX, xOrY, maybeY) {
@@ -425,7 +585,7 @@
     return world;
   }
 
-  window.BiomeEngine = { createBiomeMap, applyToWorld, createMountainRanges, getBiomeIdAt, canSpawnMobAt, spawnWeightAt, installBiomeObjectDefs };
+  window.BiomeEngine = { createBiomeMap, applyToWorld, createMountainRanges, getBiomeIdAt, canSpawnMobAt, spawnWeightAt, installBiomeObjectDefs, rebalanceWorld };
   window.biomeDefinitions = BiomeRegistry.all();
   window.biomeAt = (x, y, seed = state?.config?.seed || 'biome') => selectBiomeId(x, y, seed, state?.config || {});
 })();

@@ -219,6 +219,11 @@
 
   function getLightAt(x, y, world = state?.world) {
     const layer = ensureLightLayer(world);
+    const lightState = ensureLightState(world);
+    if (world && (world.lightDirty || !Number(lightState?.lastRecomputeAt || 0))) {
+      recomputeLighting(null, world, world.lightInvalidationReason || 'light-query');
+      world.lightDirty = false;
+    }
     return clampLight(layer?.[Math.round(y)]?.[Math.round(x)] ?? DEFAULT_LIGHT);
   }
 
