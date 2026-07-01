@@ -95,7 +95,12 @@ function haulAmount(cargo) {
 }
 
 function isAtTile(c, x, y) {
-  return c && c.x === x && c.y === y;
+  return c && Math.round(c.x) === Math.round(x) && Math.round(c.y) === Math.round(y);
+}
+
+function tileDistance(ax, ay, bx, by) {
+  if (typeof dist === 'function') return dist(ax, ay, bx, by);
+  return Math.hypot((Number(ax) || 0) - (Number(bx) || 0), (Number(ay) || 0) - (Number(by) || 0));
 }
 
 function routeBetween(fromX, fromY, toX, toY, target = null) {
@@ -106,6 +111,55 @@ function routeBetween(fromX, fromY, toX, toY, target = null) {
 
 function canRouteBetween(fromX, fromY, toX, toY, target = null) {
   return (fromX === toX && fromY === toY) || routeBetween(fromX, fromY, toX, toY, target).length > 0;
+}
+
+function tileOccupiedByOtherColonist(x, y, fromX, fromY) {
+  return !!(state?.colonists || []).some(c => {
+    const cx = Math.round(Number(c.x) || 0);
+    const cy = Math.round(Number(c.y) || 0);
+    if (cx !== x || cy !== y) return false;
+    return cx !== Math.round(Number(fromX) || 0) || cy !== Math.round(Number(fromY) || 0);
+  });
+}
+
+function canStandOnHaulTile(x, y, fromX, fromY) {
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  if (typeof isInside === 'function' && !isInside(tx, ty)) return false;
+  if (typeof isTileDiscovered === 'function' && !isTileDiscovered(tx, ty)) return false;
+  if (typeof isBlocked === 'function' && isBlocked(tx, ty)) return false;
+  if (tileOccupiedByOtherColonist(tx, ty, fromX, fromY)) return false;
+  return true;
+}
+
+function nearestFreeAdjacent(targetX, targetY, fromX = targetX, fromY = targetY) {
+  const tx = Math.round(Number(targetX) || 0);
+  const ty = Math.round(Number(targetY) || 0);
+  const fx = Math.round(Number(fromX) || 0);
+  const fy = Math.round(Number(fromY) || 0);
+  const candidates = [
+    { x: tx, y: ty - 1 },
+    { x: tx + 1, y: ty },
+    { x: tx, y: ty + 1 },
+    { x: tx - 1, y: ty },
+    { x: tx + 1, y: ty - 1 },
+    { x: tx + 1, y: ty + 1 },
+    { x: tx - 1, y: ty + 1 },
+    { x: tx - 1, y: ty - 1 }
+  ].filter(tile => canStandOnHaulTile(tile.x, tile.y, fx, fy));
+
+  if (!candidates.length) return null;
+  const reachable = candidates
+    .map(tile => ({ ...tile, path: routeBetween(fx, fy, tile.x, tile.y) }))
+    .filter(tile => (tile.x === fx && tile.y === fy) || tile.path.length > 0)
+    .sort((a, b) => {
+      const pathA = a.x === fx && a.y === fy ? 0 : a.path.length || 9999;
+      const pathB = b.x === fx && b.y === fy ? 0 : b.path.length || 9999;
+      return pathA - pathB || tileDistance(fx, fy, a.x, a.y) - tileDistance(fx, fy, b.x, b.y);
+    });
+
+  const selected = reachable[0] || candidates.sort((a, b) => tileDistance(fx, fy, a.x, a.y) - tileDistance(fx, fy, b.x, b.y))[0];
+  return selected ? { x: selected.x, y: selected.y } : null;
 }
 
 function dropoffTileForDestination(destination, c) {
@@ -256,6 +310,7 @@ function updateHaulingAdvTick() {
   }
 }
 
+window.nearestFreeAdjacent = window.nearestFreeAdjacent || nearestFreeAdjacent;
 window.getColonistMaxCapacity = getColonistMaxCapacity;
 window.getColonoMaxCapacity = getColonistMaxCapacity;
 window.getColonistCurrentLoadCount = getColonistCurrentLoadCount;
