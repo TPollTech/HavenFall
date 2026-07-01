@@ -312,7 +312,7 @@
     if (Math.hypot(x - spawn.x, y - spawn.y) < 14) return 0;
     if (nearbyConstructionCount(x, y, 5) > 1) return 0;
     const water = distanceToNearestWater(x, y, 7);
-    const trees = nearbyObjectTypeCountForLiving(x, y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'willow_tree', 'bush', 'berry'], 5);
+    const trees = nearbyObjectTypeCountForLiving(x, y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus', 'bush', 'berry'], 5);
     return 0.12 + (water < 7 ? (7 - water) * 0.045 : 0) + Math.min(0.28, trees * 0.035);
   }
 

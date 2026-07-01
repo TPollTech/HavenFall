@@ -13,8 +13,8 @@
     iron: { hp: 170, resource: 'metal', yield: 5, mineSpeed: 0.9, insulation: 0.48 }
   });
   const TREE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree']);
-  const LOOSE_RESOURCE_TYPES = new Set([...TREE_TYPES, 'bush', 'berry', 'herbs', 'mushrooms', 'sapling', 'invasive_weed', 'dry_twigs', 'logs', 'rock', 'ore']);
-  const TALL_RESOURCE_TYPES = new Set([...TREE_TYPES, 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
+  const LOOSE_RESOURCE_TYPES = new Set([...TREE_TYPES, 'cactus', 'bush', 'berry', 'herbs', 'mushrooms', 'sapling', 'invasive_weed', 'dry_twigs', 'logs', 'rock', 'ore']);
+  const TALL_RESOURCE_TYPES = new Set([...TREE_TYPES, 'cactus', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
   const GEOLOGY_FORBIDDEN_TYPES = new Set([...LOOSE_RESOURCE_TYPES, 'ruin', 'cache', 'supply_crate', 'rubble']);
 
   function noise(seed, x, y, salt) {

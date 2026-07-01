@@ -5,8 +5,8 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.geologyObjectRenderGuardInstalled = true;
 
-  const LOOSE_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs', 'rock', 'ore']);
-  const TALL_RESOURCE_TYPES = new Set(['tree', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
+  const LOOSE_RESOURCE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs', 'rock', 'ore']);
+  const TALL_RESOURCE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus', 'bush', 'berry', 'sapling', 'invasive_weed', 'logs']);
 
   function solidRockAt(x, y) {
     return !!(typeof getRockAt === 'function' && getRockAt(x, y)?.solid);

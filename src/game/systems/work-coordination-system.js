@@ -7,7 +7,7 @@
 
   const reservations = new Map();
   const blockedUntil = new Map();
-  const IDLE_USEFUL_TYPES = new Set(['logs', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
+  const IDLE_USEFUL_TYPES = new Set(['logs', 'berry', 'herbs', 'mushrooms', 'dry_twigs', 'cactus']);
   let pulse = 0;
 
   function keyOf(obj) { return obj?.id || `${obj?.type}:${obj?.x},${obj?.y}`; }

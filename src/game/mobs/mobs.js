@@ -255,7 +255,7 @@ function mobSpawnTileScore(type, tile, world = state?.world) {
   const distanceWeight = isHostileMobType(type)
     ? (colonistDist < MOB_SAFE_ZONE_RADIUS ? 0 : Math.min(1.35, colonistDist / 26))
     : (colonistDist < 7 ? 0.2 : Math.min(1.18, colonistDist / 16));
-  const coverWeight = nearbyObjectTypeCount(world, tile.x, tile.y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree'], 4);
+  const coverWeight = nearbyObjectTypeCount(world, tile.x, tile.y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus'], 4);
   const coverBonus = type === 'squirrel' || type === 'deer' || type === 'rabbit' ? Math.min(0.7, coverWeight * 0.09) : 0;
   const opennessPenalty = herdMobTypes.has(type) ? Math.min(0.35, coverWeight * 0.035) : 0;
   return biomeWeight * terrainWeight * distanceWeight + coverBonus - opennessPenalty;
