@@ -17,7 +17,7 @@
   window.WallConfig = window.WallConfig || WALL_CONFIG;
   window.BuildAssetConfig = window.BuildAssetConfig || Object.freeze({ wall: Object.freeze({ tile_width: 1, tile_height: 1, anchor: 'center', layer: 'structure' }), door: Object.freeze({ tile_width: 1, tile_height: 1, anchor: 'center', layer: 'structure' }), floor: Object.freeze({ tile_width: 1, tile_height: 1, anchor: 'top-left', layer: 'floor' }) });
 
-  function copy(cost = {}) { return Object.fromEntries(Object.entries(cost || {})); }
+  function copy(cost = {}) { return Object.fromEntries(Object.entries(cost || {}).filter(([, value]) => Number(value || 0) > 0)); }
   function tileSize() { return typeof getTileSize === 'function' ? getTileSize() : TILE; }
   function materialForBuild(key) { return buildDefs?.[key]?.wallMaterial || (key === 'wall_stone' ? 'stone' : key === 'wall_metal' ? 'metal' : 'wood'); }
   function typeForBuild(key) { return buildDefs?.[key]?.type || key || null; }
@@ -71,16 +71,11 @@
   function resolveDoorPlacementTile(x, y) {
     const tx = Math.round(Number(x) || 0);
     const ty = Math.round(Number(y) || 0);
-    const candidates = [
-      { x: tx, y: ty }, { x: tx + 1, y: ty }, { x: tx - 1, y: ty }, { x: tx, y: ty + 1 }, { x: tx, y: ty - 1 },
-      { x: tx + 1, y: ty + 1 }, { x: tx - 1, y: ty + 1 }, { x: tx + 1, y: ty - 1 }, { x: tx - 1, y: ty - 1 }
-    ];
+    const candidates = [{ x: tx, y: ty }, { x: tx + 1, y: ty }, { x: tx - 1, y: ty }, { x: tx, y: ty + 1 }, { x: tx, y: ty - 1 }, { x: tx + 1, y: ty + 1 }, { x: tx - 1, y: ty + 1 }, { x: tx + 1, y: ty - 1 }, { x: tx - 1, y: ty - 1 }];
     return candidates.find(tile => isDoorOpeningTile(tile.x, tile.y) && hasDoorOpeningFrame(tile.x, tile.y)) || null;
   }
 
-  function canPlaceFloorBuild(def, x, y) {
-    return !!window.FloorSystem?.canPlaceFloor?.(x, y, def?.floorType);
-  }
+  function canPlaceFloorBuild(def, x, y) { return !!window.FloorSystem?.canPlaceFloor?.(x, y, def?.floorType); }
 
   function canPlaceBuild(key, x, y) {
     const def = buildDefs?.[key]; const tx = Math.round(Number(x) || 0); const ty = Math.round(Number(y) || 0);
@@ -103,6 +98,22 @@
   function buildCostText(key) { const def = buildDefs?.[key]; if (!def) return 'construção inválida'; return typeof itemCostText === 'function' ? itemCostText(def.cost || {}, def.itemCost || {}) : Object.entries(def.cost || {}).map(([k, v]) => `${v} ${k}`).join(' + ') || 'sem custo'; }
   function hasPayment(key) { const def = buildDefs?.[key]; return !!def && (!def.cost || hasCost(def.cost)) && (!def.itemCost || hasItems(def.itemCost)); }
 
+  function reserveBuildPayment(key, tx, ty) {
+    const def = buildDefs?.[key];
+    if (!def) return { ok: false, reason: 'Construção inválida.' };
+    if (!hasPayment(key)) return { ok: false, reason: `Recursos insuficientes. Precisa de ${buildCostText(key)}.` };
+    const reservedCost = copy(def.cost || {});
+    const reservedItemCost = copy(def.itemCost || {});
+    const paidResources = Object.keys(reservedCost).length ? (typeof reserveCost === 'function' ? reserveCost(reservedCost, { reason: 'build-reserve', targetId: key, x: tx, y: ty }) : payCost(reservedCost, { reason: 'build-reserve', targetId: key, x: tx, y: ty })) : true;
+    const paidItems = Object.keys(reservedItemCost).length ? (typeof reserveItems === 'function' ? reserveItems(reservedItemCost, { reason: 'build-reserve', targetId: key, x: tx, y: ty }) : payItems(reservedItemCost, { reason: 'build-reserve', targetId: key, x: tx, y: ty })) : true;
+    if (!paidResources || !paidItems) {
+      if (paidResources && Object.keys(reservedCost).length && typeof refundCost === 'function') refundCost(reservedCost, { reason: 'build-reserve-rollback', targetId: key, x: tx, y: ty });
+      if (paidItems && Object.keys(reservedItemCost).length && typeof refundItems === 'function') refundItems(reservedItemCost, { reason: 'build-reserve-rollback', targetId: key, x: tx, y: ty });
+      return { ok: false, reason: `Recursos insuficientes. Precisa de ${buildCostText(key)}.` };
+    }
+    return { ok: true, reservedCost, reservedItemCost };
+  }
+
   function applyBuildMetadata(obj, def) {
     if (!obj || !def) return obj;
     if (def.type === 'wall') { const cfg = WALL_CONFIG[def.wallMaterial || materialForBuild(obj.buildType || 'wall')] || WALL_CONFIG.wood; obj.wallMaterial = cfg.key; obj.hp = Number.isFinite(obj.hp) ? obj.hp : cfg.hp; obj.maxHp = Number.isFinite(obj.maxHp) ? obj.maxHp : cfg.hp; obj.texture_id = cfg.texture_id; obj.tile_width = 1; obj.tile_height = 1; obj.anchor = 'center'; }
@@ -121,27 +132,26 @@
     } else if (def.type === 'door') {
       const resolved = resolveDoorPlacementTile(tx, ty);
       if (!resolved) return { ok: false, reason: 'A porta precisa de uma abertura entre rocha, parede ou estrutura.' };
-      tx = resolved.x;
-      ty = resolved.y;
+      tx = resolved.x; ty = resolved.y;
       const obj = typeof getObjectAt === 'function' ? getObjectAt(tx, ty) : null;
       if (obj && objectCanBeReplacedByDoor(obj)) replacing = obj;
     } else if (!canPlaceBuild(key, tx, ty)) {
       return { ok: false, reason: 'Não dá para construir nesse lugar.' };
     }
-    if (!hasPayment(key)) return { ok: false, reason: `Recursos insuficientes. Precisa de ${buildCostText(key)}.` };
-    payCost(def.cost || {}); payItems(def.itemCost || {});
+    const payment = reserveBuildPayment(key, tx, ty);
+    if (!payment.ok) return payment;
     if (replacing?.id && Array.isArray(state.objects)) state.objects = state.objects.filter(obj => obj.id !== replacing.id);
     const rotation = typeof isBuildRotatable === 'function' && isBuildRotatable(key) ? normalizeBuildRotation(currentBuildRotation) : 0;
-    const blueprint = applyBuildMetadata({ id: uid('obj'), type: 'blueprint', buildType: key, x: tx, y: ty, progress: 0, rotation, replacesObjectId: replacing?.id || null }, def);
+    const blueprint = applyBuildMetadata({ id: uid('obj'), type: 'blueprint', buildType: key, x: tx, y: ty, progress: 0, rotation, replacesObjectId: replacing?.id || null, reservedCost: payment.reservedCost, reservedItemCost: payment.reservedItemCost, materialReserved: true }, def);
     state.objects.push(blueprint);
     if (state.world && state.world.objects) state.world.objects = state.objects;
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-    if (!options.silent && typeof log === 'function') log(replacing ? `Parede convertida em planta de ${def.label}.` : `Planta de ${def.label} posicionada.`);
+    if (!options.silent && typeof log === 'function') log(replacing ? `Parede convertida em planta de ${def.label}. Materiais reservados.` : `Planta de ${def.label} posicionada. Materiais reservados.`);
     return { ok: true, blueprint };
   }
 
   function placeBuildBlueprint(key, x, y) { const result = queueConstruction(key, x, y); if (!result.ok) { if (typeof log === 'function') log(result.reason); return false; } const c = typeof selectedColonist === 'function' ? selectedColonist() : null; if (c && result.blueprint && typeof assignBuild === 'function') assignBuild(c, result.blueprint); if (typeof updateUI === 'function') updateUI(true); return true; }
-  function placeRect(key, start, end) { let placed = 0, attempted = 0, first = null, fail = null; eachTile(start, end, tile => { attempted++; const result = queueConstruction(key, tile.x, tile.y, { silent: true }); if (result.ok) { placed++; first ||= result.blueprint; } else fail ||= result.reason; }); if (placed) { if (typeof log === 'function') log(`${placed}/${attempted} planta${placed > 1 ? 's' : ''} enfileirada${placed > 1 ? 's' : ''}.`); const c = typeof selectedColonist === 'function' ? selectedColonist() : null; if (c && first && typeof assignBuild === 'function') assignBuild(c, first); } else if (fail && typeof log === 'function') log(fail); if (typeof updateUI === 'function') updateUI(true); return placed; }
+  function placeRect(key, start, end) { let placed = 0, attempted = 0, first = null, fail = null; eachTile(start, end, tile => { attempted++; const result = queueConstruction(key, tile.x, tile.y, { silent: true }); if (result.ok) { placed++; first ||= result.blueprint; } else fail ||= result.reason; }); if (placed) { if (typeof log === 'function') log(`${placed}/${attempted} planta${placed > 1 ? 's' : ''} enfileirada${placed > 1 ? 's' : ''}. Materiais reservados.`); const c = typeof selectedColonist === 'function' ? selectedColonist() : null; if (c && first && typeof assignBuild === 'function') assignBuild(c, first); } else if (fail && typeof log === 'function') log(fail); if (typeof updateUI === 'function') updateUI(true); return placed; }
 
   function toggleDoorState(obj) { if (!obj || obj.type !== 'door') return false; obj.state = obj.state === DOOR_STATE.OPEN ? DOOR_STATE.CLOSED : DOOR_STATE.OPEN; obj.doorState = obj.state; obj.texture_id = obj.state === DOOR_STATE.OPEN ? 'door_wood_open' : 'door_wood_closed'; if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid(); if (typeof updateUI === 'function') updateUI(true); return true; }
   function routePrimaryObjectActionWrapper(c, obj) { if (obj?.type === 'door') { toggleDoorState(obj); return; } if (originalRoutePrimaryObjectAction) return originalRoutePrimaryObjectAction(c, obj); }
@@ -163,15 +173,8 @@
       { key: 'butcher_table', html: 'Açougue<br><small>14 madeira + 4 pedra</small>' }
     ].reverse().forEach(item => { if (grid.querySelector(`[data-build="${item.key}"]`)) return; const btn = document.createElement('button'); btn.dataset.build = item.key; btn.innerHTML = item.html; if (ref) grid.insertBefore(btn, ref); else grid.appendChild(btn); });
   }
-  function selectBuildTool(key) {
-    if (typeof window.selectBuildTool === 'function') return window.selectBuildTool(key);
-    if (!buildDefs?.[key]) return false;
-    if (typeof clearZoneTool === 'function') clearZoneTool('construcao selecionada');
-    currentBuild = key;
-    if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(key);
-    if (typeof updateUI === 'function') updateUI(true);
-    return true;
-  }
+
+  function selectBuildTool(key) { if (typeof window.selectBuildTool === 'function') return window.selectBuildTool(key); if (!buildDefs?.[key]) return false; if (typeof clearZoneTool === 'function') clearZoneTool('construcao selecionada'); currentBuild = key; if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(key); if (typeof updateUI === 'function') updateUI(true); return true; }
   function buildButtonCapture(event) { const build = event.target?.closest?.('[data-build]'); if (!build || !build.closest('#hud, #bottomActionBar, #buildPanel')) return; event.preventDefault(); event.stopPropagation(); selectBuildTool(build.dataset.build); }
   function mouseDown(event) { if (event.button !== 0 || appScreen !== SCREEN.PLAYING || !state || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag = { start: tile, current: tile, active: false, x: event.clientX, y: event.clientY }; try { mouseTile = tile; } catch (_) {} }
   function mouseMove(event) { if (!drag || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag.current = tile; try { mouseTile = tile; } catch (_) {} if (tile.x !== drag.start.x || tile.y !== drag.start.y || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5) drag.active = true; }
@@ -180,15 +183,15 @@
   function completeFloorBlueprint(c, bp, def, buildType) {
     const ok = window.FloorSystem?.setFloorAt?.(bp.x, bp.y, def.floorType);
     if (!ok) {
-      if (typeof log === 'function') log(`Falha ao finalizar ${def.label}.`);
+      if (typeof refundCost === 'function') refundCost(bp.reservedCost || {}, { reason: 'floor-build-failed', targetId: bp.id, x: bp.x, y: bp.y });
+      if (typeof refundItems === 'function') refundItems(bp.reservedItemCost || {}, { reason: 'floor-build-failed', targetId: bp.id, x: bp.x, y: bp.y });
+      if (typeof log === 'function') log(`Falha ao finalizar ${def.label}. Materiais devolvidos.`);
     }
     state.objects = (state.objects || []).filter(obj => obj.id !== bp.id);
     if (state.world && state.world.objects) state.world.objects = state.objects;
     window.HavenfallWorkFeedback?.notifyComplete?.('build', { buildType, objectType: 'floor', floorType: def.floorType }, bp.x, bp.y);
-    if (typeof log === 'function') log(`${c.name} terminou: ${def.label}.`);
-    c.task = null;
-    c.work = 0;
-    c.note = 'Ocioso';
+    if (ok && typeof log === 'function') log(`${c.name} terminou: ${def.label}.`);
+    c.task = null; c.work = 0; c.note = 'Ocioso';
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     return true;
   }
@@ -203,22 +206,19 @@
     c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`;
     if (bp.progress >= def.work) {
       if (def.type === 'floor') return completeFloorBlueprint(c, bp, def, buildType);
-      const x = bp.x;
-      const y = bp.y;
+      const x = bp.x; const y = bp.y;
       bp.type = def.type;
       if (bp.type === 'crop') bp.growth = 0;
       applyBuildMetadata(bp, def);
-      delete bp.buildType;
-      delete bp.progress;
+      delete bp.buildType; delete bp.progress; delete bp.reservedCost; delete bp.reservedItemCost; delete bp.materialReserved;
       window.HavenfallWorkFeedback?.notifyComplete?.('build', { buildType, objectType: def.type }, x, y);
       if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
       if (typeof log === 'function') log(`${c.name} terminou: ${def.label}.`);
-      c.task = null;
-      c.work = 0;
-      c.note = 'Ocioso';
+      c.task = null; c.work = 0; c.note = 'Ocioso';
     }
     return true;
   }
+
   function updateUIWrapper(force = false) { if (originalUpdateUI) originalUpdateUI(force); installBuildButtons(); if (typeof dom !== 'undefined' && dom?.buildStatus) dom.buildStatus.textContent = currentBuild ? `Construindo: ${buildDefs[currentBuild]?.label || currentBuild}. Clique ou arraste.` : 'Nenhuma construção selecionada.'; document.querySelectorAll('[data-build]').forEach(btn => { const key = btn.dataset.build; if (!buildDefs?.[key]) return; btn.classList.toggle('active', key === currentBuild); btn.title = `${buildDefs[key].label} · ${buildCostText(key)}`; }); }
 
   function install() {
@@ -237,8 +237,8 @@
     canvas?.addEventListener('mousedown', mouseDown); canvas?.addEventListener('mousemove', mouseMove); canvas?.addEventListener('mouseup', mouseUp); canvas?.addEventListener('mouseleave', () => { if (drag && !drag.active) drag = null; }); document.addEventListener('click', buildButtonCapture, true);
     window.GameSystems?.registerTaskHandler?.('build', 'construction.completion', buildTaskHandler, { order: 1 });
     installBuildButtons();
-    window.HavenfallConstructionSystem = 'smart-opening-door-floor-construction';
-    console.info('[Construction System] Portas inteligentes e pisos construíveis carregados.');
+    window.HavenfallConstructionSystem = 'smart-opening-door-floor-reserved-materials-construction';
+    console.info('[Construction System] Portas inteligentes, pisos e reserva real de materiais carregados.');
   }
 
   install();
