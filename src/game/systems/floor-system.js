@@ -164,10 +164,35 @@
   }
 
   function drawFloorTileRenderer(x, y) { if (!ctx || appScreen !== SCREEN.PLAYING) return false; return drawFloorTile(ctx, x, y, getFloorAt(x, y)); }
+
+  function drawFloorBlueprintObject(obj) {
+    if (!obj || obj.type !== 'blueprint') return false;
+    const def = buildDefs?.[obj.buildType];
+    if (def?.type !== 'floor') return false;
+    if (!ctx || appScreen !== SCREEN.PLAYING) return true;
+    const x = Math.round(Number(obj.x) || 0);
+    const y = Math.round(Number(obj.y) || 0);
+    ctx.save();
+    ctx.globalAlpha = 0.46;
+    drawFloorTile(ctx, x, y, def.floorType);
+    ctx.globalAlpha = 0.92;
+    ctx.strokeStyle = 'rgba(155,211,106,.82)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+    const progress = Math.max(0, Math.min(1, Number(obj.progress || 0) / Math.max(0.01, Number(def.work || 1))));
+    ctx.fillStyle = 'rgba(7, 17, 31, .72)';
+    ctx.fillRect(x * TILE + 7, y * TILE + 7, TILE - 14, 5);
+    ctx.fillStyle = '#9bd36a';
+    ctx.fillRect(x * TILE + 7, y * TILE + 7, (TILE - 14) * progress, 5);
+    ctx.restore();
+    return true;
+  }
+
   function movementModifier(c, current) { const floor = getFloorAt(c?.x, c?.y); const def = floorDef(floor); return Number(current || 1) * Number(def?.moveSpeed || 1); }
   function tick() { ensureFloorLayer(); }
 
-  window.FloorSystem = Object.freeze({ FLOOR_DEFS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, floorDef, floorLabel, drawFloorTile, bumpFloorVersion });
+  window.FloorSystem = Object.freeze({ FLOOR_DEFS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, floorDef, floorLabel, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
   window.ensureFloorLayer = ensureFloorLayer;
   window.getFloorAt = getFloorAt;
   window.setFloorAt = setFloorAt;
@@ -175,5 +200,6 @@
   window.canPlaceFloor = canPlaceFloor;
   window.GameSystems?.registerTick?.('floor-system.ensure-layer', tick, { order: 9, intervalMs: 600, critical: true });
   window.GameSystems?.registerTileRenderer?.('floor.layer', drawFloorTileRenderer, { order: 3, critical: true });
+  window.GameSystems?.registerObjectRenderer?.('floor.blueprint-renderer', drawFloorBlueprintObject, { order: 1, critical: true });
   window.GameSystems?.registerMovementModifier?.('floor.speed', movementModifier, { order: 18 });
 })();
