@@ -7,6 +7,14 @@
     return selected || state.colonists[0] || null;
   }
 
+  function dist(x1, y1, x2, y2) {
+    const ax = Number(x1) || 0;
+    const ay = Number(y1) || 0;
+    const bx = Number(x2) || 0;
+    const by = Number(y2) || 0;
+    return Math.hypot(ax - bx, ay - by);
+  }
+
   function ensureResources() {
     state.resources = state.resources || {};
     for (const key of ['food', 'wood', 'stone', 'metal', 'medicine', 'water']) {
@@ -151,9 +159,12 @@
   }
 
   window.selectedColonist = selectedColonist;
+  window.dist = window.dist || dist;
+  window.distanceBetween = window.distanceBetween || dist;
 
   window.GameState = {
     selectedColonist,
+    dist,
     resources,
     hasResources,
     addResources,
