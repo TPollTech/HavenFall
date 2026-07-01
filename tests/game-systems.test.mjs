@@ -722,3 +722,210 @@ test('GameState manages resources, items and object indexes', () => {
   assert.equal(invalidations, 2);
 });
 
+test('Lighting system respects built roofs and active workstation sources', () => {
+  const grid = (rows, cols, value) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => value));
+  const context = createContext({
+    console,
+    performance: { now: () => 0 },
+    TILE: 48,
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    HavenfallContext: {},
+    state: {
+      hour: 23,
+      weather: 'limpo',
+      colonists: [{ id: 1, task: { type: 'forge', objId: 'forge-1' } }],
+      world: {
+        rows: 8,
+        cols: 8,
+        terrain: grid(8, 8, 'grass'),
+        objects: [{ id: 'forge-1', type: 'forge', x: 4, y: 4 }],
+        exploration: grid(8, 8, 1),
+        builtRoofLayer: grid(8, 8, false),
+        naturalRoofLayer: grid(8, 8, false)
+      }
+    },
+    ctx: {
+      save() {},
+      restore() {},
+      fillRect() {},
+      set fillStyle(value) { this._fillStyle = value; },
+      get fillStyle() { return this._fillStyle; }
+    },
+    getWorldCols: () => 8,
+    getWorldRows: () => 8,
+    visibleTileBounds: () => ({ startX: 0, startY: 0, endX: 7, endY: 7 })
+  });
+  context.state.world.builtRoofLayer[4][4] = true;
+
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/data/objects.js', context);
+  vm.runInContext('this.objectDefs = { ...baseObjectDefs };', context);
+  runBrowserScript('src/game/systems/lighting-system.js', context);
+
+  assert.equal(context.LightingSystem.hasRoofAt(4, 4, context.state.world), true);
+  assert.equal(context.LightingSystem.collectLightSources(context.state.world).sources.length, 1);
+
+  context.LightingSystem.recomputeLighting(null, context.state.world, 'active-source');
+  const activeLight = context.LightingSystem.getLightAt(4, 4, context.state.world);
+  assert.ok(activeLight > 0.7);
+
+  context.state.colonists = [];
+  context.LightingSystem.invalidate('workstation-idle', context.state.world);
+  assert.equal(context.LightingSystem.collectLightSources(context.state.world).sources.length, 0);
+  context.LightingSystem.recomputeLighting(null, context.state.world, 'idle-source');
+  const idleLight = context.LightingSystem.getLightAt(4, 4, context.state.world);
+  assert.ok(idleLight < activeLight);
+});
+
+test('World region system only snapshots active regions when region mode is enabled', () => {
+  const grid = (rows, cols, value) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => value));
+  const context = createContext({
+    console,
+    TILE: 48,
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    HavenfallContext: {},
+    camera: { x: 128 * 48, y: 128 * 48 },
+    getMapSizeDef: mapSize => mapSize === 'infinite_chunks'
+      ? { chunkMode: true, chunkSize: 32 }
+      : { chunkMode: false, chunkSize: 32 }
+  });
+
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/world-region-system.js', context);
+
+  const largeWorld = {
+    mapSize: 'large',
+    cols: 256,
+    rows: 256,
+    terrain: grid(256, 256, 'grass'),
+    objects: []
+  };
+  assert.deepEqual(context.WorldRegionSystem.updateActiveRegions(largeWorld), []);
+  assert.equal(Object.keys(largeWorld.regions || {}).length, 0);
+
+  const frontierWorld = {
+    mapSize: 'infinite_chunks',
+    regionMode: true,
+    cols: 256,
+    rows: 256,
+    terrain: grid(256, 256, 'grass'),
+    biomes: grid(256, 256, 'forest'),
+    exploration: grid(256, 256, 0),
+    objects: [{ id: 'ore-1', type: 'ore', x: 126, y: 126 }],
+    lightLayer: grid(256, 256, 1)
+  };
+  const snapshots = context.WorldRegionSystem.snapshotActiveRegions(frontierWorld);
+  assert.equal(frontierWorld.activeRegions.length, 9);
+  assert.equal(snapshots.length, 9);
+  assert.equal(Object.keys(frontierWorld.regions).length, 9);
+  assert.ok(Object.keys(frontierWorld.regions).length < 16);
+});
+
+test('compactStateForSave strips transient lighting and region caches', () => {
+  const context = createContext({
+    SAVE_KEY: 'hf-save',
+    localStorage: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {}
+    }
+  });
+  runBrowserScript('src/game/runtime/save-load.js', context);
+
+  const compact = context.compactStateForSave({
+    world: {
+      terrain: [['grass']],
+      objects: [{ id: 'obj-1', type: 'campfire', x: 0, y: 0 }],
+      regionMode: true,
+      regionSize: 64,
+      regionSaveVersion: 'region-save-v2',
+      lightLayer: [[0.4]],
+      lightState: { lastRecomputeAt: 10 },
+      lightDirty: true,
+      lightVersion: 3,
+      lightInvalidationReason: 'debug',
+      regions: { '0,0': { objects: [] } },
+      activeRegions: ['0,0'],
+      activeRegion: { x: 0, y: 0 },
+      regionIndexing: false,
+      regionSnapshotAt: 20
+    }
+  });
+
+  assert.equal(compact.world.regionMode, true);
+  assert.equal(compact.world.regionSize, 64);
+  assert.equal(compact.world.regionSaveVersion, 'region-save-v2');
+  assert.equal('lightLayer' in compact.world, false);
+  assert.equal('lightState' in compact.world, false);
+  assert.equal('regions' in compact.world, false);
+  assert.equal('activeRegions' in compact.world, false);
+});
+
+test('Biome rebalance gives desert tiles real sand and cactus signatures', () => {
+  const hashSeed = value => {
+    let h = 2166136261;
+    const text = String(value || '');
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  };
+  const worldNoise = (seed, x, y, salt) => (hashSeed(`${seed}|${salt}|${x}|${y}`) % 100000) / 100000;
+  const context = createContext({
+    console,
+    hashSeed,
+    worldNoise,
+    assetAudit: { vegetation: () => null },
+    objectDefs: {},
+    HavenfallContext: {},
+    worldUid: (type, index) => `${type}_${index}`,
+    state: { config: { seed: 'TEST' } },
+    getMapSizeDef: () => ({ chunkSize: 32, macroBiomeChunks: 2 })
+  });
+  runBrowserScript('src/game/data/ecosystem-rules.js', context);
+  runBrowserScript('src/game/biomes/biome-registry.js', context);
+  runBrowserScript('src/game/biomes/biome-forest.js', context);
+  runBrowserScript('src/game/biomes/biome-desert.js', context);
+  runBrowserScript('src/game/biomes/biome-snow.js', context);
+  runBrowserScript('src/game/biomes/biome-engine.js', context);
+
+  const cols = 40;
+  const rows = 20;
+  const terrain = Array.from({ length: rows }, () => Array.from({ length: cols }, () => 'grass'));
+  const biomes = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => x >= 20 ? 'desert' : 'forest'));
+  const world = {
+    seed: 'TEST',
+    cols,
+    rows,
+    terrain,
+    biomes,
+    objects: [
+      { id: 'tree-1', type: 'tree', x: 24, y: 8 },
+      { id: 'berry-1', type: 'berry', x: 28, y: 10 },
+      { id: 'bush-1', type: 'bush', x: 31, y: 11 }
+    ],
+    spawn: { x: 4, y: 4 },
+    generationVersion: 'test'
+  };
+
+  context.BiomeEngine.installBiomeObjectDefs();
+  context.BiomeEngine.rebalanceWorld(world, { seed: 'TEST' });
+
+  const desertSandTiles = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 20; x < cols; x++) {
+      if (world.terrain[y][x] === 'sand') desertSandTiles.push(`${x},${y}`);
+    }
+  }
+  const cacti = world.objects.filter(obj => obj.type === 'cactus');
+
+  assert.ok(desertSandTiles.length > 40);
+  assert.ok(cacti.length >= 3);
+  assert.ok(cacti.every(obj => world.biomes[obj.y][obj.x] === 'desert'));
+  assert.ok(cacti.every(obj => ['sand', 'dirt'].includes(world.terrain[obj.y][obj.x])));
+  assert.ok(world.objects.some(obj => obj.type === 'palm_tree' && world.biomes[obj.y][obj.x] === 'desert'));
+});
+
