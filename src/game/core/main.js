@@ -22,10 +22,18 @@ function loadCoreExtension(file, id) {
   });
 }
 
+function loadOptionalCoreExtension(file, id) {
+  return loadCoreExtension(file, id).catch(err => {
+    console.warn(`[Engine] Extensão opcional ignorada: ${id}`, err);
+    window.HavenfallRuntimeErrors?.unshift?.({ kind: 'optional-extension', id, message: err?.message || String(err), stack: err?.stack || null, at: new Date().toISOString() });
+    return null;
+  });
+}
+
 function loadWorldInfrastructure() {
   bootStatus('Preparando mundo por regiões', 85, 'Indexando regiões, luz e streaming futuro');
-  return loadCoreExtension('src/game/systems/world-region-system.js', 'world_region_system')
-    .then(() => loadCoreExtension('src/game/systems/lighting-system.js', 'lighting_system'));
+  return loadOptionalCoreExtension('src/game/systems/world-region-system.js', 'world_region_system')
+    .then(() => loadOptionalCoreExtension('src/game/systems/lighting-system.js', 'lighting_system'));
 }
 
 function bootGame() {
@@ -103,7 +111,7 @@ function handleBootError(err) {
   console.error('[Engine Boot Error]:', err);
   window.HavenfallRuntimeErrors?.unshift?.({ kind: 'boot', message: err?.message || String(err), stack: err?.stack || null, at: new Date().toISOString() });
   window.HavenfallBootProgress?.set?.('Falha ao iniciar o jogo', 100, err?.message || String(err));
-  const message = 'Falha ao iniciar o jogo. Verifique se os assets e módulos principais foram carregados corretamente.';
+  const message = `Falha ao iniciar o jogo: ${err?.message || err || 'erro desconhecido'}`;
   const modal = typeof dom !== 'undefined' ? dom.modal : null;
   const modalText = modal?.querySelector('p');
 
