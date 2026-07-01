@@ -108,11 +108,24 @@
     return keys.map(parseRegionKey).map(region => snapshotRegion(region.x, region.y, world)).filter(Boolean);
   }
 
+  function installSaveHook() {
+    if (window.HavenfallContext.worldRegionSaveHookInstalled || typeof saveGame !== 'function') return;
+    const originalSaveGame = saveGame;
+    saveGame = function saveGameWithRegionSnapshots(manual = false) {
+      try { snapshotActiveRegions(state?.world); }
+      catch (err) { console.warn('[WorldRegionSystem] Falha ao atualizar snapshots antes do save.', err); }
+      return originalSaveGame(manual);
+    };
+    window.HavenfallContext.worldRegionSaveHookInstalled = true;
+  }
+
   function tick() {
     if (!state?.world || appScreen !== SCREEN.PLAYING) return;
     updateActiveRegions(state.world);
+    installSaveHook();
   }
 
-  window.WorldRegionSystem = Object.freeze({ REGION_SIZE, regionKey, parseRegionKey, regionForTile, ensureRegionState, regionBounds, indexExistingRegions, snapshotRegion, snapshotActiveRegions, activeRegionForCamera, updateActiveRegions });
+  window.WorldRegionSystem = Object.freeze({ REGION_SIZE, regionKey, parseRegionKey, regionForTile, ensureRegionState, regionBounds, indexExistingRegions, snapshotRegion, snapshotActiveRegions, activeRegionForCamera, updateActiveRegions, installSaveHook });
+  installSaveHook();
   window.GameSystems?.registerTick?.('world-region-system.active-regions', tick, { order: 11, intervalMs: 900, critical: false });
 })();
