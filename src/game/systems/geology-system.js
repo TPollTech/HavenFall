@@ -8,6 +8,8 @@
     iron: { label: 'Veio de ferro', hp: 165, resource: 'metal', yield: 5, mineSpeed: 0.9, insulation: 0.48, color: '#7f1d1d' }
   });
 
+  const MINING_PATH_COOLDOWN_MS = 7000;
+
   function rockTypeForBiome(biomeId, x, y, seed) {
     const n = typeof worldNoise === 'function' ? worldNoise(seed, x, y, 'rock-type') : Math.random();
     if (biomeId === 'desert') return n > 0.78 ? 'slate' : 'sandstone';
@@ -126,21 +128,90 @@
   function markRockForMining(x, y, marked = true) { const rock = getRockAt(x, y); if (!rock?.mineable || !rock.solid) return false; rock.markedForMining = !!marked; return true; }
   function toggleRockMiningMark(x, y) { const rock = getRockAt(x, y); if (!rock?.mineable || !rock.solid) return false; rock.markedForMining = !rock.markedForMining; return rock.markedForMining; }
 
+  function nowMs() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
+  function miningTargetKey(x, y) { return `${Math.round(Number(x) || 0)},${Math.round(Number(y) || 0)}`; }
+
+  function ensureMiningPathMemory(c) {
+    if (!c) return null;
+    c._blockedMiningTargets = c._blockedMiningTargets && typeof c._blockedMiningTargets === 'object' ? c._blockedMiningTargets : {};
+    const now = nowMs();
+    for (const [key, entry] of Object.entries(c._blockedMiningTargets)) {
+      if (Number(entry?.until || 0) <= now) delete c._blockedMiningTargets[key];
+    }
+    return c._blockedMiningTargets;
+  }
+
+  function isMiningTargetBlockedFor(c, x, y) {
+    const memory = ensureMiningPathMemory(c);
+    if (!memory) return false;
+    const entry = memory[miningTargetKey(x, y)];
+    return !!(entry && Number(entry.until || 0) > nowMs());
+  }
+
+  function rememberMiningTargetBlocked(c, x, y, reason = 'sem caminho para mineração') {
+    const memory = ensureMiningPathMemory(c);
+    if (!memory) return;
+    memory[miningTargetKey(x, y)] = { until: nowMs() + MINING_PATH_COOLDOWN_MS, reason };
+  }
+
+  function clearMiningTargetBlocked(c, x, y) {
+    const memory = ensureMiningPathMemory(c);
+    if (memory) delete memory[miningTargetKey(x, y)];
+  }
+
+  function miningAdjacentCandidates(c, x, y) {
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    return dirs
+      .map(([dx, dy]) => ({ x: Math.round(Number(x) || 0) + dx, y: Math.round(Number(y) || 0) + dy }))
+      .filter(tile => {
+        if (typeof isInside === 'function' && !isInside(tile.x, tile.y)) return false;
+        if (typeof isTileDiscovered === 'function' && !isTileDiscovered(tile.x, tile.y)) return false;
+        if (typeof isBlocked === 'function' && isBlocked(tile.x, tile.y)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const da = Math.abs((c?.x || 0) - a.x) + Math.abs((c?.y || 0) - a.y);
+        const db = Math.abs((c?.x || 0) - b.x) + Math.abs((c?.y || 0) - b.y);
+        return da - db;
+      });
+  }
+
+  function findReachableMiningAdjacent(c, x, y, options = {}) {
+    if (!c || typeof findPath !== 'function') return null;
+    const rock = getRockAt(x, y);
+    if (!rock?.mineable || !rock.solid) return null;
+    if (!options.ignoreCooldown && isMiningTargetBlockedFor(c, x, y)) return null;
+
+    for (const adj of miningAdjacentCandidates(c, x, y)) {
+      const alreadyAtWorkTile = Math.round(c.x) === adj.x && Math.round(c.y) === adj.y;
+      const path = alreadyAtWorkTile ? [] : findPath(c.x, c.y, adj.x, adj.y, null, { maxVisited: options.maxVisited || 6200 });
+      if (alreadyAtWorkTile || (Array.isArray(path) && path.length > 0)) {
+        clearMiningTargetBlocked(c, x, y);
+        return { adj, path, rock, alreadyAtWorkTile };
+      }
+    }
+
+    if (options.rememberFailure !== false) rememberMiningTargetBlocked(c, x, y);
+    return null;
+  }
+
   function nearestMarkedMine(c) {
     if (!c || !state?.world) return null;
     ensureGeologyState();
     let best = null;
-    let bestDist = Infinity;
+    let bestScore = Infinity;
     const layer = state.world.geologyLayer || [];
     for (let y = 0; y < layer.length; y++) {
       for (let x = 0; x < (layer[y]?.length || 0); x++) {
         const rock = layer[y][x];
         if (!rock?.solid || !rock.mineable || !rock.markedForMining) continue;
         if (typeof isTileDiscovered === 'function' && !isTileDiscovered(x, y)) continue;
-        const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(x, y, c.x, c.y) : null;
-        if (!adj) continue;
-        const d = Math.abs(c.x - x) + Math.abs(c.y - y);
-        if (d < bestDist) { bestDist = d; best = { x, y, rock, adj }; }
+        const access = findReachableMiningAdjacent(c, x, y, { rememberFailure: true });
+        if (!access) continue;
+        const pathCost = access.alreadyAtWorkTile ? 0 : access.path.length;
+        const rockDistance = Math.abs(c.x - x) + Math.abs(c.y - y);
+        const score = pathCost * 10 + rockDistance;
+        if (score < bestScore) { bestScore = score; best = { x, y, rock, adj: access.adj, path: access.path, alreadyAtWorkTile: access.alreadyAtWorkTile }; }
       }
     }
     return best;
@@ -287,7 +358,7 @@
 
   function updateGeologyTick() { ensureGeologyState(); }
 
-  window.GeologySystem = { ROCK_DEFS, ensureGeologyState, getRockAt, hasNaturalRoofAt, isMountainBlocked, markRockForMining, toggleRockMiningMark, nearestMarkedMine, mineRockAt, recalculateRoofLayer, geologyLabelAt, createGeologyLayer, createRoofLayer, drawGeologyTileBackdrop, drawGeologyBackdrop, drawGeologyOverlay };
+  window.GeologySystem = { ROCK_DEFS, ensureGeologyState, getRockAt, hasNaturalRoofAt, isMountainBlocked, markRockForMining, toggleRockMiningMark, nearestMarkedMine, findReachableMiningAdjacent, rememberMiningTargetBlocked, clearMiningTargetBlocked, mineRockAt, recalculateRoofLayer, geologyLabelAt, createGeologyLayer, createRoofLayer, drawGeologyTileBackdrop, drawGeologyBackdrop, drawGeologyOverlay };
   window.ensureGeologyState = ensureGeologyState;
   window.getRockAt = getRockAt;
   window.hasNaturalRoofAt = hasNaturalRoofAt;
@@ -295,6 +366,9 @@
   window.markRockForMining = markRockForMining;
   window.toggleRockMiningMark = toggleRockMiningMark;
   window.nearestMarkedMine = nearestMarkedMine;
+  window.findReachableMiningAdjacent = findReachableMiningAdjacent;
+  window.rememberMiningTargetBlocked = rememberMiningTargetBlocked;
+  window.clearMiningTargetBlocked = clearMiningTargetBlocked;
   window.mineRockAt = mineRockAt;
   window.drawGeologyTileBackdrop = drawGeologyTileBackdrop;
   window.drawGeologyBackdrop = drawGeologyBackdrop;
