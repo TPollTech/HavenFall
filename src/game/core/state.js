@@ -5,11 +5,11 @@ const ctx = canvas.getContext('2d');
 const TILE = 48;
 
 const MAP_SIZES = Object.freeze({
-  large: { label: 'grande', cols: 96, rows: 70, resourceMultiplier: 1.35, poiCount: 9 },
-  huge: { label: 'enorme', cols: 132, rows: 96, resourceMultiplier: 1.9, poiCount: 14 },
-  giant: { label: 'gigante', cols: 172, rows: 124, resourceMultiplier: 2.55, poiCount: 22, biomeIntent: 'multi' },
-  infinite_chunks: { label: 'infinito por chunks', cols: 220, rows: 156, resourceMultiplier: 3.1, poiCount: 30, chunkMode: true, biomeIntent: 'multi' },
-  standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5 }
+  large: { label: 'grande', cols: 96, rows: 70, resourceMultiplier: 1.35, poiCount: 9, chunkSize: 32, macroBiomeChunks: 2 },
+  huge: { label: 'enorme', cols: 132, rows: 96, resourceMultiplier: 1.9, poiCount: 14, chunkSize: 32, macroBiomeChunks: 3 },
+  giant: { label: 'gigante', cols: 172, rows: 124, resourceMultiplier: 2.35, poiCount: 20, biomeIntent: 'multi', chunkSize: 32, macroBiomeChunks: 3 },
+  infinite_chunks: { label: 'fronteira continental', cols: 220, rows: 156, resourceMultiplier: 1.85, poiCount: 24, chunkMode: true, fixedFrontier: true, biomeIntent: 'multi', chunkSize: 32, macroBiomeChunks: 4 },
+  standard: { label: 'padrão', cols: 64, rows: 46, resourceMultiplier: 1.0, poiCount: 5, chunkSize: 32, macroBiomeChunks: 2 }
 });
 
 let viewTransform = { scale: 1, offsetX: 0, offsetY: 0 };

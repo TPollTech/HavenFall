@@ -2,6 +2,7 @@
 
 (() => {
   const VEGETATION_OBJECT_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms', 'dry_twigs']);
+  const DEFAULT_CHUNK_SIZE = 32;
 
   function pickWeightedTerrain(weights, seed, x, y, fallback = 'grass') {
     const entries = Object.entries(weights || {});
@@ -16,17 +17,97 @@
     return fallback;
   }
 
+  function mapSizeDef(config = {}) {
+    return typeof getMapSizeDef === 'function' ? getMapSizeDef(config.mapSize) : {};
+  }
+
+  function biomeChunkSize(config = {}) {
+    const size = mapSizeDef(config);
+    return Math.max(16, Number(size.chunkSize || DEFAULT_CHUNK_SIZE));
+  }
+
+  function biomePatchChunks(config = {}) {
+    const size = mapSizeDef(config);
+    return Math.max(2, Math.min(5, Number(size.macroBiomeChunks || (config.mapSize === 'large' ? 2 : 3))));
+  }
+
+  function macroBiomeCell(x, y, config = {}) {
+    const chunkSize = biomeChunkSize(config);
+    const patch = biomePatchChunks(config);
+    return {
+      x: Math.floor(x / (chunkSize * patch)),
+      y: Math.floor(y / (chunkSize * patch))
+    };
+  }
+
+  function biomeBias(config = {}) {
+    const dominant = typeof scanDominantBiome === 'function' ? scanDominantBiome(config) : null;
+    const forest = typeof scanBiomeStat === 'function' ? scanBiomeStat(config, 'forest') : 35;
+    const desert = typeof scanBiomeStat === 'function' ? scanBiomeStat(config, 'desert') : 20;
+    const snow = typeof scanBiomeStat === 'function' ? scanBiomeStat(config, 'snow') : 14;
+    const rock = typeof scanBiomeStat === 'function' ? scanBiomeStat(config, 'rock') : 24;
+    return { dominant, forest, desert, snow, rock };
+  }
+
+  function weightedBiomePick(seed, cellX, cellY, config = {}) {
+    const bias = biomeBias(config);
+    const weights = {
+      forest: 44 + Math.max(0, bias.forest - 34) * 0.8,
+      desert: 17 + Math.max(0, bias.desert - 22) * 1.1,
+      snow: 10 + Math.max(0, bias.snow - 22) * 1.0,
+      rock: 14 + Math.max(0, bias.rock - 24) * 1.05
+    };
+
+    if (bias.dominant === 'forest') weights.forest += 24;
+    if (bias.dominant === 'desert') weights.desert += 26;
+    if (bias.dominant === 'snow') weights.snow += 24;
+    if (bias.dominant === 'rock') weights.rock += 22;
+    if (config.mapSize === 'giant' || config.mapSize === 'infinite_chunks') {
+      weights.desert += 6;
+      weights.snow += 5;
+      weights.rock += 7;
+    }
+
+    const entries = Object.entries(weights).map(([key, value]) => [key, Math.max(0, Number(value || 0))]);
+    const total = entries.reduce((sum, [, value]) => sum + value, 0);
+    let roll = worldNoise(seed, cellX, cellY, 'macro-biome-pick-v1') * Math.max(1, total);
+    for (const [key, value] of entries) {
+      roll -= value;
+      if (roll <= 0) return key;
+    }
+    return 'forest';
+  }
+
+  function selectMacroBiomeId(x, y, seed, config = {}) {
+    const cell = macroBiomeCell(x, y, config);
+    const localX = x / biomeChunkSize(config);
+    const localY = y / biomeChunkSize(config);
+    const candidates = [];
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const cx = cell.x + dx;
+        const cy = cell.y + dy;
+        const biome = weightedBiomePick(seed, cx, cy, config);
+        const patch = biomePatchChunks(config);
+        const centerX = (cx + 0.5) * patch + (worldNoise(seed, cx, cy, 'macro-biome-center-x') - 0.5) * patch * 0.45;
+        const centerY = (cy + 0.5) * patch + (worldNoise(seed, cx, cy, 'macro-biome-center-y') - 0.5) * patch * 0.45;
+        const d = Math.hypot(localX - centerX, localY - centerY);
+        const weight = d - worldNoise(seed, cx, cy, 'macro-biome-border') * patch * 0.35;
+        candidates.push({ biome, weight });
+      }
+    }
+
+    candidates.sort((a, b) => a.weight - b.weight);
+    const primary = candidates[0]?.biome || 'forest';
+    const secondary = candidates.find(item => item.biome !== primary)?.biome || primary;
+    const edgeBlend = Math.abs((candidates[1]?.weight ?? 999) - (candidates[0]?.weight ?? 0));
+    if (edgeBlend < 0.34 && worldNoise(seed, x, y, 'macro-biome-edge-mix') > 0.72) return secondary;
+    return primary;
+  }
+
   function selectBiomeId(x, y, seed, config = {}) {
-    const macroX = Math.floor(x / 18);
-    const macroY = Math.floor(y / 18);
-    const cold = worldNoise(seed, macroX, macroY, 'biome-cold');
-    const dry = worldNoise(seed, macroX, macroY, 'biome-dry');
-    const forest = worldNoise(seed, Math.floor(x / 11), Math.floor(y / 11), 'biome-forest');
-    const giantBias = config.mapSize === 'giant' || config.mapSize === 'infinite_chunks' ? 0.06 : 0;
-    if (cold > 0.70 - giantBias) return 'snow';
-    if (dry > 0.64 - giantBias && cold < 0.68) return 'desert';
-    if (forest > 0.42) return 'forest';
-    return dry > 0.54 ? 'desert' : 'forest';
+    return selectMacroBiomeId(x, y, seed, config);
   }
 
   function createBiomeMap(cols, rows, seed, config = {}) {
@@ -34,16 +115,19 @@
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) map[y][x] = selectBiomeId(x, y, seed, config);
     }
-    return smoothBiomeMap(map, seed);
+    const passCount = config.mapSize === 'large' ? 1 : 2;
+    let next = map;
+    for (let i = 0; i < passCount; i++) next = smoothBiomeMap(next, seed, i);
+    return next;
   }
 
-  function smoothBiomeMap(map, seed) {
+  function smoothBiomeMap(map, seed, pass = 0) {
     const rows = map.length;
     const cols = map[0]?.length || 0;
     const copy = map.map(row => row.slice());
     for (let y = 1; y < rows - 1; y++) {
       for (let x = 1; x < cols - 1; x++) {
-        if (worldNoise(seed, x, y, 'biome-smooth') < 0.34) continue;
+        if (worldNoise(seed, x, y, `biome-smooth-${pass}`) < 0.26) continue;
         const counts = {};
         for (let yy = y - 1; yy <= y + 1; yy++) {
           for (let xx = x - 1; xx <= x + 1; xx++) counts[map[yy][xx]] = (counts[map[yy][xx]] || 0) + 1;
@@ -248,14 +332,7 @@
     window.HavenfallContext = window.HavenfallContext || {};
     const treeNames = { oak_tree: 'carvalho', birch_tree: 'bétula', pine_tree: 'pinheiro', palm_tree: 'palmeira', willow_tree: 'salgueiro' };
     for (const [key, name] of Object.entries(treeNames)) {
-      objectDefs[key] = {
-        name,
-        img: assetAudit?.vegetation?.(key) || 'tree',
-        blocks: true,
-        gather: { wood: key === 'pine_tree' ? 10 : key === 'palm_tree' ? 6 : 8 },
-        work: key === 'pine_tree' ? 3.8 : 3.2,
-        respawn: false
-      };
+      objectDefs[key] = { name, img: assetAudit?.vegetation?.(key) || 'tree', blocks: true, gather: { wood: key === 'pine_tree' ? 10 : key === 'palm_tree' ? 6 : 8 }, work: key === 'pine_tree' ? 3.8 : 3.2, respawn: false };
     }
     objectDefs.herbs = { name: 'ervas medicinais', img: 'res_herbs', blocks: false, gather: { medicine: 1 }, work: 2.0 };
     objectDefs.mushrooms = { name: 'cogumelos', img: 'res_berries', blocks: false, gather: { food: 4 }, work: 2.2 };
@@ -335,27 +412,20 @@
     installBiomeObjectDefs();
     const seed = config.seed || world.seed || 'biome';
     world.biomes = createBiomeMap(world.cols, world.rows, seed, config);
-    world.biomeDefinitionsVersion = '1.0';
+    world.biomeDefinitionsVersion = '2.0-macro-chunks';
+    world.biomeChunkSize = biomeChunkSize(config);
+    world.biomePatchChunks = biomePatchChunks(config);
     applyBiomeTerrain(world, config);
     createMountainRanges(world, config);
     removeVegetationFromInvalidMountainTiles(world);
     decorateExistingObjects(world, seed);
     addBiomeForage(world, seed);
     removeVegetationFromInvalidMountainTiles(world);
-    world.generationVersion = `${world.generationVersion || 'world'}+biomes`;
+    world.generationVersion = `${world.generationVersion || 'world'}+macro-biomes`;
     return world;
   }
 
-  window.BiomeEngine = {
-    createBiomeMap,
-    applyToWorld,
-    createMountainRanges,
-    getBiomeIdAt,
-    canSpawnMobAt,
-    spawnWeightAt,
-    installBiomeObjectDefs
-  };
-
+  window.BiomeEngine = { createBiomeMap, applyToWorld, createMountainRanges, getBiomeIdAt, canSpawnMobAt, spawnWeightAt, installBiomeObjectDefs };
   window.biomeDefinitions = BiomeRegistry.all();
   window.biomeAt = (x, y, seed = state?.config?.seed || 'biome') => selectBiomeId(x, y, seed, state?.config || {});
 })();
