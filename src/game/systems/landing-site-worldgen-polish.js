@@ -332,7 +332,7 @@
       riskAverage: Math.round(Object.values(site.risks || {}).reduce((sum, value) => sum + Number(value || 0), 0) / Math.max(1, Object.keys(site.risks || {}).length)),
       resourceAverage: Math.round(Object.values(site.resources || {}).reduce((sum, value) => sum + Number(value || 0), 0) / Math.max(1, Object.keys(site.resources || {}).length))
     };
-    world.generationVersion = '1.9.1-landing-polish';
+    world.generationVersion = `${world.generationVersion || 'world'}+landing-polish`;
     return world;
   }
 

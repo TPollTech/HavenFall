@@ -522,6 +522,24 @@
     return placed;
   }
 
+  function ensureBiomeFallbackResources(world, biomeId, type, minCount, seed, replaceableTypes = []) {
+    let count = countBiomeObjects(world, biomeId, type);
+    if (count >= minCount) return count;
+
+    for (const obj of world.objects || []) {
+      if (count >= minCount) break;
+      if (!obj || world.biomes?.[obj.y]?.[obj.x] !== biomeId) continue;
+      if (!replaceableTypes.includes(obj.type)) continue;
+      if (!ecosystemAllows(type, terrainAt(world, obj.x, obj.y))) continue;
+      obj.type = type;
+      count++;
+    }
+
+    if (count >= minCount) return count;
+    ensureBiomeResourceCount(world, biomeId, type, minCount - count, `${seed}|fallback`);
+    return countBiomeObjects(world, biomeId, type);
+  }
+
   function rebalanceBiomeResources(world, seed) {
     const plans = [
       { biomeId: 'forest', type: 'berry', density: 0.0016, min: 4 },
@@ -538,6 +556,10 @@
       const target = Math.max(plan.min, Math.floor(area * plan.density));
       const existing = countBiomeObjects(world, plan.biomeId, plan.type);
       if (existing < target) ensureBiomeResourceCount(world, plan.biomeId, plan.type, target - existing, `${seed}|${plan.biomeId}|${plan.type}`);
+    }
+
+    if (countBiomeArea(world, 'desert') > 0) {
+      ensureBiomeFallbackResources(world, 'desert', 'cactus', 3, `${seed}|desert|cactus`, ['palm_tree', 'dry_twigs', 'bush', 'berry']);
     }
   }
 

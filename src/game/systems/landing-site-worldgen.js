@@ -238,7 +238,7 @@
       appliedModifiers: { ...(site.worldgenModifiers || {}) }
     };
     world.landingRiskProfile = { ...(site.risks || {}) };
-    world.generationVersion = '1.9.0-landing-sites';
+    world.generationVersion = `${world.generationVersion || 'world'}+landing-sites`;
     if (world.planetScan) {
       world.planetScan.selectedLandingSiteId = site.id;
       world.planetScan.selectedLandingSite = compactSite(site);
