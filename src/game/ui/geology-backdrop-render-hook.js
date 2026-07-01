@@ -24,5 +24,5 @@
     ctx.restore();
   }
 
-  window.GameSystems?.registerTileRenderer('geology.backdrop', drawRockBackdropAt, { order: 5 });
+  window.GameSystems?.registerTileRenderer('geology.backdrop', drawRockBackdropAt, { order: 5, enabled: false, renderPass: 'static' });
 })();

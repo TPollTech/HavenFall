@@ -21,6 +21,7 @@
   let indexedObjectsSignature = '';
   let lastOptimizedDrawAt = 0;
   let lastReportedSlowRenderAt = 0;
+  let slowRenderStreak = 0;
 
   const original = {
     draw: typeof draw === 'function' ? draw : null,
@@ -29,13 +30,6 @@
     drawRain: typeof drawRain === 'function' ? drawRain : null,
     invalidateSpatialGrid: typeof invalidateSpatialGrid === 'function' ? invalidateSpatialGrid : null
   };
-
-  const ROCK_RENDER_PALETTE = Object.freeze({
-    granite: Object.freeze({ base: '#4b5563', light: '#7b8491', shadow: '#222832', stroke: '#111827', vein: '#9ca3af' }),
-    sandstone: Object.freeze({ base: '#a16207', light: '#d6a044', shadow: '#5f3705', stroke: '#3f2605', vein: '#f3cf7a' }),
-    slate: Object.freeze({ base: '#334155', light: '#66758a', shadow: '#172033', stroke: '#0f172a', vein: '#94a3b8' }),
-    iron: Object.freeze({ base: '#7f1d1d', light: '#b45309', shadow: '#3f1111', stroke: '#260707', vein: '#ef4444' })
-  });
 
   function perfNow() { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
   function setting(path, fallback = null) { return window.HavenfallSettings?.get?.(path, fallback) ?? fallback; }
@@ -77,6 +71,36 @@
     return false;
   }
 
+  function perfDiagnosticsEnabled() {
+    return window.HavenfallSettings?.get?.('interface.fpsOverlay', 'off') === 'full' || !!showDebugGrid || !!settings?.showGrid;
+  }
+
+  function slowRenderThresholdMs(q = quality()) {
+    const target = targetFrameIntervalMs(q);
+    if (target <= 0) return 64;
+    return Math.max(52, target * 2.5);
+  }
+
+  function reportSlowRender(now, elapsed, q, renderStats) {
+    const threshold = slowRenderThresholdMs(q);
+    slowRenderStreak = elapsed >= threshold ? slowRenderStreak + 1 : 0;
+    window.HavenfallPerf = window.HavenfallPerf || {};
+    window.HavenfallPerf.render = {
+      ...(window.HavenfallPerf.render || {}),
+      lastMs: Math.round(elapsed * 10) / 10,
+      slowThresholdMs: Math.round(threshold * 10) / 10,
+      slowStreak: slowRenderStreak,
+      chunksDrawn: Number(renderStats?.chunksDrawn || 0),
+      tilesDrawn: Number(renderStats?.tilesDrawn || 0),
+      tileHookCalls: Number(renderStats?.tileHookCalls || 0),
+      entitiesDrawn: Number(renderStats?.entitiesDrawn || 0)
+    };
+    if (!perfDiagnosticsEnabled() || slowRenderStreak < 3) return;
+    if (now - lastReportedSlowRenderAt <= 8000) return;
+    lastReportedSlowRenderAt = now;
+    console.warn('[HavenFall Render]', `Frame pesado: ${Math.round(elapsed)}ms`, renderStats);
+  }
+
   function makeCanvas(width, height) {
     if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(width, height);
     const c = document.createElement('canvas');
@@ -112,100 +136,6 @@
   }
 
   function tileTypeAt(x, y) { return state?.terrain?.[y]?.[x] || null; }
-
-  function rockAtTile(x, y) {
-    const world = state?.world;
-    if (!world) return null;
-    let layer = Array.isArray(world.geologyLayer) ? world.geologyLayer : null;
-    if (!layer && typeof window.ensureGeologyState === 'function') layer = window.ensureGeologyState(world);
-    return layer?.[y]?.[x] || null;
-  }
-
-  function floorAtTile(x, y) {
-    return window.FloorSystem?.getFloorAt?.(x, y) || null;
-  }
-
-  function drawFloorBackdropTo(targetCtx, x, y, q = quality()) {
-    const floor = floorAtTile(x, y);
-    if (!floor) return false;
-    return !!window.FloorSystem?.drawFloorTile?.(targetCtx, x, y, floor, q);
-  }
-
-  function rockPalette(rock) { return ROCK_RENDER_PALETTE[rock?.type] || ROCK_RENDER_PALETTE.granite; }
-  function rockNoise(x, y, salt = 0) { const n = Math.sin((x + 17.31) * 12.9898 + (y - 9.17) * 78.233 + salt * 37.719) * 43758.5453; return n - Math.floor(n); }
-
-  function drawRockPolygon(targetCtx, points, fillStyle, strokeStyle, lineWidth = 1.5) {
-    if (!points.length) return;
-    targetCtx.beginPath();
-    targetCtx.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i++) targetCtx.lineTo(points[i][0], points[i][1]);
-    targetCtx.closePath();
-    targetCtx.fillStyle = fillStyle;
-    targetCtx.fill();
-    targetCtx.strokeStyle = strokeStyle;
-    targetCtx.lineWidth = lineWidth;
-    targetCtx.stroke();
-  }
-
-  function drawRockBackdropTo(targetCtx, x, y, q = quality()) {
-    const rock = rockAtTile(x, y);
-    if (!rock?.solid) return false;
-    const p = rockPalette(rock);
-    const px = x * TILE;
-    const py = y * TILE;
-    const inset = q.renderDistance === 'short' ? 3 : 2;
-    const n0 = rockNoise(x, y, 0);
-    const n1 = rockNoise(x, y, 1);
-    const n2 = rockNoise(x, y, 2);
-    const n3 = rockNoise(x, y, 3);
-    targetCtx.save();
-    targetCtx.fillStyle = 'rgba(0,0,0,.24)';
-    targetCtx.fillRect(px + 5, py + TILE * 0.70, TILE - 10, TILE * 0.22);
-    const body = [
-      [px + inset + n0 * 5, py + 7 + n1 * 4],
-      [px + TILE - 8 - n1 * 4, py + inset + n2 * 6],
-      [px + TILE - inset - n2 * 4, py + TILE - 12 - n3 * 4],
-      [px + TILE * 0.58 + n3 * 5, py + TILE - inset - n0 * 4],
-      [px + 7 + n2 * 4, py + TILE - 9 - n1 * 3],
-      [px + inset, py + TILE * 0.42 + n0 * 6]
-    ];
-    drawRockPolygon(targetCtx, body, p.base, p.stroke, q.renderDistance === 'short' ? 1.25 : 1.75);
-    targetCtx.globalAlpha = 0.34;
-    drawRockPolygon(targetCtx, [[px + 9, py + 10], [px + TILE * 0.50, py + 6 + n1 * 5], [px + TILE * 0.39, py + TILE * 0.36], [px + 12, py + TILE * 0.42]], p.light, p.light, 0.5);
-    targetCtx.globalAlpha = 0.32;
-    drawRockPolygon(targetCtx, [[px + TILE * 0.52, py + TILE * 0.56], [px + TILE - 7, py + TILE * 0.46], [px + TILE - 8, py + TILE - 10], [px + TILE * 0.42, py + TILE - 6]], p.shadow, p.shadow, 0.5);
-    targetCtx.globalAlpha = rock.type === 'iron' ? 0.95 : 0.48;
-    targetCtx.strokeStyle = p.vein;
-    targetCtx.lineWidth = rock.type === 'iron' ? 2.3 : 1.35;
-    targetCtx.beginPath();
-    targetCtx.moveTo(px + 13 + n0 * 4, py + 17 + n2 * 3);
-    targetCtx.lineTo(px + TILE * 0.42 + n1 * 5, py + TILE * 0.43);
-    targetCtx.lineTo(px + TILE - 14 - n2 * 4, py + TILE - 16 - n3 * 4);
-    targetCtx.stroke();
-    if (rock.type === 'iron') {
-      targetCtx.globalAlpha = 0.62;
-      targetCtx.strokeStyle = '#fecaca';
-      targetCtx.lineWidth = 1;
-      targetCtx.beginPath();
-      targetCtx.moveTo(px + TILE * 0.30, py + TILE * 0.22);
-      targetCtx.lineTo(px + TILE * 0.66, py + TILE * 0.31);
-      targetCtx.stroke();
-    }
-    if (q.renderDistance !== 'short') {
-      targetCtx.globalAlpha = 0.34;
-      targetCtx.strokeStyle = 'rgba(255,255,255,.28)';
-      targetCtx.lineWidth = 1;
-      targetCtx.beginPath();
-      targetCtx.moveTo(px + 11, py + 12);
-      targetCtx.lineTo(px + TILE * 0.42, py + 9);
-      targetCtx.stroke();
-      targetCtx.globalAlpha = 0.42;
-      targetCtx.fillStyle = rgba(p.stroke, 0.55);
-      targetCtx.fillRect(px + 7, py + TILE - 8, TILE - 14, 2);
-    }
-    targetCtx.restore();
-    return true;
-  }
 
   function drawTerrainTextureTo(targetCtx, img, x, y) {
     if (!img) return;
@@ -290,9 +220,9 @@
       const row = state?.terrain?.[y];
       if (!row) continue;
       for (let x = originX; x <= maxX; x++) {
-        drawTerrainTileTo(cctx, x, y, row[x] || 'grass', q);
-        drawFloorBackdropTo(cctx, x, y, q);
-        drawRockBackdropTo(cctx, x, y, q);
+        const type = row[x] || 'grass';
+        drawTerrainTileTo(cctx, x, y, type, q);
+        window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true });
       }
     }
     cctx.restore();
@@ -316,7 +246,7 @@
     for (let y = bounds.startY; y <= bounds.endY; y++) {
       const row = state?.terrain?.[y];
       if (!row) continue;
-      for (let x = bounds.startX; x <= bounds.endX; x++) { window.GameSystems.drawTileRenderers(x, y, row[x] || 'grass'); calls++; }
+      for (let x = bounds.startX; x <= bounds.endX; x++) { window.GameSystems.drawTileRenderers(x, y, row[x] || 'grass', { pass: 'dynamic', optimized: true }); calls++; }
     }
     return calls;
   }
@@ -418,7 +348,12 @@
     viewTransform.offsetY = safe.height / 2 - camera.y * viewTransform.scale;
   }
 
-  function optimizedDrawTile(x, y, type) { const q = quality(); drawTerrainTileTo(ctx, x, y, type, q); drawFloorBackdropTo(ctx, x, y, q); drawRockBackdropTo(ctx, x, y, q); if (q.drawTileHooks) window.GameSystems?.drawTileRenderers?.(x, y, type); }
+  function optimizedDrawTile(x, y, type) {
+    const q = quality();
+    drawTerrainTileTo(ctx, x, y, type, q);
+    window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true });
+    if (q.drawTileHooks) window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'dynamic', optimized: true });
+  }
   function optimizedDrawRain() { const q = quality(); if (!q.drawRain) return; if (original.drawRain) original.drawRain(); }
 
   function optimizedDraw() {
@@ -480,7 +415,7 @@
       uiMs: window.HavenfallPerf?.uiMs || 0
     });
     const elapsed = perfNow() - started;
-    if (elapsed > 34 && now - lastReportedSlowRenderAt > 2500) { lastReportedSlowRenderAt = now; console.warn('[HavenFall Render]', `Frame pesado: ${Math.round(elapsed)}ms`, renderStats); }
+    reportSlowRender(now, elapsed, q, renderStats);
   }
 
   if (original.invalidateSpatialGrid) {

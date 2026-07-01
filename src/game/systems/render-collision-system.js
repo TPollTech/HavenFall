@@ -138,7 +138,7 @@
     if (installed) return;
     if (!window.HavenfallContext?.gameBooted || !window.GameSystems) { setTimeout(install, 120); return; }
     installed = true;
-    window.GameSystems.registerTileRenderer?.('terrain.mountains', drawTileLayer, { order: 20 });
+    window.GameSystems.registerTileRenderer?.('terrain.mountains', drawTileLayer, { order: 20, renderPass: 'static' });
     window.GameSystems.registerWorldOverlay?.('lighting.shadow-occlusion', drawShadow, { order: 70 });
     window.GameSystems.registerWorldOverlay?.('grid.overlay', drawGrid, { order: 95 });
     window.GameSystems.registerCollisionProvider?.('terrain-structures.collision', collisionAt, { order: 10 });

@@ -291,6 +291,7 @@
   window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
   window.GameSystems?.registerTick('geology', updateGeologyTick, { order: 10 });
-  window.GameSystems?.registerTileRenderer('geology.backdrop', drawGeologyTileBackdrop, { order: 5 });
+  // Mountain visuals are handled by the dedicated terrain renderer to avoid duplicate tile passes.
+  window.GameSystems?.registerTileRenderer('geology.backdrop', drawGeologyTileBackdrop, { order: 5, enabled: false, renderPass: 'static' });
   window.GameSystems?.registerDrawOverlay('geology', drawGeologyOverlay, { order: 10 });
 })();

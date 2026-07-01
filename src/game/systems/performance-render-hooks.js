@@ -151,6 +151,6 @@
     window.GameSystems?.setTileRendererEnabled?.('living-world.water', water !== 'low');
   }
 
-  window.GameSystems?.registerTileRenderer?.('performance.low-water', drawLowQualityWater, { order: 6 });
+  window.GameSystems?.registerTileRenderer?.('performance.low-water', drawLowQualityWater, { order: 6, renderPass: 'dynamic' });
   window.GameSystems?.registerTick?.('performance.render-quality', applyRendererQualityToggles, { order: 2 });
 })();

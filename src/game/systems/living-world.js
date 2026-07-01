@@ -35,7 +35,7 @@
     patchAnimalBehavior();
     patchMobSpawning();
     window.GameSystems?.registerTick?.('living-world.ecology', livingWorldTick, { order: 34 });
-    window.GameSystems?.registerTileRenderer?.('living-world.water', drawWaterTile, { order: 6 });
+    window.GameSystems?.registerTileRenderer?.('living-world.water', drawWaterTile, { order: 6, renderPass: 'dynamic' });
     window.GameSystems?.registerWorldOverlay?.('living-world.markers', drawLivingWorldMarkers, { order: 92 });
     window.GameSystems?.registerCollisionProvider?.('living-world.water-collision', waterCollisionAt, { order: 8 });
     installMapControls();

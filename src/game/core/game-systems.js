@@ -83,6 +83,7 @@
       order: Number(options.order ?? 100),
       enabled: options.enabled !== false,
       type: options.type || null,
+      renderPass: options.renderPass === 'static' ? 'static' : options.renderPass === 'dynamic' ? 'dynamic' : 'default',
       critical: options.critical === true,
       intervalMs: Number(options.intervalMs || 0),
       nextAt: 0
@@ -298,8 +299,18 @@
     return setEnabled(tileRenderers, id, enabled);
   }
 
-  function drawTileRenderers(x, y, type) {
-    run(tileRenderers, x, y, type);
+  function matchesTileRenderPass(entry, pass = null) {
+    if (pass === 'static') return entry.renderPass === 'static';
+    if (pass === 'dynamic') return entry.renderPass !== 'static';
+    return true;
+  }
+
+  function drawTileRenderers(x, y, type, options = null) {
+    const pass = options?.pass === 'static' ? 'static' : options?.pass === 'dynamic' ? 'dynamic' : null;
+    for (const [, entry] of orderedEntries(tileRenderers)) {
+      if (!matchesTileRenderPass(entry, pass)) continue;
+      entry.fn(x, y, type, options);
+    }
   }
 
   function registerObjectRenderer(id, fn, options = {}) {

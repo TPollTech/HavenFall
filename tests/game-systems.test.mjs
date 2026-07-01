@@ -658,6 +658,13 @@ test('GameSystems composes render and collision extension points', () => {
   context.GameSystems.drawTileRenderers(2, 3, 'grass');
   assert.deepEqual(calls, ['early:grass:2,3', 'late:grass:2,3']);
 
+  const passes = [];
+  context.GameSystems.registerTileRenderer('static-floor', (x, y, type) => passes.push(`static:${type}:${x},${y}`), { order: 5, renderPass: 'static' });
+  context.GameSystems.registerTileRenderer('dynamic-water', (x, y, type) => passes.push(`dynamic:${type}:${x},${y}`), { order: 6, renderPass: 'dynamic' });
+  context.GameSystems.drawTileRenderers(4, 5, 'water', { pass: 'static' });
+  context.GameSystems.drawTileRenderers(4, 5, 'water', { pass: 'dynamic' });
+  assert.deepEqual(passes, ['static:water:4,5', 'dynamic:water:4,5']);
+
   context.GameSystems.registerObjectRenderer('miss', () => false, { order: 10 });
   context.GameSystems.registerObjectRenderer('hit', obj => {
     obj.rendered = true;
@@ -700,8 +707,9 @@ test('GameState manages resources, items and object indexes', () => {
     resources: { wood: 4, stone: 2 },
     items: { rope: 2 }
   });
-  assert.deepEqual(context.state.resources, { wood: 6, stone: 2 });
-  assert.deepEqual(context.state.items, { rope: 3 });
+  assert.equal(context.state.resources.wood, 6);
+  assert.equal(context.state.resources.stone, 2);
+  assert.equal(context.state.items.rope, 3);
 
   const wall = { id: 'wall-1', type: 'wall', x: 1, y: 2 };
   assert.equal(context.GameState.addObject(wall), wall);

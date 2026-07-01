@@ -318,7 +318,7 @@
   window.clearFloorAt = clearFloorAt;
   window.canPlaceFloor = canPlaceFloor;
   window.GameSystems?.registerTick?.('floor-system.ensure-layer', tick, { order: 9, intervalMs: 600, critical: true });
-  window.GameSystems?.registerTileRenderer?.('floor.layer', drawFloorTileRenderer, { order: 3, critical: true });
+  window.GameSystems?.registerTileRenderer?.('floor.layer', drawFloorTileRenderer, { order: 3, critical: true, renderPass: 'static' });
   window.GameSystems?.registerObjectRenderer?.('floor.blueprint-renderer', drawFloorBlueprintObject, { order: 1, critical: true });
   window.GameSystems?.registerMovementModifier?.('floor.speed', movementModifier, { order: 18 });
 })();
