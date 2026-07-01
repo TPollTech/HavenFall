@@ -197,6 +197,7 @@ function clearZoneTool(reason = '') {
   if (!currentZoneTool && !zoneDragActive) return;
   currentZoneTool = null;
   clearZoneSelection();
+  document.body.classList.remove('zone-brush-active');
   updateZonePanel();
   updateZonesModal();
   if (reason && typeof log === 'function') log(`Ferramenta de zona desativada${reason ? `: ${reason}` : ''}.`);
@@ -254,6 +255,7 @@ function setZoneTool(tool) {
   currentZoneTool = tool;
   currentBuild = null;
   clearZoneSelection();
+  document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
   updateZonePanel();
   updateZonesModal();
   if (typeof updateUI === 'function') updateUI(true);
@@ -400,15 +402,25 @@ function zoneSelectionBounds() {
 
 function finishZoneSelectionFromEvent(event = null) {
   if (!zoneDragActive || !currentZoneTool) return false;
+  const tool = currentZoneTool;
   if (event) updateZoneDragFromEvent(event);
   const bounds = zoneSelectionBounds();
   clearZoneSelection();
-  if (!bounds) return false;
-  const changed = zoneSystem.setZoneRect(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, currentZoneTool);
+  if (!bounds) {
+    currentZoneTool = null;
+    document.body.classList.remove('zone-brush-active');
+    updateZonePanel();
+    updateZonesModal();
+    if (typeof updateUI === 'function') updateUI(true);
+    return false;
+  }
+  const changed = zoneSystem.setZoneRect(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, tool);
+  currentZoneTool = null;
+  document.body.classList.remove('zone-brush-active');
   updateZonePanel();
   updateZonesModal();
   if (typeof updateUI === 'function') updateUI(true);
-  return changed >= 0;
+  return changed > 0;
 }
 
 function zonesModalOpen() {
@@ -416,7 +428,7 @@ function zonesModalOpen() {
 }
 
 function shouldShowZonesOverlay() {
-  return !!currentZoneTool || zoneDragActive || zonesModalOpen();
+  return zoneDragActive || zonesModalOpen();
 }
 
 function stopCanvasEvent(event) {
@@ -537,7 +549,7 @@ function installZoneRendererHook() {
   window.HavenfallContext.zoneRendererHooked = true;
 }
 
-function findLooseHaulTarget(c) {
+function findLooseHaulTarget() {
   if (!state?.objects) return null;
   let best = null;
   for (let i = 0; i < state.objects.length; i++) {
@@ -625,7 +637,7 @@ function updateZoneBehaviors() {
 
     if ((c.health < 38 || c.statuses?.includes('gripe') || c.statuses?.includes('hipotermia')) && assignMoveToZone(c, 'safe', 'Buscando área segura')) continue;
 
-    const target = canAutoHandleZoneTask(c) && zoneSystem.count('storage') ? findLooseHaulTarget(c) : null;
+    const target = canAutoHandleZoneTask(c) && zoneSystem.count('storage') ? findLooseHaulTarget() : null;
     if (target) {
       const storageTile = zoneSystem.findFreeStorageTile();
       if (storageTile && assignHaulTask(c, target, storageTile)) continue;
@@ -638,6 +650,7 @@ function updateZoneBehaviors() {
 function updateZonesTick() {
   installZonePanel();
   updateZonePanel();
+  updateZonesModal();
   updateZoneBehaviors();
 }
 
