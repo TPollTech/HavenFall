@@ -31,6 +31,10 @@ function bootGame() {
   bootStatus('Preparando sistema de colonos', 84, 'Carregando vitais e rotina inicial');
   loadCoreExtension('src/game/systems/colonist-vitals-system.js', 'colonist_vitals')
     .then(() => {
+      bootStatus('Preparando autonomia dos colonos', 85, 'Instalando cérebro individual e descanso contextual');
+      return loadCoreExtension('src/game/systems/colonist-autonomy-system.js', 'colonist_autonomy');
+    })
+    .then(() => {
       bootStatus('Carregando assets', 86, 'Lendo imagens, sprites e placeholders');
       return loadImages();
     })
