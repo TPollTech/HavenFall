@@ -14,6 +14,14 @@
   function colsFor(world = state?.world) { return Number(world?.cols || state?.terrain?.[0]?.length || 0); }
   function perfNow() { return typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now(); }
 
+  function hasUsableExplorationMask(world = state?.world) {
+    if (world?.explorationDisabled) return false;
+    const rows = rowsFor(world);
+    const cols = colsFor(world);
+    if (!rows || !cols || !Array.isArray(world?.exploration) || world.exploration.length !== rows) return false;
+    return world.exploration.every(row => Array.isArray(row) && row.length === cols);
+  }
+
   function ensureLightState(world = state?.world) {
     if (!world) return null;
     world.lightState = world.lightState && typeof world.lightState === 'object' ? world.lightState : {};
@@ -247,10 +255,11 @@
     const endX = Math.min(getWorldCols() - 1, Math.ceil(bounds?.endX ?? getWorldCols() - 1));
     const startY = Math.max(0, Math.floor(bounds?.startY ?? 0));
     const endY = Math.min(getWorldRows() - 1, Math.ceil(bounds?.endY ?? getWorldRows() - 1));
+    const explorationMaskActive = hasUsableExplorationMask(state.world);
     ctx.save();
     for (let y = startY; y <= endY; y++) {
       for (let x = startX; x <= endX; x++) {
-        const explored = state.world.exploration?.[y]?.[x] || 0;
+        const explored = explorationMaskActive ? Number(state.world.exploration?.[y]?.[x] || 0) : 2;
         const light = clampLight(layer[y]?.[x] ?? 1);
         const darkness = explored ? Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)) : 0.92;
         if (darkness <= 0.035) continue;
@@ -295,7 +304,7 @@
 
   function round1(value) { return Math.round((Number(value) || 0) * 10) / 10; }
 
-  window.LightingSystem = Object.freeze({ ensureLightLayer, invalidate, getLightAt, getDarknessAt, collectLightSources, recomputeLighting, drawLightingOverlay, hasRoofAt, skyLight, stats });
+  window.LightingSystem = Object.freeze({ ensureLightLayer, invalidate, getLightAt, getDarknessAt, collectLightSources, recomputeLighting, drawLightingOverlay, hasRoofAt, hasUsableExplorationMask, skyLight, stats });
   window.GameSystems?.registerTick?.('lighting.ensure-layer', tick, { order: 12, intervalMs: 800, critical: false });
   window.GameSystems?.registerWorldOverlay?.('lighting.dynamic-overlay', drawLightingOverlay, { order: 70, critical: false });
 })();
