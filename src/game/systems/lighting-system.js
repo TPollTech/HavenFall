@@ -9,17 +9,9 @@
   const MEMORY_LIGHT = 0.20;
   const DEFAULT_LIGHT = 1;
 
-  function clampLight(value) {
-    return Math.max(0, Math.min(1, Number(value) || 0));
-  }
-
-  function rowsFor(world = state?.world) {
-    return Number(world?.rows || state?.terrain?.length || 0);
-  }
-
-  function colsFor(world = state?.world) {
-    return Number(world?.cols || state?.terrain?.[0]?.length || 0);
-  }
+  function clampLight(value) { return Math.max(0, Math.min(1, Number(value) || 0)); }
+  function rowsFor(world = state?.world) { return Number(world?.rows || state?.terrain?.length || 0); }
+  function colsFor(world = state?.world) { return Number(world?.cols || state?.terrain?.[0]?.length || 0); }
 
   function ensureLightLayer(world = state?.world) {
     if (!world) return null;
@@ -52,15 +44,8 @@
     return 1;
   }
 
-  function skyLight() {
-    return clampLight(daylightAtHour() * weatherLightFactor());
-  }
-
-  function objectLightDef(obj) {
-    if (!obj) return null;
-    const def = objectDefs?.[obj.type];
-    return def?.light || null;
-  }
+  function skyLight() { return clampLight(daylightAtHour() * weatherLightFactor()); }
+  function objectLightDef(obj) { return obj ? objectDefs?.[obj.type]?.light || null : null; }
 
   function collectLightSources(world = state?.world) {
     const sources = [];
@@ -133,9 +118,7 @@
     return clampLight(layer?.[Math.round(y)]?.[Math.round(x)] ?? DEFAULT_LIGHT);
   }
 
-  function getDarknessAt(x, y, world = state?.world) {
-    return clampLight(1 - getLightAt(x, y, world));
-  }
+  function getDarknessAt(x, y, world = state?.world) { return clampLight(1 - getLightAt(x, y, world)); }
 
   function invalidate(reason = 'manual', world = state?.world) {
     if (!world) return;
@@ -177,4 +160,5 @@
 
   window.LightingSystem = Object.freeze({ ensureLightLayer, invalidate, getLightAt, getDarknessAt, collectLightSources, recomputeLighting, drawLightingOverlay, hasRoofAt, skyLight });
   window.GameSystems?.registerTick?.('lighting.ensure-layer', tick, { order: 12, intervalMs: 800, critical: false });
+  window.GameSystems?.registerWorldOverlay?.('lighting.dynamic-overlay', drawLightingOverlay, { order: 70, critical: false });
 })();
