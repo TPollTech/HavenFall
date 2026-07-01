@@ -55,8 +55,11 @@
   const ALLOWED_TERRAIN = Object.freeze({
     // Recursos naturais
     tree: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.FOREST],
+    palm_tree: [TERRAIN.SAND, TERRAIN.DIRT, TERRAIN.GRASS],
+    cactus: [TERRAIN.SAND, TERRAIN.DIRT, TERRAIN.DESERT],
     bush: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.FOREST],
     berry: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.FOREST],
+    mushrooms: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.FOREST],
     herb: [TERRAIN.GRASS, TERRAIN.DIRT],
     stick: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.SAND, TERRAIN.FOREST],
     stone_loose: [TERRAIN.GRASS, TERRAIN.DIRT, TERRAIN.STONE, TERRAIN.ROCK],
@@ -96,6 +99,8 @@
    */
   const PREFERRED_TERRAIN = Object.freeze({
     tree: { [TERRAIN.FOREST]: 2.0, [TERRAIN.GRASS]: 1.5, [TERRAIN.DIRT]: 0.8 },
+    palm_tree: { [TERRAIN.SAND]: 1.8, [TERRAIN.DIRT]: 1.2, [TERRAIN.GRASS]: 0.7 },
+    cactus: { [TERRAIN.SAND]: 2.1, [TERRAIN.DIRT]: 1.0 },
     ruin: { [TERRAIN.DIRT]: 1.5, [TERRAIN.SAND]: 1.3, [TERRAIN.GRASS]: 0.7 },
     ore: { [TERRAIN.MOUNTAIN]: 2.0, [TERRAIN.STONE]: 1.8, [TERRAIN.ROCK]: 1.5, [TERRAIN.DIRT]: 0.3 },
     campfire: { [TERRAIN.GRASS]: 1.2, [TERRAIN.DIRT]: 1.0, [TERRAIN.SAND]: 0.6 }
@@ -126,7 +131,7 @@
   const TYPE_ALIASES = Object.freeze({
     rock: 'stone_loose',       // world-generator usa 'rock' para pedra solta
     crate: 'chest',             // baú inicial
-    logs: 'tree',               // toras seguem mesma regra de árvores
+    logs: 'stick',              // toras seguem regra de recurso seco
     supply_crate: 'cache',      // suprimentos seguem regra de cache
     tree_stump: 'tree',         // toco segue mesma regra de árvore
     stone_ore: 'ore',           // minério de pedra
@@ -135,7 +140,13 @@
     gold_ore: 'ore',            // minério de ouro
     berry_bush: 'berry',        // arbusto de fruta
     medicinal_herb: 'herb',     // erva medicinal
-    fiber_plant: 'fiber'        // planta de fibra
+    fiber_plant: 'fiber',       // planta de fibra
+    oak_tree: 'tree',
+    birch_tree: 'tree',
+    pine_tree: 'tree',
+    willow_tree: 'tree',
+    herbs: 'herb',
+    dry_twigs: 'stick'
   });
 
   /**

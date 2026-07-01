@@ -4,14 +4,17 @@ window.HavenfallContext = window.HavenfallContext || {};
 
 function installEnvironmentDefinitions() {
   if (window.HavenfallContext.environmentDefsInstalled) return;
+  const torchLight = objectDefs.torch?.light || { radius: 4, power: 0.72, color: '#ffc16a', flicker: 0.18, requiresLit: true };
 
   objectDefs.torch = {
+    ...(objectDefs.torch || {}),
     name: 'tocha fixa',
     img: 'weapon_torch',
     blocks: false,
     warmth: 3,
     fuelMax: 48,
     fuelUse: 1,
+    light: { ...torchLight, requiresLit: true },
     roofBoundary: false
   };
 
@@ -102,12 +105,18 @@ function updateTorchFuel(tick) {
     const obj = state.objects[i];
     if (obj.type !== 'torch') continue;
     obj.fuel = obj.fuel ?? objectDefs.torch.fuelMax;
+    const wasLit = obj.lit !== false && obj.fuel > 0;
     if (obj.fuel <= 0) {
       obj.lit = false;
+      if (wasLit !== obj.lit) window.LightingSystem?.invalidate?.('torch-extinguished');
       continue;
     }
     obj.lit = true;
     obj.fuel = Math.max(0, obj.fuel - tick * 0.018);
+    if (obj.fuel <= 0) {
+      obj.lit = false;
+      window.LightingSystem?.invalidate?.('torch-extinguished');
+    }
     if (obj.fuel <= 0) log('Uma tocha apagou por falta de combustível.');
   }
 }
@@ -116,9 +125,14 @@ function maybeRefuelTorches() {
   if (!state?.objects || state.resources.wood <= 0) return;
   const needy = state.objects.find(o => o.type === 'torch' && (o.fuel ?? objectDefs.torch.fuelMax) < 8);
   if (!needy) return;
-  state.resources.wood -= 1;
+  const wasLit = needy.lit !== false && (needy.fuel ?? 0) > 0;
+  const spent = typeof consumeCost === 'function'
+    ? consumeCost({ wood: 1 }, { reason: 'torch-refuel', targetId: needy.id, x: needy.x, y: needy.y })
+    : window.GameState?.consumeResources?.({ wood: 1 }, { reason: 'torch-refuel', targetId: needy.id, x: needy.x, y: needy.y });
+  if (!spent) return;
   needy.fuel = Math.min(objectDefs.torch.fuelMax, (needy.fuel || 0) + 18);
   needy.lit = true;
+  if (!wasLit) window.LightingSystem?.invalidate?.('torch-refueled');
   log(`Uma tocha foi reabastecida com 1 madeira do estoque.`);
 }
 

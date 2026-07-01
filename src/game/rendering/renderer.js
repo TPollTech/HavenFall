@@ -603,6 +603,7 @@ function drawProgress(cx, y, value, color) {
 }
 
 function drawNightOverlay() {
+  if (window.LightingSystem) return;
   const hour = state.hour;
   let alpha = 0;
   if (hour < 5) alpha = 0.45;

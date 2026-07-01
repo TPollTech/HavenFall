@@ -9,7 +9,8 @@
   const NATURAL_TILES = new Set(['grass', 'dirt']);
   const DRY_TILES = new Set(['grass', 'dirt', 'sand']);
   const TREE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree']);
-  const PLANT_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'bush', 'berry', 'herbs', 'mushrooms']);
+  const TALL_PLANT_TYPES = new Set([...TREE_TYPES, 'cactus']);
+  const PLANT_TYPES = new Set([...TALL_PLANT_TYPES, 'bush', 'berry', 'herbs', 'mushrooms']);
   const DRY_RESOURCE_TYPES = new Set(['logs', 'dry_twigs']);
   const STONE_RESOURCE_TYPES = new Set(['rock', 'ore']);
   const POI_TYPES = new Set(['ruin', 'cache', 'supply_crate', 'rubble']);
@@ -53,20 +54,29 @@
     return total > 0 && (stone / total >= 0.32 || stone >= 8);
   }
 
+  function ecosystemAllows(type, tile) {
+    if (!tile) return false;
+    const rules = window.HavenfallEcosystemRules;
+    if (typeof rules?.canObjectExistOnTile === 'function') return !!rules.canObjectExistOnTile(type, tile);
+    return false;
+  }
+
   function canObjectExistOn(world, type, x, y) {
     const tile = tileAt(world, x, y);
     if (!tile || tile === 'water') return false;
-    if (PLANT_TYPES.has(type)) return NATURAL_TILES.has(tile) && !isMountainMass(world, x, y, 3);
-    if (DRY_RESOURCE_TYPES.has(type)) return DRY_TILES.has(tile) && !isMountainMass(world, x, y, 3);
-    if (type === 'rock') return tile === 'stone' || tile === 'dirt' || tile === 'grass';
-    if (type === 'ore') return tile === 'stone' || tile === 'dirt';
-    if (POI_TYPES.has(type)) return DRY_TILES.has(tile) && !isMountainMass(world, x, y, 5);
-    if (CAMP_TYPES.has(type)) return DRY_TILES.has(tile);
+    if (PLANT_TYPES.has(type)) return ecosystemAllows(type, tile) && !isMountainMass(world, x, y, 3);
+    if (DRY_RESOURCE_TYPES.has(type)) return ecosystemAllows(type, tile) && !isMountainMass(world, x, y, 3);
+    if (type === 'rock' || type === 'ore') return ecosystemAllows(type, tile);
+    if (POI_TYPES.has(type)) return ecosystemAllows(type, tile) && !isMountainMass(world, x, y, 5);
+    if (CAMP_TYPES.has(type)) return ecosystemAllows(type, tile);
     return tile !== 'water';
   }
 
   function terrainPreference(type, tile) {
+    const ecosystemWeight = window.HavenfallEcosystemRules?.terrainPreference?.(type, tile);
+    if (Number.isFinite(ecosystemWeight) && ecosystemWeight !== 1) return ecosystemWeight;
     if (TREE_TYPES.has(type)) return tile === 'grass' ? 1.5 : tile === 'dirt' ? 1 : 0.2;
+    if (type === 'cactus') return tile === 'sand' ? 1.8 : tile === 'dirt' ? 1 : 0.2;
     if (type === 'berry') return tile === 'grass' ? 1.4 : tile === 'dirt' ? 1 : 0.2;
     if (type === 'rock') return tile === 'dirt' ? 1.35 : tile === 'stone' ? 1 : 0.6;
     if (POI_TYPES.has(type)) return tile === 'dirt' ? 1.5 : tile === 'sand' ? 1.1 : 0.7;
@@ -78,7 +88,7 @@
     for (const obj of world.objects || []) {
       if (!obj || obj.id === ignoreId) continue;
       const d = distance(obj.x, obj.y, x, y);
-      if (TREE_TYPES.has(type) && TREE_TYPES.has(obj.type) && d < 2) return false;
+      if (TALL_PLANT_TYPES.has(type) && TALL_PLANT_TYPES.has(obj.type) && d < 2) return false;
       if (POI_TYPES.has(type) && POI_TYPES.has(obj.type) && d < 6) return false;
       if (type === 'rock' && obj.type === 'rock' && d < 2) return false;
       if (PLANT_TYPES.has(type) && POI_TYPES.has(obj.type) && d < 4) return false;

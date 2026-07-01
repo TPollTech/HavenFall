@@ -859,9 +859,18 @@
 
     state.activeTravel = { ...plan, startedDay: state.day, startedHour: state.hour, status: 'traveling' };
     saveCurrentSector();
-    state.resources.food = (state.resources.food || 0) - plan.foodCost;
+    if (plan.foodCost > 0) {
+      const spent = typeof consumeCost === 'function'
+        ? consumeCost({ food: plan.foodCost }, { reason: 'travel-supplies', targetId: toSiteId })
+        : window.GameState?.consumeResources?.({ food: plan.foodCost }, { reason: 'travel-supplies', targetId: toSiteId });
+      if (!spent) {
+        state.activeTravel = null;
+        if (typeof log === 'function') log('Viagem cancelada: suprimentos insuficientes para a expedição.');
+        return { ok: false, plan, reasons: ['Suprimentos insuficientes.'] };
+      }
+    }
     const event = travelEvent(plan, site);
-    if (event?.gain) for (const [key, value] of Object.entries(event.gain)) state.resources[key] = (state.resources[key] || 0) + value;
+    if (event?.gain) addResources(event.gain, { reason: 'travel-event-gain', targetId: toSiteId });
     const totalHours = plan.estimatedHours + Number(event?.delay || 0);
     advanceTime(totalHours);
     applyTravelConsequences(plan, event);

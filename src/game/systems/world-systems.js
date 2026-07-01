@@ -376,10 +376,14 @@ function updateColonist(c, dt) {
   if (c.health < 30) c.mood = clamp(c.mood - tick * 0.12, 0, 100);
 
   if (c.hunger < 32 && state.resources.food > 0 && c.task?.type !== 'sleep') {
-    state.resources.food -= 1;
-    c.hunger = clamp(c.hunger + 42, 0, 100);
-    c.mood = clamp(c.mood + 4, 0, 100);
-    log(`${c.name} comeu uma refeição rápida.`);
+    const spent = typeof consumeCost === 'function'
+      ? consumeCost({ food: 1 }, { reason: 'colonist-eat', actorId: c.id })
+      : window.GameState?.consumeResources?.({ food: 1 }, { reason: 'colonist-eat', actorId: c.id });
+    if (spent) {
+      c.hunger = clamp(c.hunger + 42, 0, 100);
+      c.mood = clamp(c.mood + 4, 0, 100);
+      log(`${c.name} comeu uma refeição rápida.`);
+    }
   }
 
   if (c.task?.type === 'leisure' && c.energy < 18) {

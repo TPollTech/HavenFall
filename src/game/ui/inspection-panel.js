@@ -47,10 +47,10 @@
   function mobsAll(){ return [...(state?.mobs||[]),...(state?.wolves||[]).map(w=>({...w,type:w.type||'wolf'})),...(state?.hostiles||[])]; }
   function entityAtMobile(list,kind,wx,wy){ let best=null,bd=9999; for(const m of list){ if(!visible(Math.round(m.x),Math.round(m.y))) continue; const d=distEntity(m,wx,wy); if(d<=mobRadius(m)&&d<bd){best=m;bd=d;} } return best?{kind,id:best.id,type:best.type,x:best.x,y:best.y}:null; }
   function hitColonist(wx,wy){ let best=null,bd=9999; for(const c of state?.colonists||[]){ if(!visible(Math.round(c.x),Math.round(c.y))) continue; const d=distEntity(c,wx,wy); if(d<28&&d<bd){best=c;bd=d;} } return best?{kind:'colonist',id:best.id,x:best.x,y:best.y}:null; }
-  function objKind(o){ if(o?.type==='blueprint')return'blueprint'; if(o?.itemKey)return'item'; const d=objectDefs?.[o?.type]||{}; if(d.interactable||o?.poiId||['ruin','cache','supply_crate'].includes(o?.type))return'poi'; if(d.gather||['tree','bush','rock','ore','logs','berry','herbs','mushrooms','dry_twigs','oak_tree','birch_tree','pine_tree','palm_tree','willow_tree'].includes(o?.type))return'resource'; return'building'; }
+  function objKind(o){ if(o?.type==='blueprint')return'blueprint'; if(o?.itemKey)return'item'; const d=objectDefs?.[o?.type]||{}; if(d.interactable||o?.poiId||['ruin','cache','supply_crate'].includes(o?.type))return'poi'; if(d.gather||['tree','bush','rock','ore','logs','berry','herbs','mushrooms','dry_twigs','cactus','oak_tree','birch_tree','pine_tree','palm_tree','willow_tree'].includes(o?.type))return'resource'; return'building'; }
   function hitObject(p){
     const list=state?.objects||state?.world?.objects||[], out=[];
-    for(const o of list){ if(!discovered(o.x,o.y)||Math.abs(o.x-p.x)>2||Math.abs(o.y-p.y)>3) continue; const tall=['tree','oak_tree','birch_tree','pine_tree','palm_tree','willow_tree'].includes(o.type); const bx=o.x*TILE+TILE/2, by=(o.y+1)*TILE, w=TILE*.82, h=tall?TILE*2:TILE*1.15; if(p.wx>=bx-w/2&&p.wx<=bx+w/2&&p.wy>=by-h&&p.wy<=by+TILE*.12) out.push(o); }
+    for(const o of list){ if(!discovered(o.x,o.y)||Math.abs(o.x-p.x)>2||Math.abs(o.y-p.y)>3) continue; const tall=['tree','oak_tree','birch_tree','pine_tree','palm_tree','willow_tree','cactus'].includes(o.type); const bx=o.x*TILE+TILE/2, by=(o.y+1)*TILE, w=TILE*.82, h=tall?TILE*2:TILE*1.15; if(p.wx>=bx-w/2&&p.wx<=bx+w/2&&p.wy>=by-h&&p.wy<=by+TILE*.12) out.push(o); }
     out.sort((a,b)=>b.y-a.y); const o=out[0]||(discovered(p.x,p.y)&&typeof getObjectAt==='function'?getObjectAt(p.x,p.y):null); return o?{kind:objKind(o),id:o.id,x:o.x,y:o.y}:null;
   }
   function hitRock(p){ if(!discovered(p.x,p.y)||typeof getRockAt!=='function') return null; const r=getRockAt(p.x,p.y); return r?.solid?{kind:'rock',x:p.x,y:p.y}:null; }
@@ -65,6 +65,8 @@
   function lightAtLabel(x,y){ const v=state?.world?.lightMap?.[y]?.[x]; return v===undefined?'—':`${Math.round(n(v)*100)}%`; }
   function resText(g){ return g?Object.entries(g).map(([k,v])=>`${v} ${({wood:'madeira',stone:'pedra',metal:'metal',food:'comida',medicine:'remédio'})[k]||k}`).join(' · '):'—'; }
   function actionList(...ids){ return ids.map(([id,label])=>({id,label})); }
+
+  function lightAtLabel(x,y){ const v=window.LightingSystem?.getLightAt?.(x,y,state?.world) ?? state?.world?.lightLayer?.[y]?.[x] ?? state?.world?.lightMap?.[y]?.[x]; return v===undefined?'—':`${Math.round(n(v)*100)}%`; }
 
   function colonistTaskLabel(c) {
     const task = c?.task;

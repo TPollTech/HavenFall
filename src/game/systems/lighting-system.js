@@ -55,8 +55,15 @@
   }
 
   function hasRoofAt(x, y, world = state?.world) {
-    if (typeof hasNaturalRoofAt === 'function') return !!hasNaturalRoofAt(x, y);
-    return !!world?.naturalRoofLayer?.[y]?.[x];
+    const ix = Math.round(x);
+    const iy = Math.round(y);
+    if (world?.builtRoofLayer?.[iy]?.[ix]) return true;
+    const roofCell = world?.roofLayer?.[iy]?.[ix];
+    if (roofCell === true) return true;
+    if (roofCell && typeof roofCell === 'object' && roofCell.built) return true;
+    if (world?.naturalRoofLayer?.[iy]?.[ix]) return true;
+    if (world === state?.world && typeof hasNaturalRoofAt === 'function') return !!hasNaturalRoofAt(ix, iy);
+    return false;
   }
 
   function daylightAtHour(hour = state?.hour || 12) {
@@ -74,7 +81,25 @@
   }
 
   function skyLight() { return clampLight(daylightAtHour() * weatherLightFactor()); }
-  function objectLightDef(obj) { return obj ? objectDefs?.[obj.type]?.light || null : null; }
+  function workstationTaskType(type) {
+    if (type === 'forge') return 'forge';
+    if (type === 'stove') return 'cook';
+    return null;
+  }
+  function workstationIsActive(obj) {
+    const taskType = workstationTaskType(obj?.type);
+    if (!taskType) return true;
+    return (state?.colonists || []).some(c => c?.task?.objId === obj.id && c?.task?.type === taskType);
+  }
+  function objectLightDef(obj) {
+    const light = obj ? objectDefs?.[obj.type]?.light || null : null;
+    if (!light || !obj) return null;
+    const fuelMax = Number(objectDefs?.torch?.fuelMax || 0);
+    const fuel = Number(obj.fuel ?? fuelMax);
+    if ((light.requiresLit || obj.type === 'torch') && (obj.lit === false || fuel <= 0)) return null;
+    if (light.requiresActivity && !workstationIsActive(obj)) return null;
+    return light;
+  }
   function ambientKey() { return `${Math.round(skyLight() * 1000)}|${state?.weather || 'limpo'}|${Math.floor(Number(state?.hour || 0) * 2)}`; }
 
   function collectLightSources(world = state?.world) {

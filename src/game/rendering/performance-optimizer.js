@@ -222,7 +222,7 @@
       for (let x = originX; x <= maxX; x++) {
         const type = row[x] || 'grass';
         drawTerrainTileTo(cctx, x, y, type, q);
-        window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true });
+        window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true, targetCtx: cctx, quality: q });
       }
     }
     cctx.restore();
@@ -246,7 +246,7 @@
     for (let y = bounds.startY; y <= bounds.endY; y++) {
       const row = state?.terrain?.[y];
       if (!row) continue;
-      for (let x = bounds.startX; x <= bounds.endX; x++) { window.GameSystems.drawTileRenderers(x, y, row[x] || 'grass', { pass: 'dynamic', optimized: true }); calls++; }
+      for (let x = bounds.startX; x <= bounds.endX; x++) { window.GameSystems.drawTileRenderers(x, y, row[x] || 'grass', { pass: 'dynamic', optimized: true, targetCtx: ctx, quality: q }); calls++; }
     }
     return calls;
   }
@@ -351,8 +351,8 @@
   function optimizedDrawTile(x, y, type) {
     const q = quality();
     drawTerrainTileTo(ctx, x, y, type, q);
-    window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true });
-    if (q.drawTileHooks) window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'dynamic', optimized: true });
+    window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'static', optimized: true, targetCtx: ctx, quality: q });
+    if (q.drawTileHooks) window.GameSystems?.drawTileRenderers?.(x, y, type, { pass: 'dynamic', optimized: true, targetCtx: ctx, quality: q });
   }
   function optimizedDrawRain() { const q = quality(); if (!q.drawRain) return; if (original.drawRain) original.drawRain(); }
 

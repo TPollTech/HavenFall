@@ -34,36 +34,41 @@
     return mask;
   }
 
-  function drawMountainTile(x, y) {
+  function drawMountainTile(targetCtx, x, y) {
     const rock = rockAt(x, y);
-    if (!rock?.solid) return;
+    if (!rock?.solid || !targetCtx) return false;
     const t = tileSize();
     const px = x * t;
     const py = y * t;
     const m = rockMask(x, y);
     const seed = ((x * 73856093) ^ (y * 19349663)) >>> 0;
     const jitter = n => ((seed >> n) & 7) - 3;
-    ctx.save();
-    ctx.fillStyle = MOUNTAIN_COLORS[rock.type] || '#4b5563';
-    ctx.strokeStyle = 'rgba(5,8,12,.72)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(px + (m & MASK.W ? 0 : 5 + jitter(0)), py + (m & MASK.N ? 0 : 6 + jitter(3)));
-    ctx.lineTo(px + t - (m & MASK.E ? 0 : 6 + jitter(6)), py + (m & MASK.N ? 0 : 4 + jitter(9)));
-    ctx.lineTo(px + t - (m & MASK.E ? 0 : 4 + jitter(12)), py + t - (m & MASK.S ? 0 : 6 + jitter(15)));
-    ctx.lineTo(px + (m & MASK.W ? 0 : 5 + jitter(18)), py + t - (m & MASK.S ? 0 : 5 + jitter(21)));
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.globalAlpha = 0.26;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(px + 3, py + t * 0.62, t - 6, t * 0.30);
-    if (!(m & MASK.S)) { ctx.globalAlpha = 0.34; ctx.fillRect(px + 1, py + t - 7, t - 2, 9); }
-    if (!(m & MASK.E)) { ctx.globalAlpha = 0.18; ctx.fillRect(px + t - 7, py + 5, 8, t - 10); }
-    ctx.restore();
+    targetCtx.save();
+    targetCtx.fillStyle = MOUNTAIN_COLORS[rock.type] || '#4b5563';
+    targetCtx.strokeStyle = 'rgba(5,8,12,.72)';
+    targetCtx.lineWidth = 2;
+    targetCtx.beginPath();
+    targetCtx.moveTo(px + (m & MASK.W ? 0 : 5 + jitter(0)), py + (m & MASK.N ? 0 : 6 + jitter(3)));
+    targetCtx.lineTo(px + t - (m & MASK.E ? 0 : 6 + jitter(6)), py + (m & MASK.N ? 0 : 4 + jitter(9)));
+    targetCtx.lineTo(px + t - (m & MASK.E ? 0 : 4 + jitter(12)), py + t - (m & MASK.S ? 0 : 6 + jitter(15)));
+    targetCtx.lineTo(px + (m & MASK.W ? 0 : 5 + jitter(18)), py + t - (m & MASK.S ? 0 : 5 + jitter(21)));
+    targetCtx.closePath();
+    targetCtx.fill();
+    targetCtx.stroke();
+    targetCtx.globalAlpha = 0.26;
+    targetCtx.fillStyle = '#000';
+    targetCtx.fillRect(px + 3, py + t * 0.62, t - 6, t * 0.30);
+    if (!(m & MASK.S)) { targetCtx.globalAlpha = 0.34; targetCtx.fillRect(px + 1, py + t - 7, t - 2, 9); }
+    if (!(m & MASK.E)) { targetCtx.globalAlpha = 0.18; targetCtx.fillRect(px + t - 7, py + 5, 8, t - 10); }
+    targetCtx.restore();
+    return true;
   }
 
-  function drawTileLayer(x, y) { if (isRock(x, y)) drawMountainTile(x, y); }
+  function drawTileLayer(x, y, _type = null, options = null) {
+    const targetCtx = options?.targetCtx || ctx;
+    if (!targetCtx) return false;
+    return drawMountainTile(targetCtx, x, y);
+  }
 
   function drawGrid(bounds = null) {
     if (!state || appScreen !== SCREEN.PLAYING) return;

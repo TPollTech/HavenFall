@@ -158,6 +158,7 @@
     if (job.progress >= workNeeded) {
       world.builtRoofLayer[task.roofY][task.roofX] = true;
       world.pendingRoofJobs = world.pendingRoofJobs.filter(j => j !== job);
+      window.LightingSystem?.invalidate?.('built-roof-change', world);
       c.task = null; c.note = 'Telhado concluído'; c.work = 0;
     }
     return true;

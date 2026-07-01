@@ -283,7 +283,12 @@
     return true;
   }
 
-  function drawFloorTileRenderer(x, y) { if (!ctx || appScreen !== SCREEN.PLAYING) return false; return drawFloorTile(ctx, x, y, getFloorAt(x, y)); }
+  function drawFloorTileRenderer(x, y, _type = null, options = null) {
+    const targetCtx = options?.targetCtx || ctx;
+    if (!targetCtx) return false;
+    if (!options?.targetCtx && appScreen !== SCREEN.PLAYING) return false;
+    return drawFloorTile(targetCtx, x, y, getFloorAt(x, y), options?.quality || null);
+  }
 
   function drawFloorBlueprintObject(obj) {
     if (!isFloorBlueprint(obj)) return false;

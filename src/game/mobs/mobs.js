@@ -90,7 +90,30 @@ function allMobileEntities() {
   ].filter(Boolean);
 }
 
+function entityAtTile(list, x, y, predicate = null) {
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  const matcher = typeof predicate === 'function' ? predicate : () => true;
+  return (list || []).find(entity => matcher(entity) && Math.round(entity?.x) === tx && Math.round(entity?.y) === ty) || null;
+}
+
 function isHostileMobType(type) { return !!mobSpawnConfig[type]?.hostile; }
+
+function getWolfAt(x, y) {
+  return entityAtTile(state?.wolves, x, y);
+}
+
+function getPassiveMobAt(x, y) {
+  return entityAtTile(ensureMobState(), x, y, mob => !isHostileMobType(mob?.type));
+}
+
+function getHostileMobAt(x, y) {
+  return getWolfAt(x, y) || entityAtTile(ensureMobState(), x, y, mob => isHostileMobType(mob?.type));
+}
+
+function getCreatureAt(x, y) {
+  return getWolfAt(x, y) || getHostileMobAt(x, y) || getPassiveMobAt(x, y);
+}
 
 function countMob(type) {
   const mobs = ensureMobState();
@@ -834,11 +857,20 @@ function handleRescueAllyTask(c, task, tick) {
   patient.isUnconscious = false;
   patient.statuses = (patient.statuses || []).filter(s => s !== 'inconsciente');
   if (destination.type === 'med_station' && state.resources.medicine > 0) {
-    state.resources.medicine -= 1;
-    patient.health = Math.max(patient.health, 32);
-    patient.energy = Math.max(patient.energy, 16);
-    patient.note = 'Recebendo tratamento';
-    log(`${c.name} levou ${patient.name} até a estação médica e usou 1 remédio.`);
+    const spent = typeof consumeCost === 'function'
+      ? consumeCost({ medicine: 1 }, { reason: 'rescue-heal', actorId: c.id, targetId: patient.id, x: destination.x, y: destination.y })
+      : window.GameState?.consumeResources?.({ medicine: 1 }, { reason: 'rescue-heal', actorId: c.id, targetId: patient.id, x: destination.x, y: destination.y });
+    if (spent) {
+      patient.health = Math.max(patient.health, 32);
+      patient.energy = Math.max(patient.energy, 16);
+      patient.note = 'Recebendo tratamento';
+      log(`${c.name} levou ${patient.name} até a estação médica e usou 1 remédio.`);
+    } else {
+      patient.health = Math.max(patient.health, 18);
+      patient.energy = Math.max(patient.energy, 12);
+      patient.note = 'Resgatado, recuperando';
+      log(`${c.name} levou ${patient.name} até a estação médica, mas não havia remédio disponível.`);
+    }
   } else {
     patient.health = Math.max(patient.health, 18);
     patient.energy = Math.max(patient.energy, 12);
@@ -946,7 +978,17 @@ window.canSpawnMob = canSpawnMob;
 window.spawnMob = spawnMob;
 window.updateMobsTick = updateMobsTick;
 window.mobDrop = mobDrop;
+window.getWolfAt = getWolfAt;
 window.getMobAt = getMobAt;
+window.getAnimalAt = getPassiveMobAt;
+window.getHostileAt = getHostileMobAt;
+window.HavenfallEntityQuery = Object.freeze({
+  getWolfAt,
+  getMobAt,
+  getAnimalAt: getPassiveMobAt,
+  getHostileAt: getHostileMobAt,
+  getCreatureAt
+});
 window.assignHuntMob = assignHuntMob;
 window.makeColonistUnconscious = makeColonistUnconscious;
 

@@ -8,8 +8,9 @@
   const VERSION = 'worldgen-cohesion-v2-ecosystem';
   const CAMP_TYPES = new Set(['campfire', 'crate', 'logs', 'stockpile']);
   const TREE_TYPES = new Set(['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree']);
+  const TALL_PLANT_TYPES = new Set([...TREE_TYPES, 'cactus']);
   const SOFT_PLANT_TYPES = new Set(['bush', 'berry', 'herbs', 'mushrooms']);
-  const VEGETATION_TYPES = new Set([...TREE_TYPES, ...SOFT_PLANT_TYPES, 'dry_twigs']);
+  const VEGETATION_TYPES = new Set([...TALL_PLANT_TYPES, ...SOFT_PLANT_TYPES, 'dry_twigs']);
   const GEOLOGY_TYPES = new Set(['rock', 'ore']);
   const RUIN_TYPES = new Set(['ruin', 'cache', 'supply_crate', 'rubble']);
   const RESOURCE_TYPES = new Set([...VEGETATION_TYPES, ...GEOLOGY_TYPES, 'logs']);
@@ -102,15 +103,28 @@
     return stone.ratio >= 0.32 || stone.count >= Math.max(8, Math.floor(stone.total * 0.28));
   }
 
+  function ecosystemAllows(type, tile) {
+    if (!tile) return false;
+    const rules = window.HavenfallEcosystemRules;
+    if (typeof rules?.canObjectExistOnTile === 'function') return !!rules.canObjectExistOnTile(type, tile);
+    return false;
+  }
+
+  function preferredTerrainForObject(type) {
+    if (type === 'cactus' || type === 'palm_tree') return 'sand';
+    if (type === 'rock' || type === 'ore') return 'stone';
+    if (RUIN_TYPES.has(type)) return 'dirt';
+    if (type === 'logs' || type === 'dry_twigs' || CAMP_TYPES.has(type)) return 'dirt';
+    return 'grass';
+  }
+
   function objectAllowedOnTerrain(obj, tile) {
     if (!obj) return false;
-    if (TREE_TYPES.has(obj.type)) return NATURAL_GROUND.has(tile);
-    if (SOFT_PLANT_TYPES.has(obj.type)) return NATURAL_GROUND.has(tile);
-    if (obj.type === 'dry_twigs' || obj.type === 'logs') return DRY_GROUND.has(tile);
-    if (obj.type === 'rock') return tile === 'stone' || tile === 'dirt' || tile === 'grass';
-    if (obj.type === 'ore') return tile === 'stone' || tile === 'dirt';
-    if (RUIN_TYPES.has(obj.type)) return tile !== 'water' && !isMountainMass(currentWorld, obj.x, obj.y, 4);
-    if (CAMP_TYPES.has(obj.type)) return DRY_GROUND.has(tile);
+    if (TALL_PLANT_TYPES.has(obj.type) || SOFT_PLANT_TYPES.has(obj.type)) return ecosystemAllows(obj.type, tile);
+    if (obj.type === 'dry_twigs' || obj.type === 'logs') return ecosystemAllows(obj.type, tile) || DRY_GROUND.has(tile);
+    if (obj.type === 'rock' || obj.type === 'ore') return ecosystemAllows(obj.type, tile);
+    if (RUIN_TYPES.has(obj.type)) return ecosystemAllows(obj.type, tile) && !isMountainMass(currentWorld, obj.x, obj.y, 4);
+    if (CAMP_TYPES.has(obj.type)) return ecosystemAllows(obj.type, tile) || DRY_GROUND.has(tile);
     return tile !== 'water';
   }
 
@@ -406,11 +420,7 @@
       const k = key(obj.x, obj.y);
       if (occupied.has(k)) return false;
       const tile = terrain(world, obj.x, obj.y);
-      if (TREE_TYPES.has(obj.type) && !NATURAL_GROUND.has(tile)) return false;
-      if (SOFT_PLANT_TYPES.has(obj.type) && !NATURAL_GROUND.has(tile)) return false;
-      if (obj.type === 'dry_twigs' && !DRY_GROUND.has(tile)) return false;
-      if (GEOLOGY_TYPES.has(obj.type) && tile === 'water') return false;
-      if (RUIN_TYPES.has(obj.type) && (tile === 'water' || isMountainMass(world, obj.x, obj.y, 4))) return false;
+      if ((RESOURCE_TYPES.has(obj.type) || RUIN_TYPES.has(obj.type) || CAMP_TYPES.has(obj.type)) && !objectAllowedOnTerrain(obj, tile)) return false;
       if (RESOURCE_TYPES.has(obj.type) && Math.hypot(obj.x - spawn.x, obj.y - spawn.y) < 7.5 && !CAMP_TYPES.has(obj.type)) return false;
       occupied.add(k);
       return true;
@@ -421,10 +431,7 @@
     for (const obj of world.objects || []) {
       if (!obj || !inside(world, obj.x, obj.y, 1)) continue;
       const t = terrain(world, obj.x, obj.y);
-      if ((TREE_TYPES.has(obj.type) || SOFT_PLANT_TYPES.has(obj.type)) && !NATURAL_GROUND.has(t)) setTerrain(world, obj.x, obj.y, 'grass');
-      else if ((obj.type === 'logs' || obj.type === 'dry_twigs' || CAMP_TYPES.has(obj.type)) && !DRY_GROUND.has(t)) setTerrain(world, obj.x, obj.y, 'dirt');
-      else if (GEOLOGY_TYPES.has(obj.type) && t === 'water') setTerrain(world, obj.x, obj.y, 'stone');
-      else if (RUIN_TYPES.has(obj.type) && t === 'water') setTerrain(world, obj.x, obj.y, 'dirt');
+      if (!objectAllowedOnTerrain(obj, t)) setTerrain(world, obj.x, obj.y, preferredTerrainForObject(obj.type));
     }
   }
 
@@ -455,6 +462,9 @@
     sanitizeObjects(world);
     refreshWorldReferences(world);
     window.HavenfallGeologyMassSystem?.applyDenseGeology?.(world);
+    sanitizeObjects(world);
+    if (window.BiomeEngine?.rebalanceWorld) world = window.BiomeEngine.rebalanceWorld(world, config);
+    protectObjectTiles(world);
     sanitizeObjects(world);
     refreshWorldReferences(world);
     world.worldgenCohesionVersion = VERSION;

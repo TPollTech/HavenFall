@@ -94,6 +94,8 @@
         ['simulation_balance','src/game/systems/simulation-balance-system.js'],
         ['work_coordination','src/game/systems/work-coordination-system.js'],
         ['auto_roof','src/game/systems/auto-roof-system.js'],
+        ['lighting_system','src/game/systems/lighting-system.js'],
+        ['world_region_system','src/game/systems/world-region-system.js'],
         ['mining_task_handler','src/game/systems/mining-task-handler.js'],
         ['mining_orders','src/game/systems/mining-orders.js']
       ])

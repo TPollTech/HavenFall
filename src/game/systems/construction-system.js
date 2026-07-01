@@ -186,6 +186,8 @@
       if (typeof refundCost === 'function') refundCost(bp.reservedCost || {}, { reason: 'floor-build-failed', targetId: bp.id, x: bp.x, y: bp.y });
       if (typeof refundItems === 'function') refundItems(bp.reservedItemCost || {}, { reason: 'floor-build-failed', targetId: bp.id, x: bp.x, y: bp.y });
       if (typeof log === 'function') log(`Falha ao finalizar ${def.label}. Materiais devolvidos.`);
+      c.task = null; c.work = 0; c.note = 'Ocioso';
+      return true;
     }
     state.objects = (state.objects || []).filter(obj => obj.id !== bp.id);
     if (state.world && state.world.objects) state.world.objects = state.objects;

@@ -44,6 +44,19 @@ function compactStateForSave(target = state) {
     if (!Array.isArray(saveState.world.objects) && Array.isArray(saveState.objects)) {
       saveState.world.objects = saveState.objects;
     }
+    for (const transientKey of [
+      'lightLayer',
+      'lightState',
+      'lightDirty',
+      'lightVersion',
+      'lightInvalidationReason',
+      'lightMap',
+      'regions',
+      'activeRegions',
+      'activeRegion',
+      'regionIndexing',
+      'regionSnapshotAt'
+    ]) delete saveState.world[transientKey];
   }
 
   if (Array.isArray(saveState.world?.terrain)) delete saveState.terrain;
@@ -276,6 +289,7 @@ function migrateLoadedState() {
   state.config = { ...defaultNewGameConfig, colonyName: 'Colônia antiga', seed: 'save-antigo', ...(state.config || {}) };
 
   const existingWorld = state.world || {};
+  const sizeDef = getMapSizeDef(state.config.mapSize);
   const cols = existingWorld.cols || state.terrain?.[0]?.length || MAP_SIZES.standard.cols;
   const rows = existingWorld.rows || state.terrain?.length || MAP_SIZES.standard.rows;
   const legacyNaturalRoofLayer = Array.isArray(existingWorld.roofLayer) && typeof existingWorld.roofLayer?.[0]?.[0] === 'boolean';
@@ -283,8 +297,11 @@ function migrateLoadedState() {
     seed: state.config.seed,
     mapSize: state.config.mapSize,
     difficulty: state.config.difficulty,
-    chunkMode: !!existingWorld.chunkMode,
-    biomeIntent: existingWorld.biomeIntent || getMapSizeDef(state.config.mapSize)?.biomeIntent || 'classic',
+    chunkMode: !!(existingWorld.chunkMode || sizeDef?.chunkMode),
+    regionMode: !!(existingWorld.regionMode || existingWorld.chunkMode || sizeDef?.chunkMode),
+    regionSize: Number(existingWorld.regionSize || Math.max(64, Number(sizeDef?.chunkSize || 32) * 2)),
+    regionSaveVersion: existingWorld.regionSaveVersion || 'region-save-v2',
+    biomeIntent: existingWorld.biomeIntent || sizeDef?.biomeIntent || 'classic',
     cols,
     rows,
     tileSize: TILE,
@@ -307,13 +324,19 @@ function migrateLoadedState() {
     biomes: existingWorld.biomes || null,
     waterDepth: existingWorld.waterDepth || null,
     livingWorld: existingWorld.livingWorld || null,
+    floorLayer: Array.isArray(existingWorld.floorLayer) ? existingWorld.floorLayer : null,
+    floorVersion: Number(existingWorld.floorVersion || 0),
     geologyLayer: Array.isArray(existingWorld.geologyLayer) ? existingWorld.geologyLayer : null,
     geologyMassVersion: existingWorld.geologyMassVersion || (Array.isArray(existingWorld.geologyLayer) ? window.HavenfallGeologyMassSystem?.version || 'dense-mountains' : null),
     naturalRoofLayer: existingWorld.naturalRoofLayer || (legacyNaturalRoofLayer ? existingWorld.roofLayer : null),
     roofLayer: legacyNaturalRoofLayer ? null : existingWorld.roofLayer || null,
     builtRoofLayer: existingWorld.builtRoofLayer || null,
     pendingRoofJobs: existingWorld.pendingRoofJobs || [],
-    lightMap: existingWorld.lightMap || null,
+    lightLayer: null,
+    lightState: null,
+    lightDirty: true,
+    lightVersion: Number(existingWorld.lightVersion || 0),
+    lightMap: null,
     geologyVersion: existingWorld.geologyVersion,
     generationVersion: existingWorld.generationVersion || 'migrated'
   };
@@ -323,6 +346,7 @@ function migrateLoadedState() {
     state.world.biomes = window.BiomeEngine.createBiomeMap(cols, rows, state.config.seed, state.config);
   }
   if (typeof ensureGeologyState === 'function') ensureGeologyState(state.world);
+  if (typeof ensureFloorLayer === 'function') ensureFloorLayer(state.world);
 
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
   state.objects = ensureLoadedEntityIds((Array.isArray(state.objects) && state.objects.length ? state.objects : state.world.objects) || [], 'obj');

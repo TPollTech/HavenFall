@@ -13,6 +13,16 @@ canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse', 'butcher_table'];
 const ROTATABLE_BUILD_TYPES = new Set(['wall', 'door']);
 
+function entityQuery() {
+  return window.HavenfallEntityQuery || null;
+}
+
+function getWolfAtSafe(x, y) {
+  const query = entityQuery();
+  if (typeof query?.getWolfAt === 'function') return query.getWolfAt(x, y);
+  return typeof getWolfAt === 'function' ? getWolfAt(x, y) : null;
+}
+
 function normalizeBuildRotation(rotation) {
   return ((Number(rotation) || 0) % 4 + 4) % 4;
 }
@@ -130,7 +140,7 @@ function handleCanvasClick(e) {
     return;
   }
 
-  const wolf = isTileVisible(tile.x, tile.y) ? getWolfAt(tile.x, tile.y) : null;
+  const wolf = isTileVisible(tile.x, tile.y) ? getWolfAtSafe(tile.x, tile.y) : null;
   if (wolf) {
     assignScare(c, wolf);
     return;
@@ -200,7 +210,7 @@ function openContextMenuForTile(e, tile) {
 }
 
 function getContextTarget(tile) {
-  const wolf = isTileVisible(tile.x, tile.y) ? getWolfAt(tile.x, tile.y) : null;
+  const wolf = isTileVisible(tile.x, tile.y) ? getWolfAtSafe(tile.x, tile.y) : null;
   if (wolf) return { kind: 'wolf', wolf, label: 'Lobo' };
 
   const obj = isTileDiscovered(tile.x, tile.y) ? getObjectAt(tile.x, tile.y) : null;
@@ -373,6 +383,17 @@ function canPlace(type, x, y) {
 }
 
 function placeBlueprint(buildKey, x, y) {
+  if (typeof window.queueConstruction === 'function') {
+    const result = window.queueConstruction(buildKey, x, y);
+    if (!result?.ok) {
+      if (result?.reason && typeof log === 'function') log(result.reason);
+      return;
+    }
+    const c = selectedColonist();
+    if (c && result.blueprint) assignBuild(c, result.blueprint);
+    if (typeof updateUI === 'function') updateUI(true);
+    return;
+  }
   const def = buildDefs[buildKey];
   if (!def) return;
   if (!isBuildUnlocked(buildKey)) { log(`Precisa pesquisar ${researchDefs[def.requires]?.label || 'tecnologia'} antes de construir ${def.label}.`); return; }

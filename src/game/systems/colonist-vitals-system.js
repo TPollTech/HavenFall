@@ -85,7 +85,10 @@
 
   function maybeEat(c) {
     if (!state?.resources || c.hunger >= 32 || state.resources.food <= 0 || c.task?.type === 'sleep') return;
-    state.resources.food -= 1;
+    const spent = typeof consumeCost === 'function'
+      ? consumeCost({ food: 1 }, { reason: 'colonist-eat', actorId: c.id })
+      : window.GameState?.consumeResources?.({ food: 1 }, { reason: 'colonist-eat', actorId: c.id });
+    if (!spent) return;
     c.hunger = safeClamp(c.hunger + 42, 0, 100);
     c.mood = safeClamp(c.mood + 4, 0, 100);
     if (typeof log === 'function') log(`${c.name} comeu uma refeição rápida.`);

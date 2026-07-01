@@ -11,16 +11,21 @@
   function regionKey(rx, ry) { return `${Math.round(Number(rx) || 0)},${Math.round(Number(ry) || 0)}`; }
   function parseRegionKey(key) { const parts = String(key || '0,0').split(','); return { x: Math.round(Number(parts[0]) || 0), y: Math.round(Number(parts[1]) || 0) }; }
   function regionForTile(x, y, size = REGION_SIZE) { return { x: Math.floor(Math.round(Number(x) || 0) / size), y: Math.floor(Math.round(Number(y) || 0) / size) }; }
+  function configuredRegionSize(world = state?.world) {
+    return Math.max(REGION_SIZE, Number(world?.regionSize || (getMapSizeDef?.(world?.mapSize)?.chunkSize || REGION_SIZE / 2) * 2));
+  }
+  function isRegionModeEnabled(world = state?.world) {
+    return !!(world && (world.regionMode || world.chunkMode || getMapSizeDef?.(world.mapSize)?.chunkMode));
+  }
 
   function ensureRegionState(world = state?.world) {
     if (!world) return null;
-    world.regionSize = Number(world.regionSize || REGION_SIZE);
-    world.regionMode = !!world.regionMode || !!getMapSizeDef?.(world.mapSize)?.chunkMode;
+    world.regionSize = configuredRegionSize(world);
+    world.regionMode = isRegionModeEnabled(world);
     world.regions = world.regions && typeof world.regions === 'object' ? world.regions : {};
     world.activeRegions = Array.isArray(world.activeRegions) ? world.activeRegions : [];
-    world.regionSaveVersion = world.regionSaveVersion || 'region-save-v1';
-    if (!Object.keys(world.regions).length && !world.regionIndexing) indexExistingRegions(world);
-    return world.regions;
+    world.regionSaveVersion = world.regionSaveVersion || 'region-save-v2';
+    return world.regionMode ? world.regions : null;
   }
 
   function regionBounds(rx, ry, world = state?.world) {
@@ -42,11 +47,8 @@
   }
 
   function snapshotRegion(rx, ry, world = state?.world) {
-    if (!world) return null;
-    world.regionSize = Number(world.regionSize || REGION_SIZE);
-    world.regions = world.regions && typeof world.regions === 'object' ? world.regions : {};
-    world.activeRegions = Array.isArray(world.activeRegions) ? world.activeRegions : [];
-    world.regionSaveVersion = world.regionSaveVersion || 'region-save-v1';
+    if (!world || !isRegionModeEnabled(world)) return null;
+    ensureRegionState(world);
     const key = regionKey(rx, ry);
     const bounds = regionBounds(rx, ry, world);
     const snapshot = {
@@ -71,10 +73,10 @@
   }
 
   function indexExistingRegions(world = state?.world) {
-    if (!world || world.regionIndexing) return world?.regions || null;
+    if (!world || !isRegionModeEnabled(world) || world.regionIndexing) return world?.regions || null;
     world.regionIndexing = true;
     try {
-      const size = Number(world.regionSize || REGION_SIZE);
+      const size = configuredRegionSize(world);
       const maxRx = Math.floor(Math.max(0, Number(world.cols || 0) - 1) / size);
       const maxRy = Math.floor(Math.max(0, Number(world.rows || 0) - 1) / size);
       world.regions = world.regions || {};
@@ -95,6 +97,13 @@
 
   function updateActiveRegions(world = state?.world) {
     if (!world) return [];
+    if (!isRegionModeEnabled(world)) {
+      world.regionMode = false;
+      world.activeRegion = null;
+      world.activeRegions = [];
+      world.regions = world.regions && typeof world.regions === 'object' ? world.regions : {};
+      return [];
+    }
     ensureRegionState(world);
     const center = activeRegionForCamera(world);
     const keys = [];
@@ -120,7 +129,9 @@
     if (window.HavenfallContext.worldRegionSaveHookInstalled || typeof saveGame !== 'function') return;
     const originalSaveGame = saveGame;
     saveGame = function saveGameWithRegionSnapshots(manual = false) {
-      try { snapshotActiveRegions(state?.world); }
+      try {
+        if (isRegionModeEnabled(state?.world)) snapshotActiveRegions(state?.world);
+      }
       catch (err) { console.warn('[WorldRegionSystem] Falha ao atualizar snapshots antes do save.', err); }
       return originalSaveGame(manual);
     };
@@ -129,11 +140,12 @@
 
   function tick() {
     if (!state?.world || appScreen !== SCREEN.PLAYING) return;
-    updateActiveRegions(state.world);
+    if (!isRegionModeEnabled(state.world)) return;
+    snapshotActiveRegions(state.world);
     installSaveHook();
   }
 
-  window.WorldRegionSystem = Object.freeze({ REGION_SIZE, regionKey, parseRegionKey, regionForTile, ensureRegionState, regionBounds, indexExistingRegions, snapshotRegion, snapshotActiveRegions, activeRegionForCamera, updateActiveRegions, installSaveHook });
+  window.WorldRegionSystem = Object.freeze({ REGION_SIZE, regionKey, parseRegionKey, regionForTile, ensureRegionState, regionBounds, indexExistingRegions, snapshotRegion, snapshotActiveRegions, activeRegionForCamera, updateActiveRegions, installSaveHook, isRegionModeEnabled });
   installSaveHook();
   window.GameSystems?.registerTick?.('world-region-system.active-regions', tick, { order: 11, intervalMs: 900, critical: false });
 })();

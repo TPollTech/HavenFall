@@ -159,7 +159,10 @@
 
   function consumeEmergencyFood(c) {
     if (!state?.resources || Number(c?.hunger ?? 100) >= 24 || Number(state.resources.food || 0) <= 0) return false;
-    state.resources.food -= 1;
+    const spent = typeof consumeCost === 'function'
+      ? consumeCost({ food: 1 }, { reason: 'colonist-emergency-eat', actorId: c.id })
+      : window.GameState?.consumeResources?.({ food: 1 }, { reason: 'colonist-emergency-eat', actorId: c.id });
+    if (!spent) return false;
     c.hunger = clampValue((c.hunger ?? 0) + 44, 0, 100);
     c.mood = clampValue((c.mood ?? 0) + 4, 0, 100);
     c.note = 'Comeu uma refeição rápida';

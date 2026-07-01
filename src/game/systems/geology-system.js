@@ -155,15 +155,25 @@
     const endX = center ? Math.min(cols - 1, Math.ceil(center.x + radius)) : cols - 1;
     const startY = center ? Math.max(0, Math.floor(center.y - radius)) : 0;
     const endY = center ? Math.min(rows - 1, Math.ceil(center.y + radius)) : rows - 1;
+    let changed = false;
     for (let y = startY; y <= endY; y++) {
       for (let x = startX; x <= endX; x++) {
         const rock = world.geologyLayer[y]?.[x];
-        if (rock?.solid) { world.naturalRoofLayer[y][x] = true; rock.isRoof = true; rock.collapseRisk = 0; continue; }
+        const before = !!world.naturalRoofLayer[y][x];
+        if (rock?.solid) {
+          world.naturalRoofLayer[y][x] = true;
+          rock.isRoof = true;
+          rock.collapseRisk = 0;
+          if (!before) changed = true;
+          continue;
+        }
         const supported = countNearbySolidRock(world, x, y, 2) >= 2;
         const deep = countNearbySolidRock(world, x, y, 4) >= 7;
         world.naturalRoofLayer[y][x] = !!(supported && deep);
+        if (world.naturalRoofLayer[y][x] !== before) changed = true;
       }
     }
+    if (changed) window.LightingSystem?.invalidate?.('natural-roof-change', world);
     return world.naturalRoofLayer;
   }
 
