@@ -87,11 +87,31 @@
     fps: 0,
     frameMs: 0,
     updateMs: 0,
+    systemsMs: 0,
     renderMs: 0,
+    uiMs: 0,
     tilesDrawn: 0,
+    chunksDrawn: 0,
     entitiesDrawn: 0,
     objects: 0,
     mobs: 0,
+    pathMs: 0,
+    pathCalls: 0,
+    pathCacheHits: 0,
+    pathQueued: 0,
+    colonistsActive: 0,
+    colonistsDeferred: 0,
+    colonistsTotal: 0,
+    npcsActive: 0,
+    activeChunks: 0,
+    worldGenMs: 0,
+    initialStateMs: 0,
+    hardwareProfile: 'medium',
+    hardwareThreads: 0,
+    simulationProfile: 'balanced',
+    lightMs: 0,
+    lightSources: 0,
+    lightTiles: 0,
     lastMetricAt: performance.now(),
     frameCount: 0,
     lastAllowedFrameAt: 0
@@ -264,7 +284,9 @@
     metrics.frameCount++;
     metrics.frameMs = Number(data.frameMs || metrics.frameMs || 0);
     metrics.updateMs = Number(data.updateMs || metrics.updateMs || 0);
+    metrics.systemsMs = Number(data.systemsMs || window.HavenfallPerf?.systemsMs || metrics.systemsMs || 0);
     metrics.renderMs = Number(data.renderMs || metrics.renderMs || 0);
+    metrics.uiMs = Number(data.uiMs || window.HavenfallPerf?.uiMs || metrics.uiMs || 0);
     metrics.objects = state?.objects?.length || 0;
     metrics.mobs = (state?.mobs?.length || 0) + (state?.wolves?.length || 0);
     if (now - metrics.lastMetricAt >= 500) {
@@ -276,6 +298,7 @@
 
   function recordRenderStats(stats = {}) {
     metrics.tilesDrawn = Number(stats.tilesDrawn || 0);
+    metrics.chunksDrawn = Number(stats.chunksDrawn || 0);
     metrics.entitiesDrawn = Number(stats.entitiesDrawn || 0);
   }
 
@@ -318,9 +341,12 @@
       ? [`FPS ${metrics.fps || 0}`, `${Math.round(metrics.frameMs || 0)} ms`]
       : [
         `FPS ${metrics.fps || 0} · ${Math.round(metrics.frameMs || 0)} ms`,
-        `Update ${Math.round(metrics.updateMs || 0)} ms · Render ${Math.round(metrics.renderMs || 0)} ms`,
-        `Tiles ${metrics.tilesDrawn || 0} · Entidades ${metrics.entitiesDrawn || 0}`,
-        `Objetos ${metrics.objects || 0} · Mobs ${metrics.mobs || 0}`
+        `Update ${Math.round(metrics.updateMs || 0)} · Systems ${Math.round(metrics.systemsMs || 0)} · Render ${Math.round(metrics.renderMs || 0)} ms`,
+        `Path ${metrics.pathCalls || 0}x/${Math.round(metrics.pathMs || 0)} ms · Fila ${metrics.pathQueued || 0} · Cache ${metrics.pathCacheHits || 0}`,
+        `Chunks ${metrics.chunksDrawn || 0} · Tiles ${metrics.tilesDrawn || 0} · Entidades ${metrics.entitiesDrawn || 0}`,
+        `Colonos ${metrics.colonistsActive || 0}/${metrics.colonistsTotal || 0} · Adiados ${metrics.colonistsDeferred || 0} · NPCs ${metrics.npcsActive || 0}`,
+        `Objetos ${metrics.objects || 0} · Mobs ${metrics.mobs || 0} · Luz ${Math.round(metrics.lightMs || 0)} ms/${metrics.lightSources || 0}`,
+        `Mundo ${Math.round(metrics.worldGenMs || 0)} ms · HW ${metrics.hardwareProfile || 'auto'} ${metrics.hardwareThreads || 0}t · Sim ${metrics.simulationProfile || 'balanced'}`
       ];
     ctx.save();
     ctx.font = '900 12px system-ui';

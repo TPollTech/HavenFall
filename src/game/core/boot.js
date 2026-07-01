@@ -154,6 +154,7 @@
         ['landing_site_worldgen_polish','src/game/systems/landing-site-worldgen-polish.js'],
         ['blood_wolf','src/game/mobs/blood-wolf.js'],
         ['living_world','src/game/systems/living-world.js'],
+        ['performance_manager','src/game/systems/performance-manager.js'],
         ['performance_render_hooks','src/game/systems/performance-render-hooks.js'],
         ['weather_vfx','src/game/systems/weather-vfx-system.js'],
         ['performance_runtime_hooks','src/game/systems/performance-runtime-hooks.js']

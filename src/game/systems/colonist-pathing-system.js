@@ -83,26 +83,56 @@
 
     if (c.path?.length || isAtTaskTile(c, task)) {
       c._stuckPathTime = 0;
+      c._stuckPathRequestKey = null;
       return;
     }
 
     if (!Number.isFinite(task.x) || !Number.isFinite(task.y) || typeof findPath !== 'function') return;
 
     const target = taskTargetObject(task);
-    const nextPath = findPath(c.x, c.y, task.x, task.y, target || null);
-    if (nextPath?.length) {
-      c.path = nextPath;
-      c._stuckPathTime = 0;
-      c.note = 'Retomando caminho';
-      return;
+    const requestKey = `repair:${c.id}:${task.type}:${task.x},${task.y}:${state?.pathVersion || 0}`;
+    if (window.PathfindingQueue?.request) {
+      if (!c._stuckPathRequestKey) {
+        c._stuckPathRequestKey = requestKey;
+        window.PathfindingQueue.request({
+          ownerId: c.id,
+          key: requestKey,
+          startX: c.x,
+          startY: c.y,
+          endX: task.x,
+          endY: task.y,
+          target: target || null,
+          apply(path) {
+            if (!c?.task || c.task !== task) return;
+            c._stuckPathRequestKey = null;
+            if (path?.length) {
+              c.path = path;
+              c._stuckPathTime = 0;
+              c.note = 'Retomando caminho';
+            } else {
+              c._stuckPathTime = Math.max(Number(c._stuckPathTime || 0), 1.81);
+            }
+          }
+        });
+      }
+    } else {
+      const nextPath = findPath(c.x, c.y, task.x, task.y, target || null);
+      if (nextPath?.length) {
+        c.path = nextPath;
+        c._stuckPathTime = 0;
+        c._stuckPathRequestKey = null;
+        c.note = 'Retomando caminho';
+        return;
+      }
     }
 
     c._stuckPathTime = (c._stuckPathTime || 0) + dt;
-    if (c._stuckPathTime > 1.8) {
+    if (c._stuckPathTime > 1.8 && !c._stuckPathRequestKey) {
       c.task = null;
       c.path = [];
       c.work = 0;
       c._stuckPathTime = 0;
+      c._stuckPathRequestKey = null;
       c.note = 'Sem caminho';
       if (typeof log === 'function') log(`${c.name} cancelou uma tarefa sem caminho válido.`);
     }

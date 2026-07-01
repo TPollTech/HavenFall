@@ -12,6 +12,35 @@
   function clampLight(value) { return Math.max(0, Math.min(1, Number(value) || 0)); }
   function rowsFor(world = state?.world) { return Number(world?.rows || state?.terrain?.length || 0); }
   function colsFor(world = state?.world) { return Number(world?.cols || state?.terrain?.[0]?.length || 0); }
+  function perfNow() { return typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now(); }
+
+  function ensureLightState(world = state?.world) {
+    if (!world) return null;
+    world.lightState = world.lightState && typeof world.lightState === 'object' ? world.lightState : {};
+    world.lightState.lastMs = Number(world.lightState.lastMs || 0);
+    world.lightState.lastTiles = Number(world.lightState.lastTiles || 0);
+    world.lightState.lastSources = Number(world.lightState.lastSources || 0);
+    world.lightState.lastReason = world.lightState.lastReason || 'boot';
+    world.lightState.lastBoundsKey = world.lightState.lastBoundsKey || '';
+    world.lightState.lastAmbientKey = world.lightState.lastAmbientKey || '';
+    world.lightState.lastSourceKey = world.lightState.lastSourceKey || '';
+    world.lightState.lastRecomputeAt = Number(world.lightState.lastRecomputeAt || 0);
+    return world.lightState;
+  }
+
+  function lightingIntervalMs() {
+    return Math.max(120, Number(window.SimulationBudget?.current?.()?.lightingIntervalMs || 320));
+  }
+
+  function boundsKey(bounds = null, world = state?.world) {
+    if (!bounds) return `full:${colsFor(world)}x${rowsFor(world)}`;
+    return [
+      Math.max(0, Math.floor(bounds.startX ?? 0)),
+      Math.max(0, Math.floor(bounds.startY ?? 0)),
+      Math.max(0, Math.ceil(bounds.endX ?? colsFor(world) - 1)),
+      Math.max(0, Math.ceil(bounds.endY ?? rowsFor(world) - 1))
+    ].join(':');
+  }
 
   function ensureLightLayer(world = state?.world) {
     if (!world) return null;
@@ -46,16 +75,20 @@
 
   function skyLight() { return clampLight(daylightAtHour() * weatherLightFactor()); }
   function objectLightDef(obj) { return obj ? objectDefs?.[obj.type]?.light || null : null; }
+  function ambientKey() { return `${Math.round(skyLight() * 1000)}|${state?.weather || 'limpo'}|${Math.floor(Number(state?.hour || 0) * 2)}`; }
 
   function collectLightSources(world = state?.world) {
     const sources = [];
     const sky = skyLight();
+    const signature = [];
     for (const obj of world?.objects || []) {
       const light = objectLightDef(obj);
       if (!light) continue;
-      sources.push({ x: obj.x, y: obj.y, radius: Number(light.radius || 4), power: Number(light.power || 0.7), color: light.color || '#ffc16a', flicker: Number(light.flicker || 0) });
+      const source = { x: obj.x, y: obj.y, radius: Number(light.radius || 4), power: Number(light.power || 0.7), color: light.color || '#ffc16a', flicker: Number(light.flicker || 0) };
+      sources.push(source);
+      signature.push(`${obj.id || obj.type}:${source.x},${source.y}:${source.radius}:${source.power}:${source.color}`);
     }
-    return { sky, sources };
+    return { sky, sources, signature: signature.join('|') };
   }
 
   function baseTileLight(x, y, sky, world = state?.world) {
@@ -76,12 +109,25 @@
     return clampLight(leak);
   }
 
-  function applySource(layer, source, world = state?.world) {
+  function applySource(layer, source, bounds = null, world = state?.world) {
     const radius = Math.max(1, Number(source.radius || 1));
-    const minX = Math.max(0, Math.floor(source.x - radius));
-    const maxX = Math.min(colsFor(world) - 1, Math.ceil(source.x + radius));
-    const minY = Math.max(0, Math.floor(source.y - radius));
-    const maxY = Math.min(rowsFor(world) - 1, Math.ceil(source.y + radius));
+    const minX = Math.max(
+      Math.max(0, Math.floor(bounds?.startX ?? 0)),
+      Math.floor(source.x - radius)
+    );
+    const maxX = Math.min(
+      Math.min(colsFor(world) - 1, Math.ceil(bounds?.endX ?? colsFor(world) - 1)),
+      Math.ceil(source.x + radius)
+    );
+    const minY = Math.max(
+      Math.max(0, Math.floor(bounds?.startY ?? 0)),
+      Math.floor(source.y - radius)
+    );
+    const maxY = Math.min(
+      Math.min(rowsFor(world) - 1, Math.ceil(bounds?.endY ?? rowsFor(world) - 1)),
+      Math.ceil(source.y + radius)
+    );
+    if (minX > maxX || minY > maxY) return;
     const flicker = source.flicker ? (Math.sin((performance.now?.() || Date.now()) / 180 + source.x * 1.7 + source.y) * source.flicker) : 0;
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
@@ -95,21 +141,54 @@
     }
   }
 
-  function recomputeLighting(bounds = null, world = state?.world) {
+  function shouldRecompute(bounds = null, world = state?.world, sourceInfo = null) {
+    const meta = ensureLightState(world);
+    if (!meta) return true;
+    const nextBoundsKey = boundsKey(bounds, world);
+    const nextAmbientKey = ambientKey();
+    const nextSourceKey = sourceInfo?.signature || '';
+    const elapsed = perfNow() - Number(meta.lastRecomputeAt || 0);
+    if (world?.lightDirty) return true;
+    if (meta.lastBoundsKey !== nextBoundsKey) return true;
+    if (meta.lastAmbientKey !== nextAmbientKey) return true;
+    if (meta.lastSourceKey !== nextSourceKey) return true;
+    return elapsed >= lightingIntervalMs();
+  }
+
+  function recomputeLighting(bounds = null, world = state?.world, reason = 'manual') {
     const layer = ensureLightLayer(world);
     if (!layer) return null;
-    const { sky, sources } = collectLightSources(world);
+    const lightState = ensureLightState(world);
+    const sourceInfo = collectLightSources(world);
+    if (!shouldRecompute(bounds, world, sourceInfo)) return layer;
+
+    const startedAt = perfNow();
+    const { sky, sources } = sourceInfo;
     const startX = Math.max(0, Math.floor(bounds?.startX ?? 0));
     const endX = Math.min(colsFor(world) - 1, Math.ceil(bounds?.endX ?? colsFor(world) - 1));
     const startY = Math.max(0, Math.floor(bounds?.startY ?? 0));
     const endY = Math.min(rowsFor(world) - 1, Math.ceil(bounds?.endY ?? rowsFor(world) - 1));
+    let tiles = 0;
 
     for (let y = startY; y <= endY; y++) {
-      for (let x = startX; x <= endX; x++) layer[y][x] = baseTileLight(x, y, sky, world);
+      for (let x = startX; x <= endX; x++) {
+        layer[y][x] = baseTileLight(x, y, sky, world);
+        tiles++;
+      }
     }
 
-    for (const source of sources) applySource(layer, source, world);
+    for (const source of sources) applySource(layer, source, { startX, startY, endX, endY }, world);
     world.lightVersion = Number(world.lightVersion || 0) + 1;
+    if (lightState) {
+      lightState.lastMs = perfNow() - startedAt;
+      lightState.lastTiles = tiles;
+      lightState.lastSources = sources.length;
+      lightState.lastReason = reason;
+      lightState.lastBoundsKey = boundsKey({ startX, startY, endX, endY }, world);
+      lightState.lastAmbientKey = ambientKey();
+      lightState.lastSourceKey = sourceInfo.signature;
+      lightState.lastRecomputeAt = perfNow();
+    }
     return layer;
   }
 
@@ -128,7 +207,10 @@
 
   function drawLightingOverlay(bounds = null) {
     if (!ctx || !state?.world || appScreen !== SCREEN.PLAYING) return;
-    recomputeLighting(bounds, state.world);
+    if (state.world.lightDirty) {
+      recomputeLighting(bounds, state.world, state.world.lightInvalidationReason || 'dirty-overlay');
+      state.world.lightDirty = false;
+    }
     const layer = state.world.lightLayer;
     if (!layer) return;
     const startX = Math.max(0, Math.floor(bounds?.startX ?? 0));
@@ -152,13 +234,38 @@
   function tick() {
     if (!state?.world) return;
     ensureLightLayer(state.world);
+    const bounds = appScreen === SCREEN.PLAYING && typeof visibleTileBounds === 'function'
+      ? visibleTileBounds(window.HavenfallSettings?.renderPadding?.() ?? 2)
+      : null;
+    const nextAmbientKey = ambientKey();
+    const nextSourceKey = collectLightSources(state.world).signature;
+    const lightState = ensureLightState(state.world);
+    if (lightState && (lightState.lastAmbientKey !== nextAmbientKey || lightState.lastSourceKey !== nextSourceKey)) {
+      state.world.lightDirty = true;
+      state.world.lightInvalidationReason = lightState.lastAmbientKey !== nextAmbientKey ? 'ambient-change' : 'light-source-change';
+    } else if (lightState && lightState.lastSources > 0 && (perfNow() - Number(lightState.lastRecomputeAt || 0)) >= lightingIntervalMs()) {
+      state.world.lightDirty = true;
+      state.world.lightInvalidationReason = 'flicker-refresh';
+    }
     if (state.world.lightDirty) {
-      recomputeLighting(null, state.world);
+      recomputeLighting(bounds, state.world, state.world.lightInvalidationReason || 'dirty-tick');
       state.world.lightDirty = false;
     }
   }
 
-  window.LightingSystem = Object.freeze({ ensureLightLayer, invalidate, getLightAt, getDarknessAt, collectLightSources, recomputeLighting, drawLightingOverlay, hasRoofAt, skyLight });
+  function stats(world = state?.world) {
+    const lightState = ensureLightState(world);
+    return {
+      lastMs: round1(lightState?.lastMs || 0),
+      tiles: Number(lightState?.lastTiles || 0),
+      sources: Number(lightState?.lastSources || 0),
+      reason: lightState?.lastReason || 'none'
+    };
+  }
+
+  function round1(value) { return Math.round((Number(value) || 0) * 10) / 10; }
+
+  window.LightingSystem = Object.freeze({ ensureLightLayer, invalidate, getLightAt, getDarknessAt, collectLightSources, recomputeLighting, drawLightingOverlay, hasRoofAt, skyLight, stats });
   window.GameSystems?.registerTick?.('lighting.ensure-layer', tick, { order: 12, intervalMs: 800, critical: false });
   window.GameSystems?.registerWorldOverlay?.('lighting.dynamic-overlay', drawLightingOverlay, { order: 70, critical: false });
 })();

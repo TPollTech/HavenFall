@@ -472,7 +472,13 @@
     window.GameSystems?.drawRegisteredOverlays();
     renderStats.entitiesDrawn = entitiesDrawn;
     window.HavenfallSettings?.recordRenderStats?.(renderStats);
-    window.HavenfallSettings?.recordFrame?.({ frameMs: Math.round((perfNow() - started) * 10) / 10, updateMs: window.HavenfallPerf?.updateMs || 0, renderMs: Math.round((perfNow() - started) * 10) / 10 });
+    window.HavenfallSettings?.recordFrame?.({
+      frameMs: Math.round((perfNow() - started) * 10) / 10,
+      updateMs: window.HavenfallPerf?.updateMs || 0,
+      systemsMs: window.HavenfallPerf?.systemsMs || 0,
+      renderMs: Math.round((perfNow() - started) * 10) / 10,
+      uiMs: window.HavenfallPerf?.uiMs || 0
+    });
     const elapsed = perfNow() - started;
     if (elapsed > 34 && now - lastReportedSlowRenderAt > 2500) { lastReportedSlowRenderAt = now; console.warn('[HavenFall Render]', `Frame pesado: ${Math.round(elapsed)}ms`, renderStats); }
   }

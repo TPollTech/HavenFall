@@ -69,6 +69,12 @@
       currentSiteId: state?.worldMap?.currentSiteId || state?.world?.landingSite?.id || null,
       sectorsCount: Object.keys(state?.sectors || state?.worldMap?.sectors || {}).length,
       pathVersion: state?.pathVersion || 0,
+      performance: {
+        hardware: window.HardwareProfile || null,
+        frame: { ...(window.HavenfallSettings?.metrics || {}) },
+        simulation: window.HavenfallPerf?.simulation || null,
+        pathfinding: window.HavenfallPerf?.pathfinding || null
+      },
       save,
       canvas: canvasEl ? { width: canvasEl.width, height: canvasEl.height } : null,
       errors: runtimeErrors.slice(0, 10)

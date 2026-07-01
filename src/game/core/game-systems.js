@@ -104,6 +104,50 @@
     return true;
   }
 
+  function configureRegistryEntry(registry, id, options = {}) {
+    const entry = registry.get(id);
+    if (!entry || !options || typeof options !== 'object') return false;
+    let changed = false;
+
+    if (options.order !== undefined) {
+      const order = Number(options.order);
+      if (Number.isFinite(order) && entry.order !== order) {
+        entry.order = order;
+        changed = true;
+      }
+    }
+
+    if (options.enabled !== undefined) {
+      const enabled = !!options.enabled;
+      if (entry.enabled !== enabled) {
+        entry.enabled = enabled;
+        statsFor(id).enabled = enabled;
+        changed = true;
+      }
+    }
+
+    if (options.critical !== undefined) {
+      const critical = !!options.critical;
+      if (entry.critical !== critical) {
+        entry.critical = critical;
+        changed = true;
+      }
+    }
+
+    if (options.intervalMs !== undefined) {
+      const intervalMs = Math.max(0, Number(options.intervalMs) || 0);
+      if (entry.intervalMs !== intervalMs) {
+        entry.intervalMs = intervalMs;
+        entry.nextAt = 0;
+        changed = true;
+      }
+    }
+
+    if (changed) touchRegistry(registry);
+    publishSystemStats();
+    return changed;
+  }
+
   function setRegistryEnabled(registry, matcher, enabled) {
     let changed = 0;
     const next = !!enabled;
@@ -137,6 +181,10 @@
 
   function setTickEnabled(id, enabled) {
     return setEnabled(ticks, id, enabled);
+  }
+
+  function configureTick(id, options = {}) {
+    return configureRegistryEntry(ticks, id, options);
   }
 
   function runTickEntry(id, entry, dt, safeTick = null) {
@@ -343,6 +391,7 @@
     unregisterTick,
     hasTick,
     setTickEnabled,
+    configureTick,
     tick,
     listTicks,
     systemStats: () => Array.from(systemStats.values()).map(stat => ({ ...stat })),

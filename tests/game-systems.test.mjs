@@ -31,6 +31,27 @@ test('GameSystems runs ticks and hooks in declared order', () => {
   assert.equal(context.GameSystems.hasTick('late'), false);
 });
 
+test('GameSystems can reconfigure registered tick intervals', () => {
+  const context = createContext();
+  runBrowserScript('src/game/core/game-systems.js', context);
+
+  let calls = 0;
+  context.GameSystems.registerTick('paced', () => { calls++; }, { order: 10, intervalMs: 1000 });
+  context.performance = { now: () => 0 };
+  context.GameSystems.tick(0.16);
+  assert.equal(calls, 1);
+
+  context.GameSystems.configureTick('paced', { intervalMs: 0 });
+  context.performance = { now: () => 10 };
+  context.GameSystems.tick(0.16);
+  assert.equal(calls, 2);
+
+  context.GameSystems.configureTick('paced', { enabled: false });
+  context.performance = { now: () => 20 };
+  context.GameSystems.tick(0.16);
+  assert.equal(calls, 2);
+});
+
 test('GameSystems composes task, movement and work-rate extensions', () => {
   const context = createContext();
   runBrowserScript('src/game/core/game-systems.js', context);

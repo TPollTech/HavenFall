@@ -224,7 +224,7 @@ function writeNewGameConfig(config = defaultNewGameConfig) {
 }
 
 function updateSetupSummary() {
-  updateSetupSummary()
+  refreshMapSizeOptionLabels();
   if (!dom.setupSummary) return;
   const cfg = readNewGameConfigSafe();
   const risk = setupRiskLabel(cfg);
@@ -245,7 +245,6 @@ function updateSetupSummary() {
       <span><small>Tipo</small><b>${escapeHtml(descriptionMapSize(cfg.mapSize))}</b></span>
       <span><small>Eventos</small><b>${escapeHtml(labelEventIntensity(cfg.eventIntensity))}</b></span>
       <span><small>Suprimentos</small><b>${escapeHtml(labelResourcesPreset(cfg.resourcesPreset))}</b></span>
-      refreshMapSizeOptionLabels();
       ${landingLine}
     </div>
     <div class="setup-risk-meter ${risk.className}">
