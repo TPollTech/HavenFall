@@ -115,9 +115,83 @@ async function startSystemsWorld(page) {
     }
 
     newGameConfig = config;
-    if (typeof generateColonistCandidates === 'function') generateColonistCandidates(config);
-    startNewGame(config, Array.isArray(colonistCandidates) && colonistCandidates.length ? colonistCandidates : null);
-    window.HavenfallRuntime?.markGameplayState?.(state);
+    window.__smokeSystemsConfig = config;
+    setTimeout(() => {
+      const now = () => typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
+      const fmt = ms => `${Math.round(ms)}ms`;
+      console.log('[SMOKE-SYSTEMS] async start boot');
+      if (typeof generateWorldFromSeed === 'function' && !generateWorldFromSeed.__smokeWrapped) {
+        const originalGenerateWorldFromSeed = generateWorldFromSeed;
+        generateWorldFromSeed = function wrappedGenerateWorldFromSeed(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] worldgen begin');
+          const world = originalGenerateWorldFromSeed.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] worldgen done ${fmt(now() - startedAt)} objs=${world?.objects?.length || 0}`);
+          return world;
+        };
+        generateWorldFromSeed.__smokeWrapped = true;
+      }
+      if (typeof createTerrainMap === 'function' && !createTerrainMap.__smokeWrapped) {
+        const originalCreateTerrainMap = createTerrainMap;
+        createTerrainMap = function wrappedCreateTerrainMap(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] terrain begin');
+          const terrain = originalCreateTerrainMap.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] terrain done ${fmt(now() - startedAt)}`);
+          return terrain;
+        };
+        createTerrainMap.__smokeWrapped = true;
+      }
+      if (typeof generateResourceFields === 'function' && !generateResourceFields.__smokeWrapped) {
+        const originalGenerateResourceFields = generateResourceFields;
+        generateResourceFields = function wrappedGenerateResourceFields(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] resources begin');
+          const result = originalGenerateResourceFields.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] resources done ${fmt(now() - startedAt)}`);
+          return result;
+        };
+        generateResourceFields.__smokeWrapped = true;
+      }
+      if (window.BiomeEngine?.applyToWorld && !window.BiomeEngine.applyToWorld.__smokeWrapped) {
+        const originalApplyToWorld = window.BiomeEngine.applyToWorld;
+        window.BiomeEngine.applyToWorld = function wrappedApplyToWorld(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] biome apply begin');
+          const world = originalApplyToWorld.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] biome apply done ${fmt(now() - startedAt)}`);
+          return world;
+        };
+        window.BiomeEngine.applyToWorld.__smokeWrapped = true;
+      }
+      if (window.BiomeEngine?.rebalanceWorld && !window.BiomeEngine.rebalanceWorld.__smokeWrapped) {
+        const originalRebalanceWorld = window.BiomeEngine.rebalanceWorld;
+        window.BiomeEngine.rebalanceWorld = function wrappedRebalanceWorld(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] biome rebalance begin');
+          const world = originalRebalanceWorld.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] biome rebalance done ${fmt(now() - startedAt)}`);
+          return world;
+        };
+        window.BiomeEngine.rebalanceWorld.__smokeWrapped = true;
+      }
+      if (window.HavenfallWorldValidator?.validateWorld && !window.HavenfallWorldValidator.validateWorld.__smokeWrapped) {
+        const originalValidateWorld = window.HavenfallWorldValidator.validateWorld;
+        window.HavenfallWorldValidator.validateWorld = function wrappedValidateWorld(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] validator begin');
+          const result = originalValidateWorld.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] validator done ${fmt(now() - startedAt)} fixes=${result?.fixCount || 0} errors=${result?.errorCount || 0}`);
+          return result;
+        };
+        window.HavenfallWorldValidator.validateWorld.__smokeWrapped = true;
+      }
+      if (typeof generateColonistCandidates === 'function') generateColonistCandidates(config);
+      console.log('[SMOKE-SYSTEMS] colonists ready');
+      startNewGame(config, Array.isArray(colonistCandidates) && colonistCandidates.length ? colonistCandidates : null);
+      console.log('[SMOKE-SYSTEMS] startNewGame returned');
+      window.HavenfallRuntime?.markGameplayState?.(state);
+    }, 0);
 
     return {
       id: best.id,
@@ -276,6 +350,7 @@ async function main() {
 
     page.on('console', msg => {
       const text = msg.text();
+      if (text.includes('[SMOKE-SYSTEMS]')) console.log(text);
       if (msg.type() === 'error' && !text.includes('Failed to load resource')) consoleErrors.push(text);
     });
     page.on('pageerror', err => pageErrors.push(err.stack || err.message || String(err)));

@@ -73,6 +73,10 @@ function isProceduralRuntimeAsset(name) {
     || key.startsWith('stations_raw_v19b_cut_');
 }
 
+function worldTileKey(x, y) {
+  return `${Math.round(Number(x) || 0)},${Math.round(Number(y) || 0)}`;
+}
+
 function generateWorldFromSeed(config) {
   config = { ...defaultNewGameConfig, ...config };
   if (typeof ensurePlanetScanOnConfig === 'function') config = ensurePlanetScanOnConfig(config);
@@ -85,16 +89,19 @@ function generateWorldFromSeed(config) {
   carveSpawnClearing(terrain, spawn.x, spawn.y, cols, rows);
 
   const objects = [];
+  const occupiedTiles = new Set();
   const add = (type, x, y, extra = {}) => {
     if (!isWorldCoordInside(x, y, cols, rows)) return null;
-    if (objects.some(o => o.x === x && o.y === y)) return null;
+    const key = worldTileKey(x, y);
+    if (occupiedTiles.has(key)) return null;
     const obj = { id: worldUid(type, objects.length, config.seed), type, x, y, ...extra };
     objects.push(obj);
+    occupiedTiles.add(key);
     return obj;
   };
 
-  generateResourceFields({ terrain, objects, cols, rows, spawn, config, rand, add });
-  const pointsOfInterest = generatePointsOfInterest({ terrain, objects, cols, rows, spawn, config, rand, add });
+  generateResourceFields({ terrain, objects, occupiedTiles, cols, rows, spawn, config, rand, add });
+  const pointsOfInterest = generatePointsOfInterest({ terrain, objects, occupiedTiles, cols, rows, spawn, config, rand, add });
   placeStartingCamp({ objects, spawn, add });
 
   const exploration = makeExplorationMatrix(cols, rows);
@@ -369,7 +376,7 @@ function carveSpawnClearing(terrain, sx, sy, cols, rows) {
 }
 
 function generateResourceFields(ctx) {
-  const { terrain, cols, rows, spawn, config, rand, add } = ctx;
+  const { terrain, occupiedTiles, cols, rows, spawn, config, rand, add } = ctx;
   const size = getMapSizeDef(config.mapSize);
   const area = cols * rows;
   const multiplier = size.resourceMultiplier * difficultyResourceFactor(config.difficulty);
@@ -389,7 +396,7 @@ function generateResourceFields(ctx) {
 
   for (const [type, amount] of Object.entries(counts)) {
     for (let i = 0; i < amount; i++) {
-      const tile = weightedResourceTile(type, terrain, cols, rows, spawn, rand, config.seed);
+      const tile = weightedResourceTile(type, terrain, occupiedTiles, cols, rows, spawn, rand, config.seed);
       if (!tile) continue;
       add(type, tile.x, tile.y);
     }
@@ -417,7 +424,7 @@ function applyPlanetScanResourceMultipliers(counts, config) {
   return counts;
 }
 
-function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
+function weightedResourceTile(type, terrain, occupiedTiles, cols, rows, spawn, rand, seed) {
   const rules = window.HavenfallEcosystemRules;
   const minDist = type === 'ore' ? 13 : type === 'rock' ? 7 : 5;
   for (let i = 0; i < 160; i++) {
@@ -428,6 +435,7 @@ function weightedResourceTile(type, terrain, cols, rows, spawn, rand, seed) {
     if (d < minDist) continue;
     // Usa ecosystem-rules em vez de regras hardcoded
     if (rules && !rules.canObjectExistOnTile(type, t)) continue;
+    if (occupiedTiles?.has(worldTileKey(x, y))) continue;
     // Ore tem chance extra (só aparece em stone se o noise permitir)
     if (type === 'ore' && t !== 'stone' && t !== 'rock' && worldNoise(seed, x, y, 'ore') < 0.72) continue;
     return { x, y };
@@ -447,7 +455,7 @@ function placeAroundSpawn(add, terrain, spawn, type, amount, minR, maxR, rand) {
 }
 
 function generatePointsOfInterest(ctx) {
-  const { terrain, objects, cols, rows, spawn, config, rand, add } = ctx;
+  const { terrain, occupiedTiles, cols, rows, spawn, config, rand, add } = ctx;
   const size = getMapSizeDef(config.mapSize);
   const scan = planetScanProfile(config);
   const points = [];
@@ -456,7 +464,7 @@ function generatePointsOfInterest(ctx) {
   const signatureCount = Array.isArray(scan?.signatures) ? scan.signatures.length : 0;
   const totalPoi = size.poiCount + Math.min(2, Math.floor(signatureCount / 3));
   for (let i = 0; i < totalPoi; i++) {
-    const p = farRandomTile(terrain, objects, cols, rows, spawn, rand);
+    const p = farRandomTile(terrain, occupiedTiles, cols, rows, spawn, rand);
     if (!p) continue;
     const signature = scan?.signatures?.[i % Math.max(1, signatureCount)];
     const type = signature ? poiTypeForScanSignature(signature, types, rand) : types[Math.floor(rand() * types.length)];
@@ -501,13 +509,13 @@ function poiNameForScanSignature(signature, index) {
   return `${names[signature?.kind] || 'Assinatura detectada'} ${index + 1}`;
 }
 
-function farRandomTile(terrain, objects, cols, rows, spawn, rand) {
+function farRandomTile(terrain, occupiedTiles, cols, rows, spawn, rand) {
   for (let i = 0; i < 320; i++) {
     const x = 3 + Math.floor(rand() * (cols - 6));
     const y = 3 + Math.floor(rand() * (rows - 6));
     if (Math.hypot(x - spawn.x, y - spawn.y) < Math.min(cols, rows) * 0.18) continue;
     if (terrain[y]?.[x] === 'stone') continue;
-    if (objects.some(o => o.x === x && o.y === y)) continue;
+    if (occupiedTiles?.has(worldTileKey(x, y))) continue;
     return { x, y };
   }
   return null;
