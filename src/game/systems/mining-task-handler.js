@@ -1,6 +1,8 @@
 'use strict';
 
 (() => {
+  window.HavenfallContext = window.HavenfallContext || {};
+
   function resetMiningTask(c, note = 'Ocioso') {
     if (!c) return;
     c.task = null;
@@ -28,7 +30,7 @@
   }
 
   function installRouteSafeAssignMine() {
-    if (window.HavenfallContext?.routeSafeAssignMineInstalled || typeof assignMine !== 'function') return;
+    if (window.HavenfallContext.routeSafeAssignMineInstalled || typeof assignMine !== 'function') return;
     const nativeAssignMine = assignMine;
     assignMine = function assignMineRouteSafe(c, x, y, mark = false) {
       if (!c || typeof getRockAt !== 'function') return false;
