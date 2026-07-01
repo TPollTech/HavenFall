@@ -35,19 +35,67 @@
     buildDefs.wall_stone = { label: 'Parede de Pedra', type: 'wall', wallMaterial: 'stone', cost: copy(WALL_CONFIG.stone.cost), work: WALL_CONFIG.stone.work };
     buildDefs.wall_metal = { label: 'Parede de Metal', type: 'wall', wallMaterial: 'metal', cost: copy(WALL_CONFIG.metal.cost), work: WALL_CONFIG.metal.work };
     buildDefs.door = { ...(buildDefs.door || {}), label: 'Porta de Madeira', type: 'door', cost: { wood: 6 }, work: 4, defaultState: DOOR_STATE.CLOSED };
-    objectDefs.wall = { ...(objectDefs.wall || {}), name: 'parede', img: 'wall_stone', blocks: true, roofBoundary: true };
-    objectDefs.door = { ...(objectDefs.door || {}), name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true };
+    objectDefs.wall = { ...(objectDefs.wall || {}), name: 'parede', img: 'wall_stone', blocks: true, roofBoundary: true, doorBoundary: true, structural: true };
+    objectDefs.door = { ...(objectDefs.door || {}), name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true, doorBoundary: true, structural: true };
   }
 
-  function isWallAnchorAt(x, y) { const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null; return obj?.type === 'wall' || (obj?.type === 'blueprint' && typeForBuild(obj.buildType) === 'wall'); }
-  function hasAdjacentWallForDoor(x, y) { return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => isWallAnchorAt(x + dx, y + dy)); }
+  function objectBuildType(obj) { return obj?.type === 'blueprint' ? typeForBuild(obj.buildType) : obj?.type; }
+  function objectCanBeReplacedByDoor(obj) { const kind = objectBuildType(obj); return kind === 'wall' || (obj?.type === 'blueprint' && kind === 'wall'); }
+  function isNaturalDoorBoundaryAt(x, y) { return typeof isMountainBlocked === 'function' && isMountainBlocked(x, y); }
+  function isDoorBoundaryAt(x, y) {
+    if (isNaturalDoorBoundaryAt(x, y)) return true;
+    const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null;
+    if (!obj) return false;
+    const kind = objectBuildType(obj);
+    if (kind === 'wall' || kind === 'door') return true;
+    const def = objectDefs?.[obj.type];
+    if (def?.doorBoundary || def?.roofBoundary || def?.structural) return true;
+    if (def?.blocks && !def?.gather && !obj.carried && !obj.stored) return true;
+    return false;
+  }
+  function isWallAnchorAt(x, y) { return isDoorBoundaryAt(x, y); }
+  function hasDoorOpeningFrame(x, y) { return (isDoorBoundaryAt(x - 1, y) && isDoorBoundaryAt(x + 1, y)) || (isDoorBoundaryAt(x, y - 1) && isDoorBoundaryAt(x, y + 1)); }
+  function hasAdjacentWallForDoor(x, y) { return hasDoorOpeningFrame(x, y); }
   function isWaterTerrain(x, y) { return state?.terrain?.[y]?.[x] === 'water'; }
   function hasAdjacentWater(x, y) { return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => isWaterTerrain(x + dx, y + dy)); }
   function occupiedByColonist(x, y) { return !!state?.colonists?.some(c => Math.round(c.x) === x && Math.round(c.y) === y); }
 
+  function isDoorOpeningTile(x, y) {
+    const tx = Math.round(Number(x) || 0);
+    const ty = Math.round(Number(y) || 0);
+    if (!state) return false;
+    if (typeof isInside === 'function' && !isInside(tx, ty)) return false;
+    if (tx < 1 || ty < 1 || tx > getWorldCols() - 2 || ty > getWorldRows() - 2) return false;
+    if (typeof isTileDiscovered === 'function' && !isTileDiscovered(tx, ty)) return false;
+    if (typeof isMountainBlocked === 'function' && isMountainBlocked(tx, ty)) return false;
+    if (isWaterTerrain(tx, ty)) return false;
+    if (occupiedByColonist(tx, ty)) return false;
+    const obj = typeof getObjectAt === 'function' ? getObjectAt(tx, ty) : null;
+    if (!obj) return true;
+    return objectCanBeReplacedByDoor(obj);
+  }
+
+  function resolveDoorPlacementTile(x, y) {
+    const tx = Math.round(Number(x) || 0);
+    const ty = Math.round(Number(y) || 0);
+    const candidates = [
+      { x: tx, y: ty },
+      { x: tx + 1, y: ty },
+      { x: tx - 1, y: ty },
+      { x: tx, y: ty + 1 },
+      { x: tx, y: ty - 1 },
+      { x: tx + 1, y: ty + 1 },
+      { x: tx - 1, y: ty + 1 },
+      { x: tx + 1, y: ty - 1 },
+      { x: tx - 1, y: ty - 1 }
+    ];
+    return candidates.find(tile => isDoorOpeningTile(tile.x, tile.y) && hasDoorOpeningFrame(tile.x, tile.y)) || null;
+  }
+
   function canPlaceBuild(key, x, y) {
     const def = buildDefs?.[key]; const tx = Math.round(Number(x) || 0); const ty = Math.round(Number(y) || 0);
     if (!def || !state) return false;
+    if (def.type === 'door') return !!resolveDoorPlacementTile(tx, ty);
     if (typeof isInside === 'function' && !isInside(tx, ty)) return false;
     if (tx < 1 || ty < 1 || tx > getWorldCols() - 2 || ty > getWorldRows() - 2) return false;
     if (typeof isTileDiscovered === 'function' && !isTileDiscovered(tx, ty)) return false;
@@ -55,7 +103,6 @@
     if (typeof getObjectAt === 'function' && getObjectAt(tx, ty)) return false;
     if (occupiedByColonist(tx, ty)) return false;
     if (state.terrain?.[ty]?.[tx] === 'water' && def.type !== 'bridge') return false;
-    if (def.type === 'door' && !hasAdjacentWallForDoor(tx, ty)) return false;
     if (def.placeOnWater) return isWaterTerrain(tx, ty);
     if (def.needsAdjacentWater && !hasAdjacentWater(tx, ty)) return false;
     if (isWaterTerrain(tx, ty)) return false;
@@ -73,17 +120,29 @@
   }
 
   function queueConstruction(key, x, y, options = {}) {
-    const def = buildDefs?.[key]; const tx = Math.round(Number(x) || 0); const ty = Math.round(Number(y) || 0);
+    const def = buildDefs?.[key]; let tx = Math.round(Number(x) || 0); let ty = Math.round(Number(y) || 0);
     if (!def) return { ok: false, reason: 'Construção inválida.' };
     if (typeof isBuildUnlocked === 'function' && !isBuildUnlocked(key)) return { ok: false, reason: `Precisa pesquisar ${researchDefs?.[def.requires]?.label || 'tecnologia'} antes.` };
-    if (!canPlaceBuild(key, tx, ty)) return { ok: false, reason: def.type === 'door' ? 'A porta precisa encostar em uma parede.' : 'Não dá para construir nesse lugar.' };
+    let replacing = null;
+    if (def.type === 'door') {
+      const resolved = resolveDoorPlacementTile(tx, ty);
+      if (!resolved) return { ok: false, reason: 'A porta precisa de uma abertura entre rocha, parede ou estrutura.' };
+      tx = resolved.x;
+      ty = resolved.y;
+      const obj = typeof getObjectAt === 'function' ? getObjectAt(tx, ty) : null;
+      if (obj && objectCanBeReplacedByDoor(obj)) replacing = obj;
+    } else if (!canPlaceBuild(key, tx, ty)) {
+      return { ok: false, reason: 'Não dá para construir nesse lugar.' };
+    }
     if (!hasPayment(key)) return { ok: false, reason: `Recursos insuficientes. Precisa de ${buildCostText(key)}.` };
     payCost(def.cost || {}); payItems(def.itemCost || {});
+    if (replacing?.id && Array.isArray(state.objects)) state.objects = state.objects.filter(obj => obj.id !== replacing.id);
     const rotation = typeof isBuildRotatable === 'function' && isBuildRotatable(key) ? normalizeBuildRotation(currentBuildRotation) : 0;
-    const blueprint = applyBuildMetadata({ id: uid('obj'), type: 'blueprint', buildType: key, x: tx, y: ty, progress: 0, rotation }, def);
+    const blueprint = applyBuildMetadata({ id: uid('obj'), type: 'blueprint', buildType: key, x: tx, y: ty, progress: 0, rotation, replacesObjectId: replacing?.id || null }, def);
     state.objects.push(blueprint);
+    if (state.world && state.world.objects) state.world.objects = state.objects;
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-    if (!options.silent && typeof log === 'function') log(`Planta de ${def.label} posicionada.`);
+    if (!options.silent && typeof log === 'function') log(replacing ? `Parede convertida em planta de ${def.label}.` : `Planta de ${def.label} posicionada.`);
     return { ok: true, blueprint };
   }
 
@@ -134,7 +193,7 @@
     originalUpdateUI = typeof updateUI === 'function' ? updateUI : null;
     originalRoutePrimaryObjectAction = typeof routePrimaryObjectAction === 'function' ? routePrimaryObjectAction : null;
     installDefinitions();
-    window.tileToWorld = tileToWorldGrid; window.worldToTile = worldToTileGrid; window.canvasClientToWorld = canvasClientToWorldGrid; window.tileFromPointerEvent = tileFromPointer; window.tileRectBetween = rectBetween; window.forEachTileInRect = eachTile; window.canPlaceBuild = canPlaceBuild; window.queueConstruction = queueConstruction; window.QueueConstruction = queueConstruction; window.placeBlueprintRect = placeRect; window.placeBlueprint = placeBuildBlueprint; window.toggleDoorState = toggleDoorState; window.applyCompletedBuildMetadata = applyBuildMetadata; window.hasAdjacentWallForDoor = hasAdjacentWallForDoor; window.isWallAnchorAt = isWallAnchorAt; window.hasAdjacentWater = hasAdjacentWater;
+    window.tileToWorld = tileToWorldGrid; window.worldToTile = worldToTileGrid; window.canvasClientToWorld = canvasClientToWorldGrid; window.tileFromPointerEvent = tileFromPointer; window.tileRectBetween = rectBetween; window.forEachTileInRect = eachTile; window.canPlaceBuild = canPlaceBuild; window.queueConstruction = queueConstruction; window.QueueConstruction = queueConstruction; window.placeBlueprintRect = placeRect; window.placeBlueprint = placeBuildBlueprint; window.toggleDoorState = toggleDoorState; window.applyCompletedBuildMetadata = applyBuildMetadata; window.hasAdjacentWallForDoor = hasAdjacentWallForDoor; window.isWallAnchorAt = isWallAnchorAt; window.isDoorBoundaryAt = isDoorBoundaryAt; window.isDoorOpeningTile = isDoorOpeningTile; window.hasDoorOpeningFrame = hasDoorOpeningFrame; window.resolveDoorPlacementTile = resolveDoorPlacementTile; window.hasAdjacentWater = hasAdjacentWater;
     try { tileFromEvent = tileFromPointer; } catch (_) {}
     try { canPlace = (type, x, y) => canPlaceBuild(type === 'wall' ? 'wall' : type, x, y); } catch (_) {}
     try { placeBlueprint = placeBuildBlueprint; } catch (_) {}
@@ -143,8 +202,8 @@
     canvas?.addEventListener('mousedown', mouseDown); canvas?.addEventListener('mousemove', mouseMove); canvas?.addEventListener('mouseup', mouseUp); canvas?.addEventListener('mouseleave', () => { if (drag && !drag.active) drag = null; }); document.addEventListener('click', buildButtonCapture, true);
     window.GameSystems?.registerTaskHandler?.('build', 'construction.completion', buildTaskHandler, { order: 1 });
     installBuildButtons();
-    window.HavenfallConstructionSystem = 'grid-drag-door-tier-system';
-    console.info('[Construction System] Sistema definitivo de construção carregado.');
+    window.HavenfallConstructionSystem = 'smart-opening-door-construction';
+    console.info('[Construction System] Portas inteligentes por abertura carregadas.');
   }
 
   install();
