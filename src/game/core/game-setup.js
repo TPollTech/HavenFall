@@ -312,12 +312,10 @@ function setupBiomeLabel(landing, sample) {
 }
 
 function renderSetupSectorVisual(cfg, risk, sample = setupPreviewSample(cfg), biomeLabel = setupBiomeLabel(cfg?.selectedLandingSite, sample)) {
-  const host = document.getElementById('setupSectorVisual');
+  if (typeof document === 'undefined') return;
+  const host = document.getElementById('setupSectorVisual') || document.querySelector('#newGameSetupScreen .setup-sector-visual');
   if (!host) return;
   const landing = cfg.selectedLandingSite;
-  const rows = sample.length || 14;
-  const cols = sample[0]?.length || 24;
-  const summary = summarizePreviewSample(sample);
   const chips = [
     { text: landing ? 'setor validado' : 'scan pendente', state: landing ? 'is-locked' : 'is-pending' },
     { text: labelMapSize(cfg.mapSize) },
@@ -325,38 +323,28 @@ function renderSetupSectorVisual(cfg, risk, sample = setupPreviewSample(cfg), bi
     { text: labelEventIntensity(cfg.eventIntensity) },
     { text: landing ? `${Number(landing.difficulty?.score || 0)}/100 score` : `risco ${risk.label.toLowerCase()}` }
   ];
-  const legend = summary.entries
-    .filter(([type]) => type !== 'spawn')
-    .slice(0, 4)
-    .map(([type, count]) => `<span style="--swatch:${setupPreviewColor(type)}"><i></i>${escapeHtml(setupPreviewLabel(type))} ${Math.round((count / Math.max(1, summary.total)) * 100)}%</span>`)
-    .join('');
-  const raster = sample.map(row => row.map(cell => {
-    const type = String(cell?.type || 'grass');
-    return `<i class="setup-preview-cell ${type === 'spawn' ? 'is-spawn' : ''}" style="--setup-cell:${setupPreviewColor(type)}"></i>`;
-  }).join('')).join('');
   const lead = landing
-    ? escapeHtml(landing.labels?.subtitle || 'Amostra real do setor travado. Terreno, risco e recursos ja entram na geracao do mundo.')
-    : escapeHtml(`Leitura sintetica baseada na seed ${cfg.seed}. Abra a analise de setor para trocar esta previsao por um pouso real.`);
+    ? escapeHtml(landing.labels?.subtitle || 'Pouso travado. Este setor ja define spawn, terreno, riscos e recursos do mapa final.')
+    : escapeHtml('Nenhum pouso foi travado ainda. Abra a analise de setor para escolher o ponto de descida da colonia.');
+  const stages = [
+    { label: 'Agora', title: 'Identidade e expedicao', state: 'current' },
+    { label: 'Etapa 02', title: 'Analise de setor', state: landing ? 'ready' : 'pending' },
+    { label: 'Etapa 03', title: 'Selecao de colonos', state: landing ? 'pending' : 'locked' }
+  ];
 
   host.innerHTML = `
     <div class="setup-visual-head">
       <div class="setup-visual-copy">
-        <span class="setup-visual-kicker">${landing ? 'Pouso confirmado' : 'Pre-varredura'}</span>
-        <b>${escapeHtml(landing?.name || 'Corredor de insercao')}</b>
+        <span class="setup-visual-kicker">Fluxo da missao</span>
+        <b>${escapeHtml(landing?.name || 'Passos da expedicao')}</b>
         <small>${lead}</small>
       </div>
       <div class="setup-visual-status ${landing ? 'is-locked' : 'is-pending'}">${landing ? 'SETOR TRAVADO' : 'SCAN PENDENTE'}</div>
     </div>
-    <div class="setup-preview-frame">
-      <div class="setup-preview-grid" style="--setup-preview-cols:${cols};--setup-preview-rows:${rows}">${raster}</div>
-      <div class="setup-preview-overlay">
-        <div><span>Bioma</span><b>${escapeHtml(biomeLabel)}</b></div>
-        <div><span>Risco</span><b>${escapeHtml(risk.label)}</b></div>
-        <div><span>Mapa</span><b>${escapeHtml(labelMapSize(cfg.mapSize))}</b></div>
-      </div>
+    <div class="setup-stage-list">
+      ${stages.map(stage => `<span class="setup-stage-card ${stage.state}"><small>${escapeHtml(stage.label)}</small><b>${escapeHtml(stage.title)}</b></span>`).join('')}
     </div>
-    <div class="setup-visual-chip-row">${chips.map(chip => `<span class="setup-visual-chip ${chip.state || ''}">${escapeHtml(chip.text)}</span>`).join('')}</div>
-    <div class="setup-preview-legend">${legend}</div>`;
+    <div class="setup-visual-chip-row">${chips.map(chip => `<span class="setup-visual-chip ${chip.state || ''}">${escapeHtml(chip.text)}</span>`).join('')}</div>`;
 }
 
 function readNewGameConfig() {
@@ -409,6 +397,9 @@ function writeNewGameConfig(config = defaultNewGameConfig) {
 function updateSetupSummary() {
   refreshMapSizeOptionLabels();
   if (!dom.setupSummary) return;
+  if (dom?.buttons?.setupNext) dom.buttons.setupNext.textContent = 'Abrir Analise de Setor';
+  const nextStep = typeof document === 'undefined' ? null : document.querySelector('#newGameSetupScreen .setup-next-step b');
+  if (nextStep) nextStep.textContent = 'Analise orbital do pouso';
   const cfg = readNewGameConfigSafe();
   const risk = setupRiskLabel(cfg);
   const landing = cfg.selectedLandingSite;
@@ -419,6 +410,13 @@ function updateSetupSummary() {
   const summaryLead = landing
     ? `Pouso confirmado em ${landingName}. O mundo vai herdar os modificadores, riscos e recursos desse setor.`
     : 'Ajuste os parametros da expedicao e abra a analise de setor para escolher onde a colonia vai descer.';
+  const landingLine = landing
+    ? `
+      <span><small>Pouso</small><b>${escapeHtml(landingName)}</b></span>
+      <span><small>Score orbital</small><b>${scanScore}</b></span>`
+    : `
+      <span><small>Analise</small><b>Aguardando escolha do pouso</b></span>
+      <span><small>Status</small><b>Sem setor travado</b></span>`;
   renderSetupSectorVisual(cfg, risk, previewSample, biomeLabel);
   dom.setupSummary.innerHTML = `
     <div class="setup-summary-title">
