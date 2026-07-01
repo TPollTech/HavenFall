@@ -3,6 +3,7 @@
 const baseBuildDefs = {
   bed: { label: 'Cama', type: 'bed', cost: { wood: 12 }, work: 5 },
   campfire: { label: 'Fogueira', type: 'campfire', cost: { wood: 6, stone: 2 }, work: 4 },
+  torch: { label: 'Tocha', type: 'torch', cost: { wood: 2 }, work: 1.2 },
   crate: { label: 'Depósito', type: 'crate', cost: { wood: 10 }, work: 4 },
   wall: { label: 'Parede', type: 'wall', cost: { wood: 4 }, work: 3 },
   door: { label: 'Porta', type: 'door', cost: { wood: 6 }, work: 4 },
