@@ -35,6 +35,9 @@
     buildDefs.wall_stone = { label: 'Parede de Pedra', type: 'wall', wallMaterial: 'stone', cost: copy(WALL_CONFIG.stone.cost), work: WALL_CONFIG.stone.work };
     buildDefs.wall_metal = { label: 'Parede de Metal', type: 'wall', wallMaterial: 'metal', cost: copy(WALL_CONFIG.metal.cost), work: WALL_CONFIG.metal.work };
     buildDefs.door = { ...(buildDefs.door || {}), label: 'Porta de Madeira', type: 'door', cost: { wood: 6 }, work: 4, defaultState: DOOR_STATE.CLOSED };
+    buildDefs.floor_dirt = { ...(buildDefs.floor_dirt || {}), label: 'Chão Batido', type: 'floor', floorType: 'packed_dirt', cost: {}, work: 1.2 };
+    buildDefs.floor_wood = { ...(buildDefs.floor_wood || {}), label: 'Piso de Madeira', type: 'floor', floorType: 'wood_floor', cost: { wood: 2 }, work: 1.6 };
+    buildDefs.floor_stone = { ...(buildDefs.floor_stone || {}), label: 'Piso de Pedra', type: 'floor', floorType: 'stone_floor', cost: { stone: 2 }, work: 1.8 };
     objectDefs.wall = { ...(objectDefs.wall || {}), name: 'parede', img: 'wall_stone', blocks: true, roofBoundary: true, doorBoundary: true, structural: true };
     objectDefs.door = { ...(objectDefs.door || {}), name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true, doorBoundary: true, structural: true };
   }
@@ -42,17 +45,7 @@
   function objectBuildType(obj) { return obj?.type === 'blueprint' ? typeForBuild(obj.buildType) : obj?.type; }
   function objectCanBeReplacedByDoor(obj) { const kind = objectBuildType(obj); return kind === 'wall' || (obj?.type === 'blueprint' && kind === 'wall'); }
   function isNaturalDoorBoundaryAt(x, y) { return typeof isMountainBlocked === 'function' && isMountainBlocked(x, y); }
-  function isDoorBoundaryAt(x, y) {
-    if (isNaturalDoorBoundaryAt(x, y)) return true;
-    const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null;
-    if (!obj) return false;
-    const kind = objectBuildType(obj);
-    if (kind === 'wall' || kind === 'door') return true;
-    const def = objectDefs?.[obj.type];
-    if (def?.doorBoundary || def?.roofBoundary || def?.structural) return true;
-    if (def?.blocks && !def?.gather && !obj.carried && !obj.stored) return true;
-    return false;
-  }
+  function isDoorBoundaryAt(x, y) { if (isNaturalDoorBoundaryAt(x, y)) return true; const obj = typeof getObjectAt === 'function' ? getObjectAt(x, y) : null; if (!obj) return false; const kind = objectBuildType(obj); if (kind === 'wall' || kind === 'door') return true; const def = objectDefs?.[obj.type]; if (def?.doorBoundary || def?.roofBoundary || def?.structural) return true; if (def?.blocks && !def?.gather && !obj.carried && !obj.stored) return true; return false; }
   function isWallAnchorAt(x, y) { return isDoorBoundaryAt(x, y); }
   function hasDoorOpeningFrame(x, y) { return (isDoorBoundaryAt(x - 1, y) && isDoorBoundaryAt(x + 1, y)) || (isDoorBoundaryAt(x, y - 1) && isDoorBoundaryAt(x, y + 1)); }
   function hasAdjacentWallForDoor(x, y) { return hasDoorOpeningFrame(x, y); }
@@ -79,22 +72,20 @@
     const tx = Math.round(Number(x) || 0);
     const ty = Math.round(Number(y) || 0);
     const candidates = [
-      { x: tx, y: ty },
-      { x: tx + 1, y: ty },
-      { x: tx - 1, y: ty },
-      { x: tx, y: ty + 1 },
-      { x: tx, y: ty - 1 },
-      { x: tx + 1, y: ty + 1 },
-      { x: tx - 1, y: ty + 1 },
-      { x: tx + 1, y: ty - 1 },
-      { x: tx - 1, y: ty - 1 }
+      { x: tx, y: ty }, { x: tx + 1, y: ty }, { x: tx - 1, y: ty }, { x: tx, y: ty + 1 }, { x: tx, y: ty - 1 },
+      { x: tx + 1, y: ty + 1 }, { x: tx - 1, y: ty + 1 }, { x: tx + 1, y: ty - 1 }, { x: tx - 1, y: ty - 1 }
     ];
     return candidates.find(tile => isDoorOpeningTile(tile.x, tile.y) && hasDoorOpeningFrame(tile.x, tile.y)) || null;
+  }
+
+  function canPlaceFloorBuild(def, x, y) {
+    return !!window.FloorSystem?.canPlaceFloor?.(x, y, def?.floorType);
   }
 
   function canPlaceBuild(key, x, y) {
     const def = buildDefs?.[key]; const tx = Math.round(Number(x) || 0); const ty = Math.round(Number(y) || 0);
     if (!def || !state) return false;
+    if (def.type === 'floor') return canPlaceFloorBuild(def, tx, ty);
     if (def.type === 'door') return !!resolveDoorPlacementTile(tx, ty);
     if (typeof isInside === 'function' && !isInside(tx, ty)) return false;
     if (tx < 1 || ty < 1 || tx > getWorldCols() - 2 || ty > getWorldRows() - 2) return false;
@@ -109,13 +100,14 @@
     return state.terrain?.[ty]?.[tx] !== 'stone' || def.type === 'wall';
   }
 
-  function buildCostText(key) { const def = buildDefs?.[key]; if (!def) return 'construção inválida'; return typeof itemCostText === 'function' ? itemCostText(def.cost || {}, def.itemCost || {}) : Object.entries(def.cost || {}).map(([k, v]) => `${v} ${k}`).join(' + '); }
+  function buildCostText(key) { const def = buildDefs?.[key]; if (!def) return 'construção inválida'; return typeof itemCostText === 'function' ? itemCostText(def.cost || {}, def.itemCost || {}) : Object.entries(def.cost || {}).map(([k, v]) => `${v} ${k}`).join(' + ') || 'sem custo'; }
   function hasPayment(key) { const def = buildDefs?.[key]; return !!def && (!def.cost || hasCost(def.cost)) && (!def.itemCost || hasItems(def.itemCost)); }
 
   function applyBuildMetadata(obj, def) {
     if (!obj || !def) return obj;
     if (def.type === 'wall') { const cfg = WALL_CONFIG[def.wallMaterial || materialForBuild(obj.buildType || 'wall')] || WALL_CONFIG.wood; obj.wallMaterial = cfg.key; obj.hp = Number.isFinite(obj.hp) ? obj.hp : cfg.hp; obj.maxHp = Number.isFinite(obj.maxHp) ? obj.maxHp : cfg.hp; obj.texture_id = cfg.texture_id; obj.tile_width = 1; obj.tile_height = 1; obj.anchor = 'center'; }
     if (def.type === 'door') { obj.state = obj.state || def.defaultState || DOOR_STATE.CLOSED; obj.doorState = obj.state; obj.hp = Number.isFinite(obj.hp) ? obj.hp : 120; obj.maxHp = Number.isFinite(obj.maxHp) ? obj.maxHp : 120; obj.texture_id = obj.state === DOOR_STATE.OPEN ? 'door_wood_open' : 'door_wood_closed'; obj.tile_width = 1; obj.tile_height = 1; obj.anchor = 'center'; }
+    if (def.type === 'floor') { obj.floorType = def.floorType; obj.tile_width = 1; obj.tile_height = 1; obj.anchor = 'top-left'; obj.blocks = false; }
     return obj;
   }
 
@@ -124,7 +116,9 @@
     if (!def) return { ok: false, reason: 'Construção inválida.' };
     if (typeof isBuildUnlocked === 'function' && !isBuildUnlocked(key)) return { ok: false, reason: `Precisa pesquisar ${researchDefs?.[def.requires]?.label || 'tecnologia'} antes.` };
     let replacing = null;
-    if (def.type === 'door') {
+    if (def.type === 'floor') {
+      if (!canPlaceFloorBuild(def, tx, ty)) return { ok: false, reason: 'Não dá para construir piso nesse lugar.' };
+    } else if (def.type === 'door') {
       const resolved = resolveDoorPlacementTile(tx, ty);
       if (!resolved) return { ok: false, reason: 'A porta precisa de uma abertura entre rocha, parede ou estrutura.' };
       tx = resolved.x;
@@ -152,12 +146,44 @@
   function toggleDoorState(obj) { if (!obj || obj.type !== 'door') return false; obj.state = obj.state === DOOR_STATE.OPEN ? DOOR_STATE.CLOSED : DOOR_STATE.OPEN; obj.doorState = obj.state; obj.texture_id = obj.state === DOOR_STATE.OPEN ? 'door_wood_open' : 'door_wood_closed'; if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid(); if (typeof updateUI === 'function') updateUI(true); return true; }
   function routePrimaryObjectActionWrapper(c, obj) { if (obj?.type === 'door') { toggleDoorState(obj); return; } if (originalRoutePrimaryObjectAction) return originalRoutePrimaryObjectAction(c, obj); }
 
-  function installBuildButtons() { const grid = document.querySelector('#buildPanel .build-grid'); if (!grid) return; const wallBtn = grid.querySelector('[data-build="wall"]'); if (wallBtn) wallBtn.innerHTML = 'Parede Madeira<br><small>4 madeira</small>'; const doorBtn = grid.querySelector('[data-build="door"]'); const ref = doorBtn || wallBtn; [{ key: 'wall_stone', html: 'Parede Pedra<br><small>6 pedra</small>' }, { key: 'wall_metal', html: 'Parede Metal<br><small>2 pedra + 6 metal</small>' }, { key: 'bridge', html: 'Ponte<br><small>8 madeira</small>' }, { key: 'butcher_table', html: 'Açougue<br><small>14 madeira + 4 pedra</small>' }].reverse().forEach(item => { if (grid.querySelector(`[data-build="${item.key}"]`)) return; const btn = document.createElement('button'); btn.dataset.build = item.key; btn.innerHTML = item.html; if (ref) grid.insertBefore(btn, ref); else grid.appendChild(btn); }); }
+  function installBuildButtons() {
+    const grid = document.querySelector('#buildPanel .build-grid');
+    if (!grid) return;
+    const wallBtn = grid.querySelector('[data-build="wall"]');
+    if (wallBtn) wallBtn.innerHTML = 'Parede Madeira<br><small>4 madeira</small>';
+    const doorBtn = grid.querySelector('[data-build="door"]');
+    const ref = doorBtn || wallBtn;
+    [
+      { key: 'floor_dirt', html: 'Chão Batido<br><small>sem custo</small>' },
+      { key: 'floor_wood', html: 'Piso Madeira<br><small>2 madeira</small>' },
+      { key: 'floor_stone', html: 'Piso Pedra<br><small>2 pedra</small>' },
+      { key: 'wall_stone', html: 'Parede Pedra<br><small>6 pedra</small>' },
+      { key: 'wall_metal', html: 'Parede Metal<br><small>2 pedra + 6 metal</small>' },
+      { key: 'bridge', html: 'Ponte<br><small>8 madeira</small>' },
+      { key: 'butcher_table', html: 'Açougue<br><small>14 madeira + 4 pedra</small>' }
+    ].reverse().forEach(item => { if (grid.querySelector(`[data-build="${item.key}"]`)) return; const btn = document.createElement('button'); btn.dataset.build = item.key; btn.innerHTML = item.html; if (ref) grid.insertBefore(btn, ref); else grid.appendChild(btn); });
+  }
   function selectBuildTool(key) { if (!buildDefs?.[key]) return; if (typeof clearZoneTool === 'function') clearZoneTool('construção selecionada'); currentBuild = key; if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(key); if (typeof updateUI === 'function') updateUI(true); }
   function buildButtonCapture(event) { const build = event.target?.closest?.('[data-build]'); if (!build || !build.closest('#hud, #bottomActionBar, #buildPanel')) return; event.preventDefault(); event.stopPropagation(); selectBuildTool(build.dataset.build); }
   function mouseDown(event) { if (event.button !== 0 || appScreen !== SCREEN.PLAYING || !state || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag = { start: tile, current: tile, active: false, x: event.clientX, y: event.clientY }; try { mouseTile = tile; } catch (_) {} }
   function mouseMove(event) { if (!drag || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag.current = tile; try { mouseTile = tile; } catch (_) {} if (tile.x !== drag.start.x || tile.y !== drag.start.y || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5) drag.active = true; }
   function mouseUp(event) { if (event.button !== 0 || !drag || !currentBuild) return; const selection = drag; drag = null; if (!selection.active) return; event.preventDefault(); event.stopPropagation(); suppressNextClick = true; placeRect(currentBuild, selection.start, selection.current); }
+
+  function completeFloorBlueprint(c, bp, def, buildType) {
+    const ok = window.FloorSystem?.setFloorAt?.(bp.x, bp.y, def.floorType);
+    if (!ok) {
+      if (typeof log === 'function') log(`Falha ao finalizar ${def.label}.`);
+    }
+    state.objects = (state.objects || []).filter(obj => obj.id !== bp.id);
+    if (state.world && state.world.objects) state.world.objects = state.objects;
+    window.HavenfallWorkFeedback?.notifyComplete?.('build', { buildType, objectType: 'floor', floorType: def.floorType }, bp.x, bp.y);
+    if (typeof log === 'function') log(`${c.name} terminou: ${def.label}.`);
+    c.task = null;
+    c.work = 0;
+    c.note = 'Ocioso';
+    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    return true;
+  }
 
   function buildTaskHandler(c, task, tick) {
     const bp = state?.objects?.find(o => o.id === task.objId && o.type === 'blueprint');
@@ -168,6 +194,7 @@
     bp.progress = (bp.progress || 0) + tick * workRate(c, 'build');
     c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`;
     if (bp.progress >= def.work) {
+      if (def.type === 'floor') return completeFloorBlueprint(c, bp, def, buildType);
       const x = bp.x;
       const y = bp.y;
       bp.type = def.type;
@@ -202,8 +229,8 @@
     canvas?.addEventListener('mousedown', mouseDown); canvas?.addEventListener('mousemove', mouseMove); canvas?.addEventListener('mouseup', mouseUp); canvas?.addEventListener('mouseleave', () => { if (drag && !drag.active) drag = null; }); document.addEventListener('click', buildButtonCapture, true);
     window.GameSystems?.registerTaskHandler?.('build', 'construction.completion', buildTaskHandler, { order: 1 });
     installBuildButtons();
-    window.HavenfallConstructionSystem = 'smart-opening-door-construction';
-    console.info('[Construction System] Portas inteligentes por abertura carregadas.');
+    window.HavenfallConstructionSystem = 'smart-opening-door-floor-construction';
+    console.info('[Construction System] Portas inteligentes e pisos construíveis carregados.');
   }
 
   install();
