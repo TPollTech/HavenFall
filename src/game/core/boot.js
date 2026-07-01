@@ -81,11 +81,12 @@
     }),
     Object.freeze({
       name: 'world_simulation',
-      label: 'Mundo, pathfinding, geologia e tarefas',
+      label: 'Mundo, pathfinding, geologia, pisos e tarefas',
       entries: Object.freeze([
         ['exploration_system','src/game/systems/exploration-system.js'],
         ['map_pathfinding','src/game/systems/map-pathfinding.js'],
         ['geology_system','src/game/systems/geology-system.js'],
+        ['floor_system','src/game/systems/floor-system.js'],
         ['geology_mass_system','src/game/systems/geology-mass-system.js'],
         ['schedule_manager','src/game/systems/schedule-manager.js'],
         ['world_systems','src/game/systems/world-systems.js'],
@@ -251,6 +252,7 @@
     asset_load_guard: 'Protegendo carregamento de assets',
     map_pathfinding: 'Preparando navegação',
     geology_system: 'Preparando montanhas e mineração',
+    floor_system: 'Preparando pisos construíveis',
     runtime_tasks: 'Preparando tarefas dos colonos',
     work_coordination: 'Preparando coordenação de trabalho',
     renderer: 'Preparando renderização',
@@ -302,7 +304,6 @@
     if (bootFinished && !force) return null;
     let overlay = document.getElementById('havenfallBootOverlay');
     if (overlay) return overlay;
-
     if (!force && !bootOverlayStarted) {
       if (!bootOverlayTimer) {
         bootOverlayTimer = setTimeout(() => {
@@ -315,7 +316,6 @@
       }
       return null;
     }
-
     bootOverlayStarted = true;
     overlay = createBootOverlay();
     syncBootOverlay();
@@ -426,28 +426,23 @@
   function loadScriptGroup(group, total = CORE_BLUEPRINTS.length + 1) {
     const blueprints = group.entries.map(([id, file]) => Object.freeze({ id, file }));
     if (!blueprints.length) return Promise.resolve([]);
-
     const startedAt = performance.now();
     setBootProgress(group.label || `Carregando ${group.name}`, scriptProgress(total), `${blueprints.length} módulo(s)`);
-
     return new Promise((resolve, reject) => {
       let remaining = blueprints.length;
       let rejected = false;
       const loaded = [];
-
       const onLoaded = blueprint => {
         if (rejected) return;
         loaded.push(blueprint);
         remaining -= 1;
         if (remaining === 0) resolve(loaded);
       };
-
       const onError = error => {
         if (rejected) return;
         rejected = true;
         reject(error);
       };
-
       for (const blueprint of blueprints) {
         document.body.appendChild(createScriptElement(blueprint, group.name, total, onLoaded, onError));
       }
