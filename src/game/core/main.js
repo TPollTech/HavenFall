@@ -35,7 +35,11 @@ function bootGame() {
       return loadCoreExtension('src/game/systems/colonist-autonomy-system.js', 'colonist_autonomy');
     })
     .then(() => {
-      bootStatus('Carregando assets', 86, 'Lendo imagens, sprites e placeholders');
+      bootStatus('Aplicando carga inicial', 86, 'Iniciando apenas com colonos');
+      return loadCoreExtension('src/game/systems/starting-loadout-system.js', 'starting_loadout');
+    })
+    .then(() => {
+      bootStatus('Carregando assets', 87, 'Lendo imagens, sprites e placeholders');
       return loadImages();
     })
     .then(() => {
