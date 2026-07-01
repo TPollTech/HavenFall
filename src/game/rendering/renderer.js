@@ -689,16 +689,42 @@ function drawGatherSelection() {
 
 function drawBuildPreview() {
   if (!currentBuild || !mouseTile) return;
-  const def = buildDefs[currentBuild];
+  const def = buildDefs?.[currentBuild];
+  if (!def) return;
   const type = def.type;
-  const can = canPlace(type, mouseTile.x, mouseTile.y) && hasCost(def.cost);
+  const canAfford = (!def.cost || hasCost(def.cost)) && (!def.itemCost || hasItems(def.itemCost));
+  const canPlaceTile = type === 'floor'
+    ? (
+      typeof canPlaceBuild === 'function'
+        ? canPlaceBuild(currentBuild, mouseTile.x, mouseTile.y)
+        : window.FloorSystem?.canPlaceFloor?.(mouseTile.x, mouseTile.y, def.floorType)
+    )
+    : (
+      typeof canPlaceBuild === 'function'
+        ? canPlaceBuild(currentBuild, mouseTile.x, mouseTile.y)
+        : canPlace(type, mouseTile.x, mouseTile.y)
+    );
+  const can = !!canPlaceTile && canAfford;
   ctx.save();
   ctx.globalAlpha = 0.65;
   ctx.fillStyle = can ? 'rgba(155, 211, 106, .22)' : 'rgba(230, 120, 102, .28)';
   ctx.fillRect(mouseTile.x * TILE, mouseTile.y * TILE, TILE, TILE);
-  const img = images[objectDefs[type].img];
+  if (type === 'floor') {
+    ctx.save();
+    ctx.globalAlpha = can ? 0.54 : 0.3;
+    window.FloorSystem?.drawFloorTile?.(ctx, mouseTile.x, mouseTile.y, def.floorType);
+    ctx.restore();
+    ctx.strokeStyle = can ? 'rgba(155, 211, 106, .82)' : 'rgba(230, 120, 102, .9)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash(can ? [] : [6, 4]);
+    ctx.strokeRect(mouseTile.x * TILE + 1.5, mouseTile.y * TILE + 1.5, TILE - 3, TILE - 3);
+    ctx.restore();
+    return;
+  }
+  const objectDef = objectDefs?.[type];
+  const img = objectDef?.img ? images[objectDef.img] : null;
   const rotation = (type === 'wall' || type === 'door') && typeof currentBuildRotation !== 'undefined' ? currentBuildRotation : 0;
-  if (!window.HavenfallWorkstationRenderer?.drawObject?.({ type, x: mouseTile.x, y: mouseTile.y })) {
+  if (!window.HavenfallWorkstationRenderer?.drawObject?.({ type, x: mouseTile.x, y: mouseTile.y }) && img) {
     drawAsset(img, mouseTile.x * TILE + TILE / 2, (mouseTile.y + 1) * TILE, objectScale(type, img), 0.5, 1, false, rotation);
   }
   if (rotation) {

@@ -288,16 +288,8 @@
     if (build) {
       event.preventDefault();
       const key = build.dataset.build;
-      if (typeof isBuildUnlocked === 'function' && !isBuildUnlocked(key)) {
-        const req = buildDefs?.[key]?.requires;
-        if (typeof log === 'function') log(`Bloqueado: pesquise ${researchDefs?.[req]?.label || 'tecnologia'} primeiro.`);
-        return;
-      }
-      currentBuild = key;
-      if (typeof clearZoneTool === 'function') clearZoneTool('construção selecionada');
-      if (typeof log === 'function') log(`Construção selecionada: ${buildDefs?.[key]?.label || key}. Clique no mapa para posicionar.`);
-      closePanel();
-      if (typeof updateUI === 'function') updateUI(true);
+      const selected = typeof window.selectBuildTool === 'function' ? window.selectBuildTool(key) : false;
+      if (selected) closePanel();
     }
   }
 

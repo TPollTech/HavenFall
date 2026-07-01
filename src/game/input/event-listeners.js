@@ -226,19 +226,23 @@
   }
 
   function selectBuildTool(buildKey) {
-    if (!state || !buildKey) return;
+    if (!state || !buildKey) return false;
     if (typeof isBuildUnlocked === 'function' && !isBuildUnlocked(buildKey)) {
       const req = buildDefs?.[buildKey]?.requires;
       if (typeof log === 'function') log(`Bloqueado: pesquise ${researchDefs?.[req]?.label || 'tecnologia'} primeiro.`);
       if (typeof updateUI === 'function') updateUI(true);
-      return;
+      return false;
     }
 
-    cancelZoneToolForAction('construção selecionada');
+    cancelZoneToolForAction('construcao selecionada');
     currentBuild = buildKey;
     if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(buildKey);
+    if (typeof log === 'function') log(`Construcao selecionada: ${buildDefs?.[buildKey]?.label || buildKey}. Clique no mapa para posicionar.`);
     if (typeof updateUI === 'function') updateUI(true);
+    return true;
   }
+
+  window.selectBuildTool = selectBuildTool;
 
   function setGameSpeed(speed) {
     if (!state || state.isPreview) return;

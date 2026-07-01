@@ -62,12 +62,8 @@
     const def = buildDefs?.[key];
     if (!def) return;
     if (locked(key)) { if (typeof log === 'function') log(`Precisa pesquisar ${researchDefs?.[def.requires]?.label || 'tecnologia'} antes de construir ${def.label}.`); return; }
-    if (typeof cancelZoneToolForAction === 'function') cancelZoneToolForAction('construção selecionada');
-    else if (typeof clearZoneTool === 'function') clearZoneTool();
-    currentBuild = key;
-    if (typeof log === 'function') log(`Construção selecionada: ${def.label}. Clique no mapa para posicionar.`);
-    if (window.uiManager?.closeCurrentModal) window.uiManager.closeCurrentModal();
-    if (typeof updateUI === 'function') updateUI(true);
+    const selected = typeof window.selectBuildTool === 'function' ? window.selectBuildTool(key) : false;
+    if (selected && window.uiManager?.closeCurrentModal) window.uiManager.closeCurrentModal();
   }
 
   document.addEventListener('click', event => {

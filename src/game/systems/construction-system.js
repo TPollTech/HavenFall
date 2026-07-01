@@ -163,7 +163,15 @@
       { key: 'butcher_table', html: 'Açougue<br><small>14 madeira + 4 pedra</small>' }
     ].reverse().forEach(item => { if (grid.querySelector(`[data-build="${item.key}"]`)) return; const btn = document.createElement('button'); btn.dataset.build = item.key; btn.innerHTML = item.html; if (ref) grid.insertBefore(btn, ref); else grid.appendChild(btn); });
   }
-  function selectBuildTool(key) { if (!buildDefs?.[key]) return; if (typeof clearZoneTool === 'function') clearZoneTool('construção selecionada'); currentBuild = key; if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(key); if (typeof updateUI === 'function') updateUI(true); }
+  function selectBuildTool(key) {
+    if (typeof window.selectBuildTool === 'function') return window.selectBuildTool(key);
+    if (!buildDefs?.[key]) return false;
+    if (typeof clearZoneTool === 'function') clearZoneTool('construcao selecionada');
+    currentBuild = key;
+    if (typeof resetBuildRotationIfNeeded === 'function') resetBuildRotationIfNeeded(key);
+    if (typeof updateUI === 'function') updateUI(true);
+    return true;
+  }
   function buildButtonCapture(event) { const build = event.target?.closest?.('[data-build]'); if (!build || !build.closest('#hud, #bottomActionBar, #buildPanel')) return; event.preventDefault(); event.stopPropagation(); selectBuildTool(build.dataset.build); }
   function mouseDown(event) { if (event.button !== 0 || appScreen !== SCREEN.PLAYING || !state || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag = { start: tile, current: tile, active: false, x: event.clientX, y: event.clientY }; try { mouseTile = tile; } catch (_) {} }
   function mouseMove(event) { if (!drag || !currentBuild) return; const tile = tileFromPointer(event); if (!tile) return; drag.current = tile; try { mouseTile = tile; } catch (_) {} if (tile.x !== drag.start.x || tile.y !== drag.start.y || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 5) drag.active = true; }
