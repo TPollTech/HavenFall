@@ -32,6 +32,13 @@
     return entries.map(([key, value]) => `+${value} ${typeof resourceLabel === 'function' ? resourceLabel(key) : key}`).join(', ');
   }
 
+  function syncObjects(nextObjects) {
+    if (!state || !Array.isArray(nextObjects)) return;
+    state.objects = nextObjects;
+    if (state.world) state.world.objects = nextObjects;
+    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+  }
+
   function dominantMaterial(obj, def = null) {
     if (obj?.wallMaterial) return obj.wallMaterial;
     if (obj?.material) return obj.material;
@@ -84,19 +91,20 @@
     return null;
   }
 
-  function spawnResidueFromObject(obj, def = null) {
+  function spawnResidueFromObject(obj, def = null, intoObjects = null) {
     if (!obj || obj.type === 'rubble' || obj.type === 'logs') return null;
     const residue = looseResidueFromObject(obj, def);
     if (!residue) return null;
-    state.objects.push(residue);
+    const targetObjects = Array.isArray(intoObjects) ? intoObjects : state?.objects;
+    if (Array.isArray(targetObjects)) targetObjects.push(residue);
     return residue;
   }
 
   function residueText(residue) {
     if (!residue) return 'Nenhum resíduo foi gerado.';
     if (residue.type === 'logs') return 'Sobras de madeira ficaram no local.';
-    if (residue.sourceMaterial === 'metal') return 'Sucata metálica ficou para descarte.';
-    return 'Entulho ficou para descarte.';
+    if (residue.sourceMaterial === 'metal') return 'Sobras de metal ficaram no local.';
+    return 'Entulho ficou no local.';
   }
 
   function handleDeconstructToRubble(c, task, tick) {
@@ -118,9 +126,11 @@
     const refund = refundFromCost(def?.cost || {}, 0.5);
     if (Object.keys(refund).length && typeof addResources === 'function') addResources(refund);
     window.HavenfallWorkFeedback?.notifyComplete?.('deconstruct', { objectType: obj.type, refund }, obj.x, obj.y);
-    state.objects = state.objects.filter(o => o.id !== obj.id);
-    const residue = spawnResidueFromObject(obj, def);
-    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+
+    const nextObjects = (state.objects || []).filter(o => o.id !== obj.id);
+    const residue = spawnResidueFromObject(obj, def, nextObjects);
+    syncObjects(nextObjects);
+
     log(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}. ${residueText(residue)}`);
     c.task = null;
     c.note = 'Ocioso';
