@@ -470,10 +470,22 @@
     return points;
   }
 
-  function selectedLandingSiteFromProfile(profile, siteId = null) {
+  function selectedLandingSiteFromProfile(profile, siteId = null, fallbackFirst = true) {
     if (!profile?.landingSites?.length) return null;
     const id = siteId || profile.selectedLandingSiteId;
-    return profile.landingSites.find(site => site.id === id) || profile.landingSites[0];
+    if (id) {
+      const selected = profile.landingSites.find(site => site.id === id);
+      if (selected) return selected;
+    }
+    return fallbackFirst ? profile.landingSites[0] : null;
+  }
+
+  function requestedLandingSiteId(config = {}, profile = null) {
+    return config.selectedLandingSiteId
+      || config.selectedLandingSite?.id
+      || config.landingSiteId
+      || profile?.selectedLandingSiteId
+      || null;
   }
 
   function compactLandingSite(site) {
@@ -534,7 +546,8 @@
       }
     };
     profile.landingSites = generateLandingSites(config, profile);
-    const selected = selectedLandingSiteFromProfile(profile, config.selectedLandingSiteId || config.selectedLandingSite?.id);
+    const selectedId = requestedLandingSiteId(config, profile);
+    const selected = selectedId ? selectedLandingSiteFromProfile(profile, selectedId, false) : null;
     profile.selectedLandingSiteId = selected?.id || null;
     profile.selectedLandingSite = compactLandingSite(selected);
     return profile;
@@ -542,7 +555,8 @@
 
   function attachPlanetScanToConfig(config = {}) {
     const profile = buildPlanetScanWorldgenProfile(config);
-    const selected = selectedLandingSiteFromProfile(profile, config.selectedLandingSiteId || profile.selectedLandingSiteId);
+    const selectedId = requestedLandingSiteId(config, profile);
+    const selected = selectedId ? selectedLandingSiteFromProfile(profile, selectedId, false) : null;
     profile.selectedLandingSiteId = selected?.id || null;
     profile.selectedLandingSite = compactLandingSite(selected);
     return {
@@ -570,7 +584,8 @@
     if (!scanMatchesConfig(profile, normalized)) {
       profile = buildPlanetScanWorldgenProfile(normalized);
     }
-    const selected = selectedLandingSiteFromProfile(profile, normalized.selectedLandingSiteId || normalized.selectedLandingSite?.id || profile.selectedLandingSiteId);
+    const selectedId = requestedLandingSiteId(normalized, profile);
+    const selected = selectedId ? selectedLandingSiteFromProfile(profile, selectedId, false) : null;
     profile = {
       ...profile,
       selectedLandingSiteId: selected?.id || null,
@@ -588,7 +603,7 @@
 
   function selectLandingSiteInConfig(config = {}, siteId) {
     const ensured = ensurePlanetScanOnConfig(config);
-    const selected = selectedLandingSiteFromProfile(ensured.planetScan, siteId);
+    const selected = selectedLandingSiteFromProfile(ensured.planetScan, siteId, false);
     if (!selected) return ensured;
     const profile = {
       ...ensured.planetScan,
@@ -605,10 +620,28 @@
     };
   }
 
+  function clearLandingSiteSelectionInConfig(config = {}) {
+    const ensured = ensurePlanetScanOnConfig(config);
+    const profile = {
+      ...ensured.planetScan,
+      selectedLandingSiteId: null,
+      selectedLandingSite: null
+    };
+    return {
+      ...ensured,
+      planetScan: profile,
+      selectedLandingSiteId: null,
+      selectedLandingSite: null,
+      landingSiteId: null,
+      sectorProfile: ensured.sectorProfile || 'balanced'
+    };
+  }
+
   window.buildPlanetScanWorldgenProfile = buildPlanetScanWorldgenProfile;
   window.attachPlanetScanToConfig = attachPlanetScanToConfig;
   window.ensurePlanetScanOnConfig = ensurePlanetScanOnConfig;
   window.selectLandingSiteInConfig = selectLandingSiteInConfig;
+  window.clearLandingSiteSelectionInConfig = clearLandingSiteSelectionInConfig;
   window.generateLandingSites = generateLandingSites;
   window.generateLandingPreview = generateLandingPreview;
 })();
