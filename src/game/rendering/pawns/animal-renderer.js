@@ -27,7 +27,7 @@
     duck: drawDuckPawn,
     turkey: drawTurkeyPawn,
     squirrel: drawSquirrelPawn,
-    turtle: drawTurtlePawn
+    turtle: drawTurtlePawn,
   });
 
   function drawAnimalPawn(mob) {
@@ -214,40 +214,21 @@
   }
 
   function drawAntlers(x, y, dir, color, scale = 1, spread = 0) {
-    const back = -dir;
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5 * scale;
+    ctx.lineWidth = 1.7 * scale;
     ctx.lineCap = 'round';
-    for (let index = 0; index < 2; index++) {
-      const depth = index * 1.1 * scale;
-      const lift = index * 0.7 * scale;
-      const reach = 6.2 + spread * 1.5 + index * 0.55;
-      const topReach = 8.4 + spread * 1.4 + index * 0.5;
-
+    for (const side of [-1, 1]) {
+      const sway = side * spread * 0.35;
       ctx.beginPath();
-      ctx.moveTo(x + back * depth * 0.4, y + lift * 0.2);
-      ctx.quadraticCurveTo(
-        x + back * 2.6 * scale,
-        y - 5.8 * scale + lift * 0.1,
-        x + back * reach * scale,
-        y - 11.4 * scale - lift * 0.35
-      );
+      ctx.moveTo(x + dir * 1.2 * scale, y);
+      ctx.lineTo(x + dir * 4.2 * scale, y - 7.8 * scale);
+      ctx.lineTo(x + dir * 8.4 * scale, y - 11.2 * scale + side + sway);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(x + back * 2.2 * scale, y - 4.9 * scale);
-      ctx.lineTo(x + back * 4.6 * scale, y - 6.8 * scale - lift * 0.1);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x + back * 4.5 * scale, y - 7.6 * scale - lift * 0.15);
-      ctx.lineTo(x + back * 6.9 * scale, y - 9.6 * scale - lift * 0.2);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x + back * 5.9 * scale, y - 10.4 * scale - lift * 0.2);
-      ctx.lineTo(x + back * topReach * scale, y - 13.4 * scale - lift * 0.3);
+      ctx.moveTo(x + dir * 4.8 * scale, y - 6.6 * scale);
+      ctx.lineTo(x + dir * 2.2 * scale, y - 11.4 * scale + side * 0.4);
       ctx.stroke();
     }
     ctx.restore();
@@ -340,54 +321,25 @@
     const y = mob.py + 12;
     const headLift = v.headLift || 0;
     const stretch = v.bodyStretch || 1;
-    const bodyTall = v.bodyTall || 1;
-    const neckX = x + f.x * 11.4 * s;
-    const neckY = y - 7 * s + headLift * 0.26 * s;
-    const headX = x + f.x * 18.8 * s;
-    const headY = y - 6.5 * s + headLift * 0.38 * s;
-    const muzzleX = x + f.x * 23.8 * s;
-    const rumpX = x - f.x * 8.8 * s;
 
     drawAnimalShadow(x, y + 11 * s, (profile.anatomy.shadowRx || 20) * s, (profile.anatomy.shadowRy || 7) * s, 0.31);
-    drawHoofLeg(rumpX - f.x * 2.7 * s, y + 1.6 * s, 12.8 * s, shade(p.leg, -6), '#2d221b', 1.85 * s, -f.x * 0.85 * s);
-    drawHoofLeg(x - f.x * 1.6 * s, y + 1.2 * s, 13.2 * s, p.leg, '#2d221b', 1.9 * s, f.x * 0.25 * s);
-    drawEllipse(x - f.x * 10.7 * s, y + 1.2 * s, 7.3 * s, 4.8 * s, shade(p.body, -16), profile.outline, 1.05, f.x * 0.16);
-    drawEllipse(x, y, 15.9 * s * stretch, 7.9 * s * bodyTall, p.body, profile.outline, 1.45);
-    drawEllipse(x - f.x * 0.8 * s, y + 0.9 * s, 8 * s, 4.6 * s, p.flank, null, 0, f.x * -0.08);
-    drawEllipse(x + f.x * 5.2 * s, y + 0.1 * s, 6.1 * s, 2.8 * s, p.chest, null, 0, f.x * 0.14);
-    drawEllipse(rumpX, y + 1.6 * s, 5.3 * s, 2.5 * s, p.rump || p.chest, null, 0, f.x * -0.12);
-    drawEllipse(x - f.x * 13 * s, y - 1.7 * s + v.tailLift * 0.85 * s, 2.3 * s, 1.8 * s, p.tail, profile.outline, 0.8, f.x * (-0.18 + v.tailLift * 0.12));
-    drawHoofLeg(x + f.x * 4.9 * s, y + 0.95 * s, 13.7 * s, p.leg, '#2d221b', 1.9 * s, -f.x * 0.32 * s);
-    drawHoofLeg(x + f.x * 10 * s, y + 0.55 * s, 13.9 * s, shade(p.leg, -6), '#2d221b', 1.8 * s, f.x * 0.92 * s);
-    drawOrganicBlob(neckX, neckY, 2.9 * s, 8.8 * s, p.neck || p.bodyLight, profile.outline, 1.05, {
-      seed: profile.seed + 23,
-      lobes: 4,
-      wobble: 0.55 * s,
-      rotation: f.x * -0.28,
-      flatBottom: 0.92
-    });
-    drawOrganicBlob(headX, headY, 4.5 * s, 3.4 * s, p.head || p.bodyLight, profile.outline, 1.2, {
-      seed: profile.seed + 41,
-      lobes: 4,
-      wobble: 0.7 * s,
-      rotation: f.x * -0.08,
-      flatBottom: 0.94
-    });
-    drawSnout(muzzleX, headY + 0.28 * s, 3 * s, 1.55 * s, p.snout || p.chest, profile.outline, p.nose);
-    drawEllipse(muzzleX - f.x * 1.1 * s, headY + 1.15 * s, 2.2 * s, 0.9 * s, p.chest, null, 0, f.x * 0.05);
-    drawTriangle([
-      { x: headX + f.x * 0.2 * s, y: headY - 2.6 * s },
-      { x: headX - f.x * 2.7 * s, y: headY - 6.8 * s + v.earTilt * 0.8 * s },
-      { x: headX - f.x * 1.1 * s, y: headY - 3.2 * s }
-    ], p.ear || p.head || p.bodyLight, profile.outline);
-    drawTriangle([
-      { x: headX - f.x * 0.9 * s, y: headY - 2.4 * s },
-      { x: headX - f.x * 3.8 * s, y: headY - 6.2 * s + v.earTilt * 0.65 * s },
-      { x: headX - f.x * 2.4 * s, y: headY - 3 * s }
-    ], shade(p.ear || p.head || p.bodyLight, -10), profile.outline);
-    drawAntlers(headX - f.x * 2.6 * s, headY - 4.7 * s, f.x, p.antler, s, v.earSpread || 0);
-    drawAnimalEye(headX + f.x * 0.8 * s, headY - 0.55 * s, 1 * s, p.eye);
-    drawCircle(muzzleX + f.x * 1.65 * s, headY + 0.4 * s, 0.85 * s, p.nose);
+    drawHoofLeg(x - 8.8 * s, y + 1.8 * s, 12.5 * s, shade(p.leg, -4), '#2d221b', 1.9 * s, -f.x * 0.8 * s);
+    drawHoofLeg(x - 1.5 * s, y + 1.2 * s, 13 * s, p.leg, '#2d221b', 1.95 * s, f.x * 0.4 * s);
+    drawEllipse(x - f.x * 10.8 * s, y + 1.2 * s, 8.1 * s, 5.3 * s, shade(p.body, -18), profile.outline, 1.1, f.x * 0.2);
+    drawEllipse(x, y, 15.7 * s * stretch, 8.5 * s, p.body, profile.outline, 1.5);
+    drawEllipse(x - f.x * 1.6 * s, y + 1.1 * s, 8.2 * s, 4.9 * s, p.flank, null, 0, f.x * -0.08);
+    drawEllipse(x + f.x * 4.4 * s, y + 0.5 * s, 6.8 * s, 3.2 * s, p.chest, null, 0, f.x * 0.18);
+    drawEllipse(x - f.x * 13.8 * s, y - 2.2 * s + v.tailLift * 0.9 * s, 3.2 * s, 2.1 * s, p.tail, profile.outline, 0.8);
+    drawHoofLeg(x + 5.2 * s, y + 1 * s, 13.5 * s, p.leg, '#2d221b', 1.95 * s, -f.x * 0.4 * s);
+    drawHoofLeg(x + 10 * s, y + 0.5 * s, 13.6 * s, shade(p.leg, -4), '#2d221b', 1.85 * s, f.x * 0.9 * s);
+    drawEllipse(x + f.x * 11.2 * s, y - 8.8 * s + headLift * 0.35 * s, 4.1 * s, 9.8 * s, p.bodyLight, profile.outline, 1, f.x * -0.14);
+    drawCircle(x + f.x * 17.6 * s, y - 6.6 * s + headLift * 0.5 * s, 7.1 * s, p.bodyLight, profile.outline, 1.3);
+    drawEllipse(x + f.x * 23.4 * s, y - 6.1 * s + headLift * 0.35 * s, 5.1 * s, 3 * s, p.chest, profile.outline, 1.05);
+    drawEllipse(x + f.x * 14.5 * s, y - 12.9 * s + headLift * 0.35 * s, 2.2 * s, 5 * s, p.bodyLight, profile.outline, 0.8, f.x * (-0.45 + v.earTilt * 0.3));
+    drawEllipse(x + f.x * 19.8 * s, y - 12.5 * s + headLift * 0.4 * s, 2.2 * s, 4.8 * s, p.bodyLight, profile.outline, 0.8, f.x * (0.25 + v.earTilt * 0.18));
+    drawAntlers(x + f.x * 16.1 * s, y - 12.4 * s + headLift * 0.3 * s, f.x, p.antler, s, v.earSpread || 0);
+    drawAnimalEye(x + f.x * 19.2 * s, y - 7.6 * s + headLift * 0.32 * s, 1.15 * s, p.eye);
+    drawCircle(x + f.x * 22.8 * s, y - 5.8 * s + headLift * 0.25 * s, 1 * s, p.nose);
     drawMobHealth(mob, x, mob.py - 20, profile.healthColor);
     return true;
   }
@@ -400,68 +352,25 @@
     const f = animalFacing(mob);
     const x = mob.px;
     const y = mob.py + 13;
-    const stretch = v.bodyStretch || 1;
-    const tall = v.bodyTall || 1;
-    const headLift = v.headLift || 0;
-    const neckX = x + f.x * 11.2 * s;
-    const neckY = y - 4.7 * s + headLift * 0.24 * s;
-    const headX = x + f.x * 17.1 * s;
-    const headY = y - 4.5 * s + headLift * 0.3 * s;
-    const snoutX = x + f.x * 21.3 * s;
 
     drawAnimalShadow(x, y + 10 * s, (profile.anatomy.shadowRx || 17) * s, (profile.anatomy.shadowRy || 6.6) * s, 0.3);
-    drawHoofLeg(x - 7.6 * s, y + 1.9 * s, 10.4 * s, shade(p.leg, -4), p.hoof, 1.75 * s, -f.x * 0.72 * s);
-    drawHoofLeg(x - 1.7 * s, y + 1.3 * s, 10.8 * s, p.leg, p.hoof, 1.8 * s, f.x * 0.32 * s);
-    drawTailStroke(
-      x - f.x * 13.8 * s,
-      y - 1.8 * s,
-      x - f.x * 15.8 * s,
-      y - 5 * s + v.tailLift * 1.7 * s,
-      p.tail,
-      1.6 * s,
-      -f.x * 1.6 * s
-    );
-    drawEllipse(x, y + 0.1 * s, 14.2 * s * stretch, 7.8 * s * tall, p.body, profile.outline, 1.45);
-    drawEllipse(x - f.x * 1.5 * s, y + 0.9 * s, 6.8 * s, 3.9 * s, p.flank, null, 0, f.x * -0.08);
-    drawEllipse(x + f.x * 4.9 * s, y + 0.8 * s, 5.8 * s, 2.8 * s, p.bodyLight, null, 0, f.x * 0.1);
-    drawHoofLeg(x + 4.9 * s, y + 1.2 * s, 10.9 * s, p.leg, p.hoof, 1.8 * s, -f.x * 0.26 * s);
-    drawHoofLeg(x + 9.8 * s, y + 0.7 * s, 10.6 * s, shade(p.leg, -8), p.hoof, 1.7 * s, f.x * 0.82 * s);
-    drawOrganicBlob(neckX, neckY, 2.7 * s, 6.4 * s, p.neck || p.bodyLight, profile.outline, 1 * s, {
-      seed: profile.seed + 11,
-      lobes: 4,
-      wobble: 0.5 * s,
-      rotation: f.x * -0.25,
-      flatBottom: 0.92
-    });
-    drawOrganicBlob(headX, headY, 4.8 * s, 3.5 * s, p.head, profile.outline, 1.2 * s, {
-      seed: profile.seed + 19,
-      lobes: 4,
-      wobble: 0.58 * s,
-      rotation: f.x * -0.06,
-      flatBottom: 0.94
-    });
-    drawSnout(snoutX, headY + 0.35 * s, 2.35 * s, 1.35 * s, p.snout || p.bodyLight, profile.outline, shade(p.headDark || p.head, -18));
-    drawTriangle([
-      { x: headX - f.x * 0.6 * s, y: headY - 2.1 * s },
-      { x: headX - f.x * 3.9 * s, y: headY - 3.8 * s + v.earTilt * 0.5 * s },
-      { x: headX - f.x * 2.2 * s, y: headY - 0.4 * s }
-    ], p.ear || p.head, profile.outline);
-    drawTriangle([
-      { x: headX + f.x * 0.7 * s, y: headY - 1.8 * s },
-      { x: headX - f.x * 1.7 * s, y: headY - 4.4 * s + v.earTilt * 0.35 * s },
-      { x: headX + f.x * 0.2 * s, y: headY - 0.2 * s }
-    ], shade(p.ear || p.head, -8), profile.outline);
-    drawGoatHorn(headX - f.x * 2.6 * s, headY - 4.2 * s, f.x, p.horn, s, v.hornTilt || 0);
-    drawGoatHorn(headX - f.x * 0.9 * s, headY - 4.5 * s, f.x, p.horn, s, -(v.hornTilt || 0) * 0.55);
-    drawOrganicBlob(headX - f.x * 0.6 * s, headY + 4.1 * s, 1.25 * s, 2.8 * s, p.beard, profile.outline, 0.8 * s, {
-      seed: profile.seed + 29,
-      lobes: 4,
-      wobble: 0.38 * s,
-      rotation: f.x * 0.12,
-      flatBottom: 0.86
-    });
-    drawAnimalEye(headX + f.x * 0.8 * s, headY - 0.45 * s, 1 * s, p.eye);
-    drawCircle(snoutX + f.x * 1.2 * s, headY + 0.4 * s, 0.82 * s, shade(p.headDark || p.head, -18));
+    drawHoofLeg(x - 7.5 * s, y + 1.8 * s, 10.6 * s, shade(p.leg, -4), p.hoof, 1.8 * s, -f.x * 0.7 * s);
+    drawHoofLeg(x - 1.2 * s, y + 1.2 * s, 10.8 * s, p.leg, p.hoof, 1.85 * s, f.x * 0.55 * s);
+    drawEllipse(x - f.x * 13.9 * s, y - 1.5 * s + v.tailLift * 1.4 * s, 2.8 * s, 4.8 * s, p.tail, profile.outline, 0.9, f.x * (0.55 + v.tailLift * 0.18));
+    drawEllipse(x, y, 14.8 * s * (v.bodyStretch || 1), 8.4 * s * (v.bodyTall || 1), p.body, profile.outline, 1.45);
+    drawEllipse(x - f.x * 1.2 * s, y + 0.8 * s, 6.8 * s, 4 * s, p.flank, null, 0, f.x * -0.08);
+    drawEllipse(x + f.x * 5 * s, y + 1.4 * s, 6.2 * s, 3 * s, p.bodyLight, null, 0, f.x * 0.18);
+    drawHoofLeg(x + 4.8 * s, y + 1 * s, 11.1 * s, p.leg, p.hoof, 1.85 * s, -f.x * 0.45 * s);
+    drawHoofLeg(x + 9.6 * s, y + 0.6 * s, 10.8 * s, shade(p.leg, -8), p.hoof, 1.75 * s, f.x * 0.85 * s);
+    drawEllipse(x + f.x * 13.2 * s, y - 5.4 * s + v.headLift * 0.35 * s, 5.3 * s, 7.2 * s, p.head, profile.outline, 1.3);
+    drawEllipse(x + f.x * 18.5 * s, y - 4.1 * s + v.headLift * 0.25 * s, 4.4 * s, 2.7 * s, p.bodyLight, profile.outline, 1);
+    drawEllipse(x + f.x * 10.3 * s, y - 7.9 * s + v.headLift * 0.32 * s, 2.7 * s, 5.8 * s, p.bodyLight, profile.outline, 0.9, f.x * (-0.4 + v.earTilt * 0.35));
+    drawEllipse(x + f.x * 16.5 * s, y - 8.4 * s + v.headLift * 0.36 * s, 2.5 * s, 5.4 * s, p.bodyLight, profile.outline, 0.9, f.x * (0.18 + v.earTilt * 0.25));
+    drawGoatHorn(x + f.x * 11.5 * s, y - 10.6 * s + v.headLift * 0.3 * s, f.x, p.horn, s, v.hornTilt || 0);
+    drawGoatHorn(x + f.x * 15.1 * s, y - 10.8 * s + v.headLift * 0.3 * s, f.x, p.horn, s, -(v.hornTilt || 0) * 0.6);
+    drawTailStroke(x + f.x * 14.4 * s, y - 0.2 * s, x + f.x * 14.9 * s, y + 4.8 * s, p.beard, 1.8 * s, 1.3 * s);
+    drawAnimalEye(x + f.x * 14.8 * s, y - 6.1 * s + v.headLift * 0.28 * s, 1.1 * s, p.eye);
+    drawCircle(x + f.x * 19 * s, y - 3.8 * s + v.headLift * 0.18 * s, 0.95 * s, shade(p.head, -26));
     drawMobHealth(mob, x, mob.py - 19 * s, profile.healthColor);
     return true;
   }
@@ -520,51 +429,37 @@
     const f = animalFacing(mob);
     const x = mob.px;
     const y = mob.py + 14;
-    const stretch = v.bodyStretch || 1;
-    const tall = v.bodyTall || 1;
-    const headLift = v.headLift || 0;
-    const headX = x + f.x * 15.6 * s;
-    const headY = y - 2.2 * s + headLift * 0.18 * s;
-    const snoutX = x + f.x * 20.6 * s;
 
-    drawAnimalShadow(x, y + 9.8 * s, (profile.anatomy.shadowRx || 17) * s, (profile.anatomy.shadowRy || 6.8) * s, 0.29);
-    drawHoofLeg(x - 7.6 * s, y + 2.5 * s, 8.3 * s, shade(p.leg, -4), p.hoof, 1.65 * s, -f.x * 0.12 * s, 0.64);
-    drawHoofLeg(x - 2.5 * s, y + 2.7 * s, 8.1 * s, p.leg, p.hoof, 1.7 * s, f.x * 0.22 * s, 0.64);
-    drawEllipse(x, y + 0.5 * s, 16.3 * s * stretch, 8.5 * s * tall, p.body, profile.outline, 1.45);
-    drawEllipse(x - f.x * 1 * s, y + 2 * s, 8.4 * s, 4.2 * s, p.belly || p.bodyLight, null, 0, f.x * -0.05);
-    drawEllipse(x - f.x * 0.9 * s, y + 0.9 * s, 7.8 * s, 4.2 * s, p.flank, null, 0, f.x * -0.08);
-    drawEllipse(x - f.x * 13 * s, y - 3.4 * s + v.tailLift * 1.1 * s, 1.2 * s, 1.2 * s, p.tail, profile.outline, 0.8);
+    drawAnimalShadow(x, y + 9.6 * s, (profile.anatomy.shadowRx || 17) * s, (profile.anatomy.shadowRy || 6.8) * s, 0.29);
+    drawHoofLeg(x - 7.8 * s, y + 2.4 * s, 8.8 * s, shade(p.leg, -4), p.hoof, 1.75 * s, -f.x * 0.25 * s, 0.62);
+    drawHoofLeg(x - 2.2 * s, y + 2.6 * s, 8.5 * s, p.leg, p.hoof, 1.8 * s, f.x * 0.4 * s, 0.62);
+    drawEllipse(x, y, 15.2 * s * (v.bodyStretch || 1), 8.8 * s * (v.bodyTall || 1), p.body, profile.outline, 1.45);
+    drawEllipse(x - f.x * 0.8 * s, y + 1.4 * s, 7.4 * s, 4.4 * s, p.flank, null, 0, f.x * -0.08);
+    drawEllipse(x - f.x * 12.2 * s, y - 3.4 * s + v.tailLift * 1.2 * s, 1.4 * s, 1.4 * s, p.tail, profile.outline, 0.8);
     drawTailStroke(
-      x - f.x * 13.9 * s,
-      y - 3.6 * s + v.tailLift * 1.1 * s,
-      x - f.x * 16 * s,
-      y - 5.2 * s + v.tailLift * 1.35 * s,
+      x - f.x * 13.2 * s,
+      y - 3.6 * s + v.tailLift * 1.2 * s,
+      x - f.x * 15.5 * s,
+      y - 5.1 * s + v.tailLift * 1.5 * s,
       p.tail,
-      1.25 * s,
-      f.x * 2.1 * s
+      1.3 * s,
+      f.x * 2.2 * s
     );
-    drawHoofLeg(x + 4.7 * s, y + 2.6 * s, 8.2 * s, p.leg, p.hoof, 1.7 * s, -f.x * 0.08 * s, 0.64);
-    drawHoofLeg(x + 9.9 * s, y + 2.3 * s, 8 * s, shade(p.leg, -8), p.hoof, 1.6 * s, f.x * 0.28 * s, 0.64);
-    drawOrganicBlob(headX, headY, 5.4 * s, 4.4 * s, p.head || p.bodyLight, profile.outline, 1.2 * s, {
-      seed: profile.seed + 7,
-      lobes: 4,
-      wobble: 0.7 * s,
-      rotation: f.x * -0.02,
-      flatBottom: 0.92
-    });
+    drawHoofLeg(x + 4.8 * s, y + 2.5 * s, 8.6 * s, p.leg, p.hoof, 1.8 * s, -f.x * 0.2 * s, 0.62);
+    drawHoofLeg(x + 10 * s, y + 2.1 * s, 8.4 * s, shade(p.leg, -8), p.hoof, 1.7 * s, f.x * 0.45 * s, 0.62);
+    drawCircle(x + f.x * 15.8 * s, y - 2.4 * s + v.headLift * 0.2 * s, 6.2 * s, p.bodyLight, profile.outline, 1.25);
     drawTriangle([
-      { x: headX - f.x * 1.4 * s, y: headY - 1.8 * s },
-      { x: headX - f.x * 4.8 * s, y: headY - 3.2 * s + v.earTilt * 0.4 * s },
-      { x: headX - f.x * 2.5 * s, y: headY + 0.6 * s }
+      { x: x + f.x * 12.6 * s, y: y - 6.4 * s + v.headLift * 0.18 * s },
+      { x: x + f.x * 10.2 * s, y: y - 11 * s + v.headLift * 0.12 * s },
+      { x: x + f.x * 15.8 * s, y: y - 8.1 * s + v.headLift * 0.2 * s }
     ], p.ear, profile.outline);
     drawTriangle([
-      { x: headX + f.x * 0.6 * s, y: headY - 1.7 * s },
-      { x: headX - f.x * 2.4 * s, y: headY - 3.4 * s + v.earTilt * 0.35 * s },
-      { x: headX - f.x * 0.4 * s, y: headY + 0.7 * s }
-    ], shade(p.ear, -8), profile.outline);
-    drawSnout(snoutX, headY + 1 * s, 3.6 * s, 2.45 * s, p.snout, profile.outline, p.snoutDark || '#7f4c44');
-    drawEllipse(snoutX - f.x * 1.1 * s, headY + 2 * s, 2.3 * s, 0.9 * s, p.belly || p.bodyLight, null, 0, f.x * 0.05);
-    drawAnimalEye(headX + f.x * 1 * s, headY - 0.7 * s, 0.95 * s, p.eye);
+      { x: x + f.x * 18.4 * s, y: y - 6.1 * s + v.headLift * 0.18 * s },
+      { x: x + f.x * 20.2 * s, y: y - 10.4 * s + v.headLift * 0.12 * s },
+      { x: x + f.x * 20.8 * s, y: y - 5.9 * s + v.headLift * 0.2 * s }
+    ], p.ear, profile.outline);
+    drawSnout(x + f.x * 20.3 * s, y - 0.9 * s + v.headLift * 0.1 * s, 3.8 * s, 2.8 * s, p.snout, profile.outline, '#7f4c44');
+    drawAnimalEye(x + f.x * 17.1 * s, y - 3.4 * s + v.headLift * 0.1 * s, 1 * s, p.eye);
     drawMobHealth(mob, x, mob.py - 18 * s, profile.healthColor);
     return true;
   }
