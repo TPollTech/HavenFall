@@ -175,38 +175,47 @@ async function startSystemsWorld(page) {
         };
         window.BiomeEngine.rebalanceWorld.__smokeWrapped = true;
       }
-      if (window.HavenfallLandingSiteWorldgen?.applyLandingSite && !window.HavenfallLandingSiteWorldgen.applyLandingSite.__smokeWrapped) {
-        const originalApplyLandingSite = window.HavenfallLandingSiteWorldgen.applyLandingSite;
-        window.HavenfallLandingSiteWorldgen.applyLandingSite = function wrappedApplyLandingSite(...args) {
-          const startedAt = now();
-          console.log('[SMOKE-SYSTEMS] landing apply begin');
-          const world = originalApplyLandingSite.apply(this, args);
-          console.log(`[SMOKE-SYSTEMS] landing apply done ${fmt(now() - startedAt)}`);
-          return world;
+      if (window.HavenfallLandingSiteWorldgen?.applyLandingSite && !window.HavenfallLandingSiteWorldgen.__smokeWrapped) {
+        const api = window.HavenfallLandingSiteWorldgen;
+        window.HavenfallLandingSiteWorldgen = {
+          ...api,
+          applyLandingSite(...args) {
+            const startedAt = now();
+            console.log('[SMOKE-SYSTEMS] landing apply begin');
+            const world = api.applyLandingSite(...args);
+            console.log(`[SMOKE-SYSTEMS] landing apply done ${fmt(now() - startedAt)}`);
+            return world;
+          },
+          __smokeWrapped: true
         };
-        window.HavenfallLandingSiteWorldgen.applyLandingSite.__smokeWrapped = true;
       }
-      if (window.HavenfallLandingSiteWorldgenPolish?.applyToWorld && !window.HavenfallLandingSiteWorldgenPolish.applyToWorld.__smokeWrapped) {
-        const originalApplyLandingPolish = window.HavenfallLandingSiteWorldgenPolish.applyToWorld;
-        window.HavenfallLandingSiteWorldgenPolish.applyToWorld = function wrappedApplyLandingPolish(...args) {
-          const startedAt = now();
-          console.log('[SMOKE-SYSTEMS] landing polish begin');
-          const world = originalApplyLandingPolish.apply(this, args);
-          console.log(`[SMOKE-SYSTEMS] landing polish done ${fmt(now() - startedAt)}`);
-          return world;
+      if (window.HavenfallLandingSiteWorldgenPolish?.applyToWorld && !window.HavenfallLandingSiteWorldgenPolish.__smokeWrapped) {
+        const api = window.HavenfallLandingSiteWorldgenPolish;
+        window.HavenfallLandingSiteWorldgenPolish = {
+          ...api,
+          applyToWorld(...args) {
+            const startedAt = now();
+            console.log('[SMOKE-SYSTEMS] landing polish begin');
+            const world = api.applyToWorld(...args);
+            console.log(`[SMOKE-SYSTEMS] landing polish done ${fmt(now() - startedAt)}`);
+            return world;
+          },
+          __smokeWrapped: true
         };
-        window.HavenfallLandingSiteWorldgenPolish.applyToWorld.__smokeWrapped = true;
       }
-      if (window.HavenfallWorldValidator?.validateWorld && !window.HavenfallWorldValidator.validateWorld.__smokeWrapped) {
-        const originalValidateWorld = window.HavenfallWorldValidator.validateWorld;
-        window.HavenfallWorldValidator.validateWorld = function wrappedValidateWorld(...args) {
-          const startedAt = now();
-          console.log('[SMOKE-SYSTEMS] validator begin');
-          const result = originalValidateWorld.apply(this, args);
-          console.log(`[SMOKE-SYSTEMS] validator done ${fmt(now() - startedAt)} fixes=${result?.fixCount || 0} errors=${result?.errorCount || 0}`);
-          return result;
+      if (window.HavenfallWorldValidator?.validateWorld && !window.HavenfallWorldValidator.__smokeWrapped) {
+        const api = window.HavenfallWorldValidator;
+        window.HavenfallWorldValidator = {
+          ...api,
+          validateWorld(...args) {
+            const startedAt = now();
+            console.log('[SMOKE-SYSTEMS] validator begin');
+            const result = api.validateWorld(...args);
+            console.log(`[SMOKE-SYSTEMS] validator done ${fmt(now() - startedAt)} fixes=${result?.fixCount || 0} errors=${result?.errorCount || 0}`);
+            return result;
+          },
+          __smokeWrapped: true
         };
-        window.HavenfallWorldValidator.validateWorld.__smokeWrapped = true;
       }
       if (typeof generateColonistCandidates === 'function') generateColonistCandidates(config);
       console.log('[SMOKE-SYSTEMS] colonists ready');
@@ -229,7 +238,8 @@ async function startSystemsWorld(page) {
 
 async function collectRuntimeSummary(page, selectedLanding) {
   return await page.evaluate(({ selectedLanding }) => {
-    const world = window.Havenfall?.state?.world;
+    const runtimeState = window.Havenfall?.state || null;
+    const world = runtimeState?.world;
     const rows = Number(world?.rows || 0);
     const cols = Number(world?.cols || 0);
     const terrainCounts = {};
@@ -270,8 +280,8 @@ async function collectRuntimeSummary(page, selectedLanding) {
     const litX = Math.min(cols - 4, Math.max(4, spawn.x + 8));
     const farX = Math.max(4, spawn.x - 8);
     const probeY = Math.min(rows - 4, Math.max(4, spawn.y));
-    const originalHour = Number(window.state?.hour || 12);
-    const originalWeather = window.state?.weather || 'limpo';
+    const originalHour = Number(runtimeState?.hour || 12);
+    const originalWeather = runtimeState?.weather || 'limpo';
     const originalObjects = Array.isArray(world?.objects) ? world.objects.slice() : [];
 
     world.builtRoofLayer = Array.isArray(world.builtRoofLayer)
@@ -290,8 +300,10 @@ async function collectRuntimeSummary(page, selectedLanding) {
 
     paintRoofPatch(litX, probeY, true);
     paintRoofPatch(farX, probeY, true);
-    window.state.hour = 23;
-    window.state.weather = 'limpo';
+    if (runtimeState) {
+      runtimeState.hour = 23;
+      runtimeState.weather = 'limpo';
+    }
 
     const torchId = '__smoke_systems_torch__';
     world.objects = (world.objects || []).filter(obj => obj?.id !== torchId);
@@ -309,8 +321,10 @@ async function collectRuntimeSummary(page, selectedLanding) {
 
     const cleanup = () => {
       world.objects = originalObjects;
-      window.state.hour = originalHour;
-      window.state.weather = originalWeather;
+      if (runtimeState) {
+        runtimeState.hour = originalHour;
+        runtimeState.weather = originalWeather;
+      }
       window.LightingSystem?.invalidate?.('smoke-systems-cleanup', world);
       window.LightingSystem?.recomputeLighting?.(null, world, 'smoke-systems-cleanup');
     };

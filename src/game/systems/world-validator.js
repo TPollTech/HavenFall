@@ -347,9 +347,11 @@
         removed++;
         continue;
       }
+      const nearSpawn = world.spawn ? distance(obj.x, obj.y, world.spawn.x, world.spawn.y) <= 24 : false;
+      const important = nearSpawn || POI_TYPES.has(obj.type) || CAMP_TYPES.has(obj.type);
       const k = `${obj.x},${obj.y}`;
       if (occupied.has(k)) {
-        const pos = findBestTile(world, obj.type, obj.x, obj.y, 10, { ignoreId: obj.id, objectIndex });
+        const pos = important ? findBestTile(world, obj.type, obj.x, obj.y, 10, { ignoreId: obj.id, objectIndex }) : null;
         if (pos) {
           obj.x = pos.x;
           obj.y = pos.y;
@@ -360,7 +362,8 @@
         }
       }
       if (!canObjectExistOn(world, obj.type, obj.x, obj.y)) {
-        const pos = findBestTile(world, obj.type, obj.x, obj.y, POI_TYPES.has(obj.type) ? 30 : 15, { ignoreId: obj.id, minSpawnDistance: POI_TYPES.has(obj.type) ? 16 : 0, objectIndex });
+        const searchRadius = POI_TYPES.has(obj.type) ? 24 : 12;
+        const pos = important ? findBestTile(world, obj.type, obj.x, obj.y, searchRadius, { ignoreId: obj.id, minSpawnDistance: POI_TYPES.has(obj.type) ? 16 : 0, objectIndex }) : null;
         if (pos) {
           obj.x = pos.x;
           obj.y = pos.y;
