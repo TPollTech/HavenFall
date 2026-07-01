@@ -1,6 +1,12 @@
 'use strict';
 
 (() => {
+  function selectedColonist() {
+    if (!state?.colonists?.length) return null;
+    const selected = state.colonists.find(c => String(c.id) === String(selectedColonistId));
+    return selected || state.colonists[0] || null;
+  }
+
   function ensureResources() {
     state.resources = state.resources || {};
     for (const key of ['food', 'wood', 'stone', 'metal', 'medicine', 'water']) {
@@ -144,7 +150,10 @@
     return state.objects;
   }
 
+  window.selectedColonist = selectedColonist;
+
   window.GameState = {
+    selectedColonist,
     resources,
     hasResources,
     addResources,
