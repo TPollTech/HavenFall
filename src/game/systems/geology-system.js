@@ -197,6 +197,26 @@
 
   function rockFillColor(rock) { return (ROCK_DEFS[rock?.type] || ROCK_DEFS.granite).color || '#4b5563'; }
 
+  function drawRockBody(x, y, rock) {
+    if (!ctx || !rock?.solid) return false;
+    ctx.save();
+    ctx.globalAlpha = 0.78;
+    ctx.fillStyle = rockFillColor(rock);
+    ctx.fillRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x * TILE + 2, y * TILE + TILE * 0.55, TILE - 4, TILE * 0.38);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    return true;
+  }
+
+  function drawGeologyTileBackdrop(x, y) {
+    if (!state?.world || appScreen !== SCREEN.PLAYING) return false;
+    const layer = Array.isArray(state.world.geologyLayer) ? state.world.geologyLayer : ensureGeologyState();
+    return drawRockBody(x, y, layer?.[y]?.[x]);
+  }
+
   function drawGeologyBackdrop(bounds = null) {
     if (!state?.world || appScreen !== SCREEN.PLAYING) return;
     ensureGeologyState();
@@ -257,7 +277,7 @@
 
   function updateGeologyTick() { ensureGeologyState(); }
 
-  window.GeologySystem = { ROCK_DEFS, ensureGeologyState, getRockAt, hasNaturalRoofAt, isMountainBlocked, markRockForMining, toggleRockMiningMark, nearestMarkedMine, mineRockAt, recalculateRoofLayer, geologyLabelAt, createGeologyLayer, createRoofLayer, drawGeologyBackdrop, drawGeologyOverlay };
+  window.GeologySystem = { ROCK_DEFS, ensureGeologyState, getRockAt, hasNaturalRoofAt, isMountainBlocked, markRockForMining, toggleRockMiningMark, nearestMarkedMine, mineRockAt, recalculateRoofLayer, geologyLabelAt, createGeologyLayer, createRoofLayer, drawGeologyTileBackdrop, drawGeologyBackdrop, drawGeologyOverlay };
   window.ensureGeologyState = ensureGeologyState;
   window.getRockAt = getRockAt;
   window.hasNaturalRoofAt = hasNaturalRoofAt;
@@ -266,9 +286,11 @@
   window.toggleRockMiningMark = toggleRockMiningMark;
   window.nearestMarkedMine = nearestMarkedMine;
   window.mineRockAt = mineRockAt;
+  window.drawGeologyTileBackdrop = drawGeologyTileBackdrop;
   window.drawGeologyBackdrop = drawGeologyBackdrop;
   window.drawGeologyOverlay = drawGeologyOverlay;
   window.updateGeologyTick = updateGeologyTick;
   window.GameSystems?.registerTick('geology', updateGeologyTick, { order: 10 });
+  window.GameSystems?.registerTileRenderer('geology.backdrop', drawGeologyTileBackdrop, { order: 5 });
   window.GameSystems?.registerDrawOverlay('geology', drawGeologyOverlay, { order: 10 });
 })();
