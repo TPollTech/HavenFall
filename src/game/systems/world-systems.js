@@ -274,7 +274,7 @@ function canDoPriorityTask(c, key) {
   }
   if (key === 'handle') {
     if (typeof findLooseHaulTarget !== 'function' || typeof assignHaulTask !== 'function') return false;
-    const target = findLooseHaulTarget();
+    const target = findLooseHaulTarget(c);
     if (!target) return false;
     if (typeof zoneSystem !== 'undefined' && typeof zoneSystem.hasStorageDestination === 'function') return zoneSystem.hasStorageDestination(target);
     return !!storageDestinationForPriority(target, c);
@@ -303,7 +303,7 @@ function assignPriorityTask(c, key) {
 
   if (key === 'handle') {
     if (typeof zoneSystem !== 'undefined' && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function') {
-      const target = findLooseHaulTarget();
+      const target = findLooseHaulTarget(c);
       const destination = storageDestinationForPriority(target, c);
       if (target && destination && assignHaulTask(c, target, destination)) return true;
     }
@@ -382,12 +382,19 @@ function updateColonist(c, dt) {
     log(`${c.name} comeu uma refeição rápida.`);
   }
 
+  if (c.task?.type === 'leisure' && c.energy < 18) {
+    c.task = null;
+    c.path = [];
+    c.work = 0;
+    startSleep(c);
+  }
+
   if (!c.task) {
     if (c.energy < 18) {
       startSleep(c);
     } else {
       const assigned = assignAutoTask(c);
-      if (!assigned && c.priority !== 'defense' && Math.random() < 0.002 * state.speed) randomWander(c);
+      if (!assigned && c.priority !== 'defense') c.note = c.note || 'Aguardando tarefa prioritária';
     }
   }
 
@@ -460,9 +467,9 @@ function handleTaskAtTarget(c, tick) {
   if (task.type === 'sleep') {
     const hasBed = task.bedId && state.objects.some(o => o.id === task.bedId);
     c.energy = clamp(c.energy + tick * (hasBed ? 2.4 : 1.25), 0, 100);
-    c.mood = clamp(c.mood + tick * (hasBed ? 0.35 : 0.08), 0, 100);
+    c.mood = clamp(c.mood + tick * (hasBed ? 0.55 : 0.24), 0, 100);
     c.note = hasBed ? 'Dormindo na cama' : 'Descansando no chão';
-    if (c.energy > 88) { c.task = null; c.note = 'Descansado'; }
+    if (c.energy > 88 && (c.mood >= 14 || c.energy >= 98)) { c.task = null; c.note = 'Descansado'; }
     return;
   }
 

@@ -187,6 +187,7 @@
     if (hasImmediateThreat()) return 'danger';
     if ((c.hunger ?? 100) < 24) return 'hunger';
     const scheduleSleep = currentSchedule(c) === scheduleSleepValue();
+    if ((c.mood ?? 100) < 14 && (c.energy ?? 100) < 96) return null;
     if (!scheduleSleep && (c.energy ?? 100) > 58) return 'schedule';
     if ((c.energy ?? 100) >= 97) return 'rested';
     return null;
@@ -220,7 +221,7 @@
     c.ai.state = 'sleeping';
     c.ai.debug.currentJob = bed ? `sleep:${bed.id}` : 'sleep_floor';
     c.energy = clamp((c.energy || 0) + tick * (bed ? 3.2 : 1.65), 0, 100);
-    c.mood = clamp((c.mood || 0) + tick * (bed ? 0.38 : 0.08), 0, 100);
+    c.mood = clamp((c.mood || 0) + tick * (bed ? 0.55 : 0.24), 0, 100);
     c.hunger = clamp((c.hunger || 100) - tick * 0.08, 0, 100);
     c.needs.sleep = clamp01(c.energy / 100);
     c.needs.hunger = clamp01(c.hunger / 100);

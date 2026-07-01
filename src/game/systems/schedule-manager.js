@@ -4,6 +4,8 @@
   const SCHEDULE = Object.freeze({ SLEEP: 0, WORK: 1, LEISURE: 2 });
   const SCHEDULE_LABELS = Object.freeze({ 0: 'Dormir', 1: 'Trabalhar', 2: 'Lazer' });
   const SCHEDULE_CLASS = Object.freeze({ 0: 'sleep', 1: 'work', 2: 'leisure' });
+  const LEISURE_MIN_ENERGY = 24;
+  const LEISURE_WAKE_MOOD = 18;
   const DEFAULT_SCHEDULE = Object.freeze([
     0,0,0,0,0,0,
     1,1,1,1,1,1,
@@ -56,7 +58,7 @@
   function isInterruptibleForSchedule(c) {
     const type = c?.task?.type;
     if (!type) return true;
-    return ['move','gather','build','research','craft','haul','inspect','loot','inspectPoi','forge','cook'].includes(type);
+    return ['move','gather','mine','build','buildRoof','research','craft','haul','inspect','loot','inspectPoi','forge','cook','leisure'].includes(type);
   }
 
   function hasExplicitWorkPending() {
@@ -84,6 +86,14 @@
   }
 
   function assignLeisure(c) {
+    if (Number(c?.energy ?? 100) < LEISURE_MIN_ENERGY) {
+      c.task = null;
+      c.path = [];
+      c.work = 0;
+      if (typeof startSleep === 'function') startSleep(c);
+      else c.note = 'Exausto: precisa dormir';
+      return true;
+    }
     const target = nearestLeisureObject(c);
     if (!target) {
       c.task = null;
@@ -101,9 +111,18 @@
     return true;
   }
 
-  function handleLeisureAtTarget(c, tick) {
-    c.mood = clamp((c.mood || 0) + tick * 0.55, 0, 100);
-    c.energy = clamp((c.energy || 0) + tick * 0.08, 0, 100);
+  function handleLeisureAtTarget(c, task, tick) {
+    tick = Number(tick) || 0;
+    if (Number(c?.energy ?? 100) < LEISURE_MIN_ENERGY) {
+      c.task = null;
+      c.path = [];
+      c.work = 0;
+      if (typeof startSleep === 'function') startSleep(c);
+      else c.note = 'Exausto: precisa dormir';
+      return true;
+    }
+    c.mood = clamp((c.mood || 0) + tick * 0.72, 0, 100);
+    c.energy = clamp((c.energy || 0) + tick * 0.24, 0, 100);
     c.note = 'Relaxando';
     return true;
   }
@@ -112,6 +131,15 @@
     if (!state || !c || c.isUnconscious) return false;
     const mode = getScheduleState(c, state.hour);
     c.scheduleMode = mode;
+
+    if (Number(c.energy ?? 100) < LEISURE_MIN_ENERGY && c.task?.type === 'leisure') {
+      c.task = null;
+      c.path = [];
+      c.work = 0;
+      if (typeof startSleep === 'function') startSleep(c);
+      else c.note = 'Exausto: precisa dormir';
+      return true;
+    }
 
     if (mode === SCHEDULE.SLEEP) {
       if (c.task?.type !== 'sleep' && isInterruptibleForSchedule(c)) {
@@ -126,7 +154,18 @@
     }
 
     if (mode === SCHEDULE.LEISURE) {
-      if (c.task?.type === 'sleep' && c.energy < 35) return false;
+      if (Number(c.energy ?? 100) < LEISURE_MIN_ENERGY) {
+        if (c.task?.type !== 'sleep' && isInterruptibleForSchedule(c)) {
+          c.task = null;
+          c.path = [];
+          c.work = 0;
+          if (typeof startSleep === 'function') startSleep(c);
+          else c.note = 'Exausto: precisa dormir';
+          return true;
+        }
+        return false;
+      }
+      if (c.task?.type === 'sleep' && (c.energy < 35 || c.mood < LEISURE_WAKE_MOOD)) return false;
       if (isWorkTask(c) && canDeferLeisureForWork(c)) return false;
       if (!c.task && canDeferLeisureForWork(c)) return false;
       if (c.task?.type !== 'leisure' && isInterruptibleForSchedule(c)) {
@@ -179,5 +218,6 @@
   };
 
   window.updateScheduleManagerTick = updateScheduleManagerTick;
+  installScheduleHooks();
   window.GameSystems?.registerTick('schedule', updateScheduleManagerTick, { order: 20 });
 })();

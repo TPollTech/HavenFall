@@ -552,21 +552,46 @@
     };
   }
 
-  findLooseHaulTarget = function advancedFindLooseHaulTarget() {
+  function reservationOwnerAlive(obj) {
+    return !!(obj?.reservedBy && state?.colonists?.some(colonist => colonist.id === obj.reservedBy && colonist.task?.objId === obj.id));
+  }
+
+  function autoHaulReference(c, destination) {
+    if (c) return { x: c.x, y: c.y };
+    const spawn = state?.world?.spawn || state?.world?.spawnPoints?.[0];
+    if (spawn) return spawn;
+    if (destination) return destination;
+    return state?.colonists?.[0] || { x: 0, y: 0 };
+  }
+
+  function canAutoHaulLooseObject(obj) {
+    if (!obj) return false;
+    if (obj.manualHaul || obj.markedForHaul) return true;
+    const zone = zoneSystem.getZoneAt?.(obj.x, obj.y);
+    if (zone === 'storage' || zone === 'dumping') return true;
+    return obj.type === 'rubble' && zoneSystem.count('dumping');
+  }
+
+  findLooseHaulTarget = function advancedFindLooseHaulTarget(c = null) {
     if (!state?.objects) return null;
+    let best = null;
+    let bestScore = Infinity;
     for (const obj of state.objects) {
-      if (obj.reservedBy) continue;
+      if (reservationOwnerAlive(obj)) continue;
       if (!isTileDiscovered(obj.x, obj.y)) continue;
       if (zoneSystem.hasAllowedArea?.() && !zoneSystem.isTileAllowed?.(obj.x, obj.y)) continue;
       const destination = destinationForObject(obj);
-      if (!destination) continue;
-      return obj;
+      if (!destination || !canAutoHaulLooseObject(obj)) continue;
+      const ref = autoHaulReference(c, destination);
+      const score = dist(ref.x, ref.y, obj.x, obj.y);
+      if (score < bestScore) { best = obj; bestScore = score; }
     }
-    return null;
+    return best;
   };
 
   assignHaulTask = function advancedAssignHaulTask(c, obj, storageTile = null) {
     if (!c || !obj || !canAutoHandleZoneTask(c)) return false;
+    if (reservationOwnerAlive(obj) && obj.reservedBy !== c.id) return false;
     const destination = storageTile ? { ...storageTile, type: storageTile.type || 'storage' } : destinationForObject(obj);
     if (!destination) return false;
     if (zoneSystem.hasAllowedArea?.() && (!zoneSystem.isTileAllowed?.(obj.x, obj.y) || !zoneSystem.isTileAllowed?.(destination.x, destination.y))) return false;
@@ -671,7 +696,7 @@
       }
       if ((state.weather === 'chuva' || c.energy < 26 || c.mood < 24) && zoneSystem.count('home') && assignMoveToZone(c, 'home', 'Voltando para a área da colônia')) continue;
       if ((c.health < 38 || c.statuses?.includes('gripe') || c.statuses?.includes('hipotermia')) && assignMoveToZone(c, 'safe', 'Buscando área segura')) continue;
-      const target = canAutoHandleZoneTask(c) ? findLooseHaulTarget() : null;
+      const target = canAutoHandleZoneTask(c) ? findLooseHaulTarget(c) : null;
       if (target && assignHaulTask(c, target)) continue;
       const growTile = nearestGrowingTile(c);
       if (growTile && assignPlantZone(c, growTile)) continue;

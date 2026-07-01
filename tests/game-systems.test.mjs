@@ -57,6 +57,71 @@ test('GameSystems composes task, movement and work-rate extensions', () => {
   assert.equal(context.GameSystems.applyWorkRateModifiers(10, {}, 'build'), 7);
 });
 
+test('Schedule manager sends exhausted leisure colonists to sleep', () => {
+  const context = createContext({
+    state: { hour: 12, objects: [{ id: 'fire-1', type: 'campfire', x: 4, y: 4 }], colonists: [] },
+    HavenfallContext: {},
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    dist: (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by),
+    nearestFreeAdjacent: (x, y) => ({ x: x - 1, y }),
+    findPath: () => [],
+    startSleep: c => {
+      c.task = { type: 'sleep', x: c.x, y: c.y };
+      c.path = [];
+      c.work = 0;
+      c.note = 'Dormindo';
+      return true;
+    }
+  });
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/schedule-manager.js', context);
+  context.updateScheduleManagerTick();
+
+  const leisureSchedule = Array(24).fill(context.ScheduleManager.SCHEDULE.LEISURE);
+  const tired = { id: 1, x: 0, y: 0, energy: 0, mood: 0, hunger: 80, health: 100, task: { type: 'leisure' }, path: [], schedule: leisureSchedule };
+  context.GameSystems.runBeforeColonistUpdate(tired, 1);
+  assert.equal(tired.task.type, 'sleep');
+
+  const sleepSchedule = Array(24).fill(context.ScheduleManager.SCHEDULE.SLEEP);
+  const trapped = { id: 2, x: 0, y: 0, energy: 80, mood: 80, hunger: 80, health: 100, task: { type: 'leisure' }, path: [], schedule: sleepSchedule };
+  context.GameSystems.runBeforeColonistUpdate(trapped, 1);
+  assert.equal(trapped.task.type, 'sleep');
+
+  const restedEnough = { id: 3, x: 0, y: 0, energy: 40, mood: 0, hunger: 80, health: 100, task: { type: 'leisure' }, path: [], schedule: leisureSchedule };
+  context.GameSystems.handleTask(restedEnough, restedEnough.task, 10);
+  assert.ok(restedEnough.energy > 40);
+  assert.ok(restedEnough.mood > 0);
+});
+
+test('Simulation balance keeps colonists asleep while mood is critically low', () => {
+  const context = createContext({
+    state: { isPreview: false, runtimeMode: 'playing', speed: 1, objects: [], colonists: [] },
+    HavenfallContext: {},
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    document: {
+      addEventListener() {},
+      querySelectorAll() { return []; }
+    },
+    setTimeout(fn) { fn(); },
+    findPath: () => [],
+    nearestFreeAdjacent: (x, y) => ({ x, y })
+  });
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/simulation-balance-system.js', context);
+
+  const exhausted = { id: 1, x: 0, y: 0, energy: 89, mood: 0, task: { type: 'sleep', x: 0, y: 0, groundRest: true }, path: [], work: 0 };
+  assert.equal(context.GameSystems.handleTask(exhausted, exhausted.task, 1), true);
+  assert.equal(exhausted.task.type, 'sleep');
+  assert.ok(exhausted.energy > 89);
+  assert.ok(exhausted.mood > 0);
+
+  exhausted.energy = 98;
+  exhausted.mood = 2;
+  assert.equal(context.GameSystems.handleTask(exhausted, exhausted.task, 1), true);
+  assert.equal(exhausted.task, null);
+});
+
 test('GameSystems colonist guards can stop base update flow', () => {
   const context = createContext();
   runBrowserScript('src/game/core/game-systems.js', context);
@@ -193,7 +258,7 @@ test('Storage zone falls back to floor stack when crate is full', () => {
       stockpile: { stored: true }
     },
     itemDefs: {},
-    GameSystems: { registerTaskHandler: () => {} },
+    GameSystems: { registerTaskHandler: () => {}, registerDrawOverlay: () => {} },
     HavenfallContext: {},
     isInside: () => true,
     isTileDiscovered: () => true,

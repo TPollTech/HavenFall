@@ -299,7 +299,7 @@
   }
 
   function ensureBootOverlay(force = false) {
-    if (bootFinished) return null;
+    if (bootFinished && !force) return null;
     let overlay = document.getElementById('havenfallBootOverlay');
     if (overlay) return overlay;
 
@@ -331,7 +331,7 @@
     const pct = bootFinished ? requested : Math.min(requested, 96);
     lastBootProgress = { label, progress: pct, detail };
     window.HavenfallBootProgressState = { label, progress: pct, detail, gates: [...completedGates], pending: pendingGateLabels(), timings: bootTimings.slice(), updatedAt: Date.now() };
-    ensureBootOverlay(false);
+    ensureBootOverlay(bootFinished && pct < 100);
     syncBootOverlay(lastBootProgress);
   }
 

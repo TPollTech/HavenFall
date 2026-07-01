@@ -11,6 +11,7 @@
   const REST_DONE_WITH_BED = 88;
   const REST_DONE_WITH_CAMPFIRE = 82;
   const REST_DONE_ON_GROUND = 76;
+  const MIN_WAKE_MOOD = 14;
   const RESEARCH_POINTS_PER_SECOND = 0.28;
 
   function clampLocal(value, min, max) {
@@ -172,14 +173,14 @@
     const hasBed = !!task.bedId && (state.objects || []).some(obj => obj.id === task.bedId && obj.type === 'bed');
     const hasCampfire = !!task.campfireId && (state.objects || []).some(obj => obj.id === task.campfireId && obj.type === 'campfire');
     const rate = hasBed ? 2.35 : hasCampfire ? 1.75 : 1.18;
-    const moodRate = hasBed ? 0.32 : hasCampfire ? 0.18 : 0.06;
+    const moodRate = hasBed ? 0.55 : hasCampfire ? 0.36 : 0.24;
     const doneAt = hasBed ? REST_DONE_WITH_BED : hasCampfire ? REST_DONE_WITH_CAMPFIRE : REST_DONE_ON_GROUND;
 
     c.energy = clampLocal((c.energy || 0) + Math.max(0, Number(tick) || 0) * rate, 0, 100);
     c.mood = clampLocal((c.mood || 0) + Math.max(0, Number(tick) || 0) * moodRate, 0, 100);
     c.note = hasBed ? 'Dormindo na cama' : hasCampfire ? 'Descansando perto da fogueira' : 'Descansando no chão';
 
-    if (c.energy >= doneAt) {
+    if (c.energy >= doneAt && (c.mood >= MIN_WAKE_MOOD || c.energy >= 98)) {
       c.task = null;
       c.path = [];
       c.work = 0;

@@ -65,7 +65,7 @@ const zoneSystem = {
     if (!zones || !isInside(x, y) || !isTileDiscovered(x, y)) return false;
     const key = this.key(x, y);
     if (!zoneType || zoneType === 'none') delete zones.grid[key];
-    else if (zoneDefs[zoneType]) zones.grid[key] = zoneType;
+    else if (zoneDefForOverlay(zoneType)) zones.grid[key] = zoneType;
     return true;
   },
 
@@ -163,12 +163,24 @@ function zoneDefForOverlay(type) {
   return window.HavenfallZones?.getZoneDef?.(type) || zoneDefs[type] || null;
 }
 
+const unknownZoneDef = Object.freeze({
+  label: 'Zona desconhecida',
+  short: '?',
+  hint: 'Tipo de zona salvo sem definição carregada.',
+  fill: 'rgba(148, 163, 184, .16)',
+  stroke: 'rgba(148, 163, 184, .72)'
+});
+
+function allZoneDefsForUi() {
+  return window.HavenfallZones?.getAllZoneDefs?.() || zoneDefs;
+}
+
 function fallbackZoneDef(type) {
-  return zoneDefForOverlay(type) || zoneDefs.storage;
+  return zoneDefForOverlay(type) || unknownZoneDef;
 }
 
 function zoneToolExists(tool) {
-  return tool === 'none' || !!zoneDefForOverlay(tool);
+  return tool === 'none' || !!zoneDefForOverlay(tool) || !!allZoneDefsForUi()[tool];
 }
 
 function zoneLabel(type) {
@@ -212,12 +224,12 @@ function installZonePanel() {
 }
 
 function zoneToolButtonsHtml() {
-  return Object.entries(zoneDefs).map(([key, def]) => `<button data-zone-tool="${key}">${def.short}</button>`).join('');
+  return Object.entries(allZoneDefsForUi()).map(([key, def]) => `<button data-zone-tool="${key}">${def.short}</button>`).join('');
 }
 
 function zoneCountCardsHtml() {
   const counts = zoneSystem.counts();
-  return Object.entries(zoneDefs).map(([key, def]) => `
+  return Object.entries(allZoneDefsForUi()).map(([key, def]) => `
     <div class="colonist-stat-card">
       <b>${def.label}</b>
       <span>${counts[key] || 0} tile${counts[key] === 1 ? '' : 's'}</span>
@@ -239,8 +251,9 @@ function updateZonePanel() {
 
 function setZoneTool(tool) {
   if (!zoneToolExists(tool)) return;
-  currentZoneTool = currentZoneTool === tool ? null : tool;
+  currentZoneTool = tool;
   currentBuild = null;
+  clearZoneSelection();
   updateZonePanel();
   updateZonesModal();
   if (typeof updateUI === 'function') updateUI(true);
@@ -251,6 +264,8 @@ function ensureZonesModalStyles() {
   const style = document.createElement('style');
   style.id = 'zones-modal-styles';
   style.textContent = `
+    #zones-modal{background:rgba(2,4,8,.34);backdrop-filter:blur(2px);}
+    #zones-modal .colonist-modal-card{pointer-events:auto;}
     .zones-modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
     .zones-modal-actions button.active,.zone-tool-row button.active{outline:2px solid #f5d15c;background:rgba(245,209,92,.16);}
     .zones-help-list{margin:10px 0 0;padding-left:18px;color:#b8b0a0;}
@@ -268,7 +283,15 @@ function ensureZonesModalElement() {
   modal.setAttribute('aria-hidden', 'true');
   document.body.appendChild(modal);
   modal.addEventListener('click', event => {
-    if (event.target === modal || event.target.closest('[data-close-zones-modal]')) closeZonesModal();
+    if (event.target.closest('[data-close-zones-modal]')) closeZonesModal();
+    const btn = event.target.closest('[data-zone-tool]');
+    if (btn) {
+      setZoneTool(btn.dataset.zoneTool);
+      closeZonesModal({ preserveTool: true });
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const clear = event.target.closest('[data-clear-zone-tool]');
     if (clear) clearZoneTool('manual');
     const wipe = event.target.closest('[data-clear-all-zones]');
@@ -290,12 +313,12 @@ function openZonesModal() {
   if (typeof updateUI === 'function') updateUI(true);
 }
 
-function closeZonesModal() {
+function closeZonesModal(options = {}) {
   const modal = document.getElementById('zones-modal');
   if (!modal) return;
   modal.classList.remove('show');
   modal.setAttribute('aria-hidden', 'true');
-  clearZoneTool();
+  if (!options.preserveTool) clearZoneTool();
   if (typeof updateUI === 'function') updateUI(true);
 }
 
@@ -453,6 +476,7 @@ function installZoneButtons() {
     const btn = event.target.closest?.('[data-zone-tool]');
     if (!btn) return;
     setZoneTool(btn.dataset.zoneTool);
+    if (btn.closest?.('#zones-modal')) closeZonesModal({ preserveTool: true });
   });
 }
 
@@ -513,7 +537,7 @@ function installZoneRendererHook() {
   window.HavenfallContext.zoneRendererHooked = true;
 }
 
-function findLooseHaulTarget() {
+function findLooseHaulTarget(c) {
   if (!state?.objects) return null;
   let best = null;
   for (let i = 0; i < state.objects.length; i++) {
@@ -601,7 +625,7 @@ function updateZoneBehaviors() {
 
     if ((c.health < 38 || c.statuses?.includes('gripe') || c.statuses?.includes('hipotermia')) && assignMoveToZone(c, 'safe', 'Buscando área segura')) continue;
 
-    const target = canAutoHandleZoneTask(c) && zoneSystem.count('storage') ? findLooseHaulTarget() : null;
+    const target = canAutoHandleZoneTask(c) && zoneSystem.count('storage') ? findLooseHaulTarget(c) : null;
     if (target) {
       const storageTile = zoneSystem.findFreeStorageTile();
       if (storageTile && assignHaulTask(c, target, storageTile)) continue;
@@ -614,7 +638,6 @@ function updateZoneBehaviors() {
 function updateZonesTick() {
   installZonePanel();
   updateZonePanel();
-  updateZonesModal();
   updateZoneBehaviors();
 }
 

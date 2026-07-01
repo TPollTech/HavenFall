@@ -121,11 +121,16 @@ function equipAvailableHandcart(c) {
   return equipItem(c, 'handcart');
 }
 
+function reservationOwnerAliveForHaul(obj) {
+  return !!(obj?.reservedBy && state?.colonists?.some(colonist => colonist.id === obj.reservedBy && colonist.task?.objId === obj.id));
+}
+
 function installHaulingZonePatch() {
   if (window.HavenfallContext?.haulingZonePatchInstalled || typeof assignHaulTask !== 'function' || typeof processHaulTask !== 'function') return;
 
   assignHaulTask = function assignHaulTaskWithCapacity(c, obj, storageTile = null) {
     if (!c || !obj || !canColonistAutoHandle(c)) return false;
+    if (reservationOwnerAliveForHaul(obj) && obj.reservedBy !== c.id) return false;
     const plannedCargo = haulingCargoForObject(obj, c);
     if (!plannedCargo) return false;
     const destination = haulingDestinationFor(obj, c, storageTile)

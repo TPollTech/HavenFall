@@ -5,11 +5,11 @@
   window.HavenfallUI.tabViews = window.HavenfallUI.tabViews || {};
 
   function zoneEntries() {
-    return Object.entries(zoneDefs || {});
+    return Object.entries(window.HavenfallZones?.getAllZoneDefs?.() || zoneDefs || {});
   }
 
   function activeTool() {
-    return currentZoneTool || 'storage';
+    return currentZoneTool || null;
   }
 
   function activateDefaultBrush() {
@@ -28,10 +28,10 @@
 
   function render() {
     if (!state) return '<div class="dock-empty">Inicie uma partida para marcar zonas.</div>';
-    activateDefaultBrush();
     const total = zoneSystem?.count?.() || 0;
+    const tool = activeTool();
     return `<div class="dock-tab-head"><div><h3>Zonas</h3><p>Pincel de zona ativo. Clique e arraste no mapa para pintar tiles.</p></div><button data-clear-zone-tool>Desativar pincel</button></div>
-      <div class="dock-zone-status"><b>Ferramenta:</b> ${escapeHtml(zoneLabel(activeTool()))} · <b>Total:</b> ${total} tile${total === 1 ? '' : 's'}</div>
+      <div class="dock-zone-status"><b>Ferramenta:</b> ${escapeHtml(zoneLabel(tool))} · <b>Total:</b> ${total} tile${total === 1 ? '' : 's'}</div>
       <div class="dock-card-grid">${zoneEntries().map(([key, def]) => renderZoneButton(key, def)).join('')}<button class="dock-card zone-card ${currentZoneTool === 'none' ? 'is-active' : ''}" data-zone-tool="none"><strong>Apagar</strong><small>Remove zonas pintadas.</small><span class="dock-badge">borracha</span></button></div>
       ${total ? '' : '<div class="dock-empty"><b>Nenhuma zona definida.</b><span>Escolha um tipo e pinte no mapa. O overlay translúcido aparece sobre os tiles marcados.</span></div>'}`;
   }

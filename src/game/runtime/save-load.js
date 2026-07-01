@@ -21,10 +21,46 @@ function localRemove(key) {
   try { localStorage.removeItem(key); return true; } catch (_) { return false; }
 }
 
+function cloneForSave(value) {
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+function currentSectorIdForSave(target) {
+  return target?.worldMap?.currentSiteId
+    || target?.world?.landingSite?.id
+    || target?.config?.selectedLandingSiteId
+    || target?.config?.landingSiteId
+    || target?.config?.planetScan?.selectedLandingSiteId
+    || null;
+}
+
+function compactStateForSave(target = state) {
+  const saveState = cloneForSave(target);
+
+  if (saveState.world && typeof saveState.world === 'object') {
+    if (!Array.isArray(saveState.world.terrain) && Array.isArray(saveState.terrain)) {
+      saveState.world.terrain = saveState.terrain;
+    }
+    if (!Array.isArray(saveState.world.objects) && Array.isArray(saveState.objects)) {
+      saveState.world.objects = saveState.objects;
+    }
+  }
+
+  if (Array.isArray(saveState.world?.terrain)) delete saveState.terrain;
+  if (Array.isArray(saveState.world?.objects)) delete saveState.objects;
+
+  const currentSectorId = currentSectorIdForSave(saveState);
+  if (currentSectorId && saveState.sectors && typeof saveState.sectors === 'object') {
+    delete saveState.sectors[currentSectorId];
+  }
+
+  return saveState;
+}
+
 function serialize() {
   const runtime = desktopApi() ? 'electron' : 'web';
   return JSON.stringify({
-    state,
+    state: compactStateForSave(state),
     selectedColonistId,
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
@@ -176,6 +212,7 @@ function validateSaveData(data) {
 function saveGame(manual = false) {
   if (!state || state.isPreview || state.runtimeMode === 'menu-preview') return false;
   if (typeof ensureGeologyState === 'function') ensureGeologyState();
+  window.HavenfallGeologyMassSystem?.purgeLooseResourcesOnGeology?.(state.world);
   if (window.HavenfallRuntime?.normalizeState) window.HavenfallRuntime.normalizeState(state);
   const payload = serialize();
   const result = writeSavePayload(payload, manual);
@@ -270,7 +307,8 @@ function migrateLoadedState() {
     biomes: existingWorld.biomes || null,
     waterDepth: existingWorld.waterDepth || null,
     livingWorld: existingWorld.livingWorld || null,
-    geologyLayer: existingWorld.geologyLayer || null,
+    geologyLayer: Array.isArray(existingWorld.geologyLayer) ? existingWorld.geologyLayer : null,
+    geologyMassVersion: existingWorld.geologyMassVersion || (Array.isArray(existingWorld.geologyLayer) ? window.HavenfallGeologyMassSystem?.version || 'dense-mountains' : null),
     naturalRoofLayer: existingWorld.naturalRoofLayer || (legacyNaturalRoofLayer ? existingWorld.roofLayer : null),
     roofLayer: legacyNaturalRoofLayer ? null : existingWorld.roofLayer || null,
     builtRoofLayer: existingWorld.builtRoofLayer || null,
@@ -289,6 +327,8 @@ function migrateLoadedState() {
   state.worldMeta = state.worldMeta || { seed: state.config.seed, mapSize: state.config.mapSize, difficulty: state.config.difficulty };
   state.objects = ensureLoadedEntityIds((Array.isArray(state.objects) && state.objects.length ? state.objects : state.world.objects) || [], 'obj');
   state.world.objects = state.objects;
+  window.HavenfallGeologyMassSystem?.purgeLooseResourcesOnGeology?.(state.world);
+  state.objects = state.world.objects;
   state.colonists = ensureLoadedEntityIds(state.colonists || [], 'colonist');
   state.mobs = ensureLoadedEntityIds(state.mobs || [], 'mob');
   state.wolves = ensureLoadedEntityIds(state.wolves || [], 'wolf');

@@ -20,6 +20,16 @@
   function n(v,f=0){ v=Number(v); return Number.isFinite(v)?v:f; }
   function pct(v,max=100){ return Math.max(0,Math.min(100,Math.round(n(v)/Math.max(1,n(max,100))*100))); }
   function bar(label,value,max=100,tone=''){ return { label,value:pct(value,max),tone }; }
+  function vital(c,key,fallback=0){
+    const direct = Number(c?.[key]);
+    if (Number.isFinite(direct)) return Math.max(0, Math.min(100, direct));
+    const aliases = { energy:['energy','sleep'], mood:['mood','comfort'], hunger:['hunger'], health:['health'] }[key] || [key];
+    for (const alias of aliases) {
+      const raw = Number(c?.needs?.[alias]);
+      if (Number.isFinite(raw)) return Math.max(0, Math.min(100, raw <= 1 ? raw * 100 : raw));
+    }
+    return fallback;
+  }
   function discovered(x,y){ return typeof isTileDiscovered!=='function'||isTileDiscovered(x,y); }
   function visible(x,y){ return typeof isTileVisible!=='function'||isTileVisible(x,y); }
   function inside(x,y){ return typeof isInside!=='function'||isInside(x,y); }
@@ -62,22 +72,25 @@
     const base = taskLabels[task.type] || task.type;
     if (task.type === 'move' && Number.isFinite(Number(task.x)) && Number.isFinite(Number(task.y))) return `${base} para ${Math.round(task.x)}, ${Math.round(task.y)}`;
     if (task.type === 'sleep') return task.bedId ? 'Dormindo na cama' : 'Descansando onde está';
+    if (task.type === 'leisure') return 'Relaxando';
     return base;
   }
 
   function colonistStatus(c) {
-    const health = n(c?.health, 100);
-    const hunger = n(c?.hunger, 100);
-    const energy = n(c?.energy, 100);
-    const mood = n(c?.mood, 70);
+    const health = vital(c, 'health', 100);
+    const hunger = vital(c, 'hunger', 100);
+    const energy = vital(c, 'energy', 100);
+    const mood = vital(c, 'mood', 70);
     if (health <= 20) return { label: 'Saúde crítica', danger: 2 };
     if (hunger <= 15) return { label: 'Fome crítica', danger: 2 };
+    if (energy <= 8) return { label: 'Exausto', danger: 2 };
     if (mood <= 10) return { label: 'Humor crítico', danger: 2 };
     if (health <= 35) return { label: 'Ferido', danger: 1 };
     if (hunger <= 30) return { label: 'Com fome', danger: 1 };
-    if (mood <= 25) return { label: 'Humor baixo', danger: 1 };
     if (energy <= 12) return { label: 'Exausto', danger: 1 };
+    if (mood <= 25) return { label: 'Humor baixo', danger: 1 };
     if (c?.task?.type === 'sleep') return { label: 'Dormindo', danger: 0 };
+    if (c?.task?.type === 'leisure') return { label: energy < 35 ? 'Recuperando energia' : 'Relaxando', danger: 0 };
     if (c?.task?.type && c.task.type !== 'move') return { label: 'Trabalhando', danger: 0 };
     if (energy >= 90) return { label: 'Totalmente descansado', danger: 0 };
     return { label: 'Estável', danger: 0 };
@@ -106,7 +119,7 @@
       subtitle:`Colono · ${c.role||'sem função'} · ${c.age??'?'} anos`,
       status:status.label,
       danger:status.danger,
-      bars:[bar('Saúde',c.health),bar('Fome',c.hunger),bar('Energia',c.energy),bar('Humor',c.mood)],
+      bars:[bar('Saúde',vital(c,'health',100)),bar('Fome',vital(c,'hunger',100)),bar('Energia',vital(c,'energy',100)),bar('Humor',vital(c,'mood',70))],
       chips:traits.length?traits:['sem traços'],
       sections:[
         ['Estado atual', currentRows],
@@ -132,14 +145,14 @@
     const s=document.createElement('style');
     s.id='inspection-panel-styles';
     s.textContent=`
-      .inspection-panel{position:fixed;left:18px;bottom:104px;width:min(432px,calc(100vw - 36px));max-height:min(68vh,620px);z-index:6200;display:none;overflow:hidden;border:1px solid rgba(121,199,232,.25);border-radius:18px;background:linear-gradient(180deg,rgba(13,21,34,.97),rgba(7,12,20,.95));box-shadow:0 24px 70px rgba(0,0,0,.45);color:#f4efe4;backdrop-filter:blur(10px)}
-      .inspection-panel.show{display:block}.inspection-scroll{max-height:min(68vh,620px);overflow:auto;padding:16px;scrollbar-width:thin;scrollbar-color:rgba(121,199,232,.48) rgba(7,12,20,.92)}
+      .inspection-panel{position:fixed;left:18px;top:12px;bottom:104px;width:min(432px,calc(100vw - 36px));max-height:none;z-index:6200;display:none;overflow:hidden;box-sizing:border-box;border:1px solid rgba(121,199,232,.25);border-radius:18px;background:linear-gradient(180deg,rgba(13,21,34,.97),rgba(7,12,20,.95));box-shadow:0 24px 70px rgba(0,0,0,.45);color:#f4efe4;backdrop-filter:blur(10px)}
+      .inspection-panel.show{display:block}.inspection-scroll{height:100%;max-height:none;overflow:auto;padding:16px;box-sizing:border-box;scrollbar-width:thin;scrollbar-color:rgba(121,199,232,.48) rgba(7,12,20,.92)}
       .inspection-scroll::-webkit-scrollbar{width:9px}.inspection-scroll::-webkit-scrollbar-track{background:rgba(7,12,20,.92);border-radius:99px}.inspection-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(121,199,232,.72),rgba(58,103,136,.86));border-radius:99px;border:2px solid rgba(7,12,20,.94)}.inspection-scroll::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(151,219,246,.9),rgba(76,128,164,.95))}
-      .inspection-head{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.09);padding-bottom:12px;margin-bottom:12px}.inspection-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#79c7e8;font-weight:950}.inspection-title{margin:3px 0;font-size:22px;line-height:1.05}.inspection-sub{font-size:13px;color:#aeb8c7;font-weight:800}.inspection-close{width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.075);color:#f4efe4;font-size:22px;font-weight:950;cursor:pointer}.inspection-close:hover{background:rgba(255,255,255,.13)}
+      .inspection-head{position:sticky;top:-16px;z-index:2;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.09);padding:16px 0 12px;margin:-16px 0 12px;background:linear-gradient(180deg,rgba(13,21,34,.99),rgba(13,21,34,.96))}.inspection-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#79c7e8;font-weight:950}.inspection-title{margin:3px 0;font-size:22px;line-height:1.05}.inspection-sub{font-size:13px;color:#aeb8c7;font-weight:800}.inspection-close{flex:0 0 auto;width:38px;height:38px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.075);color:#f4efe4;font-size:22px;font-weight:950;cursor:pointer}.inspection-close:hover{background:rgba(255,255,255,.13)}
       .inspection-status{padding:12px 14px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.085);font-size:15px;font-weight:950;margin-bottom:12px}.inspection-panel.danger-1 .inspection-status{background:rgba(244,196,107,.13);border-color:rgba(244,196,107,.32);color:#ffd37a}.inspection-panel.danger-2 .inspection-status{background:rgba(255,105,97,.13);border-color:rgba(255,105,97,.36);color:#ff9c94}
       .inspection-bars{display:grid;gap:10px;margin:12px 0}.inspection-bar{display:grid;grid-template-columns:92px 1fr 48px;align-items:center;gap:10px;font-size:14px}.inspection-bar>span{white-space:nowrap}.inspection-track{height:10px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}.inspection-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#79c7e8,#9bd36a)}.inspection-fill.warn{background:linear-gradient(90deg,#f4c46b,#e69d42)}.inspection-fill.danger{background:linear-gradient(90deg,#ff6961,#d74e45)}
       .inspection-chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.inspection-chip{border:1px solid rgba(121,199,232,.24);background:rgba(121,199,232,.10);border-radius:99px;padding:6px 10px;font-size:12px;font-weight:900;color:#d9edf7}.inspection-section{border-top:1px solid rgba(255,255,255,.08);padding-top:13px;margin-top:13px}.inspection-section h4{margin:0 0 10px;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:#f4c46b}.inspection-row{display:grid;grid-template-columns:136px 1fr;gap:12px;font-size:14px;padding:5px 0}.inspection-row span{color:#9da9b8;font-weight:900}.inspection-row b{min-width:0;overflow-wrap:anywhere}.inspection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.inspection-actions button{border:1px solid rgba(121,199,232,.22);background:rgba(121,199,232,.10);color:#f4efe4;border-radius:10px;padding:8px 10px;font-weight:950;cursor:pointer}.inspection-actions button:hover{background:rgba(121,199,232,.17)}
-      @media(max-width:760px){.inspection-panel{left:10px;right:10px;bottom:92px;width:auto;max-height:52vh}.inspection-scroll{max-height:52vh}.inspection-row{grid-template-columns:98px 1fr}.inspection-bar{grid-template-columns:76px 1fr 42px}}
+      @media(max-width:760px){.inspection-panel{left:10px;right:10px;top:8px;bottom:88px;width:auto;max-height:none}.inspection-scroll{height:100%;max-height:none}.inspection-row{grid-template-columns:98px 1fr}.inspection-bar{grid-template-columns:76px 1fr 42px}}
     `;
     document.head.appendChild(s);
   }

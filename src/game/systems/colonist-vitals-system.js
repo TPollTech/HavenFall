@@ -9,6 +9,7 @@
     LOW: 24,
     SLEEP_AT: 16,
     EMERGENCY: 6,
+    MIN_WAKE_MOOD: 14,
     WAKE_AT: 78,
     FULLY_RESTED: 92,
     DRAIN_IDLE: 0.010,
@@ -42,7 +43,7 @@
     if (type === 'sleep') return false;
     if (type === 'move') return false;
     if (type === 'combat' || type === 'scare') return false;
-    return ['gather', 'build', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine'].includes(type);
+    return ['gather', 'build', 'buildRoof', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine'].includes(type);
   }
 
   function isWorkingTask(type) {
@@ -127,8 +128,8 @@
 
   function shouldForceRest(c) {
     if (!c || c.isUnconscious || c.task?.type === 'sleep') return false;
+    if (c.energy <= ENERGY.EMERGENCY) return !['combat', 'scare'].includes(c.task?.type);
     if (c.task?.type === 'move') return false;
-    if (c.energy <= ENERGY.EMERGENCY) return taskInterruptibleForRest(c);
     if (!c.task && c.energy < ENERGY.SLEEP_AT) return true;
     if (c.energy < ENERGY.SLEEP_AT && taskInterruptibleForRest(c)) return true;
     return false;
@@ -139,6 +140,7 @@
     const scheduledSleep = window.ScheduleManager?.getScheduleState?.(c, state?.hour || 0) === window.ScheduleManager?.SCHEDULE?.SLEEP;
     const wakeTarget = scheduledSleep ? ENERGY.FULLY_RESTED : ENERGY.WAKE_AT;
     if (c.energy < wakeTarget) return false;
+    if (c.mood < ENERGY.MIN_WAKE_MOOD && c.energy < ENERGY.FULLY_RESTED) return false;
     c.task = null;
     c.path = [];
     c.work = 0;
@@ -150,7 +152,7 @@
     const hasBed = !!(task?.bedId && state?.objects?.some(o => o.id === task.bedId));
     const rate = hasBed ? ENERGY.SLEEP_BED : ENERGY.SLEEP_FLOOR;
     c.energy = safeClamp(Number(c.energy || 0) + tick * rate, 0, 100);
-    c.mood = safeClamp(Number(c.mood || 0) + tick * (hasBed ? 0.28 : 0.12), 0, 100);
+    c.mood = safeClamp(Number(c.mood || 0) + tick * (hasBed ? 0.55 : 0.24), 0, 100);
     c.note = hasBed ? 'Dormindo na cama' : 'Descansando onde está';
     wakeIfRested(c);
     return true;
@@ -219,7 +221,7 @@
         startRest(c, 'tired');
       } else {
         const assigned = typeof assignAutoTask === 'function' ? assignAutoTask(c) : false;
-        if (!assigned && c.priority !== 'defense' && c.energy > ENERGY.LOW && Math.random() < 0.0015 * speed && typeof randomWander === 'function') randomWander(c);
+        if (!assigned && c.priority !== 'defense') c.note = c.note || 'Aguardando tarefa prioritária';
       }
     }
 
