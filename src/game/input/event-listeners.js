@@ -25,25 +25,182 @@
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!el.isContentEditable;
   }
 
+  function ensureRuntimeLoadingStyle() {
+    if (document.getElementById('havenfallRuntimeLoadingStyle')) return;
+    const style = document.createElement('style');
+    style.id = 'havenfallRuntimeLoadingStyle';
+    style.textContent = `
+      #havenfallRuntimeLoadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #f4efe4;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 50% 34%, rgba(86, 215, 208, .16), transparent 34%),
+          linear-gradient(180deg, rgba(2, 5, 10, .70), rgba(2, 5, 10, .88));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity .18s ease, visibility .18s ease;
+      }
+      #havenfallRuntimeLoadingOverlay.show {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-card {
+        width: min(560px, calc(100vw - 40px));
+        padding: 22px;
+        border: 1px solid rgba(227, 169, 63, .28);
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(12, 17, 25, .96), rgba(5, 8, 14, .96));
+        box-shadow: 0 28px 86px rgba(0, 0, 0, .62), inset 0 0 0 1px rgba(255, 255, 255, .045);
+        backdrop-filter: blur(10px);
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-kicker {
+        margin-bottom: 7px;
+        color: #e3a93f;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: .22em;
+        text-transform: uppercase;
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-title {
+        margin: 0 0 10px;
+        color: #fff4d9;
+        font-size: clamp(30px, 5vw, 48px);
+        font-weight: 950;
+        line-height: .95;
+        text-transform: uppercase;
+        text-shadow: 0 4px 0 rgba(0, 0, 0, .38);
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-status {
+        min-height: 22px;
+        margin-bottom: 15px;
+        color: #dce7ee;
+        font-size: 14px;
+        font-weight: 760;
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-bar {
+        height: 11px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .10);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, .42);
+        box-shadow: inset 0 0 16px rgba(0, 0, 0, .55);
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #56d7d0, #e3a93f 62%, #fff4d9);
+        box-shadow: 0 0 18px rgba(86, 215, 208, .26);
+        transition: width .16s ease;
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 10px;
+        color: #9da9bd;
+        font-size: 12px;
+        font-weight: 760;
+      }
+      #havenfallRuntimeLoadingOverlay .runtime-loading-detail {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      @media (max-width: 560px) {
+        #havenfallRuntimeLoadingOverlay { padding: 16px; }
+        #havenfallRuntimeLoadingOverlay .runtime-loading-card { width: 100%; padding: 18px; }
+        #havenfallRuntimeLoadingOverlay .runtime-loading-title { font-size: 32px; }
+        #havenfallRuntimeLoadingOverlay .runtime-loading-meta { flex-direction: column; gap: 4px; }
+        #havenfallRuntimeLoadingOverlay .runtime-loading-detail { white-space: normal; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureRuntimeLoadingOverlay() {
+    ensureRuntimeLoadingStyle();
+    let overlay = document.getElementById('havenfallRuntimeLoadingOverlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'havenfallRuntimeLoadingOverlay';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.setAttribute('aria-label', 'Carregando HavenFall');
+    overlay.innerHTML = `
+      <div class="runtime-loading-card">
+        <div class="runtime-loading-kicker">HavenFall</div>
+        <h2 id="runtimeLoadingTitle" class="runtime-loading-title">Carregando</h2>
+        <div id="runtimeLoadingStatus" class="runtime-loading-status">Preparando...</div>
+        <div class="runtime-loading-bar" aria-hidden="true"><div id="runtimeLoadingFill" class="runtime-loading-fill"></div></div>
+        <div class="runtime-loading-meta"><span id="runtimeLoadingDetail" class="runtime-loading-detail">Preparando sistemas</span><span id="runtimeLoadingPercent">0%</span></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function setRuntimeLoading(label, progress, detail = '') {
+    const overlay = ensureRuntimeLoadingOverlay();
+    const pct = Math.max(0, Math.min(100, Math.round(Number(progress || 0))));
+    const title = document.getElementById('runtimeLoadingTitle');
+    const status = document.getElementById('runtimeLoadingStatus');
+    const fill = document.getElementById('runtimeLoadingFill');
+    const meta = document.getElementById('runtimeLoadingDetail');
+    const percent = document.getElementById('runtimeLoadingPercent');
+    if (title) title.textContent = label || 'Carregando';
+    if (status) status.textContent = detail || 'Preparando...';
+    if (fill) fill.style.width = `${pct}%`;
+    if (meta) meta.textContent = detail || 'Preparando sistemas';
+    if (percent) percent.textContent = `${pct}%`;
+    overlay.classList.add('show');
+    document.body.classList.add('runtime-loading-active');
+  }
+
+  function hideRuntimeLoading(delay = 240) {
+    const overlay = document.getElementById('havenfallRuntimeLoadingOverlay');
+    if (!overlay) return;
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      document.body.classList.remove('runtime-loading-active');
+    }, Math.max(0, Number(delay) || 0));
+  }
+
   function withLoading(label, detail, work, options = {}) {
-    const progress = window.HavenfallBootProgress;
-    if (!progress?.set || !progress?.hide) {
-      work();
-      return;
-    }
-    progress.set(label || 'Carregando...', Number(options.start || 12), detail || 'Preparando');
+    const start = Number(options.start ?? 10);
+    const middle = Number(options.middle ?? 58);
+    const delay = Number(options.delay ?? 70);
+    const hideDelay = Number(options.hideDelay ?? 240);
+    setRuntimeLoading(label || 'Carregando', start, detail || 'Preparando');
+
     setTimeout(() => {
       try {
-        progress.set(label || 'Carregando...', Number(options.middle || 54), options.middleDetail || detail || 'Processando');
-        work();
-        progress.set(options.doneLabel || 'Concluído', 100, options.doneDetail || 'Pronto');
-        setTimeout(() => progress.hide(), Number(options.hideDelay || 260));
+        setRuntimeLoading(label || 'Carregando', middle, options.middleDetail || detail || 'Processando');
+        const result = typeof work === 'function' ? work() : null;
+        const finish = () => {
+          setRuntimeLoading(options.doneLabel || 'Concluído', 100, options.doneDetail || 'Pronto');
+          hideRuntimeLoading(hideDelay);
+        };
+        if (result && typeof result.then === 'function') result.then(finish).catch(error => {
+          setRuntimeLoading('Falha no carregamento', 100, error?.message || String(error));
+          console.error(error);
+        });
+        else finish();
       } catch (error) {
-        progress.set('Falha no carregamento', 100, error?.message || String(error));
+        setRuntimeLoading('Falha no carregamento', 100, error?.message || String(error));
         console.error(error);
         throw error;
       }
-    }, Number(options.delay || 60));
+    }, Math.max(0, delay));
   }
 
   function syncSpeedButtons() {
@@ -416,7 +573,7 @@
         newGameConfig = typeof ensurePlanetScanOnConfig === 'function'
           ? ensurePlanetScanOnConfig(newGameConfig || readNewGameConfig())
           : (newGameConfig || readNewGameConfig());
-        window.HavenfallBootProgress?.set?.('Validando seed', 72, 'Aplicando ecossistema, spawn e POIs');
+        setRuntimeLoading('Validando seed', 72, 'Aplicando ecossistema, spawn e POIs');
         startNewGame(newGameConfig, colonistCandidates);
         window.HavenfallRuntime?.markGameplayState?.(state);
         syncSpeedButtons();
