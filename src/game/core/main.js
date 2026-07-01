@@ -22,20 +22,6 @@ function loadCoreExtension(file, id) {
   });
 }
 
-function loadOptionalCoreExtension(file, id) {
-  return loadCoreExtension(file, id).catch(err => {
-    console.warn(`[Engine] Extensão opcional ignorada: ${id}`, err);
-    window.HavenfallRuntimeErrors?.unshift?.({ kind: 'optional-extension', id, message: err?.message || String(err), stack: err?.stack || null, at: new Date().toISOString() });
-    return null;
-  });
-}
-
-function loadWorldInfrastructure() {
-  bootStatus('Preparando mundo por regiões', 85, 'Indexando regiões, luz e streaming futuro');
-  return loadOptionalCoreExtension('src/game/systems/world-region-system.js', 'world_region_system')
-    .then(() => loadOptionalCoreExtension('src/game/systems/lighting-system.js', 'lighting_system'));
-}
-
 function bootGame() {
   if (window.HavenfallContext.gameBooted) {
     console.warn('[Engine] Boot já executado. Chamada redundante ignorada.');
@@ -48,7 +34,6 @@ function bootGame() {
       bootStatus('Preparando autonomia dos colonos', 85, 'Instalando cérebro individual e descanso contextual');
       return loadCoreExtension('src/game/systems/colonist-autonomy-system.js', 'colonist_autonomy');
     })
-    .then(loadWorldInfrastructure)
     .then(() => {
       bootStatus('Carregando assets', 86, 'Lendo imagens, sprites e placeholders');
       return loadImages();
