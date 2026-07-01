@@ -728,10 +728,69 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(circle at center, #000 0 62%, transparent 84%);
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: .66;
+  pointer-events: none;
+}
+
+.setup-visual-head,
+.setup-preview-frame,
+.setup-visual-chip-row,
+.setup-preview-legend {
+  position: relative;
+  z-index: 1;
+}
+
+.setup-visual-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.setup-visual-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.setup-visual-kicker {
+  color: #d79b46;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.setup-visual-copy b {
+  color: #fff3df;
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.setup-visual-copy small {
+  color: rgba(234, 236, 243, .70);
+  line-height: 1.45;
+}
+
+.setup-visual-status {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+  color: rgba(244,239,228,.88);
+  font: 900 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .12em;
+}
+
+.setup-visual-status.is-locked {
+  color: #ffe6ae;
+  border-color: rgba(247,184,74,.32);
+  background: rgba(247,184,74,.10);
 }
 
 .setup-orbit-ring {
@@ -903,6 +962,8 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
   #newGameSetupScreen .screen-title-row h1 { font-size: 34px; }
   #newGameSetupScreen .setup-form-grid,
   .setup-summary-grid { grid-template-columns: 1fr; }
+  .setup-visual-head,
+  .setup-preview-overlay { grid-template-columns: 1fr; display: grid; }
   .setup-actions { display: grid; }
 }
 

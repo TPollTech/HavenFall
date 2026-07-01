@@ -16,6 +16,36 @@ var defaultNewGameConfig = Object.freeze({
   landingSiteId: null
 });
 const MAX_STARTING_COLONISTS = 8;
+const SETUP_PREVIEW_COLORS = Object.freeze({
+  grass: '#688744',
+  dirt: '#785438',
+  sand: '#b99558',
+  stone: '#6f7c7d',
+  water: '#2c708b',
+  forest: '#35592d',
+  snow: '#cdd9e4',
+  ruin: '#8b6650',
+  spawn: '#f7bc54'
+});
+const SETUP_PREVIEW_LABELS = Object.freeze({
+  grass: 'campo vivo',
+  dirt: 'solo seco',
+  sand: 'faixa de areia',
+  stone: 'placa mineral',
+  water: 'agua detectada',
+  forest: 'massa florestal',
+  snow: 'gelo superficial',
+  ruin: 'eco estrutural',
+  spawn: 'zona de insercao'
+});
+const SETUP_BIOME_LABELS = Object.freeze({
+  forest: 'Floresta temperada',
+  meadow: 'Planicie estavel',
+  rock: 'Cinturao mineral',
+  water: 'Bacia hidrica',
+  desert: 'Faixa desertica',
+  snow: 'Planalto gelido'
+});
 
 function loadSettings() {
   try {
@@ -176,6 +206,159 @@ function labelResourcesPreset(value) {
   })[value] || value || 'Padrão';
 }
 
+function setupPreviewColor(type) {
+  return SETUP_PREVIEW_COLORS[type] || '#455569';
+}
+
+function setupPreviewLabel(type) {
+  return SETUP_PREVIEW_LABELS[type] || String(type || 'setor');
+}
+
+function normalizePreviewSample(sample) {
+  if (!Array.isArray(sample) || !sample.length) return [];
+  const rows = sample
+    .filter(row => Array.isArray(row) && row.length)
+    .map(row => row.map(cell => ({ type: String(cell?.type || 'grass') })));
+  return rows.length ? rows : [];
+}
+
+function buildSyntheticSetupPreview(cfg, width = 24, height = 14) {
+  const rand = seededRandom(`${cfg.seed}|setup-preview|${cfg.mapSize}|${cfg.difficulty}|${cfg.resourcesPreset}|${cfg.eventIntensity}`);
+  const harsh = Math.max(0, Math.min(1, (({
+    easy: 0.20,
+    normal: 0.38,
+    hard: 0.60,
+    hardcore: 0.82
+  })[cfg.difficulty] ?? 0.38) + (({ low: -0.06, normal: 0, high: 0.09 })[cfg.eventIntensity] || 0)));
+  const fertile = Math.max(0, Math.min(1, ({
+    scarce: 0.18,
+    standard: 0.36,
+    rich: 0.56
+  })[cfg.resourcesPreset] ?? 0.36));
+  const frontier = Math.max(0, Math.min(1, ({
+    large: 0.18,
+    huge: 0.30,
+    giant: 0.44,
+    infinite_chunks: 0.62
+  })[cfg.mapSize] ?? 0.30));
+  const desertish = harsh > 0.64 && fertile < 0.34 && rand() > 0.40;
+  const snowy = !desertish && (cfg.mapSize === 'giant' || cfg.mapSize === 'infinite_chunks') && harsh > 0.58 && rand() > 0.58;
+  const ruinChance = Math.max(0, harsh - 0.42) * 0.14;
+  const riverLine = height * (0.56 + (rand() - 0.5) * 0.20);
+  const sample = [];
+
+  for (let y = 0; y < height; y++) {
+    const row = [];
+    for (let x = 0; x < width; x++) {
+      const dx = (x - width / 2) / width;
+      const dy = (y - height / 2) / height;
+      const dist = Math.hypot(dx, dy);
+      const noise = rand();
+      const ridge = rand();
+      const riverOffset = Math.sin((x / width) * Math.PI * (1.4 + frontier)) * (0.7 + frontier * 1.1);
+      let type = desertish ? 'sand' : snowy ? 'snow' : (fertile > 0.40 ? 'grass' : 'dirt');
+
+      if (dist < 0.09) type = 'spawn';
+      else if (fertile > 0.24 && Math.abs(y - riverLine - riverOffset) < 0.80 + fertile * 1.1 && noise > 0.34) type = 'water';
+      else if (ridge > 0.90 - frontier * 0.17 + harsh * 0.05) type = 'stone';
+      else if (!desertish && !snowy && noise < fertile * 0.56) type = ridge < 0.30 ? 'forest' : 'grass';
+      else if (desertish && noise < 0.16 + harsh * 0.08) type = 'stone';
+      else if (!desertish && noise > 0.81) type = 'dirt';
+      else if (desertish && noise > 0.72) type = 'sand';
+
+      if (type !== 'spawn' && type !== 'water' && noise > 0.965 - ruinChance) type = 'ruin';
+      if (cfg.mapSize === 'infinite_chunks' && x > width * 0.64 && ridge > 0.76) type = 'stone';
+      if (cfg.resourcesPreset === 'rich' && type === 'dirt' && noise < 0.22) type = 'grass';
+      row.push({ type });
+    }
+    sample.push(row);
+  }
+  return sample;
+}
+
+function setupPreviewSample(cfg) {
+  const landingSample = normalizePreviewSample(cfg?.selectedLandingSite?.preview?.terrainSample);
+  return landingSample.length ? landingSample : buildSyntheticSetupPreview(cfg);
+}
+
+function summarizePreviewSample(sample) {
+  const counts = {};
+  let total = 0;
+  for (const row of sample || []) {
+    for (const cell of row || []) {
+      const type = String(cell?.type || 'grass');
+      counts[type] = Number(counts[type] || 0) + 1;
+      total++;
+    }
+  }
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return { counts, total, entries };
+}
+
+function inferSetupPreviewBiome(sample) {
+  const counts = summarizePreviewSample(sample).counts;
+  if ((counts.sand || 0) >= Math.max(counts.grass || 0, counts.forest || 0, counts.snow || 0) && (counts.sand || 0) > 10) return 'desert';
+  if ((counts.snow || 0) > Math.max(counts.grass || 0, counts.forest || 0, counts.sand || 0)) return 'snow';
+  if ((counts.water || 0) > 28) return 'water';
+  if ((counts.stone || 0) > 34) return 'rock';
+  if ((counts.forest || 0) > (counts.grass || 0)) return 'forest';
+  return 'meadow';
+}
+
+function setupBiomeLabel(landing, sample) {
+  if (landing?.labels?.biomeLabel) return String(landing.labels.biomeLabel);
+  const primary = String(landing?.biomes?.primary || inferSetupPreviewBiome(sample));
+  return SETUP_BIOME_LABELS[primary] || primary;
+}
+
+function renderSetupSectorVisual(cfg, risk, sample = setupPreviewSample(cfg), biomeLabel = setupBiomeLabel(cfg?.selectedLandingSite, sample)) {
+  const host = document.getElementById('setupSectorVisual');
+  if (!host) return;
+  const landing = cfg.selectedLandingSite;
+  const rows = sample.length || 14;
+  const cols = sample[0]?.length || 24;
+  const summary = summarizePreviewSample(sample);
+  const chips = [
+    { text: landing ? 'setor validado' : 'scan pendente', state: landing ? 'is-locked' : 'is-pending' },
+    { text: labelMapSize(cfg.mapSize) },
+    { text: labelResourcesPreset(cfg.resourcesPreset) },
+    { text: labelEventIntensity(cfg.eventIntensity) },
+    { text: landing ? `${Number(landing.difficulty?.score || 0)}/100 score` : `risco ${risk.label.toLowerCase()}` }
+  ];
+  const legend = summary.entries
+    .filter(([type]) => type !== 'spawn')
+    .slice(0, 4)
+    .map(([type, count]) => `<span style="--swatch:${setupPreviewColor(type)}"><i></i>${escapeHtml(setupPreviewLabel(type))} ${Math.round((count / Math.max(1, summary.total)) * 100)}%</span>`)
+    .join('');
+  const raster = sample.map(row => row.map(cell => {
+    const type = String(cell?.type || 'grass');
+    return `<i class="setup-preview-cell ${type === 'spawn' ? 'is-spawn' : ''}" style="--setup-cell:${setupPreviewColor(type)}"></i>`;
+  }).join('')).join('');
+  const lead = landing
+    ? escapeHtml(landing.labels?.subtitle || 'Amostra real do setor travado. Terreno, risco e recursos ja entram na geracao do mundo.')
+    : escapeHtml(`Leitura sintetica baseada na seed ${cfg.seed}. Abra a analise de setor para trocar esta previsao por um pouso real.`);
+
+  host.innerHTML = `
+    <div class="setup-visual-head">
+      <div class="setup-visual-copy">
+        <span class="setup-visual-kicker">${landing ? 'Pouso confirmado' : 'Pre-varredura'}</span>
+        <b>${escapeHtml(landing?.name || 'Corredor de insercao')}</b>
+        <small>${lead}</small>
+      </div>
+      <div class="setup-visual-status ${landing ? 'is-locked' : 'is-pending'}">${landing ? 'SETOR TRAVADO' : 'SCAN PENDENTE'}</div>
+    </div>
+    <div class="setup-preview-frame">
+      <div class="setup-preview-grid" style="--setup-preview-cols:${cols};--setup-preview-rows:${rows}">${raster}</div>
+      <div class="setup-preview-overlay">
+        <div><span>Bioma</span><b>${escapeHtml(biomeLabel)}</b></div>
+        <div><span>Risco</span><b>${escapeHtml(risk.label)}</b></div>
+        <div><span>Mapa</span><b>${escapeHtml(labelMapSize(cfg.mapSize))}</b></div>
+      </div>
+    </div>
+    <div class="setup-visual-chip-row">${chips.map(chip => `<span class="setup-visual-chip ${chip.state || ''}">${escapeHtml(chip.text)}</span>`).join('')}</div>
+    <div class="setup-preview-legend">${legend}</div>`;
+}
+
 function readNewGameConfig() {
   refreshMapSizeOptionLabels();
   const previous = (typeof newGameConfig !== 'undefined' && newGameConfig) ? newGameConfig : {};
@@ -229,12 +412,17 @@ function updateSetupSummary() {
   const cfg = readNewGameConfigSafe();
   const risk = setupRiskLabel(cfg);
   const landing = cfg.selectedLandingSite;
-  const landingLine = landing ? `
-      <span><small>Pouso</small><b>${escapeHtml(landing.name || landing.id)}</b></span>
-      <span><small>Score orbital</small><b>${Number(landing.difficulty?.score || 0)}/100</b></span>` : '';
+  const previewSample = setupPreviewSample(cfg);
+  const biomeLabel = setupBiomeLabel(landing, previewSample);
+  const landingName = landing ? (landing.name || landing.id) : 'Escolher na analise';
+  const scanScore = landing ? `${Number(landing.difficulty?.score || 0)}/100` : 'Pendente';
+  const summaryLead = landing
+    ? `Pouso confirmado em ${landingName}. O mundo vai herdar os modificadores, riscos e recursos desse setor.`
+    : 'Ajuste os parametros da expedicao e abra a analise de setor para escolher onde a colonia vai descer.';
+  renderSetupSectorVisual(cfg, risk, previewSample, biomeLabel);
   dom.setupSummary.innerHTML = `
     <div class="setup-summary-title">
-      <span>Briefing</span>
+      <span>Dossie da missao</span>
       <b>${escapeHtml(cfg.colonyName)}</b>
     </div>
     <div class="setup-summary-grid">

@@ -6,11 +6,11 @@
   window.HavenfallContext.planetScanGlobeUiInstalled = true;
 
   const COPY = Object.freeze({
-    label: 'Reconhecimento Orbital',
-    title: 'Análise Orbital de Setor',
-    description: 'Leitura orbital do setor que será usado pela geração do mapa, clima, recursos e pontos de interesse.',
-    next: 'Reconhecimento orbital',
-    button: 'Abrir Reconhecimento Orbital',
+    label: 'Análise de Setor',
+    title: 'Análise de Setor',
+    description: 'Leitura técnica do setor que vai alimentar a geração do mapa, clima, recursos e pontos de interesse.',
+    next: 'Análise de setor',
+    button: 'Abrir Análise de Setor',
     refresh: 'Gerar outro setor',
     status: 'Leitura pronta'
   });
