@@ -32,11 +32,40 @@
     return Math.hypot(ax - bx, ay - by);
   }
 
+  function coordKey(x, y) {
+    return `${Math.round(Number(x) || 0)},${Math.round(Number(y) || 0)}`;
+  }
+
+  function buildObjectIndex(world, ignoreId = null) {
+    const index = new Map();
+    for (const obj of world?.objects || []) {
+      if (!obj || obj.id === ignoreId) continue;
+      index.set(coordKey(obj.x, obj.y), obj);
+    }
+    return index;
+  }
+
+  function nearbyObjects(objectIndex, x, y, radius = 1) {
+    const objects = [];
+    const r = Math.max(1, Math.ceil(Number(radius) || 1));
+    for (let yy = y - r; yy <= y + r; yy++) {
+      for (let xx = x - r; xx <= x + r; xx++) {
+        const obj = objectIndex?.get(coordKey(xx, yy));
+        if (obj) objects.push(obj);
+      }
+    }
+    return objects;
+  }
+
   function objectBlocks(obj) {
     return !!(window.objectDefs?.[obj?.type]?.blocks);
   }
 
-  function objectAt(world, x, y, ignoreId = null) {
+  function objectAt(world, x, y, ignoreId = null, objectIndex = null) {
+    if (objectIndex) {
+      const obj = objectIndex.get(coordKey(x, y));
+      return obj && obj.id !== ignoreId ? obj : null;
+    }
     return (world.objects || []).find(obj => obj && obj.id !== ignoreId && obj.x === x && obj.y === y) || null;
   }
 
@@ -84,8 +113,8 @@
     return 1;
   }
 
-  function respectsSpacing(world, type, x, y, ignoreId = null) {
-    for (const obj of world.objects || []) {
+  function respectsSpacing(world, type, x, y, ignoreId = null, objectIndex = null) {
+    for (const obj of nearbyObjects(objectIndex || buildObjectIndex(world, ignoreId), x, y, 6)) {
       if (!obj || obj.id === ignoreId) continue;
       const d = distance(obj.x, obj.y, x, y);
       if (TALL_PLANT_TYPES.has(type) && TALL_PLANT_TYPES.has(obj.type) && d < 2) return false;
@@ -101,15 +130,16 @@
     let bestScore = -Infinity;
     const minSpawnDistance = Number(options.minSpawnDistance || 0);
     const ignoreId = options.ignoreId || null;
+    const objectIndex = options.objectIndex || buildObjectIndex(world, ignoreId);
     for (let dy = -radius; dy <= radius; dy++) {
       for (let dx = -radius; dx <= radius; dx++) {
         const x = Math.round(nearX + dx);
         const y = Math.round(nearY + dy);
         if (!inside(world, x, y, 2)) continue;
-        if (objectAt(world, x, y, ignoreId)) continue;
+        if (objectAt(world, x, y, ignoreId, objectIndex)) continue;
         if (minSpawnDistance && world.spawn && distance(x, y, world.spawn.x, world.spawn.y) < minSpawnDistance) continue;
         if (!canObjectExistOn(world, type, x, y)) continue;
-        if (!respectsSpacing(world, type, x, y, ignoreId)) continue;
+        if (!respectsSpacing(world, type, x, y, ignoreId, objectIndex)) continue;
         const tile = tileAt(world, x, y);
         const score = terrainPreference(type, tile) * 12 - distance(x, y, nearX, nearY) * 0.35 - (isMountainMass(world, x, y, 4) ? 20 : 0);
         if (score > bestScore) {
@@ -171,6 +201,7 @@
     const centerY = Math.floor(world.rows / 2);
     let best = null;
     let bestScore = -Infinity;
+    const objectIndex = buildObjectIndex(world);
     for (let y = 6; y < world.rows - 6; y++) {
       for (let x = 6; x < world.cols - 6; x++) {
         if (!NATURAL_TILES.has(tileAt(world, x, y))) continue;
@@ -181,7 +212,7 @@
           for (let xx = x - 3; xx <= x + 3; xx++) {
             const tile = tileAt(world, xx, yy);
             if (tile === 'water' || tile === 'stone') bad = true;
-            if (tile && tile !== 'water' && tile !== 'stone' && !objectAt(world, xx, yy)) open++;
+            if (tile && tile !== 'water' && tile !== 'stone' && !objectAt(world, xx, yy, null, objectIndex)) open++;
           }
         }
         if (bad || open < 28) continue;
@@ -308,6 +339,7 @@
   function sanitizeObjects(world, fixes) {
     const next = [];
     const occupied = new Set();
+    const objectIndex = new Map();
     let removed = 0;
     let moved = 0;
     for (const obj of world.objects || []) {
@@ -317,7 +349,7 @@
       }
       const k = `${obj.x},${obj.y}`;
       if (occupied.has(k)) {
-        const pos = findBestTile(world, obj.type, obj.x, obj.y, 10, { ignoreId: obj.id });
+        const pos = findBestTile(world, obj.type, obj.x, obj.y, 10, { ignoreId: obj.id, objectIndex });
         if (pos) {
           obj.x = pos.x;
           obj.y = pos.y;
@@ -328,7 +360,7 @@
         }
       }
       if (!canObjectExistOn(world, obj.type, obj.x, obj.y)) {
-        const pos = findBestTile(world, obj.type, obj.x, obj.y, POI_TYPES.has(obj.type) ? 30 : 15, { ignoreId: obj.id, minSpawnDistance: POI_TYPES.has(obj.type) ? 16 : 0 });
+        const pos = findBestTile(world, obj.type, obj.x, obj.y, POI_TYPES.has(obj.type) ? 30 : 15, { ignoreId: obj.id, minSpawnDistance: POI_TYPES.has(obj.type) ? 16 : 0, objectIndex });
         if (pos) {
           obj.x = pos.x;
           obj.y = pos.y;
@@ -338,7 +370,9 @@
           continue;
         }
       }
-      occupied.add(`${obj.x},${obj.y}`);
+      const finalKey = coordKey(obj.x, obj.y);
+      occupied.add(finalKey);
+      objectIndex.set(finalKey, obj);
       next.push(obj);
     }
     world.objects = next;

@@ -175,6 +175,28 @@ async function startSystemsWorld(page) {
         };
         window.BiomeEngine.rebalanceWorld.__smokeWrapped = true;
       }
+      if (window.HavenfallLandingSiteWorldgen?.applyLandingSite && !window.HavenfallLandingSiteWorldgen.applyLandingSite.__smokeWrapped) {
+        const originalApplyLandingSite = window.HavenfallLandingSiteWorldgen.applyLandingSite;
+        window.HavenfallLandingSiteWorldgen.applyLandingSite = function wrappedApplyLandingSite(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] landing apply begin');
+          const world = originalApplyLandingSite.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] landing apply done ${fmt(now() - startedAt)}`);
+          return world;
+        };
+        window.HavenfallLandingSiteWorldgen.applyLandingSite.__smokeWrapped = true;
+      }
+      if (window.HavenfallLandingSiteWorldgenPolish?.applyToWorld && !window.HavenfallLandingSiteWorldgenPolish.applyToWorld.__smokeWrapped) {
+        const originalApplyLandingPolish = window.HavenfallLandingSiteWorldgenPolish.applyToWorld;
+        window.HavenfallLandingSiteWorldgenPolish.applyToWorld = function wrappedApplyLandingPolish(...args) {
+          const startedAt = now();
+          console.log('[SMOKE-SYSTEMS] landing polish begin');
+          const world = originalApplyLandingPolish.apply(this, args);
+          console.log(`[SMOKE-SYSTEMS] landing polish done ${fmt(now() - startedAt)}`);
+          return world;
+        };
+        window.HavenfallLandingSiteWorldgenPolish.applyToWorld.__smokeWrapped = true;
+      }
       if (window.HavenfallWorldValidator?.validateWorld && !window.HavenfallWorldValidator.validateWorld.__smokeWrapped) {
         const originalValidateWorld = window.HavenfallWorldValidator.validateWorld;
         window.HavenfallWorldValidator.validateWorld = function wrappedValidateWorld(...args) {

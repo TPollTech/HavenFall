@@ -52,12 +52,21 @@
     const gy = clamp(Math.round((site.globe?.y ?? 0.5) * (rows - 1)), 4, rows - 5);
     const radius = Math.max(12, Math.floor(Math.min(cols, rows) * 0.18));
     let best = { x: gx, y: gy, score: -Infinity };
-    const objects = world.objects || [];
+    const occupied = occupiedSet(world);
     for (let y = Math.max(4, gy - radius); y <= Math.min(rows - 5, gy + radius); y++) {
       for (let x = Math.max(4, gx - radius); x <= Math.min(cols - 5, gx + radius); x++) {
         const tile = world.terrain?.[y]?.[x] || 'grass';
         if (tile === 'water' || tile === 'stone') continue;
-        if (objects.some(o => Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1)) continue;
+        let blocked = false;
+        for (let yy = y - 1; yy <= y + 1 && !blocked; yy++) {
+          for (let xx = x - 1; xx <= x + 1; xx++) {
+            if (occupied.has(coordKey(xx, yy))) {
+              blocked = true;
+              break;
+            }
+          }
+        }
+        if (blocked) continue;
         let score = 32 - Math.hypot(x - gx, y - gy) * 0.42 + noise(seed, x, y, 'landing-spawn') * 8;
         if (tile === 'grass') score += 12;
         if (tile === 'dirt') score += 6;
@@ -143,8 +152,7 @@
     }
   }
 
-  function randomTile(world, site, seed, kind, tries = 260) {
-    const occ = occupiedSet(world);
+  function randomTile(world, site, seed, kind, tries = 260, occ = occupiedSet(world)) {
     for (let i = 0; i < tries; i++) {
       const x = 2 + Math.floor(noise(seed, i, kind.length, `${kind}-x`) * Math.max(1, world.cols - 4));
       const y = 2 + Math.floor(noise(seed, i, kind.length, `${kind}-y`) * Math.max(1, world.rows - 4));
@@ -176,7 +184,7 @@
     for (const [type, amount] of Object.entries(extras)) {
       const objectType = type === 'ruin' ? 'ruin' : type;
       for (let i = 0; i < amount; i++) {
-        const tile = randomTile(world, site, seed, type, 180);
+        const tile = randomTile(world, site, seed, type, 180, occ);
         if (!tile) continue;
         addObject(world, objectType, tile.x, tile.y, type === 'ruin' ? { landingSiteId: site.id, poiId: `landing_ruin_${i}` } : {}, occ);
       }
@@ -190,7 +198,7 @@
     world.pointsOfInterest = Array.isArray(world.pointsOfInterest) ? world.pointsOfInterest : [];
     const occ = occupiedSet(world);
     for (let i = 0; i < bonus; i++) {
-      const tile = randomTile(world, site, seed, 'ruin', 220);
+      const tile = randomTile(world, site, seed, 'ruin', 220, occ);
       if (!tile) continue;
       const id = `landing_poi_${i}`;
       addObject(world, 'cache', tile.x, tile.y, { poiId: id, landingSiteId: site.id }, occ);
