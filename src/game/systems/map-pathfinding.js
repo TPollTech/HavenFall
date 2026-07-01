@@ -5,11 +5,25 @@ let spatialObjectsRef = null;
 let spatialObjectsLength = -1;
 
 function tileKey(x, y) {
-  return (x << 16) | y;
+  return (Math.round(Number(x) || 0) << 16) | Math.round(Number(y) || 0);
+}
+
+function getWorldCols() {
+  return Number(state?.world?.cols || state?.cols || state?.terrain?.[0]?.length || state?.world?.terrain?.[0]?.length || 0);
+}
+
+function getWorldRows() {
+  return Number(state?.world?.rows || state?.rows || state?.terrain?.length || state?.world?.terrain?.length || 0);
+}
+
+function isInside(x, y) {
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  return tx >= 0 && ty >= 0 && tx < getWorldCols() && ty < getWorldRows();
 }
 
 function ensureSpatialGrid() {
-  const objects = state?.objects || [];
+  const objects = state?.objects || state?.world?.objects || [];
   if (objects === spatialObjectsRef && objects.length === spatialObjectsLength) return;
 
   spatialObjectGrid.clear();
@@ -26,6 +40,39 @@ function ensureSpatialGrid() {
 function invalidateSpatialGrid() {
   spatialObjectsRef = null;
   spatialObjectsLength = -1;
+}
+
+function getObjectAt(x, y) {
+  if (!state) return null;
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  ensureSpatialGrid();
+  return spatialObjectGrid.get(tileKey(tx, ty)) || null;
+}
+
+function getTerrainAt(x, y) {
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  return state?.terrain?.[ty]?.[tx] || state?.world?.terrain?.[ty]?.[tx] || null;
+}
+
+function isBlocked(x, y, target = null) {
+  const tx = Math.round(Number(x) || 0);
+  const ty = Math.round(Number(y) || 0);
+  if (!isInside(tx, ty)) return true;
+  if (target && Math.round(Number(target.x) || 0) === tx && Math.round(Number(target.y) || 0) === ty) return false;
+
+  if (window.GameSystems?.pathBlocked) {
+    const blocked = window.GameSystems.pathBlocked(tx, ty, target);
+    if (blocked !== null && blocked !== undefined) return !!blocked;
+  }
+
+  if (typeof isMountainBlocked === 'function' && isMountainBlocked(tx, ty)) return true;
+  if (getTerrainAt(tx, ty) === 'water') return true;
+  const obj = getObjectAt(tx, ty);
+  if (!obj || obj.type === 'blueprint') return false;
+  if (obj.type === 'door') return (obj.state || 'closed') !== (window.DoorState?.OPEN || 'open');
+  return !!objectDefs?.[obj.type]?.blocks;
 }
 
 function log(message) {
@@ -239,3 +286,10 @@ function itemCostText(cost = {}, itemCost = {}) {
   ];
   return parts.join(' + ') || 'sem custo';
 }
+
+window.getWorldCols = window.getWorldCols || getWorldCols;
+window.getWorldRows = window.getWorldRows || getWorldRows;
+window.isInside = window.isInside || isInside;
+window.getObjectAt = window.getObjectAt || getObjectAt;
+window.isBlocked = window.isBlocked || isBlocked;
+window.getTerrainAt = window.getTerrainAt || getTerrainAt;
