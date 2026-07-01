@@ -19,7 +19,7 @@
     world.regions = world.regions && typeof world.regions === 'object' ? world.regions : {};
     world.activeRegions = Array.isArray(world.activeRegions) ? world.activeRegions : [];
     world.regionSaveVersion = world.regionSaveVersion || 'region-save-v1';
-    if (!Object.keys(world.regions).length) indexExistingRegions(world);
+    if (!Object.keys(world.regions).length && !world.regionIndexing) indexExistingRegions(world);
     return world.regions;
   }
 
@@ -43,7 +43,10 @@
 
   function snapshotRegion(rx, ry, world = state?.world) {
     if (!world) return null;
-    ensureRegionState(world);
+    world.regionSize = Number(world.regionSize || REGION_SIZE);
+    world.regions = world.regions && typeof world.regions === 'object' ? world.regions : {};
+    world.activeRegions = Array.isArray(world.activeRegions) ? world.activeRegions : [];
+    world.regionSaveVersion = world.regionSaveVersion || 'region-save-v1';
     const key = regionKey(rx, ry);
     const bounds = regionBounds(rx, ry, world);
     const snapshot = {
@@ -68,15 +71,20 @@
   }
 
   function indexExistingRegions(world = state?.world) {
-    if (!world) return null;
-    const size = Number(world.regionSize || REGION_SIZE);
-    const maxRx = Math.floor(Math.max(0, Number(world.cols || 0) - 1) / size);
-    const maxRy = Math.floor(Math.max(0, Number(world.rows || 0) - 1) / size);
-    world.regions = world.regions || {};
-    for (let ry = 0; ry <= maxRy; ry++) for (let rx = 0; rx <= maxRx; rx++) snapshotRegion(rx, ry, world);
-    world.activeRegions = Object.keys(world.regions);
-    world.regionSnapshotAt = Date.now();
-    return world.regions;
+    if (!world || world.regionIndexing) return world?.regions || null;
+    world.regionIndexing = true;
+    try {
+      const size = Number(world.regionSize || REGION_SIZE);
+      const maxRx = Math.floor(Math.max(0, Number(world.cols || 0) - 1) / size);
+      const maxRy = Math.floor(Math.max(0, Number(world.rows || 0) - 1) / size);
+      world.regions = world.regions || {};
+      for (let ry = 0; ry <= maxRy; ry++) for (let rx = 0; rx <= maxRx; rx++) snapshotRegion(rx, ry, world);
+      world.activeRegions = Object.keys(world.regions);
+      world.regionSnapshotAt = Date.now();
+      return world.regions;
+    } finally {
+      world.regionIndexing = false;
+    }
   }
 
   function activeRegionForCamera(world = state?.world) {
