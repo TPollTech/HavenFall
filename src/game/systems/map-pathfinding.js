@@ -5,7 +5,7 @@ let spatialObjectsRef = null;
 let spatialObjectsLength = -1;
 
 function tileKey(x, y) {
-  return (Math.round(Number(x) || 0) << 16) | Math.round(Number(y) || 0);
+  return `${Math.round(Number(x) || 0)},${Math.round(Number(y) || 0)}`;
 }
 
 function getWorldCols() {
@@ -73,6 +73,71 @@ function isBlocked(x, y, target = null) {
   if (!obj || obj.type === 'blueprint') return false;
   if (obj.type === 'door') return (obj.state || 'closed') !== (window.DoorState?.OPEN || 'open');
   return !!objectDefs?.[obj.type]?.blocks;
+}
+
+function manhattan(ax, ay, bx, by) {
+  return Math.abs(Math.round(Number(ax) || 0) - Math.round(Number(bx) || 0)) + Math.abs(Math.round(Number(ay) || 0) - Math.round(Number(by) || 0));
+}
+
+function reconstructPath(cameFrom, endKey) {
+  const path = [];
+  let key = endKey;
+  while (cameFrom.has(key)) {
+    const node = cameFrom.get(key);
+    path.unshift({ x: node.x, y: node.y });
+    key = node.parent;
+  }
+  return path;
+}
+
+function findPath(startX, startY, endX, endY, target = null, options = {}) {
+  const sx = Math.round(Number(startX) || 0);
+  const sy = Math.round(Number(startY) || 0);
+  const ex = Math.round(Number(endX) || 0);
+  const ey = Math.round(Number(endY) || 0);
+  if (!isInside(sx, sy) || !isInside(ex, ey)) return [];
+  if (sx === ex && sy === ey) return [];
+
+  const maxVisited = Math.max(256, Number(options.maxVisited || 4200));
+  const open = [{ x: sx, y: sy, g: 0, f: manhattan(sx, sy, ex, ey) }];
+  const openKeys = new Set([tileKey(sx, sy)]);
+  const closed = new Set();
+  const cameFrom = new Map();
+  const gScore = new Map([[tileKey(sx, sy), 0]]);
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let visited = 0;
+
+  while (open.length && visited < maxVisited) {
+    open.sort((a, b) => a.f - b.f || a.g - b.g);
+    const current = open.shift();
+    const currentKey = tileKey(current.x, current.y);
+    openKeys.delete(currentKey);
+    if (closed.has(currentKey)) continue;
+    closed.add(currentKey);
+    visited++;
+
+    if (current.x === ex && current.y === ey) return reconstructPath(cameFrom, currentKey);
+
+    for (const [dx, dy] of dirs) {
+      const nx = current.x + dx;
+      const ny = current.y + dy;
+      const nKey = tileKey(nx, ny);
+      if (closed.has(nKey)) continue;
+      if (isBlocked(nx, ny, target) && !(nx === ex && ny === ey)) continue;
+
+      const tentativeG = current.g + 1;
+      if (tentativeG >= (gScore.get(nKey) ?? Infinity)) continue;
+
+      cameFrom.set(nKey, { x: nx, y: ny, parent: currentKey });
+      gScore.set(nKey, tentativeG);
+      if (!openKeys.has(nKey)) {
+        open.push({ x: nx, y: ny, g: tentativeG, f: tentativeG + manhattan(nx, ny, ex, ey) });
+        openKeys.add(nKey);
+      }
+    }
+  }
+
+  return [];
 }
 
 function log(message) {
@@ -293,3 +358,4 @@ window.isInside = window.isInside || isInside;
 window.getObjectAt = window.getObjectAt || getObjectAt;
 window.isBlocked = window.isBlocked || isBlocked;
 window.getTerrainAt = window.getTerrainAt || getTerrainAt;
+window.findPath = window.findPath || findPath;
