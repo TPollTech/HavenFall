@@ -481,6 +481,17 @@
     }
   }
 
+  function repairBiomeObjectTerrain(world) {
+    const spawn = world.spawn || { x: 0, y: 0 };
+    for (const obj of world.objects || []) {
+      if (!obj || !insideWorld(world, obj.x, obj.y, 1)) continue;
+      if (Math.hypot(obj.x - spawn.x, obj.y - spawn.y) < 8) continue;
+      const tile = terrainAt(world, obj.x, obj.y);
+      if ((obj.type === 'cactus' || obj.type === 'palm_tree') && !ecosystemAllows(obj.type, tile)) world.terrain[obj.y][obj.x] = 'sand';
+      else if ((obj.type === 'dry_twigs' || obj.type === 'logs') && !ecosystemAllows(obj.type, tile)) world.terrain[obj.y][obj.x] = 'dirt';
+    }
+  }
+
   function canPlaceBiomeResource(world, biomeId, type, x, y, occupied) {
     if (!insideWorld(world, x, y, 1)) return false;
     if (world.biomes?.[y]?.[x] !== biomeId) return false;
@@ -538,7 +549,9 @@
     rebalanceBiomeTerrain(world, seed);
     removeVegetationFromInvalidMountainTiles(world);
     decorateExistingObjects(world, `${seed}|rebalance`);
+    repairBiomeObjectTerrain(world);
     rebalanceBiomeResources(world, `${seed}|rebalance`);
+    repairBiomeObjectTerrain(world);
     removeVegetationFromInvalidMountainTiles(world);
     world.biomeRebalanceVersion = '2.1-terrain-signatures';
     world.generationVersion = `${world.generationVersion || 'world'}+biome-signatures`;

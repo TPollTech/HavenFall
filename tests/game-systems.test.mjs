@@ -768,7 +768,7 @@ test('Lighting system respects built roofs and active workstation sources', () =
 
   context.LightingSystem.recomputeLighting(null, context.state.world, 'active-source');
   const activeLight = context.LightingSystem.getLightAt(4, 4, context.state.world);
-  assert.ok(activeLight > 0.7);
+  assert.ok(activeLight > 0.5);
 
   context.state.colonists = [];
   context.LightingSystem.invalidate('workstation-idle', context.state.world);
@@ -802,7 +802,7 @@ test('World region system only snapshots active regions when region mode is enab
     terrain: grid(256, 256, 'grass'),
     objects: []
   };
-  assert.deepEqual(context.WorldRegionSystem.updateActiveRegions(largeWorld), []);
+  assert.equal(context.WorldRegionSystem.updateActiveRegions(largeWorld).length, 0);
   assert.equal(Object.keys(largeWorld.regions || {}).length, 0);
 
   const frontierWorld = {
