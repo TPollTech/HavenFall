@@ -131,8 +131,33 @@ function labelMapSize(value) {
     large: 'Grande',
     huge: 'Enorme',
     giant: 'Gigante',
-    infinite_chunks: 'Infinito por chunks'
+    infinite_chunks: 'Fronteira Continental'
   })[value] || value || 'Mapa';
+}
+
+function descriptionMapSize(value) {
+  return ({
+    large: 'Recomendado: rápido e estável.',
+    huge: 'Exploração maior, ainda com geração rápida.',
+    giant: 'Mapa grande com múltiplos biomas.',
+    infinite_chunks: 'Mapa fixo continental, experimental. Usa seed livre, mas ainda não é expansão infinita real.'
+  })[value] || 'Mapa procedural gerado por seed.';
+}
+
+function refreshMapSizeOptionLabels() {
+  const select = dom.inputs?.mapSize;
+  if (!select) return;
+
+  const labels = {
+    large: 'Grande · recomendado',
+    huge: 'Enorme · exploração maior',
+    giant: 'Gigante · múltiplos biomas',
+    infinite_chunks: 'Fronteira Continental · mapa fixo experimental'
+  };
+
+  for (const option of Array.from(select.options || [])) {
+    if (labels[option.value]) option.textContent = labels[option.value];
+  }
 }
 
 function labelEventIntensity(value) {
@@ -152,6 +177,7 @@ function labelResourcesPreset(value) {
 }
 
 function readNewGameConfig() {
+  refreshMapSizeOptionLabels();
   const previous = (typeof newGameConfig !== 'undefined' && newGameConfig) ? newGameConfig : {};
   const raw = normalizeNewGameConfig({
     ...previous,
@@ -184,6 +210,7 @@ function readNewGameConfig() {
 }
 
 function writeNewGameConfig(config = defaultNewGameConfig) {
+  refreshMapSizeOptionLabels();
   const normalized = normalizeNewGameConfig(config);
   if (dom.inputs.colonyName) dom.inputs.colonyName.value = normalized.colonyName;
   if (dom.inputs.worldSeed) dom.inputs.worldSeed.value = normalized.seed;
@@ -197,6 +224,7 @@ function writeNewGameConfig(config = defaultNewGameConfig) {
 }
 
 function updateSetupSummary() {
+  updateSetupSummary()
   if (!dom.setupSummary) return;
   const cfg = readNewGameConfigSafe();
   const risk = setupRiskLabel(cfg);
@@ -214,8 +242,10 @@ function updateSetupSummary() {
       <span><small>Risco</small><b>${escapeHtml(risk.label)}</b></span>
       <span><small>Equipe</small><b>${cfg.colonistCount} colono${cfg.colonistCount === 1 ? '' : 's'}</b></span>
       <span><small>Mapa</small><b>${escapeHtml(labelMapSize(cfg.mapSize))}</b></span>
+      <span><small>Tipo</small><b>${escapeHtml(descriptionMapSize(cfg.mapSize))}</b></span>
       <span><small>Eventos</small><b>${escapeHtml(labelEventIntensity(cfg.eventIntensity))}</b></span>
       <span><small>Suprimentos</small><b>${escapeHtml(labelResourcesPreset(cfg.resourcesPreset))}</b></span>
+      refreshMapSizeOptionLabels();
       ${landingLine}
     </div>
     <div class="setup-risk-meter ${risk.className}">
