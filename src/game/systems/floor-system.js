@@ -5,6 +5,7 @@
   window.HavenfallContext = window.HavenfallContext || {};
   window.HavenfallContext.floorSystemInstalled = true;
 
+  const MAX_PENDING_FLOOR_BLUEPRINTS = 96;
   const FLOOR_DEFS = Object.freeze({
     packed_dirt: Object.freeze({ key: 'packed_dirt', label: 'Chão Batido', buildKey: 'floor_dirt', moveSpeed: 1.00, comfort: 0.05, cleanliness: 0.05, sleepSurface: 'rough', base: '#6d4d31', line: '#3e2a1b', light: '#8a6844' }),
     wood_floor: Object.freeze({ key: 'wood_floor', label: 'Piso de Madeira', buildKey: 'floor_wood', moveSpeed: 1.06, comfort: 0.35, cleanliness: 0.20, sleepSurface: 'floor', base: '#8a5a36', line: '#4f2f1d', light: '#b7834f' }),
@@ -43,15 +44,21 @@
   function floorLabel(type) { return floorDef(type)?.label || 'Sem piso'; }
   function getFloorAt(x, y, world = state?.world) { const layer = ensureFloorLayer(world); return layer?.[Math.round(y)]?.[Math.round(x)] || null; }
 
+  function isFloorBlueprint(obj, floorType = null) {
+    if (!obj || obj.type !== 'blueprint') return false;
+    const def = buildDefs?.[obj.buildType];
+    if (def?.type !== 'floor') return false;
+    return !floorType || def.floorType === floorType;
+  }
+
+  function countFloorBlueprints() {
+    return (state?.objects || []).reduce((total, obj) => total + (isFloorBlueprint(obj) ? 1 : 0), 0);
+  }
+
   function hasFloorBlueprintAt(x, y, floorType = null) {
     const tx = Math.round(Number(x) || 0);
     const ty = Math.round(Number(y) || 0);
-    return !!(state?.objects || []).some(obj => {
-      if (!obj || obj.type !== 'blueprint' || Math.round(obj.x) !== tx || Math.round(obj.y) !== ty) return false;
-      const def = buildDefs?.[obj.buildType];
-      if (def?.type !== 'floor') return false;
-      return !floorType || def.floorType === floorType;
-    });
+    return !!(state?.objects || []).some(obj => Math.round(obj?.x) === tx && Math.round(obj?.y) === ty && isFloorBlueprint(obj, floorType));
   }
 
   function isWaterTerrain(x, y) { return state?.terrain?.[y]?.[x] === 'water' || state?.world?.terrain?.[y]?.[x] === 'water'; }
@@ -68,6 +75,7 @@
     if (isWaterTerrain(tx, ty)) return false;
     if (!options.allowSame && getFloorAt(tx, ty) === floorType) return false;
     if (hasFloorBlueprintAt(tx, ty)) return false;
+    if (!options.ignorePendingLimit && countFloorBlueprints() >= MAX_PENDING_FLOOR_BLUEPRINTS) return false;
     return true;
   }
 
@@ -166,9 +174,8 @@
   function drawFloorTileRenderer(x, y) { if (!ctx || appScreen !== SCREEN.PLAYING) return false; return drawFloorTile(ctx, x, y, getFloorAt(x, y)); }
 
   function drawFloorBlueprintObject(obj) {
-    if (!obj || obj.type !== 'blueprint') return false;
+    if (!isFloorBlueprint(obj)) return false;
     const def = buildDefs?.[obj.buildType];
-    if (def?.type !== 'floor') return false;
     if (!ctx || appScreen !== SCREEN.PLAYING) return true;
     const x = Math.round(Number(obj.x) || 0);
     const y = Math.round(Number(obj.y) || 0);
@@ -192,7 +199,7 @@
   function movementModifier(c, current) { const floor = getFloorAt(c?.x, c?.y); const def = floorDef(floor); return Number(current || 1) * Number(def?.moveSpeed || 1); }
   function tick() { ensureFloorLayer(); }
 
-  window.FloorSystem = Object.freeze({ FLOOR_DEFS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, floorDef, floorLabel, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
+  window.FloorSystem = Object.freeze({ FLOOR_DEFS, MAX_PENDING_FLOOR_BLUEPRINTS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, countFloorBlueprints, floorDef, floorLabel, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
   window.ensureFloorLayer = ensureFloorLayer;
   window.getFloorAt = getFloorAt;
   window.setFloorAt = setFloorAt;
