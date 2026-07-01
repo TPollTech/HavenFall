@@ -200,6 +200,7 @@ function clearZoneTool(reason = '') {
   document.body.classList.remove('zone-brush-active');
   updateZonePanel();
   updateZonesModal();
+  window.HavenfallUI?.refreshDockPanel?.('zones');
   if (reason && typeof log === 'function') log(`Ferramenta de zona desativada${reason ? `: ${reason}` : ''}.`);
 }
 
@@ -258,6 +259,7 @@ function setZoneTool(tool) {
   document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
   updateZonePanel();
   updateZonesModal();
+  window.HavenfallUI?.refreshDockPanel?.('zones');
   if (typeof updateUI === 'function') updateUI(true);
 }
 
@@ -419,6 +421,7 @@ function finishZoneSelectionFromEvent(event = null) {
   document.body.classList.remove('zone-brush-active');
   updateZonePanel();
   updateZonesModal();
+  window.HavenfallUI?.refreshDockPanel?.('zones');
   if (typeof updateUI === 'function') updateUI(true);
   return changed > 0;
 }

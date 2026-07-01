@@ -243,8 +243,13 @@
   function cargoForObject(obj) {
     if (!obj) return null;
     if (obj.stored || obj.type === 'stockpile') return null;
+    const amount = Math.max(1, Number(obj.amount || obj.yield || 1));
     if (obj.type === 'rubble') return { kind: 'debris', label: 'entulho', amount: 1 };
     if (obj.type === 'logs') return { resource: 'wood', amount: Number(obj.amount || 5), label: 'toras' };
+    if (obj.type === 'berry') return { resource: 'food', amount, label: 'bagas' };
+    if (obj.type === 'crop') return { resource: 'food', amount, label: 'colheita' };
+    if (obj.type === 'rock') return { resource: 'stone', amount, label: 'pedra' };
+    if (obj.type === 'ore') return { resource: 'metal', amount, label: 'minério' };
     if (obj.itemKey) {
       const resourceKey = itemDefs?.[obj.itemKey]?.resourceKey || null;
       const label = itemDefs?.[obj.itemKey]?.label || obj.itemKey;
@@ -280,13 +285,19 @@
       .sort((a, b) => dist(fromX, fromY, a.x, a.y) - dist(fromX, fromY, b.x, b.y))[0] || null;
   }
 
+  function objectLikeForCargo(cargo) {
+    if (!cargo) return null;
+    if (cargo.item) return { type: 'loot', itemKey: cargo.item, amount: cargo.amount };
+    if (cargo.resource === 'wood') return { type: 'logs', amount: cargo.amount };
+    if (cargo.resource === 'stone') return { type: 'rock', amount: cargo.amount };
+    if (cargo.resource === 'metal') return { type: 'ore', amount: cargo.amount };
+    if (cargo.resource === 'food') return { type: 'berry', amount: cargo.amount };
+    return null;
+  }
+
   function destinationForCargo(cargo, fromX = 0, fromY = 0) {
     if (!storageAcceptsCargo(cargo)) return null;
-    const sourceLike = cargo.resource === 'wood'
-      ? { type: 'logs', amount: cargo.amount }
-      : cargo.item
-        ? { type: 'loot', itemKey: cargo.item, amount: cargo.amount }
-        : null;
+    const sourceLike = objectLikeForCargo(cargo);
     const storageObject = sourceLike ? zoneSystem.findFreeStorageObjectFor(sourceLike, fromX, fromY) : null;
     if (storageObject) return storageObject;
     const stack = findExistingStorageStackForCargo(cargo, fromX, fromY);
@@ -565,11 +576,11 @@
   }
 
   function canAutoHaulLooseObject(obj) {
-    if (!obj) return false;
+    if (!obj || obj.stored || obj.type === 'stockpile') return false;
     if (obj.manualHaul || obj.markedForHaul) return true;
-    const zone = zoneSystem.getZoneAt?.(obj.x, obj.y);
-    if (zone === 'storage' || zone === 'dumping') return true;
-    return obj.type === 'rubble' && zoneSystem.count('dumping');
+    if (obj.type === 'rubble') return zoneSystem.count('dumping') > 0;
+    if (storageAcceptsObject(obj)) return zoneSystem.hasStorageDestination?.(obj) ?? zoneSystem.count('storage') > 0;
+    return false;
   }
 
   findLooseHaulTarget = function advancedFindLooseHaulTarget(c = null) {
@@ -580,8 +591,9 @@
       if (reservationOwnerAlive(obj)) continue;
       if (!isTileDiscovered(obj.x, obj.y)) continue;
       if (zoneSystem.hasAllowedArea?.() && !zoneSystem.isTileAllowed?.(obj.x, obj.y)) continue;
+      if (!canAutoHaulLooseObject(obj)) continue;
       const destination = destinationForObject(obj);
-      if (!destination || !canAutoHaulLooseObject(obj)) continue;
+      if (!destination) continue;
       const ref = autoHaulReference(c, destination);
       const score = dist(ref.x, ref.y, obj.x, obj.y);
       if (score < bestScore) { best = obj; bestScore = score; }
@@ -595,9 +607,10 @@
     const destination = storageTile ? { ...storageTile, type: storageTile.type || 'storage' } : destinationForObject(obj);
     if (!destination) return false;
     if (zoneSystem.hasAllowedArea?.() && (!zoneSystem.isTileAllowed?.(obj.x, obj.y) || !zoneSystem.isTileAllowed?.(destination.x, destination.y))) return false;
+    const plannedCargo = cargoForObject(obj);
     const adj = nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) || { x: obj.x, y: obj.y };
     obj.reservedBy = c.id;
-    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y, zoneObjectId: destination.objectId || null };
+    c.task = { type: 'haul', phase: 'pickup', objId: obj.id, x: adj.x, y: adj.y, storageX: destination.x, storageY: destination.y, zoneType: destination.type, zoneX: destination.x, zoneY: destination.y, zoneObjectId: destination.objectId || null, zoneStackId: destination.stackId || null, haulAmount: cargoAmount(plannedCargo) };
     c.path = findPath(c.x, c.y, adj.x, adj.y, obj);
     c.work = 0;
     c.note = destination.type === 'dumping' ? 'Indo recolher entulho' : 'Indo buscar item solto';
@@ -626,9 +639,9 @@
       if (task.zoneType === 'dumping' || cargo?.kind === 'debris') {
         log(`${c.name} descartou ${cargo?.label || 'entulho'} na zona de descarte.`);
       } else {
-        if (cargo?.resource && cargo.amount) addResources({ [cargo.resource]: cargo.amount });
-        if (cargo?.item && cargo.amount && typeof addItems === 'function') addItems({ [cargo.item]: cargo.amount });
-        const targetLabel = task.zoneType === 'storage_object' ? 'o depósito' : 'a zona de armazenamento';
+        const result = depositCargoForTask(task, cargo);
+        if (!result.ok && !(result.amount > 0)) addCargoToGlobalStock(cargo);
+        const targetLabel = task.zoneType === 'storage_object' ? 'o depósito' : task.zoneType === 'storage_stack' ? 'a pilha de armazenamento' : 'a zona de armazenamento';
         log(`${c.name} levou ${cargo?.amount || 0} ${cargo?.label || 'item'} para ${targetLabel}.`);
       }
       c.carrying = null;

@@ -36,18 +36,11 @@
   }
 
   function handleClick(event) {
-    const clear = event.target.closest?.('[data-clear-zone-tool]');
-    if (clear) {
-      clearZoneTool?.('manual');
-      document.body.classList.remove('zone-brush-active');
+    if (!event.target.closest?.('[data-zone-tool], [data-clear-zone-tool]')) return;
+    window.requestAnimationFrame?.(() => {
+      document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
       window.HavenfallUI.refreshDockPanel?.('zones');
-      return;
-    }
-    const tool = event.target.closest?.('[data-zone-tool]');
-    if (!tool) return;
-    if (typeof setZoneTool === 'function') setZoneTool(tool.dataset.zoneTool);
-    document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
-    window.HavenfallUI.refreshDockPanel?.('zones');
+    });
   }
 
   document.addEventListener('click', handleClick);
