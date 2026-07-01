@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Animal Preview</title>
+  <style>
+    body {
+      margin: 0;
+      background: #2b2118;
+      color: #f3e7d1;
+      font: 14px/1.4 Georgia, serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      padding: 24px;
+      border: 1px solid rgba(255, 240, 220, 0.14);
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 42%),
+        linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.34));
+      border-radius: 18px;
+      box-shadow: 0 22px 50px rgba(0,0,0,0.28);
+    }
+
+    canvas {
+      display: block;
+      width: 720px;
+      height: 260px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,255,255,0.06), transparent 28%),
+        linear-gradient(180deg, #6b8d54 0 34%, #7b6843 34% 100%);
+      border-radius: 16px;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="preview" width="720" height="260"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('preview');
+    window.ctx = canvas.getContext('2d');
+    window.drawProgress = function () {};
+  </script>
+  <script src="/src/game/rendering/pawns/pawn-core.js"></script>
+  <script src="/src/game/rendering/pawns/pawn-style.js"></script>
+  <script src="/src/game/rendering/pawns/animal-renderer.js"></script>
+  <script>
+    const deerIds = ['deer-a', 'deer-b', 'deer-c', 'deer-d'];
+    const bg = ctx;
+
+    function bush(x, y, scale) {
+      bg.fillStyle = '#45642f';
+      bg.strokeStyle = '#314623';
+      bg.lineWidth = 2;
+      for (const blob of [
+        { dx: -18, dy: 2, r: 18 },
+        { dx: -2, dy: -10, r: 22 },
+        { dx: 19, dy: 0, r: 19 },
+        { dx: 4, dy: 14, r: 16 }
+      ]) {
+        bg.beginPath();
+        bg.arc(x + blob.dx * scale, y + blob.dy * scale, blob.r * scale, 0, Math.PI * 2);
+        bg.fill();
+        bg.stroke();
+      }
+    }
+
+    function drawGround() {
+      for (let i = 0; i < 6; i++) bush(110 + i * 105, 86 + (i % 2) * 8, 1);
+      bg.fillStyle = 'rgba(255,255,255,0.09)';
+      bg.fillRect(0, 150, 720, 5);
+      bg.fillStyle = 'rgba(0,0,0,0.08)';
+      bg.fillRect(0, 0, 720, 260);
+      bg.fillStyle = 'rgba(255,255,255,0.08)';
+      bg.fillRect(0, 0, 720, 34);
+    }
+
+    function drawLabel(text, x, y) {
+      bg.fillStyle = '#f6e4bf';
+      bg.font = '15px Georgia, serif';
+      bg.fillText(text, x, y);
+    }
+
+    drawGround();
+    deerIds.forEach((id, index) => {
+      const dir = index % 2 === 0 ? 'right' : 'left';
+      drawLabel(`cervo ${index + 1}`, 68 + index * 165, 220);
+      window.HavenfallAnimalRenderer.drawMob({
+        id,
+        type: 'deer',
+        dir,
+        px: 110 + index * 165,
+        py: 130,
+        hp: 52,
+        maxHp: 74
+      });
+    });
+  </script>
+</body>
+</html>

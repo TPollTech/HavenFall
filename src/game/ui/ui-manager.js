@@ -16,6 +16,7 @@
 
   const BUILD_GROUPS = {
     structure: { label: 'Estrutura', items: ['wall', 'door', 'crate'] },
+    floors: { label: 'Pisos', items: ['floor_dirt', 'floor_wood', 'floor_stone'] },
     furniture: { label: 'Mobília', items: ['bed', 'campfire', 'bench', 'research_desk'] },
     production: { label: 'Produção', items: ['forge', 'stove', 'med_station'] },
     agriculture: { label: 'Agricultura', items: ['crop', 'irrigation_channel'] },
@@ -182,7 +183,10 @@
       bridge: 'Permite cruzar água profunda.',
       fish_trap: 'Gera comida quando instalada na água.',
       water_collector: 'Capta água e melhora suporte hídrico.',
-      irrigation_channel: 'Acelera plantações próximas e reduz seca.'
+      irrigation_channel: 'Acelera plantações próximas e reduz seca.',
+      floor_dirt: 'Compacta o terreno para criar chão simples dentro da base.',
+      floor_wood: 'Cria piso de madeira, melhorando conforto e circulação.',
+      floor_stone: 'Cria piso de pedra, resistente e durável para áreas de alto tráfego.'
     })[key] || 'Construção disponível para a colônia.';
   }
 
