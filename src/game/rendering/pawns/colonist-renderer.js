@@ -36,6 +36,19 @@
     drawEllipse(headX - forward.x * 1.2, headY - 4, 8.8, 4.6, style.hair, null, 1, forward.x * 0.2);
   }
 
+  function isRestingPose(c) {
+    if (!c) return false;
+    if (c.isUnconscious || c.isDowned || c.health <= 1) return true;
+    if (c.task?.type === 'sleep') return true;
+    if (c.sleeping || c.resting) return true;
+    const note = String(c.note || '').toLowerCase();
+    return note.includes('dormindo') || note.includes('descansando') || note.includes('inconsciente') || note.includes('atordoado');
+  }
+
+  function isDangerDowned(c) {
+    return !!(c?.isUnconscious || c?.isDowned || c?.health <= 1 || String(c?.note || '').toLowerCase().includes('inconsciente') || String(c?.note || '').toLowerCase().includes('atordoado'));
+  }
+
   function drawHumanoidPawn(c, options = {}) {
     const x = c.px;
     const y = c.py + 10;
@@ -45,18 +58,26 @@
     const style = styleApi.colonistStyle(c);
     const scale = bodyScale(style);
     const downed = !!options.downed;
+    const resting = !!options.resting || downed;
     const bodyY = y + 5;
     const bodyRotation = dir === 'left' || dir === 'right' ? 0.12 * forward.x : 0;
 
     ctx.save();
-    if (downed) {
-      drawPawnShadow(x, y + 4, 20, 8);
+    if (resting) {
+      drawPawnShadow(x, y + 4, downed ? 20 : 18, downed ? 8 : 7);
       ctx.translate(x, y + 11);
       ctx.rotate(Math.PI / 2);
       drawEllipse(0, 0, 11 * scale.x, 17 * scale.y, '#151a21', 'rgba(255,255,255,.16)', 1.1);
       drawEllipse(0, -1, 8 * scale.x, 14 * scale.y, style.cloth, '#1b1714', 1.5);
       drawCircle(0, -18, style.head === 'narrow' ? 7.8 : 8.5, style.skin, '#2b211b', 1.4);
       drawHair(style, 0, -18, { x: 0, y: -1 });
+      if (!downed) {
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(226, 232, 240, .82)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Z', 17, -6 + Math.sin((c.anim || 0) * 4) * 2);
+      }
       ctx.restore();
       return;
     }
@@ -118,11 +139,19 @@
   }
 
   function drawColonistPawn(c) {
-    if (c?.isUnconscious) return drawUnconsciousPawn(c);
+    if (isDangerDowned(c)) return drawUnconsciousPawn(c);
+    if (isRestingPose(c)) return drawRestingPawn(c);
     drawSelection(c);
     drawHumanoidPawn(c);
     drawTinyBars?.(c);
     drawName?.(c.name, c.px, c.py - 38);
+  }
+
+  function drawRestingPawn(c) {
+    drawSelection(c);
+    drawHumanoidPawn(c, { resting: true });
+    drawTinyBars?.(c);
+    drawName?.(`${c.name} - dormindo`, c.px, c.py - 38);
   }
 
   function drawUnconsciousPawn(c) {
@@ -138,6 +167,7 @@
   window.HavenfallColonistRenderer = Object.freeze({
     drawColonist: drawColonistPawn,
     drawUnconsciousColonist: drawUnconsciousPawn,
+    drawRestingColonist: drawRestingPawn,
     drawHumanoid: drawHumanoidPawn
   });
 })();
