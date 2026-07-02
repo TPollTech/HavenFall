@@ -103,6 +103,29 @@
     document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
   }
 
+  function stopEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+  }
+
+  function activateZoneTool(tool) {
+    if (window.HavenfallZoneInput?.setTool?.(tool)) return true;
+    if (typeof setZoneTool === 'function') {
+      setZoneTool(tool);
+      return true;
+    }
+    return false;
+  }
+
+  function handleZoneToolClick(event) {
+    const button = event.target.closest?.('[data-zone-tool]');
+    if (!button || !button.closest?.('.zones-panel')) return;
+    stopEvent(event);
+    selectedPlotId = null;
+    activateZoneTool(button.dataset.zoneTool);
+  }
+
   function handleChange(event) {
     const select = event.target.closest?.('[data-plot-crop]');
     if (!select) return;
@@ -127,11 +150,10 @@
     if (!info?.plot) return;
     selectedPlotId = info.plot.id;
     window.HavenfallUI.renderDockPanel?.('zones');
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation?.();
+    stopEvent(event);
   }
 
+  document.addEventListener('click', handleZoneToolClick, true);
   document.addEventListener('change', handleChange, true);
   document.addEventListener('click', handleMapPlotClick, true);
   window.HavenfallUI.tabViews.zones = { render, onOpen };
