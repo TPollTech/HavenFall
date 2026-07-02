@@ -460,7 +460,6 @@
 
     if (lightingPulse >= 0.35 || !world.lightMap) {
       lightingPulse = 0;
-      computeLighting();
     }
   }
 
@@ -534,26 +533,6 @@
     }
     ctx.restore();
 
-    const lightMap = world.lightMap;
-    if (!lightMap) return;
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    for (let y = b.startY; y <= b.endY; y++) for (let x = b.startX; x <= b.endX; x++) {
-      const light = clamp01(lightMap[y]?.[x] ?? ambientLight());
-      const roofed = !!world.roofLayer?.[y]?.[x]?.built;
-      const alpha = clamp((1 - light) * (roofed ? 0.78 : 0.55), 0, 0.72);
-      if (alpha <= 0.03) continue;
-      ctx.fillStyle = `rgba(4, 8, 15, ${alpha.toFixed(3)})`;
-      ctx.fillRect(x * t, y * t, t, t);
-    }
-    for (const src of activeLightSources()) {
-      const px = src.x * t + t / 2, py = src.y * t + t / 2, r = src.radius * t;
-      const gradient = ctx.createRadialGradient(px, py, 0, px, py, r);
-      gradient.addColorStop(0, `rgba(255, 188, 82, ${Math.min(0.35, src.intensity * 0.25)})`);
-      gradient.addColorStop(1, 'rgba(255, 188, 82, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(px - r, py - r, r * 2, r * 2);
-    }
     ctx.restore();
   }
 

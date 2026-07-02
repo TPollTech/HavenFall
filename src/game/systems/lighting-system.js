@@ -400,6 +400,22 @@
     ctx.restore();
   }
 
+  function cornerLight(x, y, layer, wRows, wCols) {
+    const cx = Math.round(x), cy = Math.round(y);
+    let sum = 0, count = 0;
+    for (let dy = 0; dy <= 1; dy++) {
+      for (let dx = 0; dx <= 1; dx++) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= wCols || ny >= wRows) {
+          sum += DEFAULT_LIGHT; count++; continue;
+        }
+        const val = layer[ny]?.[nx];
+        if (val !== undefined) { sum += val; count++; }
+      }
+    }
+    return count > 0 ? sum / count : DEFAULT_LIGHT;
+  }
+
   function drawLightingOverlay(bounds = null) {
     if (!ctx || !state?.world || appScreen !== SCREEN.PLAYING) return;
     const layer = ensureLightLayer(state.world);
@@ -422,6 +438,16 @@
     const explorationMaskActive = hasUsableExplorationMask(state.world);
     drawSunShadows(drawBounds, state.world, sun);
     drawAmbientTint(drawBounds, sun);
+
+    const wRows = rowsFor(state.world), wCols = colsFor(state.world);
+    const cRows = endY - startY + 2, cCols = endX - startX + 2;
+    const corners = Array.from({ length: cRows }, () => new Float64Array(cCols));
+    for (let cy = 0; cy < cRows; cy++) {
+      for (let cx = 0; cx < cCols; cx++) {
+        corners[cy][cx] = cornerLight(startX + cx - 1, startY + cy - 1, layer, wRows, wCols);
+      }
+    }
+
     ctx.save();
     for (let y = startY; y <= endY; y++) {
       for (let x = startX; x <= endX; x++) {
@@ -429,10 +455,38 @@
         const light = tileLightAt(x, y, state.world, sun.light);
         const darkness = explored ? Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)) : 0.92;
         if (darkness <= 0.035) continue;
-        ctx.fillStyle = `rgba(1, 5, 14, ${Math.min(0.86, darkness * 0.82)})`;
-        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+
+        const ci = y - startY, cj = x - startX;
+        const d00 = 1 - corners[ci][cj];
+        const d10 = 1 - corners[ci][cj + 1];
+        const d01 = 1 - corners[ci + 1][cj];
+        const d11 = 1 - corners[ci + 1][cj + 1];
+
+        const px = x * TILE, py = y * TILE;
+        const darkTop = Math.min(0.86, d00 * 0.82);
+        const darkBot = Math.min(0.86, d01 * 0.82);
+        const darkLeft = Math.min(0.86, d00 * 0.82);
+        const darkRight = Math.min(0.86, d10 * 0.82);
+
+        if (darkTop <= 0.035 && darkBot <= 0.035 && darkLeft <= 0.035 && darkRight <= 0.035) continue;
+
+        const gx = ctx.createLinearGradient(px, py, px + TILE, py);
+        gx.addColorStop(0, `rgba(1,5,14,${darkLeft})`);
+        gx.addColorStop(1, `rgba(1,5,14,${darkRight})`);
+
+        const gy = ctx.createLinearGradient(px, py, px, py + TILE);
+        gy.addColorStop(0, `rgba(1,5,14,${darkTop})`);
+        gy.addColorStop(1, `rgba(1,5,14,${darkBot})`);
+
+        ctx.fillStyle = gx;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = gy;
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillRect(px, py, TILE, TILE);
       }
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
   }
 
