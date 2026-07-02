@@ -12,7 +12,7 @@
   const BACKGROUND_BATCH_DELAY_MS = 24;
   const CRITICAL_BOOT_ASSETS = Object.freeze([
     'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
-    'tree', 'bush', 'rock', 'logs', 'berry', 'crop_patch',
+    'tree', 'bush', 'rock', 'logs', 'berry',
     'bed_single', 'crate_wood', 'campfire',
     'icon_food', 'icon_wood', 'icon_stone', 'icon_metal', 'icon_warn'
   ]);
@@ -163,7 +163,7 @@
 
   function guardedLoadImages() {
     const report = {
-      version: 'asset-load-guard-v3-fast-boot',
+      version: 'asset-load-guard-farming-boot',
       startedAt: new Date().toISOString(),
       loaded: 0,
       missing: [],
@@ -192,7 +192,7 @@
   }
 
   window.HavenfallAssetLoadGuard = Object.freeze({
-    version: 'asset-load-guard-v3-fast-boot',
+    version: 'asset-load-guard-farming-boot',
     guardedLoadImages,
     runBackgroundAssetLoad,
     essentialAssetNames,
