@@ -441,16 +441,19 @@
     for (let cy = 0; cy < cH; cy++) {
       for (let cx = 0; cx < cW; cx++) {
         const tx = startX + cx - 1, ty = startY + cy - 1;
-        let light;
-        if (tx < 0 || ty < 0 || tx >= wCols || ty >= wRows) {
-          light = DEFAULT_LIGHT;
+        const inBounds = tx >= 0 && ty >= 0 && tx < wCols && ty < wRows;
+        let darkness;
+        if (!inBounds) {
+          darkness = 0;
         } else {
           const explored = explorationMaskActive ? Number(state.world.exploration?.[ty]?.[tx] || 0) : 2;
-          light = explored ? clampLight(layer[ty]?.[tx] ?? DEFAULT_LIGHT) : 0;
+          if (!explored) {
+            darkness = 0.92;
+          } else {
+            const light = clampLight(layer[ty]?.[tx] ?? DEFAULT_LIGHT);
+            darkness = Math.max(0, 1 - Math.max(light, MEMORY_LIGHT));
+          }
         }
-        const darkness = (tx >= 0 && ty >= 0 && tx < wCols && ty < wRows)
-          ? (explorationMaskActive ? (Number(state.world.exploration?.[ty]?.[tx] || 0) ? Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)) : 0.92) : Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)))
-          : 0;
         const alpha = Math.min(0.86, darkness * 0.82);
         const idx = (cy * cW + cx) * 4;
         pixels[idx] = 1;

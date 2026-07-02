@@ -21,12 +21,22 @@ function grid(rows, cols, value) {
 function createLightingContext({ exploration, explorationDisabled = false, hour = 6 + 50 / 60, objects = [] } = {}) {
   let now = 1;
   const draws = [];
+  const drawImages = [];
   const context = createContext({
     TILE: 48,
     SCREEN: { PLAYING: 'playing' },
     appScreen: 'playing',
     HavenfallContext: {},
     performance: { now: () => now },
+    OffscreenCanvas: class OffscreenCanvas {
+      constructor(w, h) { this.width = w; this.height = h; this._data = new Uint8ClampedArray(w * h * 4); }
+      getContext() {
+        return {
+          createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+          putImageData: (imgData) => { this._data = imgData.data; }.bind(this)
+        };
+      }
+    },
     state: {
       hour,
       weather: 'limpo',
