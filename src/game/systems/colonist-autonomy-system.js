@@ -34,7 +34,7 @@
   function workExists() { return !!window.HavenfallWorkCoordinator?.workExists?.(); }
   function taskType(c) { return c?.task?.type || null; }
   function isCombatTask(type) { return type === 'combat' || type === 'scare'; }
-  function isWorkTask(type) { return ['gather','mine','build','buildRoof','haul','deconstruct','research','craft','forge','cook','inspect','loot','inspectPoi','heal'].includes(type); }
+  function isWorkTask(type) { return ['gather','mine','build','buildRoof','haul','deconstruct','research','craft','forge','cook','inspect','loot','inspectPoi','heal','prepareSoil','sowCrop','tendCrop','harvestCrop'].includes(type); }
   function isHeavyTask(type) { return ['mine','forge','build','combat','scare'].includes(type); }
 
   function shouldFinishCurrentTask(c) {
@@ -125,10 +125,10 @@
   }
 
   function sleepRecovery(surface) {
-    if (surface === SLEEP_SURFACE.BED) return { quality: 1, energy: 4.8, mood: 0.55, pain: -1.20, health: 0 };
-    if (surface === SLEEP_SURFACE.FLOOR) return { quality: 0.65, energy: 2.8, mood: 0.12, pain: 0.22, health: 0 };
+    if (surface === SLEEP_SURFACE.BED) return { quality: 1, energy: 4.8, mood: 0.55, pain: -1.20, health: 0.035 };
+    if (surface === SLEEP_SURFACE.FLOOR) return { quality: 0.65, energy: 2.8, mood: 0.12, pain: 0.22, health: 0.006 };
     if (surface === SLEEP_SURFACE.OUTDOOR) return { quality: 0.30, energy: 1.4, mood: -0.10, pain: 0.85, health: -0.015 };
-    return { quality: 0.45, energy: 2.1, mood: -0.04, pain: 0.52, health: 0 };
+    return { quality: 0.45, energy: 2.1, mood: -0.04, pain: 0.52, health: 0.004 };
   }
 
   function surfaceLabel(surface) { if (surface === SLEEP_SURFACE.BED) return 'cama'; if (surface === SLEEP_SURFACE.FLOOR) return 'chão'; if (surface === SLEEP_SURFACE.OUTDOOR) return 'relento'; return 'chão duro'; }
@@ -213,7 +213,7 @@
     c.energy = clampValue(Number(c.energy || 0) + tick * recovery.energy, 0, 100);
     c.mood = clampValue(Number(c.mood || 0) + tick * recovery.mood, 0, 100);
     c.bodyPain = clampValue(Number(c.bodyPain || 0) + tick * recovery.pain, 0, 100);
-    if (recovery.health) c.health = clampValue(Number(c.health || 100) + tick * recovery.health, 1, 100);
+    if (recovery.health) c.health = clampValue(Number(c.health || 100) + tick * recovery.health, 0, 100);
     if (surface !== SLEEP_SURFACE.BED) c.rest.sleptOnFloorHours += tick / 60;
     c.note = surface === SLEEP_SURFACE.BED ? 'Dormindo na cama' : `Dormindo no ${surfaceLabel(surface)}`;
     const wakeTarget = scheduledSleep ? ENERGY.WAKE_SLEEP_WINDOW : ENERGY.WAKE_WORK;
@@ -222,8 +222,40 @@
     return true;
   }
 
+  function deathCheck(c, tick) {
+    if (c.isDead || c.isUnconscious) return;
+    if (c.health <= 0) {
+      c.isDead = true;
+      c.isUnconscious = true;
+      c.deathTime = worldTime();
+      const causes = [];
+      if (c.hunger < 5) causes.push('inanício');
+      if (c.bodyPain > 85) causes.push('dor extrema');
+      if (c.energy < 3) causes.push('exaustão');
+      if (c.statuses?.includes?.('hipotermia')) causes.push('hipotermia');
+      if (c.statuses?.includes?.('gripe')) causes.push('gripe');
+      if (c.health <= 0 && !causes.length) causes.push('desnutrição');
+      c.deathCause = causes.join(' e ') || 'desconhecida';
+      if (typeof log === 'function') log(`${c.name} morreu por ${c.deathCause}.`);
+      c.task = null;
+      c.path = [];
+      c.work = 0;
+      c.note = `Morto: ${c.deathCause}`;
+      return;
+    }
+    if (c.health <= 5) {
+      c.lowHealthTime = (c.lowHealthTime || 0) + tick;
+      if (c.lowHealthTime > 18) {
+        c.health = 0;
+        deathCheck(c, tick);
+      }
+    } else {
+      c.lowHealthTime = 0;
+    }
+  }
+
   function applyVitals(c, tick) {
-    c.energy = clampValue(Number(c.energy ?? 100), 0, 100); c.hunger = clampValue(Number(c.hunger ?? 100), 0, 100); c.mood = clampValue(Number(c.mood ?? 70), 0, 100); c.health = clampValue(Number(c.health ?? 100), 1, 100); c.bodyPain = clampValue(Number(c.bodyPain || 0), 0, 100);
+    c.energy = clampValue(Number(c.energy ?? 100), 0, 100); c.hunger = clampValue(Number(c.hunger ?? 100), 0, 100); c.mood = clampValue(Number(c.mood ?? 70), 0, 100); c.health = clampValue(Number(c.health ?? 100), 0, 100); c.bodyPain = clampValue(Number(c.bodyPain || 0), 0, 100);
     c.hunger = clampValue(c.hunger - tick * 0.14, 0, 100);
     let drain = 0.010;
     const type = taskType(c);
@@ -234,8 +266,9 @@
     if (isHeavyTask(type) && c.bodyPain > 20) c.bodyPain = clampValue(c.bodyPain + tick * 0.06, 0, 100);
     const lowNeeds = c.hunger < 25 || c.energy < 24 || c.bodyPain > 45;
     c.mood = clampValue(c.mood - tick * (lowNeeds ? 0.085 : 0.024), 0, 100);
-    if (c.hunger < 18) c.health = clampValue(c.health - tick * 0.055, 1, 100);
+    if (c.hunger < 18) c.health = clampValue(c.health - tick * 0.055, 0, 100);
     if (c.health < 30) c.mood = clampValue(c.mood - tick * 0.08, 0, 100);
+    deathCheck(c, tick);
   }
 
   function maybeEat(c) { if (!state?.resources || c.hunger >= 32 || Number(state.resources.food || 0) <= 0 || c.task?.type === 'sleep') return false; const spent = typeof consumeCost === 'function' ? consumeCost({ food: 1 }, { reason: 'colonist-eat', actorId: c.id }) : window.GameState?.consumeResources?.({ food: 1 }, { reason: 'colonist-eat', actorId: c.id }); if (!spent) return false; c.hunger = clampValue(c.hunger + 42, 0, 100); c.mood = clampValue(c.mood + 4, 0, 100); c.note = 'Comeu uma refeição rápida'; rememberIntent(c, INTENT.EAT, 'hungry', 0.08); if (typeof log === 'function') log(`${c.name} comeu uma refeição rápida.`); return true; }
@@ -292,7 +325,7 @@
   }
 
   function autonomyUpdateColonist(c, dt) {
-    if (!state || !c) return;
+    if (!state || !c || c.isDead) return;
     ensureBrain(c); ensureRestState(c);
     if (window.GameSystems?.runColonistUpdateGuards(c, dt)) return;
     runBeforeHooksWithoutLegacySchedule(c, dt);
@@ -300,6 +333,7 @@
     const tick = Math.max(0, dt * speed);
     c.anim = Number(c.anim || 0) + tick;
     applyVitals(c, tick);
+    if (c.isDead) return;
     if (c.task?.type !== 'sleep') releaseBed(c);
     applyDecision(c);
     if (c.task) {

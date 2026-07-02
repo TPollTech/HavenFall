@@ -284,6 +284,7 @@
 
   function cellWorkType(cell, plot) {
     if (!cell || !plot?.cropId) return null;
+    if (cell._retryCooldown && cell._retryCooldown > Date.now()) return null;
     if (cell.phase === CELL_PHASES.PREPARE || cell.phase === CELL_PHASES.EMPTY) return 'prepareSoil';
     if (cell.phase === CELL_PHASES.READY_TO_SOW || cell.phase === CELL_PHASES.NEEDS_REPLANT || cell.phase === CELL_PHASES.HARVESTED) return plot.allowReplant === false ? null : 'sowCrop';
     if ((cell.phase === CELL_PHASES.SOWN || cell.phase === CELL_PHASES.GROWING) && (cell.water < 24 || cell.health < 72)) return 'tendCrop';
@@ -367,7 +368,17 @@
     updatePlotStatus(plot.id);
     c.task = null;
     c.work = 0;
-    c.note = ok ? 'Ocioso' : 'Falta semente ou solo adequado';
+    if (!ok) {
+      cell._retryCooldown = Date.now() + 12000;
+      c._farmingFailCooldown = 6;
+      c.note = 'Falta semente ou solo adequado';
+      if (typeof log === 'function' && plot?.cropId) {
+        const def = cropDef(plot.cropId);
+        log(`${c.name} não conseguiu semear ${def?.label || plot.cropId}. Aguardando sementes...`);
+      }
+    } else {
+      c.note = 'Ocioso';
+    }
     return true;
   }
 
@@ -421,6 +432,7 @@
     updatePerish(hours);
     for (const c of state.colonists || []) {
       if (c.task || c.energy < 18 || c.health < 20) continue;
+      if (c._farmingFailCooldown > 0) { c._farmingFailCooldown -= 1; continue; }
       assignFarmingTask(c);
     }
   }
