@@ -18,20 +18,23 @@ function grid(rows, cols, value) {
   return Array.from({ length: rows }, () => Array.from({ length: cols }, () => value));
 }
 
-function createLightingContext({ exploration, explorationDisabled = false }) {
-  let fillCount = 0;
+function createLightingContext({ exploration, explorationDisabled = false, hour = 6 + 50 / 60, objects = [] } = {}) {
+  let now = 0;
+  const draws = [];
   const context = createContext({
     TILE: 48,
     SCREEN: { PLAYING: 'playing' },
     appScreen: 'playing',
     HavenfallContext: {},
+    performance: { now: () => now },
     state: {
-      hour: 6 + 50 / 60,
+      hour,
       weather: 'limpo',
+      colonists: [],
       world: {
         rows: 3,
         cols: 3,
-        objects: [],
+        objects,
         exploration,
         explorationDisabled,
         lightLayer: grid(3, 3, 1),
@@ -39,10 +42,17 @@ function createLightingContext({ exploration, explorationDisabled = false }) {
         naturalRoofLayer: grid(3, 3, false)
       }
     },
+    objectDefs: {
+      tree: { blocks: true },
+      torch: { fuelMax: 100, light: { radius: 4, power: 0.7 } }
+    },
     ctx: {
       save() {},
       restore() {},
-      fillRect() { fillCount += 1; },
+      beginPath() {},
+      ellipse() {},
+      fillRect(x, y, width, height) { draws.push({ kind: 'rect', style: this._fillStyle, x, y, width, height }); },
+      fill() { draws.push({ kind: 'shape', style: this._fillStyle }); },
       set fillStyle(value) { this._fillStyle = value; },
       get fillStyle() { return this._fillStyle; }
     },
@@ -50,8 +60,17 @@ function createLightingContext({ exploration, explorationDisabled = false }) {
     getWorldRows: () => 3
   });
 
-  context.fillCount = () => fillCount;
+  context.draws = () => draws;
+  context.advanceMs = ms => { now += ms; };
   return context;
+}
+
+function darkOverlayDraws(context) {
+  return context.draws().filter(draw => String(draw.style).startsWith('rgba(1, 5, 14,'));
+}
+
+function shadowDraws(context) {
+  return context.draws().filter(draw => String(draw.style).startsWith('rgba(0, 0, 0,'));
 }
 
 test('Lighting overlay treats disabled exploration as already visible', () => {
@@ -62,7 +81,7 @@ test('Lighting overlay treats disabled exploration as already visible', () => {
 
   context.LightingSystem.drawLightingOverlay({ startX: 0, startY: 0, endX: 2, endY: 2 });
 
-  assert.equal(context.fillCount(), 0);
+  assert.equal(darkOverlayDraws(context).length, 0);
 });
 
 test('Lighting overlay keeps heavy fog when a valid exploration mask hides tiles', () => {
@@ -73,5 +92,36 @@ test('Lighting overlay keeps heavy fog when a valid exploration mask hides tiles
 
   context.LightingSystem.drawLightingOverlay({ startX: 0, startY: 0, endX: 2, endY: 2 });
 
-  assert.equal(context.fillCount(), 9);
+  assert.equal(darkOverlayDraws(context).length, 9);
+});
+
+test('Lighting system eases global daylight instead of snapping or updating by map chunks', () => {
+  const context = createLightingContext({ exploration: grid(3, 3, 2), hour: 12 });
+  runBrowserScript('src/game/systems/lighting-system.js', context);
+
+  const noon = context.LightingSystem.updateVisualSunState(context.state.world, true);
+  assert.ok(noon.light > 0.95);
+
+  context.state.hour = 23;
+  context.advanceMs(100);
+  const fading = context.LightingSystem.updateVisualSunState(context.state.world);
+  const nightTarget = context.LightingSystem.sunStateAtHour(23).light;
+
+  assert.ok(fading.light < noon.light);
+  assert.ok(fading.light > nightTarget);
+
+  context.LightingSystem.drawLightingOverlay({ startX: 0, startY: 0, endX: 2, endY: 2 });
+  const darkTiles = darkOverlayDraws(context);
+  assert.equal(darkTiles.length, 9);
+  assert.equal(new Set(darkTiles.map(draw => draw.style)).size, 1);
+});
+
+test('Directional sun casts object shadows during daylight', () => {
+  const context = createLightingContext({ exploration: grid(3, 3, 2), hour: 7, objects: [{ id: 'tree-1', type: 'tree', x: 1, y: 1 }] });
+  runBrowserScript('src/game/systems/lighting-system.js', context);
+
+  context.LightingSystem.updateVisualSunState(context.state.world, true);
+  context.LightingSystem.drawLightingOverlay({ startX: 0, startY: 0, endX: 2, endY: 2 });
+
+  assert.ok(shadowDraws(context).length >= 1);
 });
