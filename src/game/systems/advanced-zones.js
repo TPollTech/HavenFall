@@ -97,53 +97,6 @@
     };
   }
 
-<<<<<<< HEAD
-  function canPlantInTile(tile) {
-    if (!tile || getObjectAt(tile.x, tile.y)) return false;
-    if (typeof isBlocked === 'function' && isBlocked(tile.x, tile.y)) return false;
-    const terrain = state?.terrain?.[tile.y]?.[tile.x];
-    return terrain === 'dirt' || terrain === 'grass' || terrain === 'sand';
-  }
-
-  function assignPlantZone(c, tile) {
-    if (!c || !tile || typeof canAutoHandleZoneTask === 'function' && !canAutoHandleZoneTask(c)) return false;
-    const cropKey = zoneSystem.ensureState()?.growing?.cropType || 'food';
-    const crop = cropDefs[cropKey] || cropDefs.food;
-    if (crop.seedCost && !hasCost(crop.seedCost)) return false;
-    c.task = { type: 'plantZone', x: tile.x, y: tile.y, zoneType: 'growing', zoneX: tile.x, zoneY: tile.y, cropType: cropKey };
-    c.path = findPath(c.x, c.y, tile.x, tile.y);
-    c.work = 0;
-    c.note = `Plantando ${crop.label}`;
-    return true;
-  }
-
-  function handlePlantZoneTask(c, task, tick) {
-    if (task?.type !== 'plantZone') return false;
-    const tile = { x: task.x, y: task.y };
-    if (!canPlantInTile(tile)) { c.task = null; c.note = 'Ocioso'; c.work = 0; return true; }
-    const crop = cropDefs[task.cropType] || cropDefs.food;
-    if (crop.seedCost && !hasCost(crop.seedCost)) { c.task = null; c.note = 'Sem sementes/comida para plantar'; c.work = 0; return true; }
-    c.work += tick * (typeof workRate === 'function' ? workRate(c, 'handle') : 1);
-    c.note = `Plantando ${crop.label} ${Math.floor((c.work / 2.4) * 100)}%`;
-    if (c.work < 2.4) return true;
-    if (crop.seedCost && !payCost(crop.seedCost)) {
-      c.task = null;
-      c.note = 'Sem sementes/comida para plantar';
-      c.work = 0;
-      if (typeof log === 'function') log(`${c.name} ficou sem sementes/comida para concluir o plantio.`);
-      return true;
-    }
-    state.objects.push({ id: uid('obj'), type: 'crop', x: tile.x, y: tile.y, growth: 0, cropType: task.cropType });
-    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-    if (typeof log === 'function') log(`${c.name} plantou ${crop.label}.`);
-    c.task = null;
-    c.note = 'Ocioso';
-    c.work = 0;
-    return true;
-  }
-
-=======
->>>>>>> 1a2ad510a3edd63d39e85506acb9a71a2ba19418
   const nativeUpdateZoneBehaviors = updateZoneBehaviors;
   updateZoneBehaviors = function advancedZoneBehaviorsWithoutCropObjects() {
     nativeUpdateZoneBehaviors?.();
