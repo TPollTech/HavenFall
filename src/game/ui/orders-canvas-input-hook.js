@@ -11,9 +11,21 @@
     const style = document.createElement('style');
     style.id = 'orders-canvas-cursor-style';
     style.textContent = `
+      body.order-move-active canvas,
+      body.order-mine-active canvas,
+      body.order-gather-active canvas,
+      body.order-build-active canvas,
+      body.order-haul-active canvas,
+      body.order-inspect-active canvas,
+      body.order-loot-active canvas,
+      body.order-research-active canvas,
+      body.order-forge-active canvas,
+      body.order-cook-active canvas,
+      body.order-heal-active canvas,
+      body.order-fight-active canvas,
+      body.order-sleep-active canvas,
       body.order-deconstruct-active canvas,
       body.order-cancel-active canvas { cursor: crosshair !important; }
-      body.order-mine-active canvas { cursor: crosshair !important; }
     `;
     document.head.appendChild(style);
   }
@@ -35,7 +47,7 @@
   }
 
   function orderDragLabel(tool) {
-    return ({ mine: 'mineração', deconstruct: 'desconstrução', cancel: 'cancelamento' })[tool] || 'ordem';
+    return typeof orderToolLabel === 'function' ? orderToolLabel(tool).toLowerCase() : 'ordem';
   }
 
   function applyMineDrag(start, end, event = null) {
