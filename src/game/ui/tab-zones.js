@@ -12,6 +12,13 @@
     document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
   }
 
+  function collapsePanelForPainting() {
+    const panel = document.getElementById('anchored-ui-panel');
+    if (!panel || panel.dataset.activeDockTab !== 'zones') return;
+    panel.classList.remove('is-active');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+
   function renderZoneButton(key, def) {
     return `<button class="dock-card zone-card ${currentZoneTool === key ? 'is-active' : ''}" data-zone-tool="${escapeHtml(key)}">
       <strong>${escapeHtml(def.short || def.label)}</strong>
@@ -31,6 +38,15 @@
   }
 
   function handleClick(event) {
+    const zoneTool = event.target.closest?.('[data-zone-tool]');
+    if (zoneTool && zoneTool.closest('#anchored-ui-panel')) {
+      window.requestAnimationFrame?.(() => {
+        document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
+        collapsePanelForPainting();
+      });
+      return;
+    }
+
     if (!event.target.closest?.('[data-clear-zone-tool]')) return;
     window.requestAnimationFrame?.(() => {
       document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
