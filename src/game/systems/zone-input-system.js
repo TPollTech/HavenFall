@@ -16,7 +16,19 @@
   }
 
   function allZoneDefs() {
-    return window.HavenfallZones?.getAllZoneDefs?.() || (typeof zoneDefs !== 'undefined' ? zoneDefs : {});
+    const base = typeof zoneDefs !== 'undefined' ? zoneDefs : {};
+    const registered = window.HavenfallZones?.getAllZoneDefs?.() || {};
+    const defs = { ...base, ...registered };
+    if (!defs.growing && (window.cropDefs || window.HavenfallFarming)) {
+      defs.growing = {
+        label: 'Zona de cultivo',
+        short: 'Cultivo',
+        hint: 'Pinte a área do talhão agrícola.',
+        fill: 'rgba(74,222,128,.16)',
+        stroke: 'rgba(74,222,128,.82)'
+      };
+    }
+    return defs;
   }
 
   function zoneDef(type) {
@@ -56,21 +68,30 @@
     syncSelection(false);
   }
 
+  function hideZonesPanelForPainting() {
+    const panel = document.getElementById('anchored-ui-panel');
+    if (panel?.dataset.activeDockTab !== 'zones') return;
+    panel.classList.remove('is-active');
+    panel.setAttribute('aria-hidden', 'true');
+    panel.hidden = true;
+  }
+
+  function restoreZonesPanel() {
+    if (window.HavenfallUI?.renderDockPanel) window.HavenfallUI.renderDockPanel('zones');
+    else window.HavenfallUI?.refreshDockPanel?.('zones');
+  }
+
   function setTool(tool) {
-    if (!toolValid(tool)) return false;
+    if (!toolValid(tool)) {
+      if (typeof log === 'function') log(`Ferramenta de zona inválida: ${tool || 'vazia'}.`);
+      return false;
+    }
     currentZoneTool = tool;
     currentBuild = null;
     if (typeof clearOrderTool === 'function') clearOrderTool('zones');
     clearSelection();
     document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
-    if (typeof updateZonePanel === 'function') updateZonePanel();
-    if (typeof updateZonesModal === 'function') updateZonesModal();
-    const panel = document.getElementById('anchored-ui-panel');
-    if (panel?.dataset.activeDockTab === 'zones') {
-      panel.classList.remove('is-active');
-      panel.setAttribute('aria-hidden', 'true');
-    }
-    if (typeof updateUI === 'function') updateUI(true);
+    hideZonesPanelForPainting();
     return true;
   }
 
@@ -116,11 +137,6 @@
     };
   }
 
-  function restoreZonesPanel() {
-    if (window.HavenfallUI?.renderDockPanel) window.HavenfallUI.renderDockPanel('zones');
-    else window.HavenfallUI?.refreshDockPanel?.('zones');
-  }
-
   function finish(event = null) {
     if (!zoneDragActive || !currentZoneTool) return false;
     if (event && canvasTarget(event)) update(event);
@@ -140,6 +156,10 @@
       log(changed ? `${label}: ${changed} tile${changed === 1 ? '' : 's'}.` : 'Nenhum tile válido foi alterado.');
     }
     return changed > 0;
+  }
+
+  function showOverlay() {
+    return !!(zoneDragActive || currentZoneTool || document.getElementById('zones-modal')?.classList.contains('show'));
   }
 
   function installInput() {
@@ -174,6 +194,11 @@
 
   function installGlobals() {
     try { setZoneTool = setTool; } catch (_) {}
+    try { beginZoneSelectionFromEvent = begin; } catch (_) {}
+    try { updateZoneDragFromEvent = update; } catch (_) {}
+    try { finishZoneSelectionFromEvent = finish; } catch (_) {}
+    try { clearZoneSelection = clearSelection; } catch (_) {}
+    try { shouldShowZonesOverlay = showOverlay; } catch (_) {}
     window.setZoneTool = setTool;
     window.HavenfallZoneInput = Object.freeze({ setTool, begin, update, finish, clearSelection, canEditTile });
   }
