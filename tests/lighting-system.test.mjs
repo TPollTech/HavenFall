@@ -19,7 +19,7 @@ function grid(rows, cols, value) {
 }
 
 function createLightingContext({ exploration, explorationDisabled = false, hour = 6 + 50 / 60, objects = [] } = {}) {
-  let now = 0;
+  let now = 1;
   const draws = [];
   const context = createContext({
     TILE: 48,
