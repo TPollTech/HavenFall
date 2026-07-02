@@ -142,7 +142,35 @@
     const sw = img.naturalWidth || img.width || TILE;
     const sh = img.naturalHeight || img.height || TILE;
     const crop = Math.max(0, Math.min(14, Math.floor(Math.min(sw, sh) * 0.055)));
-    targetCtx.drawImage(img, crop, crop, Math.max(1, sw - crop * 2), Math.max(1, sh - crop * 2), x * TILE - 1.4, y * TILE - 1.4, TILE + 2.8, TILE + 2.8);
+    const px = x * TILE - 8;
+    const py = y * TILE - 8;
+    const size = TILE + 16;
+    targetCtx.drawImage(img, crop, crop, Math.max(1, sw - crop * 2), Math.max(1, sh - crop * 2), px, py, size, size);
+    const fw = 8;
+    targetCtx.save();
+    targetCtx.globalCompositeOperation = 'destination-out';
+    let g;
+    g = targetCtx.createLinearGradient(px, py, px, py + fw);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py, size, fw);
+    g = targetCtx.createLinearGradient(px, py + size, px, py + size - fw);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py + size - fw, size, fw);
+    g = targetCtx.createLinearGradient(px, py, px + fw, py);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py, fw, size);
+    g = targetCtx.createLinearGradient(px + size, py, px + size - fw, py);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px + size - fw, py, fw, size);
+    targetCtx.restore();
   }
 
   function drawBlendStripTo(targetCtx, x, y, side, neighborType) {
@@ -160,7 +188,7 @@
       gradient.addColorStop(0.85, rgba(color, 0.42));
       gradient.addColorStop(1, rgba(color, 0.35));
       targetCtx.fillStyle = gradient;
-      targetCtx.fillRect(px - w, py - 1.4, w * 1.3, TILE + 2.8);
+      targetCtx.fillRect(px - w, py - 8, w * 1.3, TILE + 16);
     } else if (side === 'right') {
       gradient = targetCtx.createLinearGradient(px + TILE + w, 0, px + TILE - w * 0.3, 0);
       gradient.addColorStop(0, rgba(color, 0));
@@ -169,7 +197,7 @@
       gradient.addColorStop(0.85, rgba(color, 0.42));
       gradient.addColorStop(1, rgba(color, 0.35));
       targetCtx.fillStyle = gradient;
-      targetCtx.fillRect(px + TILE - w * 0.3, py - 1.4, w * 1.3, TILE + 2.8);
+      targetCtx.fillRect(px + TILE - w * 0.3, py - 8, w * 1.3, TILE + 16);
     } else if (side === 'top') {
       gradient = targetCtx.createLinearGradient(0, py - w, 0, py + w * 0.3);
       gradient.addColorStop(0, rgba(color, 0));
@@ -178,7 +206,7 @@
       gradient.addColorStop(0.85, rgba(color, 0.42));
       gradient.addColorStop(1, rgba(color, 0.35));
       targetCtx.fillStyle = gradient;
-      targetCtx.fillRect(px - 1.4, py - w, TILE + 2.8, w * 1.3);
+      targetCtx.fillRect(px - 8, py - w, TILE + 16, w * 1.3);
     } else if (side === 'bottom') {
       gradient = targetCtx.createLinearGradient(0, py + TILE + w, 0, py + TILE - w * 0.3);
       gradient.addColorStop(0, rgba(color, 0));
@@ -187,7 +215,7 @@
       gradient.addColorStop(0.85, rgba(color, 0.42));
       gradient.addColorStop(1, rgba(color, 0.35));
       targetCtx.fillStyle = gradient;
-      targetCtx.fillRect(px - 1.4, py + TILE - w * 0.3, TILE + 2.8, w * 1.3);
+      targetCtx.fillRect(px - 8, py + TILE - w * 0.3, TILE + 16, w * 1.3);
     }
   }
 
@@ -213,7 +241,7 @@
 
   function drawTerrainTileTo(targetCtx, x, y, type, q) {
     targetCtx.fillStyle = terrainColor(type);
-    targetCtx.fillRect(x * TILE - 1.4, y * TILE - 1.4, TILE + 2.8, TILE + 2.8);
+    targetCtx.fillRect(x * TILE - 8, y * TILE - 8, TILE + 16, TILE + 16);
     const img = images[`tile_${type}`] || (type === 'water' ? null : images.tile_grass);
     drawTerrainTextureTo(targetCtx, img, x, y);
     if (!q.drawTerrainBlends) return;
