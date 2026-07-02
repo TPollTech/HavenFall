@@ -362,6 +362,19 @@ function tileFromEvent(e) {
   return { x, y };
 }
 
+function worldPointFromEvent(e) {
+  if (!canvas || !viewTransform || !canvas.width || !canvas.height) return null;
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+
+  const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+  return {
+    x: (px - viewTransform.offsetX) / viewTransform.scale,
+    y: (py - viewTransform.offsetY) / viewTransform.scale
+  };
+}
+
 function isWallAnchorAt(x, y) {
   const obj = getObjectAt(x, y);
   return !!obj && (obj.type === 'wall' || (obj.type === 'blueprint' && obj.buildType === 'wall'));
@@ -400,13 +413,32 @@ function placeBlueprint(buildKey, x, y) {
   if (def.type === 'door' && !hasAdjacentWallForDoor(x, y)) { log('A porta precisa encostar em uma parede existente ou em uma blueprint de parede.'); return; }
   if (!canPlace(def.type, x, y)) { log('Não dá para construir nesse lugar.'); return; }
   if (!hasCost(def.cost || {}) || !hasItems(def.itemCost || {})) { log(`Recursos insuficientes para essa construção. Precisa de ${itemCostText(def.cost, def.itemCost)}.`); return; }
-  payCost(def.cost || {});
-  payItems(def.itemCost || {});
+  const paidResources = payCost(def.cost || {});
+  const paidItems = payItems(def.itemCost || {});
+  if (!paidResources || !paidItems) {
+    if (paidResources && typeof refundCost === 'function') refundCost(def.cost || {}, { reason: 'legacy-build-rollback', targetId: buildKey, x, y });
+    if (paidItems && typeof refundItems === 'function') refundItems(def.itemCost || {}, { reason: 'legacy-build-rollback', targetId: buildKey, x, y });
+    log(`Recursos insuficientes para essa construÃ§Ã£o. Precisa de ${itemCostText(def.cost, def.itemCost)}.`);
+    return;
+  }
   const rotation = isBuildRotatable(buildKey) ? normalizeBuildRotation(currentBuildRotation) : 0;
-  state.objects.push({ id: uid('obj'), type: 'blueprint', buildType: buildKey, x, y, progress: 0, rotation });
+  state.objects.push({
+    id: uid('obj'),
+    type: 'blueprint',
+    buildType: buildKey,
+    x,
+    y,
+    progress: 0,
+    rotation,
+    reservedCost: { ...(def.cost || {}) },
+    reservedItemCost: { ...(def.itemCost || {}) },
+    materialReserved: true
+  });
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
   log(`Planta de ${def.label} posicionada${rotation ? ` (${buildRotationLabel(rotation)})` : ''}.`);
   const c = selectedColonist();
   const bp = getObjectAt(x, y);
   if (c && bp) assignBuild(c, bp);
 }
+
+window.worldPointFromEvent = window.worldPointFromEvent || worldPointFromEvent;

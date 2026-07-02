@@ -70,8 +70,18 @@
     if (!obj) return false;
     if (obj.type === 'blueprint') {
       const def = buildDefs?.[obj.buildType];
-      if (def?.cost && typeof addResources === 'function') addResources(def.cost);
+      const reservedCost = obj.reservedCost || def?.cost || {};
+      const reservedItemCost = obj.reservedItemCost || def?.itemCost || {};
+      if (Object.keys(reservedCost).length) {
+        if (typeof refundCost === 'function') refundCost(reservedCost, { reason: 'build-cancel', targetId: obj.id, x: obj.x, y: obj.y });
+        else if (typeof addResources === 'function') addResources(reservedCost);
+      }
+      if (Object.keys(reservedItemCost).length) {
+        if (typeof refundItems === 'function') refundItems(reservedItemCost, { reason: 'build-cancel', targetId: obj.id, x: obj.x, y: obj.y });
+        else if (typeof addItems === 'function') addItems(reservedItemCost);
+      }
       state.objects = (state.objects || []).filter(o => o.id !== obj.id);
+      if (state.world) state.world.objects = state.objects;
       if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
       return true;
     }

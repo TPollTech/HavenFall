@@ -8,6 +8,40 @@
   const WATER_TILE = 'water';
   const VISITOR_STAY_HOURS = 10;
   const BRIDGE_TYPES = new Set(['bridge', 'wood_bridge', 'stone_bridge']);
+  const RESOURCE_LABELS = Object.freeze({ food: 'comida', wood: 'madeira', stone: 'pedra', metal: 'metal', medicine: 'remedio', water: 'agua' });
+  const ITEM_LABELS = Object.freeze({ rope: 'corda', nails: 'pregos', cloth: 'tecido', leather: 'couro', bandage: 'curativos', simpleMeal: 'refeicao', toolkit: 'kit', shield: 'escudo' });
+  const VISITOR_STORIES = Object.freeze([
+    Object.freeze({
+      key: 'lost_traveler',
+      label: 'Viajante perdido',
+      intro: 'Um viajante coberto de poeira pede comida e uma noite segura antes de seguir.',
+      recruitBase: 0.46,
+      aidCost: Object.freeze({ resources: Object.freeze({ food: 6 }) }),
+      aidLabel: 'Dar 6 comida',
+      aidEffect: 'O viajante recupera as forcas e observa a base com mais calma.',
+      rumorText: 'Ele fala de rastros e materiais esquecidos perto de uma rota quebrada.'
+    }),
+    Object.freeze({
+      key: 'injured_refugee',
+      label: 'Refugiado ferido',
+      intro: 'Um refugiado chega machucado, com medo de voltar para a estrada durante a noite.',
+      recruitBase: 0.68,
+      aidCost: Object.freeze({ resources: Object.freeze({ medicine: 1, food: 3 }) }),
+      aidLabel: 'Tratar e alimentar',
+      aidEffect: 'O curativo e a refeicao mudam completamente a postura do visitante.',
+      rumorText: 'Ele descreve um abrigo danificado onde outros sobreviventes passaram.'
+    }),
+    Object.freeze({
+      key: 'wandering_scout',
+      label: 'Batedor errante',
+      intro: 'Uma pessoa acostumada a vagar pelas redondezas para e oferece informacoes em troca de conversa franca.',
+      recruitBase: 0.38,
+      aidCost: Object.freeze({ resources: Object.freeze({ food: 4 }) }),
+      aidLabel: 'Partilhar provisoes',
+      aidEffect: 'O batedor se acalma e passa a confiar mais no assentamento.',
+      rumorText: 'Ele marca mentalmente trilhas de agua, ruinas e clareiras defensaveis.'
+    })
+  ]);
   const visitorNames = ['Ari', 'Nara', 'Téo', 'Mira', 'Luan', 'Iris', 'Noah', 'Bia'];
 
   const animalProfiles = Object.freeze({
@@ -28,6 +62,7 @@
   let nativeUpdatePassiveMob = null;
   let mapOverlay = null;
   let mapCanvas = null;
+  let encounterModal = null;
 
   function install() {
     installDefinitions();
@@ -40,13 +75,18 @@
     window.GameSystems?.registerCollisionProvider?.('living-world.water-collision', waterCollisionAt, { order: 8 });
     installMapControls();
     window.HavenfallLivingWorld = {
-      version: 'living-world-v2',
+      version: 'living-world-v3',
       animalProfiles,
       openMap: openWorldMap,
       closeMap: closeWorldMap,
       ensureWorldWater: enhanceWorldWithWater,
       createWaypoint,
-      generateExplorationQueue
+      generateExplorationQueue,
+      spawnVisitor,
+      triggerEncounter: visitorId => openVisitorEncounter(findVisitorById(visitorId)),
+      resolveEncounter: chooseEncounterAction,
+      recruitVisitor: visitorId => recruitVisitor(findVisitorById(visitorId)),
+      openBriefing: maybeOpenIntroBriefing
     };
   }
 
@@ -100,8 +140,16 @@
     if (!state?.world) return null;
     state.livingWorld = state.livingWorld || state.world.livingWorld || {};
     state.livingWorld.lastNatureDay = Number(state.livingWorld.lastNatureDay || 0);
-    state.livingWorld.nextVisitorDay = Number(state.livingWorld.nextVisitorDay || 2);
+    state.livingWorld.introShown = !!state.livingWorld.introShown;
+    state.livingWorld.activeEncounter = state.livingWorld.activeEncounter || null;
+    state.livingWorld.socialEventCount = Number(state.livingWorld.socialEventCount || 0);
+    state.livingWorld.nextVisitorDay = Number(state.livingWorld.nextVisitorDay || 0);
+    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt))) {
+      const legacyDay = Number(state.livingWorld.nextVisitorDay || 0);
+      state.livingWorld.nextVisitorAt = legacyDay > 0 ? legacyDay * 24 + 10 : null;
+    }
     state.visitors = Array.isArray(state.visitors) ? state.visitors : [];
+    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt))) scheduleNextVisitor(true, state.livingWorld);
     state.world.livingWorld = state.livingWorld;
     return state.livingWorld;
   }
@@ -135,7 +183,7 @@
     world.waterTiles = [...waterTiles];
     world.waterDepth = world.waterDepth || [];
     world.objects = (world.objects || []).filter(obj => !waterTiles.has(`${obj.x},${obj.y}`));
-    world.livingWorld = { ...(world.livingWorld || {}), waterEnhanced: true, waterTiles: world.waterTiles, version: 'living-world-v2' };
+    world.livingWorld = { ...(world.livingWorld || {}), waterEnhanced: true, waterTiles: world.waterTiles, version: 'living-world-v3' };
     return world;
   }
 
@@ -213,6 +261,7 @@
     if (!state || appScreen !== SCREEN.PLAYING) return;
     const living = ensureRuntimeState();
     if (!living) return;
+    maybeOpenIntroBriefing();
     const tick = dt * Number(state.speed || 1);
     updateWaterExposure(tick);
     updateVisitors(tick);
@@ -343,24 +392,578 @@
     return count;
   }
 
+  function livingClockHours() {
+    return Number(state?.day || 1) * 24 + Number(state?.hour || 0);
+  }
+
+  function livingUid(prefix = 'living') {
+    return typeof uid === 'function'
+      ? uid(prefix)
+      : `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function tileDistance(ax, ay, bx, by) {
+    return Math.hypot((Number(ax) || 0) - (Number(bx) || 0), (Number(ay) || 0) - (Number(by) || 0));
+  }
+
+  function blockedTile(x, y) {
+    return typeof isBlocked === 'function' ? isBlocked(x, y) : false;
+  }
+
+  function objectAtTile(x, y) {
+    return typeof getObjectAt === 'function' ? getObjectAt(x, y) : null;
+  }
+
+  function currentBasePoint() {
+    return state?.world?.spawn || state?.colonists?.[0] || { x: Math.floor(getWorldCols() / 2), y: Math.floor(getWorldRows() / 2) };
+  }
+
+  function socialIntensityProfile() {
+    const intensity = state?.config?.eventIntensity || 'normal';
+    if (intensity === 'low') return { firstMin: 5.5, firstMax: 8.0, revisitMin: 30, revisitMax: 42, merchantChance: 0.28 };
+    if (intensity === 'high') return { firstMin: 3.0, firstMax: 5.0, revisitMin: 18, revisitMax: 28, merchantChance: 0.40 };
+    return { firstMin: 4.0, firstMax: 6.5, revisitMin: 22, revisitMax: 34, merchantChance: 0.33 };
+  }
+
+  function scheduleNextVisitor(forceEarly = false, living = state?.livingWorld) {
+    if (!living) return null;
+    const profile = socialIntensityProfile();
+    const min = forceEarly ? profile.firstMin : profile.revisitMin;
+    const max = forceEarly ? profile.firstMax : profile.revisitMax;
+    const next = livingClockHours() + min + Math.random() * Math.max(0.5, max - min);
+    living.nextVisitorAt = next;
+    living.nextVisitorDay = Math.max(1, Math.floor(next / 24));
+    return next;
+  }
+
+  function findVisitorById(id) {
+    return (state?.visitors || []).find(visitor => String(visitor?.id) === String(id)) || null;
+  }
+
+  function removeVisitorById(id) {
+    const list = state?.visitors || [];
+    const index = list.findIndex(visitor => String(visitor?.id) === String(id));
+    if (index < 0) return null;
+    const [removed] = list.splice(index, 1);
+    return removed || null;
+  }
+
+  function visitorStory(seed = 0) {
+    const story = VISITOR_STORIES[Math.abs(seed) % VISITOR_STORIES.length] || VISITOR_STORIES[0];
+    return {
+      key: story.key,
+      label: story.label,
+      intro: story.intro,
+      recruitBase: story.recruitBase,
+      aidLabel: story.aidLabel,
+      aidEffect: story.aidEffect,
+      rumorText: story.rumorText,
+      aidCost: {
+        resources: { ...(story.aidCost?.resources || {}) },
+        items: { ...(story.aidCost?.items || {}) }
+      }
+    };
+  }
+
+  function nextColonistNumericId() {
+    return (state?.colonists || []).reduce((max, colonist) => Math.max(max, Number(colonist?.id) || 0), 0) + 1;
+  }
+
+  function stripVisitorPrefix(name = '') {
+    return String(name || '').replace(/^Mercador\s+/i, '').replace(/^Visitante\s+/i, '').trim() || 'Recem-chegado';
+  }
+
+  function ensureItemState() {
+    state.items = state.items || {};
+    return state.items;
+  }
+
+  function cleanEntryMap(entries = {}) {
+    const out = {};
+    for (const [key, value] of Object.entries(entries || {})) {
+      const amount = Number(value || 0);
+      if (Number.isFinite(amount) && amount > 0) out[key] = amount;
+    }
+    return out;
+  }
+
+  function entryBag(kind) {
+    if (kind === 'items') return ensureItemState();
+    state.resources = state.resources || {};
+    return state.resources;
+  }
+
+  function hasEntryMap(kind, entries = {}) {
+    const bag = entryBag(kind);
+    return Object.entries(cleanEntryMap(entries)).every(([key, value]) => Number(bag[key] || 0) >= value);
+  }
+
+  function mutateEntryMap(kind, entries = {}, delta = 1) {
+    const bag = entryBag(kind);
+    for (const [key, value] of Object.entries(cleanEntryMap(entries))) {
+      bag[key] = Math.max(0, Number(bag[key] || 0) + value * delta);
+    }
+    return bag;
+  }
+
+  function hasPayload(payload = null) {
+    if (!payload) return true;
+    return hasEntryMap('resources', payload.resources) && hasEntryMap('items', payload.items);
+  }
+
+  function payPayload(payload = null, reason = 'living-world') {
+    if (!payload) return true;
+    if (!hasPayload(payload)) return false;
+    if (payload.resources) {
+      if (typeof payResources === 'function') payResources(payload.resources, { reason, requireEnough: true });
+      else mutateEntryMap('resources', payload.resources, -1);
+    }
+    if (payload.items) {
+      if (typeof payItems === 'function') payItems(payload.items, { reason, requireEnough: true });
+      else mutateEntryMap('items', payload.items, -1);
+    }
+    return true;
+  }
+
+  function givePayload(payload = null, reason = 'living-world') {
+    if (!payload) return true;
+    if (payload.resources) {
+      if (typeof addResources === 'function') addResources(payload.resources, { reason });
+      else mutateEntryMap('resources', payload.resources, 1);
+    }
+    if (payload.items) {
+      if (typeof addItems === 'function') addItems(payload.items, { reason });
+      else mutateEntryMap('items', payload.items, 1);
+    }
+    return true;
+  }
+
+  function labelEntry(key, kind = 'resources') {
+    if (kind === 'items') return itemDefs?.[key]?.label || ITEM_LABELS[key] || key;
+    return RESOURCE_LABELS[key] || key;
+  }
+
+  function payloadText(payload = null) {
+    if (!payload) return 'nada';
+    const parts = [];
+    for (const [key, value] of Object.entries(cleanEntryMap(payload.resources))) parts.push(`${value} ${labelEntry(key, 'resources')}`);
+    for (const [key, value] of Object.entries(cleanEntryMap(payload.items))) parts.push(`${value} ${labelEntry(key, 'items')}`);
+    return parts.join(', ') || 'nada';
+  }
+
+  function escapeEncounterText(value = '') {
+    return typeof escapeHtml === 'function'
+      ? escapeHtml(value)
+      : String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  }
+
+  function ensureEncounterModal() {
+    if (encounterModal?.isConnected) return encounterModal;
+    if (typeof document?.createElement !== 'function' || !document.body) return null;
+
+    if (!document.getElementById('living-world-event-style')) {
+      const style = document.createElement('style');
+      style.id = 'living-world-event-style';
+      style.textContent = `
+        #eventModal.living-world-event{position:fixed;inset:0;top:auto;left:auto;transform:none;width:100vw;max-width:none;max-height:none;overflow:visible;z-index:10001;display:none;place-items:center;padding:20px;background:rgba(3,7,13,.82);backdrop-filter:blur(10px)}
+        #eventModal.living-world-event.show{display:grid}
+        #eventModal .living-event-card{width:min(620px,calc(100vw - 32px));display:grid;gap:14px;padding:22px;border-radius:22px;border:1px solid rgba(214,162,74,.34);background:linear-gradient(180deg,rgba(18,24,34,.98),rgba(7,10,16,.98));box-shadow:0 30px 90px rgba(0,0,0,.62);color:#f6efe1}
+        #eventModal .living-event-kicker{color:#d6a24a;font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+        #eventModal h2{margin:0;color:#fff4dd;font-size:30px;line-height:1.02}
+        #eventModal p{margin:0;color:#d6cfbf;line-height:1.5}
+        #eventModal .living-event-actions{display:grid;gap:10px}
+        #eventModal .living-event-actions button{display:grid;gap:3px;text-align:left;min-height:54px;padding:12px 14px;border-radius:14px;border:1px solid rgba(214,162,74,.22);background:rgba(18,25,36,.86);color:#f7f2e8;font-weight:800;cursor:pointer}
+        #eventModal .living-event-actions button:hover:not(:disabled){border-color:rgba(214,162,74,.62);transform:translateY(-1px)}
+        #eventModal .living-event-actions button:disabled{opacity:.52;cursor:not-allowed}
+        #eventModal .living-event-actions small{color:#9fb0c2;font-weight:600}
+      `;
+      document.head?.appendChild(style);
+    }
+
+    encounterModal = document.getElementById('eventModal');
+    if (!encounterModal) {
+      encounterModal = document.createElement('section');
+      encounterModal.id = 'eventModal';
+      encounterModal.className = 'game-popup-modal living-world-event';
+      encounterModal.hidden = true;
+      encounterModal.setAttribute('aria-hidden', 'true');
+      encounterModal.innerHTML = `
+        <article class="living-event-card" role="dialog" aria-modal="true">
+          <div class="living-event-kicker" data-encounter-kicker>Evento</div>
+          <h2 data-encounter-title></h2>
+          <p data-encounter-body></p>
+          <div class="living-event-actions" data-encounter-actions></div>
+        </article>
+      `;
+      document.body.appendChild(encounterModal);
+    }
+
+    if (encounterModal.dataset.boundLivingWorld !== '1') {
+      encounterModal.dataset.boundLivingWorld = '1';
+      encounterModal.addEventListener('click', handleEncounterClick);
+      encounterModal.addEventListener('pointerdown', event => event.stopPropagation());
+      encounterModal.addEventListener('wheel', event => { event.preventDefault(); event.stopPropagation(); }, { passive: false });
+    }
+    return encounterModal;
+  }
+
+  function renderEncounter(encounter) {
+    const modal = ensureEncounterModal();
+    if (!modal || !encounter) return false;
+    const kicker = modal.querySelector('[data-encounter-kicker]');
+    const title = modal.querySelector('[data-encounter-title]');
+    const body = modal.querySelector('[data-encounter-body]');
+    const actions = modal.querySelector('[data-encounter-actions]');
+    if (kicker) kicker.textContent = encounter.kicker || 'Evento';
+    if (title) title.textContent = encounter.title || 'Aconteceu algo';
+    if (body) body.textContent = encounter.body || '';
+    if (actions) {
+      actions.innerHTML = (encounter.buttons || []).map(button => `
+        <button type="button" data-encounter-action="${escapeEncounterText(button.action || 'close')}" ${button.disabled ? 'disabled' : ''}>
+          <span>${escapeEncounterText(button.label || 'Continuar')}</span>
+          ${button.hint ? `<small>${escapeEncounterText(button.hint)}</small>` : ''}
+        </button>
+      `).join('');
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('show', 'is-active');
+    return true;
+  }
+
+  function setActiveEncounter(encounter, options = {}) {
+    const living = ensureRuntimeState();
+    if (!living || !encounter) return false;
+    living.activeEncounter = encounter;
+    const rendered = renderEncounter(encounter);
+    if (rendered && options.pause !== false) pauseForEncounter();
+    return rendered;
+  }
+
+  function openEncounter(encounter) {
+    return setActiveEncounter(encounter, { pause: true });
+  }
+
+  function replaceEncounter(encounter) {
+    return setActiveEncounter(encounter, { pause: false });
+  }
+
+  function closeEncounter(resume = true) {
+    if (state?.livingWorld) state.livingWorld.activeEncounter = null;
+    const modal = ensureEncounterModal();
+    modal?.classList.remove('show', 'is-active');
+    if (modal) {
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    if (resume) resumeFromEncounter();
+  }
+
+  function pauseForEncounter() {
+    const living = ensureRuntimeState();
+    if (!living || living.pauseLock) return;
+    living.pauseLock = true;
+    living.resumeSpeed = Math.max(1, Number(state.speed || 1));
+    state.speed = 0;
+    if (typeof updateUI === 'function') updateUI(true);
+  }
+
+  function resumeFromEncounter() {
+    const living = state?.livingWorld;
+    if (!living?.pauseLock) return;
+    living.pauseLock = false;
+    if (appScreen === SCREEN.PLAYING) state.speed = Math.max(1, Number(living.resumeSpeed || 1));
+    delete living.resumeSpeed;
+    if (typeof updateUI === 'function') updateUI(true);
+  }
+
+  function handleEncounterClick(event) {
+    const action = event.target.closest?.('[data-encounter-action]')?.dataset?.encounterAction;
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    chooseEncounterAction(action);
+  }
+
+  function focusTaskObjectives() {
+    if (window.HavenfallUI?.openPanel) window.HavenfallUI.openPanel('tasks');
+    else if (typeof setHudTab === 'function') setHudTab('tasks');
+    if (typeof updateUI === 'function') updateUI(true);
+  }
+
+  function maybeOpenIntroBriefing() {
+    const living = ensureRuntimeState();
+    if (!living || living.introShown || living.activeEncounter) return false;
+    const loadingOverlay = typeof document?.getElementById === 'function' ? document.getElementById('havenfallRuntimeLoadingOverlay') : null;
+    if (loadingOverlay?.classList?.contains('show') || document?.body?.classList?.contains?.('runtime-loading-active')) return false;
+    if ((state?.day || 1) > 2) {
+      living.introShown = true;
+      return false;
+    }
+    living.introShown = true;
+    if (typeof log === 'function') log('Briefing inicial: monte 2 camas, 1 fogueira e uma mesa de pesquisa para estabilizar a colonia.');
+    return openEncounter({
+      key: 'intro',
+      kicker: 'Primeiras horas',
+      title: 'A colonia precisa de ritmo',
+      body: 'Voce pousou, mas ainda nao existe rotina clara. Prioridades imediatas: construir 2 camas, 1 fogueira e 1 mesa de pesquisa. Depois organize comida e pelo menos 1 remedio.',
+      buttons: [
+        { action: 'intro_tasks', label: 'Abrir objetivos', hint: 'Foca o painel de tarefas e metas.' },
+        { action: 'intro_close', label: 'Fechar briefing', hint: 'Continuar jogando.' }
+      ]
+    });
+  }
+
+  function createRumorWaypoint(label = 'Sinal de atividade') {
+    const base = currentBasePoint();
+    for (let i = 0; i < 90; i++) {
+      const x = 2 + Math.floor(Math.random() * Math.max(1, getWorldCols() - 4));
+      const y = 2 + Math.floor(Math.random() * Math.max(1, getWorldRows() - 4));
+      if (tileDistance(x, y, base.x, base.y) < 12) continue;
+      if (blockedTile(x, y) || isWaterTile(x, y)) continue;
+      return createWaypoint(x, y, 'social_rumor', label);
+    }
+    return null;
+  }
+
+  function shareVisitorRumor(visitor, fromMerchant = false) {
+    const label = fromMerchant ? 'Rastro comercial' : 'Sinal de sobreviventes';
+    const waypoint = createRumorWaypoint(label);
+    const detail = fromMerchant
+      ? 'O mercador comenta sobre movimento recente alem da rota principal.'
+      : (visitor?.story?.rumorText || 'O visitante descreve um ponto curioso nas redondezas.');
+    if (typeof log === 'function') log(`${visitor?.name || 'Visitante'} compartilhou um rumor: ${detail}${waypoint ? ` Novo ponto marcado: ${waypoint.label}.` : ''}`);
+    return waypoint;
+  }
+
+  function recruitChance(visitor) {
+    const story = visitor?.story || VISITOR_STORIES[0];
+    let chance = Number(story.recruitBase || 0.4);
+    if (visitor?.helped) chance += 0.18;
+    if ((state?.colonists?.length || 0) <= 3) chance += 0.07;
+    if ((state?.resources?.food || 0) >= 40) chance += 0.06;
+    if (state?.config?.difficulty === 'hard') chance -= 0.05;
+    if (state?.config?.difficulty === 'hardcore') chance -= 0.10;
+    return clamp(chance, 0.12, 0.92);
+  }
+
+  function defaultPrioritySet(workPreferenceId = 'gather') {
+    const presets = {
+      gather: { gather: 4, build: 2, research: 1, handle: 2 },
+      build: { gather: 2, build: 4, research: 1, handle: 2 },
+      defense: { gather: 1, build: 1, research: 1, handle: 1 },
+      research: { gather: 1, build: 1, research: 4, handle: 2 },
+      cooking: { gather: 1, build: 1, research: 2, handle: 3 },
+      medicine: { gather: 1, build: 1, research: 2, handle: 3 }
+    };
+    return { ...(presets[workPreferenceId] || presets.gather) };
+  }
+
+  function visitorCandidate(visitor) {
+    const config = state?.config || defaultNewGameConfig;
+    const seed = `${config?.seed || 'havenfall'}|visitor|${visitor?.id || 'guest'}|${visitor?.story?.key || visitor?.kind || 'wanderer'}`;
+    if (typeof createColonistCandidate === 'function') {
+      const candidate = createColonistCandidate((state?.colonists?.length || 0) % 8, config, seed);
+      candidate.name = stripVisitorPrefix(visitor?.name);
+      return candidate;
+    }
+    return {
+      name: stripVisitorPrefix(visitor?.name),
+      sprite: 'colonist',
+      role: 'Generalista',
+      age: 24,
+      skills: { coleta: 4, construcao: 4, defesa: 3, pesquisa: 2, medicina: 1 },
+      needs: { hunger: 74, energy: 66, mood: 62, health: visitor?.story?.key === 'injured_refugee' ? 72 : 88 },
+      workPreferenceId: 'gather',
+      physicalTraitIds: [],
+      positiveTraitIds: [],
+      negativeTraitIds: []
+    };
+  }
+
+  function recruitVisitor(visitor) {
+    if (!visitor) return null;
+    const candidate = visitorCandidate(visitor);
+    const spawn = nearbyOpenTile(currentBasePoint().x, currentBasePoint().y, 4) || { x: visitor.x, y: visitor.y };
+    const colonistId = nextColonistNumericId();
+    let colonist = null;
+    if (typeof candidateToColonist === 'function') colonist = candidateToColonist(candidate, colonistId, spawn.x, spawn.y);
+    else if (typeof makeColonist === 'function') colonist = makeColonist(colonistId, candidate.name, candidate.sprite || 'colonist', spawn.x, spawn.y, candidate.role || 'Generalista');
+    if (!colonist) return null;
+    colonist.note = 'Recem-chegado';
+    colonist.mood = clamp(Number(colonist.mood || 65), 0, 100);
+    colonist.energy = clamp(Number(colonist.energy || 68), 0, 100);
+    colonist.health = clamp(Number(colonist.health || (visitor?.story?.key === 'injured_refugee' ? 72 : 90)), 1, 100);
+    state.colonists = Array.isArray(state.colonists) ? state.colonists : [];
+    state.taskPriorities = state.taskPriorities || {};
+    state.taskPriorities[colonist.id] = defaultPrioritySet(candidate.workPreferenceId || colonist.workPreferenceId || colonist.priority);
+    state.colonists.push(colonist);
+    removeVisitorById(visitor.id);
+    if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    window.HavenfallRuntime?.bumpPathVersion?.(state, 'visitor-joined');
+    if (typeof updateUI === 'function') updateUI(true);
+    return colonist;
+  }
+
+  function sendVisitorAway(visitor, message = '') {
+    if (!visitor) return false;
+    visitor.stage = 'leaving';
+    visitor.target = visitor.exitTarget || randomLivingEdgeTile() || visitor.target;
+    visitor.pause = 0;
+    if (message && typeof log === 'function') log(message);
+    return true;
+  }
+
+  function buildMerchantEncounter(visitor) {
+    const offerLabel = `${payloadText(visitor?.offer?.cost)} por ${payloadText(visitor?.offer?.gain)}`;
+    const tradeHint = hasPayload(visitor?.offer?.cost) ? 'Fecha negocio imediato.' : `Falta ${payloadText(visitor?.offer?.cost)}.`;
+    return {
+      key: 'merchant',
+      visitorId: visitor.id,
+      kicker: 'Mercador itinerante',
+      title: `${visitor.name} montou uma banca`,
+      body: `${visitor.name} chegou com pouco peso e quer uma troca direta: ${offerLabel}.`,
+      buttons: [
+        { action: 'merchant_trade', label: `Trocar ${offerLabel}`, hint: tradeHint, disabled: !hasPayload(visitor?.offer?.cost) },
+        { action: 'merchant_rumor', label: 'Pedir rumores', hint: 'Coleta pistas sobre o setor.' },
+        { action: 'merchant_leave', label: 'Dispensar', hint: 'Ele segue viagem sem negociar.' }
+      ]
+    };
+  }
+
+  function buildVisitorEncounter(visitor, followup = '') {
+    const story = visitor?.story || visitorStory(0);
+    return {
+      key: 'visitor',
+      visitorId: visitor.id,
+      kicker: story.label,
+      title: `${visitor.name} pede audiencia`,
+      body: followup || story.intro,
+      buttons: [
+        {
+          action: 'visitor_aid',
+          label: visitor?.helped ? 'Ajuda entregue' : story.aidLabel,
+          hint: visitor?.helped ? 'O visitante ja recebeu apoio.' : `Custa ${payloadText(story.aidCost)}.`,
+          disabled: !!visitor?.helped || !hasPayload(story.aidCost)
+        },
+        { action: 'visitor_rumor', label: 'Ouvir historia', hint: 'Pode gerar um novo ponto de interesse.' },
+        { action: 'visitor_invite', label: 'Convidar para ficar', hint: `Chance aproximada: ${Math.round(recruitChance(visitor) * 100)}%.` },
+        { action: 'visitor_leave', label: 'Mandar seguir viagem', hint: 'Sem assumir compromisso.' }
+      ]
+    };
+  }
+
+  function openVisitorEncounter(visitor) {
+    if (!visitor || state?.livingWorld?.activeEncounter) return false;
+    visitor.stage = 'interacting';
+    visitor.pause = 0;
+    visitor.encountered = true;
+    const encounter = visitor.kind === 'merchant' ? buildMerchantEncounter(visitor) : buildVisitorEncounter(visitor);
+    if (!openEncounter(encounter)) {
+      visitor.stage = 'idle';
+      visitor.encountered = false;
+      return false;
+    }
+    return true;
+  }
+
+  function chooseEncounterAction(action = '') {
+    const encounter = state?.livingWorld?.activeEncounter;
+    if (!encounter) return false;
+    const visitor = encounter.visitorId ? findVisitorById(encounter.visitorId) : null;
+
+    if (action === 'intro_tasks') {
+      focusTaskObjectives();
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'intro_close') {
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'merchant_trade') {
+      if (visitor?.offer && payPayload(visitor.offer.cost, 'merchant-trade')) {
+        givePayload(visitor.offer.gain, 'merchant-trade');
+        if (typeof log === 'function') log(`${visitor.name} fechou negocio: ${payloadText(visitor.offer.cost)} por ${payloadText(visitor.offer.gain)}.`);
+      } else if (typeof log === 'function') {
+        log(`Recursos insuficientes para negociar com ${visitor?.name || 'o mercador'}.`);
+      }
+      sendVisitorAway(visitor, `${visitor?.name || 'O mercador'} recolheu a banca e seguiu estrada afora.`);
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'merchant_rumor') {
+      shareVisitorRumor(visitor, true);
+      sendVisitorAway(visitor, `${visitor?.name || 'O mercador'} seguiu viagem depois da conversa.`);
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'merchant_leave') {
+      sendVisitorAway(visitor, `${visitor?.name || 'O mercador'} seguiu viagem sem negociar.`);
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'visitor_aid') {
+      if (!visitor?.story?.aidCost || !payPayload(visitor.story.aidCost, 'visitor-aid')) {
+        if (typeof log === 'function') log(`Faltam recursos para ajudar ${visitor?.name || 'o visitante'}.`);
+        closeEncounter(true);
+        return false;
+      }
+      visitor.helped = true;
+      visitor.leaveAt += 6;
+      for (const colonist of state?.colonists || []) colonist.mood = clamp(Number(colonist.mood || 0) + 2, 0, 100);
+      if (typeof log === 'function') log(`${visitor.name} recebeu ajuda. ${visitor.story.aidEffect}`);
+      replaceEncounter(buildVisitorEncounter(visitor, `${visitor.story.aidEffect} Agora ele considera melhor a ideia de ficar por perto.`));
+      return true;
+    }
+    if (action === 'visitor_rumor') {
+      shareVisitorRumor(visitor, false);
+      sendVisitorAway(visitor, `${visitor?.name || 'O visitante'} seguiu viagem depois de compartilhar o que sabia.`);
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'visitor_invite') {
+      if (Math.random() <= recruitChance(visitor)) {
+        const colonist = recruitVisitor(visitor);
+        if (typeof log === 'function') log(`${colonist?.name || stripVisitorPrefix(visitor?.name)} aceitou se juntar a colonia.`);
+      } else {
+        sendVisitorAway(visitor, `${visitor?.name || 'O visitante'} agradeceu, mas preferiu continuar na estrada.`);
+      }
+      closeEncounter(true);
+      return true;
+    }
+    if (action === 'visitor_leave') {
+      sendVisitorAway(visitor, `${visitor?.name || 'O visitante'} retomou a estrada em silencio.`);
+      closeEncounter(true);
+      return true;
+    }
+    closeEncounter(true);
+    return false;
+  }
+
   function maybeSpawnVisitors() {
-    if (!state?.livingWorld || state.visitors.length >= 6) return;
-    if (state.day < state.livingWorld.nextVisitorDay || state.hour < 8 || state.hour > 17) return;
-    const kind = Math.random() < 0.34 ? 'merchant' : 'visitor';
-    const amount = kind === 'merchant' ? 1 + Math.floor(Math.random() * 2) : 1 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < amount; i++) spawnVisitor(kind, i);
-    state.livingWorld.nextVisitorDay = state.day + 2 + Math.floor(Math.random() * 3);
-    if (typeof log === 'function') log(kind === 'merchant' ? 'Um pequeno grupo mercante entrou no mapa.' : 'Visitantes foram avistados cruzando a regiao.');
+    const living = state?.livingWorld;
+    if (!living || state.visitors.length >= 4) return;
+    const now = livingClockHours();
+    if (living.activeEncounter || !Number.isFinite(Number(living.nextVisitorAt)) || now < living.nextVisitorAt) return;
+    if (state.hour < 7 || state.hour > 19) return;
+    const profile = socialIntensityProfile();
+    const kind = Math.random() < profile.merchantChance ? 'merchant' : 'visitor';
+    const visitor = spawnVisitor(kind, living.socialEventCount);
+    scheduleNextVisitor(false, living);
+    if (!visitor) return;
+    living.socialEventCount += 1;
+    if (typeof log === 'function') log(kind === 'merchant' ? 'Um mercador apareceu nos arredores da colonia.' : 'Uma figura foi avistada vindo pela estrada.');
   }
 
   function spawnVisitor(kind = 'visitor', index = 0) {
     const edge = randomLivingEdgeTile();
     if (!edge) return null;
-    const base = state.world?.spawn || state.colonists?.[0] || { x: Math.floor(getWorldCols() / 2), y: Math.floor(getWorldRows() / 2) };
-    const target = nearbyOpenTile(base.x, base.y, 5) || { x: base.x, y: base.y };
+    const base = currentBasePoint();
+    const target = nearbyOpenTile(base.x, base.y, kind === 'merchant' ? 3 : 5) || { x: base.x, y: base.y };
     const nameSeed = (state.day * 7 + index * 3 + state.visitors.length) % visitorNames.length;
     const visitor = {
-      id: uid(kind),
+      id: livingUid(kind),
       type: kind,
       kind,
       name: `${kind === 'merchant' ? 'Mercador' : 'Visitante'} ${visitorNames[nameSeed]}`,
@@ -372,10 +975,14 @@
       target,
       exitTarget: edge,
       stage: 'arriving',
-      speed: kind === 'merchant' ? 20 : 24,
-      leaveAt: state.day * 24 + state.hour + VISITOR_STAY_HOURS + Math.random() * 3,
+      speed: kind === 'merchant' ? 15 : 18,
+      pause: 0,
+      leaveAt: livingClockHours() + VISITOR_STAY_HOURS + Math.random() * 3,
       offer: kind === 'merchant' ? merchantOffer() : null,
-      appearance: visitorAppearance(kind, nameSeed)
+      story: kind === 'merchant' ? null : visitorStory(nameSeed + state.day + index),
+      appearance: visitorAppearance(kind, nameSeed),
+      encountered: false,
+      helped: false
     };
     state.visitors.push(visitor);
     return visitor;
@@ -383,12 +990,16 @@
 
   function merchantOffer() {
     const offers = [
-      { gives: 'remedios', wants: 'comida' },
-      { gives: 'tecido', wants: 'madeira' },
-      { gives: 'pregos', wants: 'pedra' },
-      { gives: 'corda', wants: 'comida' }
+      { cost: { resources: { food: 4 } }, gain: { resources: { medicine: 1 } } },
+      { cost: { resources: { wood: 14 } }, gain: { items: { cloth: 1 } } },
+      { cost: { resources: { stone: 10 } }, gain: { items: { nails: 2 } } },
+      { cost: { resources: { food: 5 } }, gain: { items: { rope: 1 } } }
     ];
-    return offers[Math.floor(Math.random() * offers.length)];
+    const picked = offers[Math.floor(Math.random() * offers.length)] || offers[0];
+    return {
+      cost: { resources: { ...(picked.cost?.resources || {}) }, items: { ...(picked.cost?.items || {}) } },
+      gain: { resources: { ...(picked.gain?.resources || {}) }, items: { ...(picked.gain?.items || {}) } }
+    };
   }
 
   function visitorAppearance(kind, seed) {
@@ -401,32 +1012,42 @@
   }
 
   function updateVisitors(tick) {
-    const now = state.day * 24 + state.hour;
+    const now = livingClockHours();
     for (let i = state.visitors.length - 1; i >= 0; i--) {
       const visitor = state.visitors[i];
-      if (visitor.stage !== 'leaving' && now >= visitor.leaveAt) {
-        visitor.stage = 'leaving';
-        visitor.target = visitor.exitTarget || randomLivingEdgeTile() || visitor.target;
-        if (typeof log === 'function') log(`${visitor.name} esta deixando a regiao.`);
+      if (!visitor) continue;
+      if (visitor.stage !== 'interacting' && visitor.stage !== 'leaving' && now >= visitor.leaveAt) {
+        sendVisitorAway(visitor, `${visitor.name} esta deixando a regiao.`);
       }
       moveVisitor(visitor, tick);
-      if (visitor.stage === 'leaving' && dist(visitor.x, visitor.y, visitor.target.x, visitor.target.y) <= 1) {
+      if (!visitor.encountered && !state?.livingWorld?.activeEncounter && visitor.stage === 'idle' && nearColonyCore(visitor, 7)) {
+        openVisitorEncounter(visitor);
+        continue;
+      }
+      if (visitor.stage === 'leaving' && visitor.target && tileDistance(visitor.x, visitor.y, visitor.target.x, visitor.target.y) <= 1) {
         state.visitors.splice(i, 1);
       }
     }
   }
 
   function moveVisitor(visitor, tick) {
-    if (!visitor?.target) return;
+    if (!visitor?.target || visitor.stage === 'interacting') return;
+    if (visitor.pause > 0) {
+      visitor.pause = Math.max(0, visitor.pause - tick);
+      return;
+    }
     const tx = visitor.target.x * TILE + TILE / 2;
     const ty = visitor.target.y * TILE + TILE / 2;
     const d = Math.hypot(tx - visitor.px, ty - visitor.py);
-    if (d < 5) {
+    if (d < 4) {
+      snapActorToTile(visitor, visitor.target.x, visitor.target.y);
       if (visitor.stage === 'arriving') {
         visitor.stage = 'idle';
-        visitor.target = nearbyOpenTile(visitor.x, visitor.y, 4) || visitor.target;
-      } else if (visitor.stage === 'idle' && Math.random() < 0.015 * Number(state.speed || 1)) {
-        visitor.target = nearbyOpenTile(visitor.x, visitor.y, 4) || visitor.target;
+        visitor.pause = 0.8 + Math.random() * 1.8;
+        visitor.target = nearbyOpenTile(visitor.x, visitor.y, visitor.kind === 'merchant' ? 2 : 4) || visitor.target;
+      } else if (visitor.stage === 'idle') {
+        visitor.pause = 0.6 + Math.random() * 2.4;
+        if (Math.random() < 0.35) visitor.target = nearbyOpenTile(visitor.x, visitor.y, visitor.kind === 'merchant' ? 2 : 4) || visitor.target;
       }
       return;
     }
@@ -438,7 +1059,7 @@
       const side = Math.floor(Math.random() * 4);
       const x = side === 0 ? 1 : side === 1 ? getWorldCols() - 2 : 1 + Math.floor(Math.random() * Math.max(1, getWorldCols() - 2));
       const y = side === 2 ? 1 : side === 3 ? getWorldRows() - 2 : 1 + Math.floor(Math.random() * Math.max(1, getWorldRows() - 2));
-      if (!isBlocked(x, y) && !getObjectAt(x, y)) return { x, y };
+      if (!blockedTile(x, y) && !objectAtTile(x, y)) return { x, y };
     }
     return null;
   }
@@ -449,9 +1070,15 @@
       const r = 1 + Math.random() * radius;
       const x = clamp(Math.round(cx + Math.cos(angle) * r), 1, getWorldCols() - 2);
       const y = clamp(Math.round(cy + Math.sin(angle) * r), 1, getWorldRows() - 2);
-      if (!isBlocked(x, y) && !getObjectAt(x, y)) return { x, y };
+      if (!blockedTile(x, y) && !objectAtTile(x, y)) return { x, y };
     }
     return null;
+  }
+
+  function nearColonyCore(actor, radius = 6) {
+    const base = currentBasePoint();
+    if (tileDistance(actor.x, actor.y, base.x, base.y) <= radius) return true;
+    return (state?.colonists || []).some(colonist => tileDistance(actor.x, actor.y, colonist.x, colonist.y) <= 2.2);
   }
 
   function patchAnimalBehavior() {
@@ -460,25 +1087,44 @@
     updatePassiveMob = function updateLivingPassiveMob(mob, tick) {
       if (!mob || !animalProfiles[mob.type] || !state?.world) return nativeUpdatePassiveMob(mob, tick);
       const profile = animalProfiles[mob.type];
-      mob.brain = mob.brain || { pause: 0, target: null, state: 'idle' };
-      if (mob.brain.pause > 0) { mob.brain.pause -= tick; return; }
+      mob.brain = mob.brain || { pause: 0, target: null, state: 'idle', anchor: { x: mob.x, y: mob.y }, retargetAt: 0 };
+      if (!mob.brain.anchor) mob.brain.anchor = { x: mob.x, y: mob.y };
+      if (mob.brain.pause > 0) {
+        mob.brain.pause = Math.max(0, mob.brain.pause - tick);
+        return;
+      }
       const danger = nearestAwareColonist(mob, profile.alertRadius);
       if (danger) {
         const dx = mob.x - danger.x;
         const dy = mob.y - danger.y;
-        const len = Math.hypot(dx, dy) || 1;
-        moveActorVector(mob, dx / len, dy / len, profile.burstSpeed * tick);
+        moveActorVector(mob, dx, dy, Math.max(18, profile.burstSpeed * 0.82) * tick);
         mob.brain.state = 'fleeing';
+        mob.brain.target = chooseAnimalTarget(mob, profile, { avoid: danger, multiplier: 1.25 });
+        mob.brain.pause = 0.18 + Math.random() * 0.5;
         return;
       }
-      if (!mob.brain.target || Math.random() < 0.018 * tick) mob.brain.target = chooseAnimalTarget(mob, profile);
-      if (mob.brain.target) {
-        const tx = mob.brain.target.x * TILE + TILE / 2;
-        const ty = mob.brain.target.y * TILE + TILE / 2;
-        const d = Math.hypot(tx - mob.px, ty - mob.py);
-        if (d < 7) { mob.brain.pause = 0.3 + Math.random() * 1.5; mob.brain.target = null; return; }
-        moveActorVector(mob, tx - mob.px, ty - mob.py, profile.baseSpeed * tick);
+      mob.brain.retargetAt = Number(mob.brain.retargetAt || 0) - tick;
+      if (!mob.brain.target || mob.brain.retargetAt <= 0) {
+        mob.brain.target = chooseAnimalTarget(mob, profile);
+        mob.brain.retargetAt = 2.4 + Math.random() * 5.6;
       }
+      if (!mob.brain.target) {
+        mob.brain.pause = 0.9 + Math.random() * 2.4;
+        return;
+      }
+      const tx = mob.brain.target.x * TILE + TILE / 2;
+      const ty = mob.brain.target.y * TILE + TILE / 2;
+      const d = Math.hypot(tx - mob.px, ty - mob.py);
+      if (d < 5) {
+        snapActorToTile(mob, mob.brain.target.x, mob.brain.target.y);
+        mob.brain.target = null;
+        mob.brain.state = 'grazing';
+        mob.brain.retargetAt = 0;
+        mob.brain.pause = animalPauseDuration(profile);
+        return;
+      }
+      moveActorVector(mob, tx - mob.px, ty - mob.py, Math.max(8, profile.baseSpeed * 0.62) * tick);
+      if (Math.random() < profile.pauseChance * tick * 0.35) mob.brain.pause = 0.45 + Math.random() * 1.8;
     };
     window.HavenfallContext.livingAnimalBehaviorPatched = true;
   }
@@ -493,15 +1139,34 @@
     return best;
   }
 
-  function chooseAnimalTarget(mob, profile) {
-    for (let i = 0; i < 24; i++) {
+  function animalPauseDuration(profile) {
+    const base = profile.activity === 'crepuscular' ? 1.4 : 1.0;
+    return base + profile.groupAffinity * 1.3 + Math.random() * 2.8;
+  }
+
+  function chooseAnimalTarget(mob, profile, options = {}) {
+    const anchor = mob.brain?.anchor || mob;
+    const focus = Math.random() < 0.7 ? anchor : mob;
+    const wanderRadius = Math.max(2, profile.wanderRadius * (options.multiplier || 0.85));
+    let best = null;
+    let bestScore = -Infinity;
+    for (let i = 0; i < 28; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const r = 1 + Math.random() * profile.wanderRadius;
-      const x = clamp(Math.round(mob.x + Math.cos(angle) * r), 1, getWorldCols() - 2);
-      const y = clamp(Math.round(mob.y + Math.sin(angle) * r), 1, getWorldRows() - 2);
-      if (animalTileOpen(x, y)) return { x, y };
+      const r = 1 + Math.random() * wanderRadius;
+      const x = clamp(Math.round(focus.x + Math.cos(angle) * r), 1, getWorldCols() - 2);
+      const y = clamp(Math.round(focus.y + Math.sin(angle) * r), 1, getWorldRows() - 2);
+      if (!animalTileOpen(x, y) || tileDistance(x, y, mob.x, mob.y) < 1.1) continue;
+      const cover = nearbyObjectTypeCountForLiving(x, y, ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'cactus', 'bush'], 2);
+      const herd = nearbyMobCount(mob.type, x, y, 3, mob.id);
+      const waterBias = distanceToNearestWater(x, y, 3) < 2 ? profile.waterAffinity * 0.55 : (1 - profile.waterAffinity) * 0.10;
+      const awayBias = options.avoid ? Math.min(0.9, tileDistance(x, y, options.avoid.x, options.avoid.y) / Math.max(2, profile.alertRadius)) : 0;
+      const score = waterBias + Math.min(0.7, cover * 0.18 * profile.coverAffinity) + Math.min(0.6, herd * 0.16 * profile.groupAffinity) + awayBias;
+      if (score > bestScore || (!best && Math.random() < 0.3)) {
+        best = { x, y };
+        bestScore = score;
+      }
     }
-    return null;
+    return best;
   }
 
   function animalTileOpen(x, y) {
@@ -553,13 +1218,30 @@
     return null;
   }
 
+  function nearbyMobCount(type, x, y, radius, ignoreId = null) {
+    let count = 0;
+    for (const mob of state?.mobs || []) {
+      if (!mob || mob.type !== type || String(mob.id) === String(ignoreId)) continue;
+      if (tileDistance(mob.x, mob.y, x, y) <= radius) count++;
+    }
+    return count;
+  }
+
+  function snapActorToTile(actor, x, y) {
+    actor.x = x;
+    actor.y = y;
+    actor.px = x * TILE + TILE / 2;
+    actor.py = y * TILE + TILE / 2;
+  }
+
   function moveActorVector(actor, dx, dy, amount) {
     const len = Math.hypot(dx, dy) || 1;
-    const nx = actor.px + (dx / len) * amount;
-    const ny = actor.py + (dy / len) * amount;
+    const step = Math.min(Math.max(0, Number(amount) || 0), len);
+    const nx = actor.px + (dx / len) * step;
+    const ny = actor.py + (dy / len) * step;
     const tileX = Math.round((nx - TILE / 2) / TILE);
     const tileY = Math.round((ny - TILE / 2) / TILE);
-    if (typeof isBlocked === 'function' && isBlocked(tileX, tileY)) return;
+    if (blockedTile(tileX, tileY)) return;
     actor.px = nx;
     actor.py = ny;
     actor.x = tileX;

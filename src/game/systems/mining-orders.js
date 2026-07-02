@@ -190,8 +190,18 @@ function cancelObjectOrder(obj) {
   if (!obj) return false;
   if (obj.type === 'blueprint') {
     const def = buildDefForObject(obj);
-    if (def?.cost && typeof addResources === 'function') addResources(def.cost);
+    const reservedCost = obj.reservedCost || def?.cost || {};
+    const reservedItemCost = obj.reservedItemCost || def?.itemCost || {};
+    if (Object.keys(reservedCost).length) {
+      if (typeof refundCost === 'function') refundCost(reservedCost, { reason: 'build-cancel', targetId: obj.id, x: obj.x, y: obj.y });
+      else if (typeof addResources === 'function') addResources(reservedCost);
+    }
+    if (Object.keys(reservedItemCost).length) {
+      if (typeof refundItems === 'function') refundItems(reservedItemCost, { reason: 'build-cancel', targetId: obj.id, x: obj.x, y: obj.y });
+      else if (typeof addItems === 'function') addItems(reservedItemCost);
+    }
     state.objects = (state.objects || []).filter(o => o.id !== obj.id);
+    if (state.world) state.world.objects = state.objects;
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     orderLog(`Construção cancelada: ${objectDisplayName(obj)}. Materiais devolvidos.`);
     return true;
@@ -322,7 +332,7 @@ function assignSleepAt(c, obj = null) {
       orderLog(`${c.name} não conseguiu chegar na cama.`);
       return false;
     }
-    c.task = { type: 'sleep', x: adj.x, y: adj.y, bedId: obj.id };
+    c.task = { type: 'sleep', x: adj.x, y: adj.y, bedId: obj.id, bedX: obj.x, bedY: obj.y };
     c.path = typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, obj) : [];
     c.work = 0;
     c.note = 'Indo dormir';

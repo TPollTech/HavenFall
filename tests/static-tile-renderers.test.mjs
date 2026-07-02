@@ -50,6 +50,10 @@ function createRenderCtxSpy() {
     createLinearGradient() {
       counts.gradient++;
       return { addColorStop() {} };
+    },
+    createRadialGradient() {
+      counts.gradient++;
+      return { addColorStop() {} };
     }
   };
 }
@@ -109,6 +113,7 @@ test('Floor and mountain static tile renderers honor targetCtx instead of global
     targetCtx,
     quality: { renderDistance: 'normal' }
   });
+  assert.equal(context.FloorSystem.patternDirectionForFloor('wood_floor', 99, 77), 'horizontal');
   assert.ok(targetCtx.counts.fillRect > 0, 'expected floor renderer to draw into targetCtx');
   assert.equal(screenCtx.counts.fillRect, 0, 'expected floor renderer to avoid drawing into global ctx');
 

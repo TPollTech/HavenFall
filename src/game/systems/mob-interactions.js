@@ -1,15 +1,37 @@
 'use strict';
 
+function worldPointForMobEvent(event) {
+  if (typeof window.worldPointFromEvent === 'function') return window.worldPointFromEvent(event);
+  if (typeof window.canvasClientToWorld === 'function') return window.canvasClientToWorld(event.clientX, event.clientY);
+  if (!canvas || !viewTransform || !canvas.width || !canvas.height) return null;
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const px = (event.clientX - rect.left) * (canvas.width / rect.width);
+  const py = (event.clientY - rect.top) * (canvas.height / rect.height);
+  return {
+    x: (px - viewTransform.offsetX) / viewTransform.scale,
+    y: (py - viewTransform.offsetY) / viewTransform.scale
+  };
+}
+
+function mobFromEvent(event) {
+  const tile = typeof tileFromEvent === 'function' ? tileFromEvent(event) : null;
+  if (!tile || !isTileDiscovered(tile.x, tile.y)) return null;
+  const point = worldPointForMobEvent(event);
+  const query = window.HavenfallEntityQuery || null;
+  if (point && typeof query?.getMobAtWorld === 'function') return query.getMobAtWorld(point.x, point.y);
+  if (point && typeof window.getMobAtWorld === 'function') return window.getMobAtWorld(point.x, point.y);
+  if (typeof getMobAt === 'function') return getMobAt(tile.x, tile.y);
+  return null;
+}
+
 function installMobCanvasInteractions() {
   if (!canvas || window.HavenfallContext?.mobCanvasInteractionsInstalled) return;
   window.HavenfallContext = window.HavenfallContext || {};
 
   canvas.addEventListener('click', event => {
     if (appScreen !== SCREEN.PLAYING || !state || currentBuild || currentZoneTool) return;
-    if (typeof tileFromEvent !== 'function' || typeof getMobAt !== 'function') return;
-    const tile = tileFromEvent(event);
-    if (!tile || !isTileDiscovered(tile.x, tile.y)) return;
-    const mob = getMobAt(tile.x, tile.y);
+    const mob = mobFromEvent(event);
     if (!mob) return;
     const c = selectedColonist();
     if (typeof assignHuntMob === 'function' && assignHuntMob(c, mob)) {
@@ -22,10 +44,8 @@ function installMobCanvasInteractions() {
 
   canvas.addEventListener('contextmenu', event => {
     if (appScreen !== SCREEN.PLAYING || !state) return;
-    if (typeof tileFromEvent !== 'function' || typeof getMobAt !== 'function' || typeof showContextMenu !== 'function') return;
-    const tile = tileFromEvent(event);
-    if (!tile || !isTileDiscovered(tile.x, tile.y)) return;
-    const mob = getMobAt(tile.x, tile.y);
+    if (typeof showContextMenu !== 'function') return;
+    const mob = mobFromEvent(event);
     if (!mob) return;
     const c = selectedColonist();
     event.preventDefault();

@@ -58,8 +58,47 @@
 
   function pathTo(c, x, y, target = null) { if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) return []; if (Math.round(c.x) === Math.round(x) && Math.round(c.y) === Math.round(y)) return []; return typeof findPath === 'function' ? (findPath(c.x, c.y, x, y, target) || []) : []; }
 
+  function bedById(id) {
+    if (!id) return null;
+    return (state?.objects || []).find(obj => obj?.type === 'bed' && String(obj.id) === String(id)) || null;
+  }
+
+  function isBedAvailableFor(bed, c) {
+    if (!bed || bed.type !== 'bed' || !c) return false;
+    if (bed.occupiedBy && String(bed.occupiedBy) !== String(c.id)) return false;
+    if (bed.reservedBy && String(bed.reservedBy) !== String(c.id)) return false;
+    if (bed.ownerId && String(bed.ownerId) !== String(c.id)) return false;
+    return true;
+  }
+
+  function releaseBed(c) {
+    if (!c || !state?.objects) return;
+    for (const bed of state.objects) {
+      if (bed?.type !== 'bed') continue;
+      if (String(bed.reservedBy || '') === String(c.id)) bed.reservedBy = null;
+      if (String(bed.occupiedBy || '') === String(c.id)) bed.occupiedBy = null;
+    }
+  }
+
+  function reserveBed(c, bed) {
+    if (!c || !bed || !isBedAvailableFor(bed, c)) return false;
+    releaseBed(c);
+    bed.reservedBy = c.id;
+    return true;
+  }
+
+  function snapToSleepTile(c, x, y) {
+    if (!c || !Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) return;
+    c.px = Number(x) * TILE + TILE / 2;
+    c.py = Number(y) * TILE + TILE / 2;
+    c.x = Number(x);
+    c.y = Number(y);
+  }
+
   function nearestReachableBed(c) {
-    const beds = (state?.objects || []).filter(o => o.type === 'bed').sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y));
+    const beds = (state?.objects || [])
+      .filter(o => o.type === 'bed' && isBedAvailableFor(o, c))
+      .sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y));
     for (const bed of beds) {
       const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(bed.x, bed.y, c.x, c.y) : null;
       const tile = adj || { x: bed.x, y: bed.y };
@@ -96,7 +135,10 @@
 
   function chooseSleepSurface(c, reason = 'tired') {
     const bed = nearestReachableBed(c);
-    if (bed) return { surface: SLEEP_SURFACE.BED, bedId: bed.bed.id, tile: bed.tile, path: bed.path, reason };
+    if (bed && reserveBed(c, bed.bed)) {
+      return { surface: SLEEP_SURFACE.BED, bedId: bed.bed.id, bedX: bed.bed.x, bedY: bed.bed.y, tile: bed.tile, path: bed.path, reason };
+    }
+    releaseBed(c);
     const surface = sleepSurfaceAt(c.x, c.y);
     return { surface, bedId: null, tile: { x: c.x, y: c.y }, path: [], reason, floorRest: true, emergency: Number(c.energy ?? 100) <= ENERGY.EMERGENCY_SLEEP };
   }
@@ -105,7 +147,21 @@
     if (!c) return false;
     const chosen = chooseSleepSurface(c, reason);
     const recovery = sleepRecovery(chosen.surface);
-    c.task = { type: 'sleep', x: chosen.tile.x, y: chosen.tile.y, bedId: chosen.bedId, reason, floorRest: chosen.surface !== SLEEP_SURFACE.BED, sleepSurface: chosen.surface, sleepQuality: recovery.quality, emergency: !!chosen.emergency, startedAt: worldTime(), badSleepLogged: false };
+    c.task = {
+      type: 'sleep',
+      x: chosen.tile.x,
+      y: chosen.tile.y,
+      bedId: chosen.bedId,
+      bedX: chosen.bedX,
+      bedY: chosen.bedY,
+      reason,
+      floorRest: chosen.surface !== SLEEP_SURFACE.BED,
+      sleepSurface: chosen.surface,
+      sleepQuality: recovery.quality,
+      emergency: !!chosen.emergency,
+      startedAt: worldTime(),
+      badSleepLogged: false
+    };
     c.path = chosen.path || [];
     c.work = 0;
     c.note = chosen.surface === SLEEP_SURFACE.BED ? (c.path.length ? 'Indo dormir na cama' : 'Dormindo na cama') : `Dormindo no ${surfaceLabel(chosen.surface)}`;
@@ -122,14 +178,36 @@
         log(`${c.name} dormiu mal no ${surfaceLabel(task.sleepSurface)}${pain >= 20 ? ` e acordou com dor no corpo (${pain}%).` : '.'}`);
       }
     }
+    releaseBed(c);
     c.task = null; c.path = []; c.work = 0; c.note = note; rememberIntent(c, INTENT.IDLE, 'rested', 0.08);
+    c.sleeping = false;
+    c.resting = false;
   }
 
   function handleSleep(c, task, tick) {
-    const surface = task.sleepSurface || (task.bedId ? SLEEP_SURFACE.BED : SLEEP_SURFACE.FLOOR);
+    let bed = task.bedId ? bedById(task.bedId) : null;
+    if (bed && !isBedAvailableFor(bed, c) && String(bed.reservedBy || bed.occupiedBy || '') !== String(c.id)) bed = null;
+    if (task.bedId && !bed) {
+      releaseBed(c);
+      task.bedId = null;
+      task.bedX = null;
+      task.bedY = null;
+      task.floorRest = true;
+      task.sleepSurface = sleepSurfaceAt(c.x, c.y);
+    }
+    const surface = task.sleepSurface || (bed ? SLEEP_SURFACE.BED : SLEEP_SURFACE.FLOOR);
     const recovery = sleepRecovery(surface);
+    if (surface === SLEEP_SURFACE.BED && bed) {
+      bed.reservedBy = c.id;
+      bed.occupiedBy = c.id;
+      snapToSleepTile(c, task.bedX ?? bed.x, task.bedY ?? bed.y);
+    } else {
+      releaseBed(c);
+    }
     const scheduledSleep = isSchedule(c, window.ScheduleManager?.SCHEDULE?.SLEEP);
     ensureRestState(c);
+    c.sleeping = true;
+    c.resting = true;
     c.rest.lastSleepSurface = surface;
     c.rest.sleepQuality = recovery.quality;
     c.energy = clampValue(Number(c.energy || 0) + tick * recovery.energy, 0, 100);
@@ -222,6 +300,7 @@
     const tick = Math.max(0, dt * speed);
     c.anim = Number(c.anim || 0) + tick;
     applyVitals(c, tick);
+    if (c.task?.type !== 'sleep') releaseBed(c);
     applyDecision(c);
     if (c.task) {
       if (Array.isArray(c.path) && c.path.length) { if (typeof moveAlongPath === 'function') moveAlongPath(c, tick); }
@@ -244,7 +323,7 @@
     try { startSleep = (c, reason = 'scheduled') => startAutonomySleep(c, reason); } catch (_) {}
     window.GameSystems?.registerMovementModifier?.('colonist-autonomy.body-pain-move', (c, current) => current * movementPainMultiplier(c), { order: 30 });
     window.GameSystems?.registerWorkRateModifier?.('colonist-autonomy.body-pain-work', workPainMultiplier, { order: 30 });
-    window.HavenfallColonistAutonomy = Object.freeze({ INTENT, SLEEP_SURFACE, ENERGY, ownsDecision, ensureBrain, ensureRestState, startSleep: startAutonomySleep, chooseSleepSurface, original, version: 'autonomy-ground-sleep-floor-aware-v1' });
+    window.HavenfallColonistAutonomy = Object.freeze({ INTENT, SLEEP_SURFACE, ENERGY, ownsDecision, ensureBrain, ensureRestState, startSleep: startAutonomySleep, chooseSleepSurface, original, version: 'autonomy-bed-reservation-hit-aligned-v2' });
     console.info('[Colonist Autonomy] Cérebro individual, sono no chão e pisos carregados.');
   }
 

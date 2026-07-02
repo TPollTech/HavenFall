@@ -131,7 +131,13 @@
     c.work += tick * (typeof workRate === 'function' ? workRate(c, 'handle') : 1);
     c.note = `Plantando ${crop.label} ${Math.floor((c.work / 2.4) * 100)}%`;
     if (c.work < 2.4) return true;
-    if (crop.seedCost) payCost(crop.seedCost);
+    if (crop.seedCost && !payCost(crop.seedCost)) {
+      c.task = null;
+      c.note = 'Sem sementes/comida para plantar';
+      c.work = 0;
+      if (typeof log === 'function') log(`${c.name} ficou sem sementes/comida para concluir o plantio.`);
+      return true;
+    }
     state.objects.push({ id: uid('obj'), type: 'crop', x: tile.x, y: tile.y, growth: 0, cropType: task.cropType });
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
     if (typeof log === 'function') log(`${c.name} plantou ${crop.label}.`);

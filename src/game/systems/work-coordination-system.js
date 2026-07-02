@@ -190,7 +190,7 @@
     if (bed) {
       const route = routeToObject(c, bed);
       if (route) {
-        c.task = { type: 'sleep', x: route.adj.x, y: route.adj.y, bedId: bed.id };
+        c.task = { type: 'sleep', x: route.adj.x, y: route.adj.y, bedId: bed.id, bedX: bed.x, bedY: bed.y };
         c.path = route.path;
         c.work = 0;
         c.note = reason;

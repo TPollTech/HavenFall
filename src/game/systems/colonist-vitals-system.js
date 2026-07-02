@@ -115,7 +115,7 @@
     const alreadyThere = tile && c.x === tile.x && c.y === tile.y;
 
     if (bed && tile && (alreadyThere || path.length > 0)) {
-      c.task = { type: 'sleep', x: tile.x, y: tile.y, bedId: bed.id, reason };
+      c.task = { type: 'sleep', x: tile.x, y: tile.y, bedId: bed.id, bedX: bed.x, bedY: bed.y, reason };
       c.path = path;
       c.work = 0;
       c.note = alreadyThere ? 'Dormindo na cama' : 'Indo dormir';
@@ -152,7 +152,14 @@
   }
 
   function handleSleep(c, task, tick) {
-    const hasBed = !!(task?.bedId && state?.objects?.some(o => o.id === task.bedId));
+    const bed = task?.bedId ? state?.objects?.find(o => o.id === task.bedId && o.type === 'bed') : null;
+    const hasBed = !!bed;
+    if (bed) {
+      c.px = (Number(task.bedX ?? bed.x) * TILE) + TILE / 2;
+      c.py = (Number(task.bedY ?? bed.y) * TILE) + TILE / 2;
+      c.x = Number(task.bedX ?? bed.x);
+      c.y = Number(task.bedY ?? bed.y);
+    }
     const rate = hasBed ? ENERGY.SLEEP_BED : ENERGY.SLEEP_FLOOR;
     c.energy = safeClamp(Number(c.energy || 0) + tick * rate, 0, 100);
     c.mood = safeClamp(Number(c.mood || 0) + tick * (hasBed ? 0.55 : 0.24), 0, 100);

@@ -358,7 +358,7 @@ function nearestBlueprint(c) {
 
 function nearestBed(c) {
   return state.objects
-    .filter(o => o.type === 'bed')
+    .filter(o => o.type === 'bed' && (!o.occupiedBy || String(o.occupiedBy) === String(c?.id || '')) && (!o.reservedBy || String(o.reservedBy) === String(c?.id || '')))
     .sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0];
 }
 
@@ -416,7 +416,7 @@ function startSleep(c) {
   const bed = nearestBed(c);
   if (bed) {
     const adj = nearestFreeAdjacent(bed.x, bed.y, c.x, c.y) || { x: bed.x, y: bed.y };
-    c.task = { type: 'sleep', x: adj.x, y: adj.y, bedId: bed.id };
+    c.task = { type: 'sleep', x: adj.x, y: adj.y, bedId: bed.id, bedX: bed.x, bedY: bed.y };
     c.path = findPath(c.x, c.y, adj.x, adj.y, bed);
     c.note = 'Indo dormir';
   } else {
@@ -469,7 +469,14 @@ function handleTaskAtTarget(c, tick) {
   }
 
   if (task.type === 'sleep') {
-    const hasBed = task.bedId && state.objects.some(o => o.id === task.bedId);
+    const bed = task.bedId ? state.objects.find(o => o.id === task.bedId && o.type === 'bed') : null;
+    const hasBed = !!bed;
+    if (bed) {
+      c.px = (Number(task.bedX ?? bed.x) * TILE) + TILE / 2;
+      c.py = (Number(task.bedY ?? bed.y) * TILE) + TILE / 2;
+      c.x = Number(task.bedX ?? bed.x);
+      c.y = Number(task.bedY ?? bed.y);
+    }
     c.energy = clamp(c.energy + tick * (hasBed ? 2.4 : 1.25), 0, 100);
     c.mood = clamp(c.mood + tick * (hasBed ? 0.55 : 0.24), 0, 100);
     c.note = hasBed ? 'Dormindo na cama' : 'Descansando no chão';
@@ -531,7 +538,12 @@ function handleTaskAtTarget(c, tick) {
     c.work += tick * workRate(c, 'craft');
     c.note = `Fabricando ${recipe.label} ${Math.floor((c.work / recipe.duration) * 100)}%`;
     if (c.work >= recipe.duration) {
-      payRecipeCost(recipe);
+      if (!payRecipeCost(recipe)) {
+        log(`Faltaram recursos para concluir ${recipe.label}.`);
+        c.task = null; c.note = 'Sem recursos'; c.work = 0;
+        updateCraftingUI();
+        return;
+      }
       addRecipeOutput(recipe.output);
       autoEquipCraftedItem(c, recipe.output);
       notifyWorkComplete(feedbackKindForRecipe(recipe, station), { recipeKey: task.recipeKey, output: recipe.output, station: station.type }, station.x, station.y);
@@ -557,7 +569,11 @@ function handleTaskAtTarget(c, tick) {
     c.work += tick * workRate(c, 'forge');
     c.note = `Forjando metal ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
-      payCost(input);
+      if (!payCost(input)) {
+        log('Faltaram recursos para concluir a forja.');
+        c.task = null; c.note = 'Sem recursos'; c.work = 0;
+        return;
+      }
       addResources(output);
       notifyWorkComplete('forge', { objectType: forge.type, input, output }, forge.x, forge.y);
       log(`${c.name} transformou ${input.stone} pedras em ${output.metal} metal.`);
@@ -598,7 +614,11 @@ function handleTaskAtTarget(c, tick) {
     c.work += tick * workRate(c, 'cook');
     c.note = `Preparando refeição ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
-      payCost(def.cook.input);
+      if (!payCost(def.cook.input)) {
+        log('Faltaram recursos para concluir o preparo da refeicao.');
+        c.task = null; c.note = 'Sem recursos'; c.work = 0;
+        return;
+      }
       addResources(def.cook.output);
       c.mood = clamp(c.mood + 4, 0, 100);
       notifyWorkComplete('cook', { objectType: stove.type, input: def.cook.input, output: def.cook.output }, stove.x, stove.y);
@@ -620,7 +640,11 @@ function handleTaskAtTarget(c, tick) {
     c.work += tick * workRate(c, 'heal');
     c.note = `Tratamento médico ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
-      payCost(def.heal.input);
+      if (!payCost(def.heal.input)) {
+        log('Faltaram recursos para concluir o tratamento.');
+        c.task = null; c.note = 'Sem recursos'; c.work = 0;
+        return;
+      }
       c.health = clamp(c.health + def.heal.amount, 0, 100);
       c.mood = clamp(c.mood + 3, 0, 100);
       notifyWorkComplete('heal', { objectType: station.type, input: def.heal.input, amount: def.heal.amount }, station.x, station.y);

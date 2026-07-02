@@ -49,6 +49,12 @@
   function floorDef(type) { return FLOOR_DEFS[type] || null; }
   function floorLabel(type) { return floorDef(type)?.label || 'Sem piso'; }
   function blendProfile(type) { return BLEND_PROFILES[type] || BLEND_PROFILES.packed_dirt; }
+  function patternDirectionForFloor(floorType, x = 0, y = 0) {
+    if (floorType === 'wood_floor') return 'horizontal';
+    if (floorType === 'stone_floor') return 'masonry';
+    if (floorType === 'packed_dirt') return 'organic';
+    return noise(x, y, 300) > 0.5 ? 'horizontal' : 'vertical';
+  }
   function getFloorAt(x, y, world = state?.world) { const layer = ensureFloorLayer(world); return layer?.[Math.round(y)]?.[Math.round(x)] || null; }
   function sameFloorAt(x, y, floorType) { return getFloorAt(x, y) === floorType; }
 
@@ -163,6 +169,25 @@
     targetCtx.restore();
   }
 
+  function drawCornerFade(targetCtx, px, py, def, mask, profile) {
+    const radius = Math.max(profile.corner + 2, profile.fade * 1.15);
+    const alpha = Math.max(0.08, profile.edgeAlpha * 0.72);
+    const fillCorner = (cx, cy, left, top) => {
+      const gradient = targetCtx.createRadialGradient(cx, cy, 1, cx, cy, radius);
+      gradient.addColorStop(0, rgba(def.base, alpha));
+      gradient.addColorStop(1, rgba(def.base, 0.01));
+      targetCtx.fillStyle = gradient;
+      targetCtx.fillRect(left, top, radius, radius);
+    };
+    targetCtx.save();
+    targetCtx.globalCompositeOperation = 'source-over';
+    if (!mask.n && !mask.w) fillCorner(px + radius * 0.26, py + radius * 0.26, px, py);
+    if (!mask.n && !mask.e) fillCorner(px + TILE - radius * 0.26, py + radius * 0.26, px + TILE - radius, py);
+    if (!mask.s && !mask.w) fillCorner(px + radius * 0.26, py + TILE - radius * 0.26, px, py + TILE - radius);
+    if (!mask.s && !mask.e) fillCorner(px + TILE - radius * 0.26, py + TILE - radius * 0.26, px + TILE - radius, py + TILE - radius);
+    targetCtx.restore();
+  }
+
   function floorCoreRect(px, py, mask, profile) {
     const left = px + (mask.w ? 0 : profile.inset);
     const top = py + (mask.n ? 0 : profile.inset);
@@ -175,6 +200,7 @@
     const px = x * TILE;
     const py = y * TILE;
     drawDirectionalFade(targetCtx, px, py, def, mask, profile);
+    drawCornerFade(targetCtx, px, py, def, mask, profile);
     const core = floorCoreRect(px, py, mask, profile);
     targetCtx.save();
     targetCtx.globalAlpha = profile.coreAlpha;
@@ -218,17 +244,37 @@
 
   function drawWoodPattern(targetCtx, x, y, def) {
     const px = x * TILE, py = y * TILE;
-    const horizontal = noise(x, y, 3) > 0.5;
+    const direction = patternDirectionForFloor(def?.key || 'wood_floor', x, y);
+    const boardSize = 12;
     targetCtx.strokeStyle = rgba(def.line, 0.70);
     targetCtx.lineWidth = 1;
-    if (horizontal) {
-      for (let yy = 9; yy < TILE; yy += 11) { targetCtx.beginPath(); targetCtx.moveTo(px + 2, py + yy); targetCtx.lineTo(px + TILE - 2, py + yy + (noise(x, y, yy) - 0.5) * 1.6); targetCtx.stroke(); }
+    if (direction === 'horizontal') {
+      const firstLine = Math.floor(py / boardSize) * boardSize;
+      for (let worldY = firstLine; worldY <= py + TILE + boardSize; worldY += boardSize) {
+        const yy = worldY - py;
+        if (yy <= 1 || yy >= TILE - 1) continue;
+        const wobble = (noise(x, worldY / boardSize, 3) - 0.5) * 1.1;
+        targetCtx.beginPath();
+        targetCtx.moveTo(px + 2, py + yy + wobble);
+        targetCtx.lineTo(px + TILE - 2, py + yy - wobble * 0.22);
+        targetCtx.stroke();
+      }
     } else {
-      for (let xx = 9; xx < TILE; xx += 11) { targetCtx.beginPath(); targetCtx.moveTo(px + xx, py + 2); targetCtx.lineTo(px + xx + (noise(x, y, xx) - 0.5) * 1.6, py + TILE - 2); targetCtx.stroke(); }
+      const firstLine = Math.floor(px / boardSize) * boardSize;
+      for (let worldX = firstLine; worldX <= px + TILE + boardSize; worldX += boardSize) {
+        const xx = worldX - px;
+        if (xx <= 1 || xx >= TILE - 1) continue;
+        const wobble = (noise(worldX / boardSize, y, 3) - 0.5) * 1.1;
+        targetCtx.beginPath();
+        targetCtx.moveTo(px + xx + wobble, py + 2);
+        targetCtx.lineTo(px + xx - wobble * 0.22, py + TILE - 2);
+        targetCtx.stroke();
+      }
     }
-    targetCtx.globalAlpha = 0.18;
+    targetCtx.globalAlpha = 0.20;
     targetCtx.fillStyle = def.light;
-    targetCtx.fillRect(px + 5, py + 5, TILE - 10, 3);
+    if (direction === 'horizontal') targetCtx.fillRect(px + 5, py + 5, TILE - 10, 3);
+    else targetCtx.fillRect(px + 5, py + 5, 3, TILE - 10);
   }
 
   function drawStonePattern(targetCtx, x, y, def) {
@@ -316,7 +362,7 @@
   function movementModifier(c, current) { const floor = getFloorAt(c?.x, c?.y); const def = floorDef(floor); return Number(current || 1) * Number(def?.moveSpeed || 1); }
   function tick() { ensureFloorLayer(); }
 
-  window.FloorSystem = Object.freeze({ FLOOR_DEFS, BLEND_PROFILES, MAX_PENDING_FLOOR_BLUEPRINTS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, countFloorBlueprints, floorDef, floorLabel, blendProfile, getFloorNeighborMask, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
+  window.FloorSystem = Object.freeze({ FLOOR_DEFS, BLEND_PROFILES, MAX_PENDING_FLOOR_BLUEPRINTS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, countFloorBlueprints, floorDef, floorLabel, blendProfile, patternDirectionForFloor, getFloorNeighborMask, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
   window.ensureFloorLayer = ensureFloorLayer;
   window.getFloorAt = getFloorAt;
   window.setFloorAt = setFloorAt;

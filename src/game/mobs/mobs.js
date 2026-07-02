@@ -115,6 +115,80 @@ function getCreatureAt(x, y) {
   return getWolfAt(x, y) || getHostileMobAt(x, y) || getPassiveMobAt(x, y);
 }
 
+const creatureHitboxes = Object.freeze({
+  wolf: { width: 46, height: 34, offsetY: 12 },
+  spider: { width: 34, height: 24, offsetY: 10 },
+  rabbit: { width: 30, height: 32, offsetY: 14 },
+  deer: { width: 50, height: 38, offsetY: 12 },
+  goat: { width: 46, height: 36, offsetY: 13 },
+  sheep: { width: 46, height: 38, offsetY: 13 },
+  pig: { width: 46, height: 36, offsetY: 14 },
+  cow: { width: 56, height: 42, offsetY: 12 },
+  chicken: { width: 28, height: 30, offsetY: 16 },
+  duck: { width: 30, height: 30, offsetY: 16 },
+  turkey: { width: 32, height: 34, offsetY: 16 },
+  squirrel: { width: 28, height: 34, offsetY: 16 },
+  turtle: { width: 34, height: 26, offsetY: 15 }
+});
+
+function creatureHitboxFor(entity) {
+  return creatureHitboxes[entity?.type] || { width: 38, height: 34, offsetY: 12 };
+}
+
+function creatureHitScore(entity, worldX, worldY) {
+  if (!entity || !Number.isFinite(Number(entity.px)) || !Number.isFinite(Number(entity.py))) return Infinity;
+  const hitbox = creatureHitboxFor(entity);
+  const halfWidth = hitbox.width / 2;
+  const halfHeight = hitbox.height / 2;
+  const centerX = Number(entity.px);
+  const centerY = Number(entity.py) + hitbox.offsetY;
+  const dx = Math.abs(Number(worldX) - centerX);
+  const dy = Math.abs(Number(worldY) - centerY);
+  if (dx > halfWidth || dy > halfHeight) return Infinity;
+  const normX = dx / Math.max(1, halfWidth);
+  const normY = dy / Math.max(1, halfHeight);
+  return normX * normX + normY * normY;
+}
+
+function creatureAtWorld(list, worldX, worldY, predicate = null) {
+  const matcher = typeof predicate === 'function' ? predicate : () => true;
+  let best = null;
+  let bestScore = Infinity;
+  let bestDepth = -Infinity;
+  for (const entity of list || []) {
+    if (!matcher(entity)) continue;
+    const score = creatureHitScore(entity, worldX, worldY);
+    if (!Number.isFinite(score)) continue;
+    const depth = Number(entity?.py || 0);
+    if (score < bestScore || (score === bestScore && depth > bestDepth)) {
+      best = entity;
+      bestScore = score;
+      bestDepth = depth;
+    }
+  }
+  return best;
+}
+
+function getMobAtWorld(worldX, worldY) {
+  return creatureAtWorld(ensureMobState(), worldX, worldY);
+}
+
+function getWolfAtWorld(worldX, worldY) {
+  return creatureAtWorld(state?.wolves, worldX, worldY);
+}
+
+function getPassiveMobAtWorld(worldX, worldY) {
+  return creatureAtWorld(ensureMobState(), worldX, worldY, mob => !isHostileMobType(mob?.type));
+}
+
+function getHostileMobAtWorld(worldX, worldY) {
+  return creatureAtWorld([...(state?.wolves || []), ...ensureMobState()], worldX, worldY, mob => mob && (mob.type === 'wolf' || isHostileMobType(mob.type)));
+}
+
+function getCreatureAtWorld(worldX, worldY) {
+  return creatureAtWorld([...(state?.wolves || []), ...ensureMobState()], worldX, worldY);
+}
+
 function countMob(type) {
   const mobs = ensureMobState();
   const normal = mobs.filter(m => m.type === type).length;
@@ -979,15 +1053,25 @@ window.spawnMob = spawnMob;
 window.updateMobsTick = updateMobsTick;
 window.mobDrop = mobDrop;
 window.getWolfAt = getWolfAt;
+window.getWolfAtWorld = getWolfAtWorld;
 window.getMobAt = getMobAt;
+window.getMobAtWorld = getMobAtWorld;
 window.getAnimalAt = getPassiveMobAt;
+window.getAnimalAtWorld = getPassiveMobAtWorld;
 window.getHostileAt = getHostileMobAt;
+window.getHostileAtWorld = getHostileMobAtWorld;
+window.getCreatureAtWorld = getCreatureAtWorld;
 window.HavenfallEntityQuery = Object.freeze({
   getWolfAt,
+  getWolfAtWorld,
   getMobAt,
+  getMobAtWorld,
   getAnimalAt: getPassiveMobAt,
+  getAnimalAtWorld: getPassiveMobAtWorld,
   getHostileAt: getHostileMobAt,
-  getCreatureAt
+  getHostileAtWorld: getHostileMobAtWorld,
+  getCreatureAt,
+  getCreatureAtWorld
 });
 window.assignHuntMob = assignHuntMob;
 window.makeColonistUnconscious = makeColonistUnconscious;

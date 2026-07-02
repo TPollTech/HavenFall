@@ -14,6 +14,78 @@ function createContext(extra = {}) {
   return context;
 }
 
+function createFakeModalDocument() {
+  const elements = {};
+  const makeNode = () => ({
+    textContent: '',
+    innerHTML: '',
+    dataset: {},
+    style: {},
+    hidden: false,
+    setAttribute() {},
+    addEventListener() {}
+  });
+  const fakeModal = {
+    id: 'eventModal',
+    isConnected: true,
+    hidden: true,
+    dataset: {},
+    style: {},
+    classList: {
+      values: new Set(),
+      add(...names) { names.forEach(name => this.values.add(name)); },
+      remove(...names) { names.forEach(name => this.values.delete(name)); },
+      contains(name) { return this.values.has(name); }
+    },
+    setAttribute() {},
+    addEventListener() {},
+    querySelector(selector) {
+      if (!this.nodes) {
+        this.nodes = {
+          '[data-encounter-kicker]': makeNode(),
+          '[data-encounter-title]': makeNode(),
+          '[data-encounter-body]': makeNode(),
+          '[data-encounter-actions]': makeNode()
+        };
+      }
+      return this.nodes[selector] || null;
+    }
+  };
+  elements.eventModal = fakeModal;
+  return {
+    activeElement: null,
+    getElementById(id) { return elements[id] || null; },
+    addEventListener() {},
+    createElement(tag) {
+      return {
+        tagName: String(tag || '').toUpperCase(),
+        id: '',
+        style: {},
+        dataset: {},
+        className: '',
+        hidden: false,
+        innerHTML: '',
+        textContent: '',
+        setAttribute() {},
+        appendChild() {},
+        querySelector: () => null,
+        addEventListener() {},
+        classList: { add() {}, remove() {}, contains() { return false; } }
+      };
+    },
+    head: {
+      appendChild(node) {
+        if (node?.id) elements[node.id] = node;
+      }
+    },
+    body: {
+      appendChild(node) {
+        if (node?.id) elements[node.id] = node;
+      }
+    }
+  };
+}
+
 test('GameSystems runs ticks and hooks in declared order', () => {
   const context = createContext();
   runBrowserScript('src/game/core/game-systems.js', context);
@@ -480,6 +552,257 @@ test('Living world registers water infrastructure and bridges unblock water', ()
   const queue = context.HavenfallLivingWorld.generateExplorationQueue();
   assert.equal(queue.length, 2);
   assert.equal(context.state.livingWorld.explorationQueue.length, 2);
+});
+
+test('Living world can pause for encounters and recruit a visitor into the colony', () => {
+  const math = Object.create(Math);
+  math.random = () => 0;
+  const document = createFakeModalDocument();
+  const context = createContext({
+    console,
+    Math: math,
+    performance: { now: () => 0 },
+    TILE: 48,
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    defaultNewGameConfig: { seed: 'TEST', eventIntensity: 'high' },
+    buildDefs: {},
+    objectDefs: {},
+    itemDefs: {},
+    state: {
+      day: 1,
+      hour: 9,
+      speed: 2,
+      weather: 'limpo',
+      terrain: Array.from({ length: 12 }, () => Array(12).fill('grass')),
+      objects: [],
+      mobs: [],
+      wolves: [],
+      colonists: [{ id: 1, name: 'Lia', x: 6, y: 6 }],
+      visitors: [],
+      resources: { food: 40, medicine: 3, wood: 0, stone: 0, metal: 0, water: 0 },
+      items: {},
+      taskPriorities: {},
+      config: { seed: 'TEST', eventIntensity: 'high', difficulty: 'normal' },
+      world: { seed: 'TEST', cols: 12, rows: 12, terrain: Array.from({ length: 12 }, () => Array(12).fill('grass')), waterTiles: [], livingWorld: null, spawn: { x: 6, y: 6 } }
+    },
+    document,
+    uid: prefix => `${prefix}-1`,
+    getWorldCols: () => 12,
+    getWorldRows: () => 12,
+    getObjectAt: () => null,
+    isBlocked: () => false,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    addResources: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.resources[key] = (context.state.resources[key] || 0) + value;
+    },
+    payResources: cost => {
+      for (const [key, value] of Object.entries(cost)) context.state.resources[key] = Math.max(0, (context.state.resources[key] || 0) - value);
+      return true;
+    },
+    addItems: gain => {
+      for (const [key, value] of Object.entries(gain)) context.state.items[key] = (context.state.items[key] || 0) + value;
+    },
+    payItems: cost => {
+      for (const [key, value] of Object.entries(cost)) context.state.items[key] = Math.max(0, (context.state.items[key] || 0) - value);
+      return true;
+    },
+    createColonistCandidate: () => ({
+      name: 'Ari',
+      sprite: 'colonist',
+      role: 'Generalista',
+      age: 24,
+      skills: { coleta: 4, construcao: 4, defesa: 3, pesquisa: 2, medicina: 1 },
+      needs: { hunger: 74, energy: 68, mood: 62, health: 90 },
+      workPreferenceId: 'gather',
+      physicalTraitIds: [],
+      positiveTraitIds: [],
+      negativeTraitIds: []
+    }),
+    candidateToColonist: (candidate, id, x, y) => ({ id, name: candidate.name, x, y, mood: 70, energy: 72, health: 90, priority: 'gather' }),
+    invalidateSpatialGrid() {},
+    updateUI() {}
+  });
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/living-world.js', context);
+
+  assert.equal(context.HavenfallLivingWorld.openBriefing(), true);
+  assert.equal(context.state.speed, 0);
+  assert.equal(context.state.livingWorld.activeEncounter.key, 'intro');
+
+  assert.equal(context.HavenfallLivingWorld.resolveEncounter('intro_close'), true);
+  assert.equal(context.state.speed, 2);
+  assert.equal(context.state.livingWorld.activeEncounter, null);
+
+  const visitor = context.HavenfallLivingWorld.spawnVisitor('visitor', 0);
+  assert.ok(visitor);
+  assert.ok(['lost_traveler', 'injured_refugee', 'wandering_scout'].includes(visitor.story.key));
+  assert.equal(context.HavenfallLivingWorld.triggerEncounter(visitor.id), true);
+  assert.equal(context.state.speed, 0);
+  assert.equal(context.state.livingWorld.activeEncounter.key, 'visitor');
+
+  assert.equal(context.HavenfallLivingWorld.resolveEncounter('visitor_invite'), true);
+  assert.equal(context.state.colonists.length, 2);
+  assert.equal(context.state.visitors.length, 0);
+  assert.equal(context.state.speed, 2);
+});
+
+test('World systems do not grant craft output when payment fails at completion', () => {
+  const logs = [];
+  let outputCalls = 0;
+  let uiRefreshes = 0;
+  const context = createContext({
+    state: {
+      objects: [{ id: 'bench-1', type: 'bench', x: 2, y: 2 }],
+      resources: {},
+      items: {}
+    },
+    recipeDefs: {
+      hammer: {
+        label: 'Martelo',
+        duration: 1,
+        output: { items: { hammer: 1 } }
+      }
+    },
+    objectDefs: { bench: { name: 'bancada' } },
+    GameSystems: { handleTask: () => false },
+    hasRecipeCost: () => true,
+    payRecipeCost: () => false,
+    addRecipeOutput: () => { outputCalls += 1; },
+    autoEquipCraftedItem: () => { throw new Error('crafted item should not be equipped when payment fails'); },
+    notifyWorkComplete: () => { throw new Error('work completion should not fire when payment fails'); },
+    feedbackKindForRecipe: () => 'craft',
+    outputText: () => '+1 Martelo',
+    workRate: () => 1,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    updateCraftingUI: () => { uiRefreshes += 1; },
+    log: message => logs.push(message)
+  });
+
+  runBrowserScript('src/game/systems/world-systems.js', context);
+
+  const colonist = {
+    id: 1,
+    name: 'Lia',
+    mood: 50,
+    task: { type: 'craft', recipeKey: 'hammer', objId: 'bench-1' },
+    work: 0
+  };
+
+  context.handleTaskAtTarget(colonist, 1);
+
+  assert.equal(outputCalls, 0);
+  assert.equal(uiRefreshes, 1);
+  assert.equal(colonist.task, null);
+  assert.equal(colonist.note, 'Sem recursos');
+  assert.match(logs.at(-1), /Faltaram recursos/);
+});
+
+test('Colonist autonomy snaps sleepers onto bed tiles and releases the bed on wake', () => {
+  const context = createContext({
+    console,
+    state: {
+      day: 1,
+      hour: 12,
+      speed: 1,
+      weather: 'limpo',
+      objects: [{ id: 'bed-1', type: 'bed', x: 4, y: 4 }],
+      colonists: []
+    },
+    HavenfallContext: {},
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    TILE: 48,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    dist: (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by),
+    nearestFreeAdjacent: (x, y) => ({ x: x - 1, y }),
+    findPath: () => [],
+    assignAutoTask: () => false,
+    updateColonist: () => {},
+    startSleep: () => false,
+    moveAlongPath: () => {},
+    handleTaskAtTarget: () => false,
+    log: () => {},
+    document: {
+      addEventListener() {},
+      querySelectorAll() { return []; }
+    },
+    setTimeout(fn) { fn(); },
+    ScheduleManager: {
+      SCHEDULE: { SLEEP: 0, WORK: 1, LEISURE: 2 },
+      getScheduleState: () => 1,
+      ensureColonistSchedule: () => Array(24).fill(1),
+      normalizeHour: hour => ((Math.floor(hour) % 24) + 24) % 24
+    }
+  });
+
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/colonist-vitals-system.js', context);
+  runBrowserScript('src/game/systems/colonist-autonomy-system.js', context);
+
+  const colonist = {
+    id: 1,
+    name: 'Lia',
+    x: 3,
+    y: 4,
+    px: 3 * 48 + 24,
+    py: 4 * 48 + 24,
+    energy: 10,
+    mood: 60,
+    hunger: 80,
+    health: 100,
+    skills: {},
+    path: [],
+    work: 0
+  };
+  context.state.colonists.push(colonist);
+
+  assert.equal(context.HavenfallColonistAutonomy.startSleep(colonist, 'test'), true);
+  assert.equal(context.state.objects[0].reservedBy, 1);
+
+  context.updateColonist(colonist, 1);
+
+  assert.equal(colonist.x, 4);
+  assert.equal(colonist.y, 4);
+  assert.equal(context.state.objects[0].occupiedBy, 1);
+  assert.equal(colonist.note, 'Dormindo na cama');
+
+  colonist.energy = 97;
+  colonist.mood = 60;
+  context.updateColonist(colonist, 1);
+
+  assert.equal(colonist.task, null);
+  assert.equal(context.state.objects[0].reservedBy, null);
+  assert.equal(context.state.objects[0].occupiedBy, null);
+});
+
+test('Mob world hit query follows the drawn animal body', () => {
+  const noop = () => {};
+  const context = createContext({
+    console,
+    state: {
+      mobs: [{ id: 'rabbit-1', type: 'rabbit', x: 2, y: 2, px: 120, py: 120 }],
+      wolves: [],
+      colonists: []
+    },
+    HavenfallContext: {},
+    TILE: 48,
+    uid: () => 'mob-1',
+    GameSystems: {
+      registerMovementModifier: noop,
+      registerTaskHandler: noop,
+      registerAutoTaskProvider: noop,
+      registerColonistUpdateGuard: noop,
+      registerAfterColonistUpdate: noop,
+      registerDrawOverlay: noop,
+      registerTick: noop
+    }
+  });
+
+  runBrowserScript('src/game/mobs/mobs.js', context);
+
+  assert.equal(context.getMobAtWorld(120, 140)?.id, 'rabbit-1');
+  assert.equal(context.getMobAtWorld(120, 94), null);
 });
 
 test('New game config clamps setup values and keeps planet scan stable', () => {
