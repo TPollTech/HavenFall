@@ -9,40 +9,49 @@
   const BATCH_SIZE = 32;
 
   const ROOTS = Object.freeze({
-    ground: Object.freeze(['assets/tiles/Tiles do chão', 'assets/tiles/Tiles do chao', 'assets/tiles/Tiles da natureza', 'assets/tiles/Tiles da Natureza', 'assets/tiles/Natureza', 'assets/tiles/natureza']),
-    vegetation: Object.freeze(['assets/tiles/Arvores e arbustos', 'assets/tiles/Arvores e Arbustos', 'assets/tiles/arvores e arbustos', 'assets/tiles/Árvores e arbustos', 'assets/tiles/Árvores e Arbustos', 'assets/tiles/Tiles da natureza', 'assets/tiles/Tiles da Natureza', 'assets/tiles/Natureza', 'assets/tiles/natureza']),
-    naturalRock: Object.freeze(['assets/tiles/Tiles do chão', 'assets/tiles/Tiles do chao', 'assets/tiles/Tiles da natureza', 'assets/tiles/Tiles da Natureza', 'assets/tiles/Natureza', 'assets/tiles/natureza', 'assets/tiles/Arvores e arbustos', 'assets/tiles/Arvores e Arbustos'])
+    ground: Object.freeze(['assets/tiles']),
+    vegetation: Object.freeze(['assets/tiles/Arvores e arbustos', 'assets/tiles/Arvores e Arbustos', 'assets/tiles/arvores e arbustos'])
   });
 
+  const BLOCKED_KEYS = new Set([
+    'tile_water', 'mountain_inner', 'mountain_corner_ne', 'mountain_corner_nw',
+    'mountain_corner_se', 'mountain_corner_sw', 'mountain_edge_e', 'mountain_edge_n',
+    'mountain_edge_s', 'mountain_edge_w'
+  ]);
+
   function variants(...names) {
-    const suffixes = ['.png', '_1.png', '_01.png', '-1.png', ' 1.png', '_2.png', '_02.png', '-2.png', ' 2.png'];
+    const suffixes = ['.png', '_1.png', '_01.png', '-1.png', '_2.png', '_02.png', '-2.png'];
     return [...new Set(names.filter(Boolean).flatMap(name => suffixes.map(suffix => `${name}${suffix}`)))];
   }
 
   const ASSETS = Object.freeze({
-    tile_grass: { roots: ROOTS.ground, files: variants('edificios_tile_grass', 'edificios_tile_grass_1', 'tile_grass', 'grass', 'grama', 'chao_grama', 'chão_grama') },
-    tile_dirt: { roots: ROOTS.ground, files: variants('edificios_tile_dirt', 'edificios_tile_dirt_1', 'tile_dirt', 'dirt', 'terra', 'chao_terra', 'chão_terra') },
-    tile_sand: { roots: ROOTS.ground, files: variants('edificios_tile_sand', 'edificios_tile_sand_1', 'tile_sand', 'sand', 'areia', 'chao_areia', 'chão_areia') },
-    tile_stone: { roots: ROOTS.ground, files: variants('edificios_tile_stone', 'edificios_tile_stone_1', 'edificios_tile_rocky', 'edificios_tile_rocky_1', 'tile_stone', 'stone', 'pedra', 'chao_pedra', 'chão_pedra') },
-    tree: { roots: ROOTS.vegetation, files: variants('arvore', 'árvore', 'arvores', 'árvores', 'carvalho', 'tree') },
-    tree_oak: { roots: ROOTS.vegetation, files: variants('carvalho', 'arvore_carvalho', 'árvore_carvalho', 'tree_oak', 'oak_tree', 'oak') },
-    tree_birch: { roots: ROOTS.vegetation, files: variants('betula', 'bétula', 'arvore_betula', 'árvore_bétula', 'tree_birch', 'birch_tree') },
-    tree_pine: { roots: ROOTS.vegetation, files: variants('pinheiro', 'arvore_pinheiro', 'árvore_pinheiro', 'tree_pine', 'pine_tree', 'conifer') },
-    tree_palm: { roots: ROOTS.vegetation, files: variants('palmeira', 'coqueiro', 'tree_palm', 'palm_tree') },
-    tree_willow: { roots: ROOTS.vegetation, files: variants('salgueiro', 'tree_willow', 'willow_tree') },
-    tree_eucalyptus: { roots: ROOTS.vegetation, files: variants('eucalipto', 'arvore_eucalipto', 'árvore_eucalipto', 'tree_eucalyptus', 'eucalyptus_tree', 'eucalyptus') },
-    bush: { roots: ROOTS.vegetation, files: variants('arbusto', 'arbustos', 'bush') },
-    bush_dense: { roots: ROOTS.vegetation, files: variants('arbusto_denso', 'arbusto', 'bush_dense', 'bush') },
-    bush_dry: { roots: ROOTS.vegetation, files: variants('arbusto_seco', 'dry_bush', 'bush_dry') },
-    berry: { roots: ROOTS.vegetation, files: variants('arbusto_frutas', 'frutas_silvestres', 'berry', 'berry_bush', 'res_berries') },
-    rock: { roots: ROOTS.naturalRock, files: variants('rock', 'pedra', 'rocha', 'pedra_natural', 'rocha_natural') },
-    logs: { roots: ROOTS.vegetation, files: variants('toras', 'madeira', 'logs') }
+    tile_grass: { roots: ROOTS.ground, files: variants('tile_grass', 'edificios_tile_grass_1', 'edificios_tile_grass') },
+    tile_dirt: { roots: ROOTS.ground, files: variants('tile_dirt', 'edificios_tile_dirt_1', 'edificios_tile_dirt') },
+    tile_sand: { roots: ROOTS.ground, files: variants('tile_sand', 'edificios_tile_sand_1', 'edificios_tile_sand') },
+    tile_stone: { roots: ROOTS.ground, files: variants('tile_stone', 'edificios_tile_stone_1', 'edificios_tile_stone', 'edificios_tile_rocky_1', 'edificios_tile_rocky') },
+    tree: { roots: ROOTS.vegetation, files: variants('tree', 'arvore', 'árvore') },
+    tree_oak: { roots: ROOTS.vegetation, files: variants('tree_oak', 'oak_tree', 'carvalho') },
+    tree_birch: { roots: ROOTS.vegetation, files: variants('tree_birch', 'birch_tree', 'betula', 'bétula') },
+    tree_pine: { roots: ROOTS.vegetation, files: variants('tree_pine', 'pine_tree', 'pinheiro', 'conifer') },
+    tree_palm: { roots: ROOTS.vegetation, files: variants('tree_palm', 'palm_tree', 'palmeira', 'coqueiro') },
+    tree_willow: { roots: ROOTS.vegetation, files: variants('tree_willow', 'willow_tree', 'salgueiro') },
+    tree_eucalyptus: { roots: ROOTS.vegetation, files: variants('tree_eucalyptus', 'eucalyptus_tree', 'eucalipto') },
+    bush: { roots: ROOTS.vegetation, files: variants('bush', 'arbusto') },
+    bush_dense: { roots: ROOTS.vegetation, files: variants('bush_dense', 'arbusto_denso') },
+    bush_dry: { roots: ROOTS.vegetation, files: variants('bush_dry', 'dry_bush', 'arbusto_seco') },
+    berry: { roots: ROOTS.vegetation, files: variants('berry', 'berry_bush', 'arbusto_frutas', 'res_berries') },
+    rock: { roots: ROOTS.ground, files: variants('rock', 'pedra', 'rocha') },
+    logs: { roots: ROOTS.vegetation, files: variants('logs', 'toras', 'madeira') }
   });
 
   function isMappedAsset(name) { return !!ASSETS[String(name || '')]; }
+  function isBlockedKey(name) { return BLOCKED_KEYS.has(String(name || '')); }
+
   function assetNamesToLoad() {
     const configured = Array.isArray(window.assetNames) ? window.assetNames : (typeof assetNames !== 'undefined' ? assetNames : []);
-    return [...new Set([...configured, ...Object.keys(ASSETS)])].filter(name => isMappedAsset(name) && !(typeof isProceduralRuntimeAsset === 'function' && isProceduralRuntimeAsset(name)));
+    return [...new Set([...configured, ...Object.keys(ASSETS)])]
+      .filter(name => isMappedAsset(name) && !isBlockedKey(name)
+        && !(typeof isProceduralRuntimeAsset === 'function' && isProceduralRuntimeAsset(name)));
   }
 
   function assetSources(name) {
@@ -89,7 +98,7 @@
   }
 
   function guardedLoadImages() {
-    const report = { version: 'asset-load-guard-natural-png-v3', roots: ROOTS, loaded: 0, missing: [], recovered: [], startedAt: new Date().toISOString() };
+    const report = { version: 'asset-load-guard-natural-png-v4', roots: ROOTS, loaded: 0, missing: [], recovered: [], startedAt: new Date().toISOString() };
     const names = assetNamesToLoad();
     const essentials = names.filter(name => name.startsWith('tile_'));
     const background = names.filter(name => !essentials.includes(name));
@@ -117,5 +126,5 @@
   }
 
   window.HavenfallNatureAssets = Object.freeze({ roots: ROOTS, names: () => Object.keys(ASSETS), sourcesFor: assetSources, candidates: ASSETS });
-  window.HavenfallAssetLoadGuard = Object.freeze({ version: 'asset-load-guard-natural-png-v3', guardedLoadImages, assetSources });
+  window.HavenfallAssetLoadGuard = Object.freeze({ version: 'asset-load-guard-natural-png-v4', guardedLoadImages, assetSources });
 })();

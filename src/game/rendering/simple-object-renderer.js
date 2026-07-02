@@ -247,9 +247,10 @@
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
     const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
-    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes].includes(type);
+    const allTypes = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes];
+    const supported = allTypes.includes(type);
     if (!supported) return false;
-    if (fallbackTypes.includes(type) && imageReadyFor(obj, type)) return false;
+    if (imageReadyFor(obj, type)) return false;
 
     const p = anchor(obj);
     ctx.save();

@@ -41,7 +41,7 @@ function loadImages() {
     const img = new Image();
     img.onload = () => { images[name] = img; resolve(); };
     img.onerror = reject;
-    img.src = typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
+    img.src = typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/tiles/${name}.png`;
   }));
 
   const animationLoads = Object.entries(window.HavenfallAssets?.animations || {}).filter(([key, animation]) => !isProceduralRuntimeAsset(key) && !isProceduralRuntimeAsset(animation?.key)).map(([key, animation]) => new Promise((resolve, reject) => {
@@ -54,8 +54,21 @@ function loadImages() {
   return Promise.all([...spriteLoads, ...animationLoads]);
 }
 
+const NATURAL_RUNTIME_KEYS = new Set([
+  'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
+  'tree', 'tree_oak', 'tree_birch', 'tree_pine', 'tree_palm', 'tree_willow', 'tree_eucalyptus',
+  'bush', 'bush_dense', 'bush_dry', 'berry', 'rock', 'logs'
+]);
+const BLOCKED_RUNTIME_KEYS = new Set([
+  'tile_water', 'mountain_inner', 'mountain_corner_ne', 'mountain_corner_nw',
+  'mountain_corner_se', 'mountain_corner_sw', 'mountain_edge_e', 'mountain_edge_n',
+  'mountain_edge_s', 'mountain_edge_w'
+]);
+
 function isProceduralRuntimeAsset(name) {
   const key = String(name || '');
+  if (BLOCKED_RUNTIME_KEYS.has(key)) return true;
+  if (NATURAL_RUNTIME_KEYS.has(key)) return false;
   const asset = window.HavenfallAssets?.assets?.[key];
   const path = String(asset?.path || '');
   return /^colonist[A-Z]+_/.test(key)
