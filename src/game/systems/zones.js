@@ -4,6 +4,7 @@ let currentZoneTool = null;
 let zoneDragActive = false;
 let zoneDragStart = null;
 let zoneDragEnd = null;
+let suppressNextZoneClick = false;
 
 const zoneDefs = Object.freeze({
   storage: {
@@ -188,9 +189,26 @@ function zoneLabel(type) {
 }
 
 function zoneToolLabel() {
-  if (!currentZoneTool) return 'nenhuma ferramenta ativa';
-  if (currentZoneTool === 'none') return 'apagando zonas';
-  return `marcando ${zoneDefForOverlay(currentZoneTool)?.label?.toLowerCase() || currentZoneTool}`;
+  if (!currentZoneTool) return '';
+  if (currentZoneTool === 'none') return 'Apagar';
+  return zoneDefForOverlay(currentZoneTool)?.short || zoneDefForOverlay(currentZoneTool)?.label || currentZoneTool;
+}
+
+function zonesDockPanel() {
+  const panel = document.getElementById('anchored-ui-panel');
+  return panel?.dataset.activeDockTab === 'zones' ? panel : null;
+}
+
+function collapseZonesPanelForPainting() {
+  const panel = zonesDockPanel();
+  if (!panel) return;
+  panel.classList.remove('is-active');
+  panel.setAttribute('aria-hidden', 'true');
+}
+
+function restoreZonesPanelAfterPainting() {
+  if (window.HavenfallUI?.renderDockPanel) window.HavenfallUI.renderDockPanel('zones');
+  else window.HavenfallUI?.refreshDockPanel?.('zones');
 }
 
 function clearZoneTool(reason = '') {
@@ -212,16 +230,15 @@ function installZonePanel() {
     <div class="panel-title-row">
       <div>
         <h2>Zonas</h2>
-        <p class="panel-hint">Atalho rápido. O controle completo abre em modal para não entupir o rodapé.</p>
+        <p class="panel-hint">Escolha uma zona e marque direto no mapa.</p>
       </div>
       <button data-open-zones-modal>Gerenciar zonas</button>
     </div>
     <div class="zone-tool-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
       ${zoneToolButtonsHtml()}
       <button data-zone-tool="none" class="secondary">Apagar</button>
-      <button data-clear-zone-tool class="secondary">Desativar ferramenta</button>
     </div>
-    <div id="zoneInfo" class="subtle-box">Nenhuma zona marcada ainda.</div>
+    <div id="zoneInfo" class="subtle-box"></div>
   `;
 }
 
@@ -242,12 +259,7 @@ function zoneCountCardsHtml() {
 
 function updateZonePanel() {
   const info = document.getElementById('zoneInfo');
-  if (!info || !state) return;
-  const counts = zoneSystem.counts();
-  info.innerHTML = `
-    <b>Ferramenta:</b> ${zoneToolLabel()}<br>
-    Estoque: ${counts.storage || 0} · Descarte: ${counts.dumping || 0} · Casa: ${counts.home || 0} · Seguro: ${counts.safe || 0} · Prioridade: ${counts.priority || 0}
-  `;
+  if (info) info.textContent = currentZoneTool ? `${zoneToolLabel()} selecionado` : '';
   document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.zoneTool === currentZoneTool));
 }
 
@@ -255,11 +267,12 @@ function setZoneTool(tool) {
   if (!zoneToolExists(tool)) return;
   currentZoneTool = tool;
   currentBuild = null;
+  if (typeof clearOrderTool === 'function') clearOrderTool('zones');
   clearZoneSelection();
   document.body.classList.toggle('zone-brush-active', !!currentZoneTool);
   updateZonePanel();
   updateZonesModal();
-  window.HavenfallUI?.refreshDockPanel?.('zones');
+  if (currentZoneTool) collapseZonesPanelForPainting();
   if (typeof updateUI === 'function') updateUI(true);
 }
 
@@ -335,7 +348,6 @@ function updateZonesModal() {
         <div>
           <div class="kicker">Gerenciamento</div>
           <h3>Zonas da colônia</h3>
-          <p class="empty">Escolha uma ferramenta e clique/arraste no mapa para marcar uma área inteira. Solte para confirmar.</p>
         </div>
         <button class="colonist-modal-close" data-close-zones-modal>Fechar</button>
       </header>
@@ -343,18 +355,8 @@ function updateZonesModal() {
       <div class="zones-modal-actions">
         ${zoneToolButtonsHtml()}
         <button data-zone-tool="none" class="secondary">Apagar zona</button>
-        <button data-clear-zone-tool class="secondary">Desativar ferramenta</button>
         <button data-clear-all-zones class="danger">Apagar todas</button>
       </div>
-      <div class="subtle-box"><b>Ferramenta ativa:</b> ${zoneToolLabel()}</div>
-      <ul class="zones-help-list">
-        <li><b>Como usar:</b> clique e arraste no mapa; soltar o mouse aplica a zona na área selecionada.</li>
-        <li><b>Armazenamento:</b> recebe toras soltas automaticamente.</li>
-        <li><b>Descarte:</b> reservada para lixo, carcaças e itens indesejados nas próximas simulações.</li>
-        <li><b>Casa:</b> define o núcleo da base.</li>
-        <li><b>Área segura:</b> colonos feridos/doentes podem buscar abrigo nela.</li>
-        <li><b>Prioritária:</b> gancho para foco de trabalho e defesa.</li>
-      </ul>
     </article>
   `;
   document.querySelectorAll('[data-zone-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.zoneTool === currentZoneTool));
@@ -408,21 +410,25 @@ function finishZoneSelectionFromEvent(event = null) {
   if (event) updateZoneDragFromEvent(event);
   const bounds = zoneSelectionBounds();
   clearZoneSelection();
+  suppressNextZoneClick = true;
+  currentZoneTool = null;
+  document.body.classList.remove('zone-brush-active');
   if (!bounds) {
-    currentZoneTool = null;
-    document.body.classList.remove('zone-brush-active');
     updateZonePanel();
     updateZonesModal();
     if (typeof updateUI === 'function') updateUI(true);
+    restoreZonesPanelAfterPainting();
     return false;
   }
   const changed = zoneSystem.setZoneRect(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, tool);
-  currentZoneTool = null;
-  document.body.classList.remove('zone-brush-active');
   updateZonePanel();
   updateZonesModal();
-  window.HavenfallUI?.refreshDockPanel?.('zones');
   if (typeof updateUI === 'function') updateUI(true);
+  restoreZonesPanelAfterPainting();
+  if (typeof log === 'function') {
+    const label = tool === 'none' ? 'Zonas apagadas' : `${zoneLabel(tool)} marcado`;
+    log(changed ? `${label}: ${changed} tile${changed === 1 ? '' : 's'}.` : 'Nenhum tile válido foi alterado.');
+  }
   return changed > 0;
 }
 
@@ -431,7 +437,7 @@ function zonesModalOpen() {
 }
 
 function shouldShowZonesOverlay() {
-  return zoneDragActive || zonesModalOpen();
+  return zoneDragActive || !!currentZoneTool || zonesModalOpen();
 }
 
 function stopCanvasEvent(event) {
@@ -446,9 +452,7 @@ function installZoneInput() {
 
   canvas.addEventListener('mousedown', event => {
     if (event.button !== 0 || !currentZoneTool) return;
-    if (beginZoneSelectionFromEvent(event)) {
-      stopCanvasEvent(event);
-    }
+    if (beginZoneSelectionFromEvent(event)) stopCanvasEvent(event);
   }, true);
 
   canvas.addEventListener('mousemove', event => {
@@ -469,6 +473,11 @@ function installZoneInput() {
   }, true);
 
   canvas.addEventListener('click', event => {
+    if (suppressNextZoneClick) {
+      suppressNextZoneClick = false;
+      stopCanvasEvent(event);
+      return;
+    }
     if (!currentZoneTool) return;
     stopCanvasEvent(event);
   }, true);
@@ -481,17 +490,23 @@ function installZoneButtons() {
     const open = event.target.closest?.('[data-open-zones-modal]');
     if (open) {
       openZonesModal();
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
     const clear = event.target.closest?.('[data-clear-zone-tool]');
     if (clear) {
       clearZoneTool('manual');
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
     const btn = event.target.closest?.('[data-zone-tool]');
     if (!btn) return;
     setZoneTool(btn.dataset.zoneTool);
     if (btn.closest?.('#zones-modal')) closeZonesModal({ preserveTool: true });
+    event.preventDefault();
+    event.stopPropagation();
   });
 }
 
