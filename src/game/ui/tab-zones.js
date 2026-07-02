@@ -59,12 +59,7 @@
 
   function renderSelectedPlotPanel() {
     const info = selectedPlotInfo();
-    if (!info) {
-      return `<section class="dock-context-card">
-        <strong>Configurar talhão</strong>
-        <small>Depois de pintar uma Zona de cultivo, clique nela no mapa para escolher batata, cenoura, milho ou morango.</small>
-      </section>`;
-    }
+    if (!info) return '';
     const { plot, cells, crop, avgGrowth, avgWater, avgHealth, mature, sample } = info;
     return `<section class="dock-context-card farming-plot-card" data-plot-id="${escapeHtml(plot.id)}">
       <div class="dock-tab-head"><div><h3>${escapeHtml(plot.name || 'Talhão')}</h3><small>${cells.length} célula${cells.length === 1 ? '' : 's'} · ${escapeHtml(plot.status || phaseLabel(sample?.phase))}</small></div></div>
@@ -81,7 +76,7 @@
   }
 
   function renderZoneButton(key, def) {
-    return `<button class="dock-card zone-card ${currentZoneTool === key ? 'is-active' : ''}" data-zone-tool="${escapeHtml(key)}">
+    return `<button type="button" class="dock-card zone-card ${currentZoneTool === key ? 'is-active' : ''}" data-zone-tool="${escapeHtml(key)}">
       <strong>${escapeHtml(def.short || def.label)}</strong>
       <small>${escapeHtml(def.hint || '')}</small>
     </button>`;
@@ -89,11 +84,11 @@
 
   function render() {
     if (!state) return '<div class="dock-empty">Inicie uma partida para marcar zonas.</div>';
-    return `<div class="zones-panel">
+    return `<div class="zones-panel" data-zones-panel>
       <div class="dock-tab-head"><div><h3>Zonas</h3></div></div>
       <div class="dock-card-grid">
         ${zoneEntries().map(([key, def]) => renderZoneButton(key, def)).join('')}
-        <button class="dock-card zone-card ${currentZoneTool === 'none' ? 'is-active' : ''}" data-zone-tool="none"><strong>Apagar</strong><small>Remove zonas pintadas.</small></button>
+        <button type="button" class="dock-card zone-card ${currentZoneTool === 'none' ? 'is-active' : ''}" data-zone-tool="none"><strong>Apagar</strong><small>Remove zonas pintadas.</small></button>
       </div>
       ${renderSelectedPlotPanel()}
     </div>`;
@@ -119,8 +114,8 @@
   }
 
   function handleZoneToolClick(event) {
-    const button = event.target.closest?.('[data-zone-tool]');
-    if (!button || !button.closest?.('.zones-panel')) return;
+    const button = event.target.closest?.('#anchored-ui-panel[data-active-dock-tab="zones"] [data-zone-tool]');
+    if (!button) return;
     stopEvent(event);
     selectedPlotId = null;
     activateZoneTool(button.dataset.zoneTool);
@@ -153,6 +148,7 @@
     stopEvent(event);
   }
 
+  document.addEventListener('pointerdown', handleZoneToolClick, true);
   document.addEventListener('click', handleZoneToolClick, true);
   document.addEventListener('change', handleChange, true);
   document.addEventListener('click', handleMapPlotClick, true);
