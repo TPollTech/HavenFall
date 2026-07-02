@@ -39,7 +39,7 @@ const SCREEN = Object.freeze({
 });
 
 const assetNames = [
-  'tile_grass','tile_dirt','tile_sand','tile_stone','tree','bush','rock','logs','berry','crop_patch',
+  'tile_grass','tile_dirt','tile_sand','tile_stone','tree','bush','rock','logs','berry',
   'bed_single','table_wood','crate_wood','stool','wall_stone','door_wood','campfire','chest_large',
   'icon_food','icon_wood','icon_stone','icon_metal','icon_warn',
   'weapon_axe','tool_pickaxe','tool_mattock','tool_shovel','tool_hammer','tool_sledgehammer','tool_chisel','tool_sickle','tool_wrench','tool_pliers',
