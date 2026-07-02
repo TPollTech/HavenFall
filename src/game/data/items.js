@@ -20,38 +20,38 @@ const baseItemDefs = {
   simpleMeal: { label: 'Refeição cozida', icon: 'res_stew', kind: 'food', note: 'Comida preparada no fogão.' },
 
   // Minérios brutos
-  rawIron: { label: 'Minério de ferro bruto', icon: 'icon_metal', kind: 'rawOre', note: 'Ferro extraído da rocha. Precisa ser triturado, selecionado e fundido.' },
-  rawCopper: { label: 'Minério de cobre bruto', icon: 'icon_metal', kind: 'rawOre', note: 'Cobre extraído da rocha. Precisa ser processado em etapas.' },
-  rawCoal: { label: 'Carvão bruto', icon: 'icon_coal', kind: 'rawOre', note: 'Carvão extraído, cheio de impurezas.' },
-  rawTin: { label: 'Minério de estanho bruto', icon: 'icon_metal', kind: 'rawOre', note: 'Estanho bruto para ligas e peças leves.' },
-  rawSilver: { label: 'Minério de prata bruto', icon: 'icon_metal', kind: 'rawOre', note: 'Prata bruta para componentes precisos.' },
+  rawIron: { label: 'Minério de ferro bruto', icon: 'mining_ore_iron_raw', kind: 'rawOre', note: 'Ferro extraído da rocha. Precisa ser triturado, selecionado e fundido.' },
+  rawCopper: { label: 'Minério de cobre bruto', icon: 'mining_ore_copper_raw', kind: 'rawOre', note: 'Cobre extraído da rocha. Precisa ser processado em etapas.' },
+  rawCoal: { label: 'Carvão bruto', icon: 'mining_ore_coal_raw', kind: 'rawOre', note: 'Carvão extraído, cheio de impurezas.' },
+  rawTin: { label: 'Minério de estanho bruto', icon: 'mining_ore_tin_raw', kind: 'rawOre', note: 'Estanho bruto para ligas e peças leves.' },
+  rawSilver: { label: 'Minério de prata bruto', icon: 'mining_ore_silver_raw', kind: 'rawOre', note: 'Prata bruta para componentes precisos.' },
 
   // Minérios processados
-  crushedIron: { label: 'Ferro triturado', icon: 'icon_metal', kind: 'crushedOre', note: 'Ferro triturado, pronto para seleção.' },
-  crushedCopper: { label: 'Cobre triturado', icon: 'icon_metal', kind: 'crushedOre', note: 'Cobre triturado, pronto para seleção.' },
-  crushedCoal: { label: 'Carvão triturado', icon: 'icon_coal', kind: 'crushedOre', note: 'Carvão triturado, precisa ser limpo.' },
-  preparedIron: { label: 'Ferro preparado', icon: 'icon_metal', kind: 'smeltable', note: 'Ferro separado e limpo, pronto para fundir.' },
-  preparedCopper: { label: 'Cobre preparado', icon: 'icon_metal', kind: 'smeltable', note: 'Cobre separado e limpo, pronto para fundir.' },
-  preparedCoal: { label: 'Carvão limpo', icon: 'icon_coal', kind: 'fuel', note: 'Carvão limpo e seco, combustível de qualidade.' },
+  crushedIron: { label: 'Ferro triturado', icon: 'mining_ore_iron_raw', kind: 'crushedOre', note: 'Ferro triturado, pronto para seleção.' },
+  crushedCopper: { label: 'Cobre triturado', icon: 'mining_ore_copper_raw', kind: 'crushedOre', note: 'Cobre triturado, pronto para seleção.' },
+  crushedCoal: { label: 'Carvão triturado', icon: 'mining_ore_coal_raw', kind: 'crushedOre', note: 'Carvão triturado, precisa ser limpo.' },
+  preparedIron: { label: 'Ferro preparado', icon: 'mining_ore_iron_raw', kind: 'smeltable', note: 'Ferro separado e limpo, pronto para fundir.' },
+  preparedCopper: { label: 'Cobre preparado', icon: 'mining_ore_copper_raw', kind: 'smeltable', note: 'Cobre separado e limpo, pronto para fundir.' },
+  preparedCoal: { label: 'Carvão limpo', icon: 'mining_ore_coal_raw', kind: 'fuel', note: 'Carvão limpo e seco, combustível de qualidade.' },
 
   // Metais em lingote
-  ironIngot: { label: 'Lingote de ferro', icon: 'icon_metal', kind: 'metal', note: 'Ferro fundido em lingote. Base para ferramentas, peças e máquinas.' },
-  copperIngot: { label: 'Lingote de cobre', icon: 'icon_metal', kind: 'metal', note: 'Cobre fundido em lingote. Base para fios e componentes elétricos.' },
-  tinIngot: { label: 'Lingote de estanho', icon: 'icon_metal', kind: 'metal', note: 'Estanho fundido, usado em ligas de bronze.' },
-  silverIngot: { label: 'Lingote de prata', icon: 'icon_metal', kind: 'metal', note: 'Prata refinada para componentes de precisão.' },
+  ironIngot: { label: 'Lingote de ferro', icon: 'mining_ingot_iron', kind: 'metal', note: 'Ferro fundido em lingote. Base para ferramentas, peças e máquinas.' },
+  copperIngot: { label: 'Lingote de cobre', icon: 'mining_ingot_copper', kind: 'metal', note: 'Cobre fundido em lingote. Base para fios e componentes elétricos.' },
+  tinIngot: { label: 'Lingote de estanho', icon: 'mining_ingot_tin', kind: 'metal', note: 'Estanho fundido, usado em ligas de bronze.' },
+  silverIngot: { label: 'Lingote de prata', icon: 'mining_ingot_silver', kind: 'metal', note: 'Prata refinada para componentes de precisão.' },
 
   // Peças e componentes
-  ironPlate: { label: 'Chapa de ferro', icon: 'icon_metal', kind: 'part', note: 'Chapa de ferro para construção de máquinas e estruturas.' },
-  copperWire: { label: 'Fio de cobre', icon: 'icon_wire', kind: 'part', note: 'Fio de cobre para energia e componentes elétricos.' },
-  gear: { label: 'Engrenagem', icon: 'icon_gear', kind: 'part', note: 'Engrenagem de metal para maquinário.' },
-  ironBar: { label: 'Barra de ferro', icon: 'icon_metal', kind: 'part', note: 'Barra de ferro para construção e peças estruturais.' },
+  ironPlate: { label: 'Chapa de ferro', icon: 'mining_part_iron_plate', kind: 'part', note: 'Chapa de ferro para construção de máquinas e estruturas.' },
+  copperWire: { label: 'Fio de cobre', icon: 'mining_part_copper_wire', kind: 'part', note: 'Fio de cobre para energia e componentes elétricos.' },
+  gear: { label: 'Engrenagem', icon: 'mining_part_gear', kind: 'part', note: 'Engrenagem de metal para maquinário.' },
+  ironBar: { label: 'Barra de ferro', icon: 'mining_part_iron_bar', kind: 'part', note: 'Barra de ferro para construção e peças estruturais.' },
 
   // Subprodutos
-  gravel: { label: 'Cascalho', icon: 'icon_stone', kind: 'material', note: 'Resíduo da britagem de minério. Usado em construção.' },
-  silica: { label: 'Sílica', icon: 'icon_stone', kind: 'material', note: 'Pó de quartzo para fabricação de vidro.' },
+  gravel: { label: 'Cascalho', icon: 'mining_byproduct_gravel', kind: 'material', note: 'Resíduo da britagem de minério. Usado em construção.' },
+  silica: { label: 'Sílica', icon: 'mining_byproduct_silica', kind: 'material', note: 'Pó de quartzo para fabricação de vidro.' },
 
   // Ferramentas de mineração
-  copperPickaxe: { label: 'Picareta de cobre', icon: 'tool_pickaxe', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.45, metal: 0.50 }, combat: 1.3, maxDurability: 35, note: 'Picareta de cobre. Melhor rendimento em mineração.' },
-  ironPickaxe: { label: 'Picareta de ferro', icon: 'tool_pickaxe', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.60, metal: 0.65 }, combat: 1.5, maxDurability: 50, note: 'Picareta de ferro. Excelente para mineração pesada.' },
-  geologicalHammer: { label: 'Martelo geológico', icon: 'tool_hammer', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.30, metal: 0.30 }, combat: 1.0, maxDurability: 60, note: 'Martelo especial que revela a pureza de veios minerais.' }
+  copperPickaxe: { label: 'Picareta de cobre', icon: 'mining_tool_pickaxe_copper', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.45, metal: 0.50 }, combat: 1.3, maxDurability: 35, note: 'Picareta de cobre. Melhor rendimento em mineração.' },
+  ironPickaxe: { label: 'Picareta de ferro', icon: 'mining_tool_pickaxe_iron', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.60, metal: 0.65 }, combat: 1.5, maxDurability: 50, note: 'Picareta de ferro. Excelente para mineração pesada.' },
+  geologicalHammer: { label: 'Martelo geológico', icon: 'mining_tool_geological_hammer', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.30, metal: 0.30 }, combat: 1.0, maxDurability: 60, note: 'Martelo especial que revela a pureza de veios minerais.' }
 };

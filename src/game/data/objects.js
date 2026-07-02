@@ -31,14 +31,14 @@ const baseObjectDefs = {
   door: { name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true },
 
   // Veios fixos de minério (persistentes, não somem ao minerar)
-  ironVein: { name: 'veio de ferro', img: 'icon_metal', blocks: true, vein: true, veinType: 'iron', work: 8.0 },
-  copperVein: { name: 'veio de cobre', img: 'icon_metal', blocks: true, vein: true, veinType: 'copper', work: 8.0 },
-  coalVein: { name: 'veio de carvão', img: 'icon_coal', blocks: true, vein: true, veinType: 'coal', work: 6.0 },
-  tinVein: { name: 'veio de estanho', img: 'icon_metal', blocks: true, vein: true, veinType: 'tin', work: 7.0 },
+  ironVein: { name: 'veio de ferro', img: 'mining_vein_iron', blocks: true, vein: true, veinType: 'iron', work: 8.0 },
+  copperVein: { name: 'veio de cobre', img: 'mining_vein_copper', blocks: true, vein: true, veinType: 'copper', work: 8.0 },
+  coalVein: { name: 'veio de carvão', img: 'mining_vein_coal', blocks: true, vein: true, veinType: 'coal', work: 6.0 },
+  tinVein: { name: 'veio de estanho', img: 'mining_vein_iron', blocks: true, vein: true, veinType: 'tin', work: 7.0 },
 
   // Bancadas de processamento de minério
-  pestle: { name: 'pilão de pedra', img: 'crafting_bench', blocks: true, craft: 1 },
-  selectionTable: { name: 'mesa de seleção', img: 'crafting_bench', blocks: true, craft: 1 },
-  furnace: { name: 'fornalha simples', img: 'campfire', blocks: true, craft: 1, light: { radius: 4, power: 0.7, color: '#ff8c42', flicker: 0.15 } },
-  anvil: { name: 'bigorna', img: 'edificios_forge', blocks: true, craft: 1 }
+  pestle: { name: 'pilão de pedra', img: 'mining_station_stone_mortar', blocks: true, craft: 1 },
+  selectionTable: { name: 'mesa de seleção', img: 'mining_station_sorting_table', blocks: true, craft: 1 },
+  furnace: { name: 'fornalha simples', img: 'mining_station_simple_furnace', blocks: true, craft: 1, light: { radius: 4, power: 0.7, color: '#ff8c42', flicker: 0.15 } },
+  anvil: { name: 'bigorna', img: 'mining_station_anvil', blocks: true, craft: 1 }
 };
