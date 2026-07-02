@@ -246,9 +246,8 @@ const TERRAIN_BASE_COLORS = Object.freeze({
   water: '#1f6f88'
 });
 const TILE_OVERDRAW = 2.0;
-const TILE_BLEND_WIDTH = 14;
+const TILE_BLEND_WIDTH = 24;
 const TILE_SOURCE_CROP_RATIO = 0.055;
-const EDGE_FEATHER_WIDTH = 4;
 
 function terrainBaseColor(type) {
   return TERRAIN_BASE_COLORS[type] || TERRAIN_BASE_COLORS.grass;
@@ -300,37 +299,7 @@ function drawTerrainTexture(img, x, y) {
     TILE + TILE_OVERDRAW * 2
   );
 
-  const type = state?.terrain?.[y]?.[x];
-  if (!type) return;
-  const color = terrainBaseColor(type);
-  const px = x * TILE;
-  const py = y * TILE;
-  const fw = EDGE_FEATHER_WIDTH;
-  let g;
 
-  g = ctx.createLinearGradient(px, py, px, py + fw);
-  g.addColorStop(0, rgbaFromHex(color, 0.45));
-  g.addColorStop(1, rgbaFromHex(color, 0));
-  ctx.fillStyle = g;
-  ctx.fillRect(px - TILE_OVERDRAW, py - TILE_OVERDRAW, TILE + TILE_OVERDRAW * 2, fw);
-
-  g = ctx.createLinearGradient(px, py + TILE, px, py + TILE - fw);
-  g.addColorStop(0, rgbaFromHex(color, 0.45));
-  g.addColorStop(1, rgbaFromHex(color, 0));
-  ctx.fillStyle = g;
-  ctx.fillRect(px - TILE_OVERDRAW, py + TILE - fw, TILE + TILE_OVERDRAW * 2, fw);
-
-  g = ctx.createLinearGradient(px, py, px + fw, py);
-  g.addColorStop(0, rgbaFromHex(color, 0.45));
-  g.addColorStop(1, rgbaFromHex(color, 0));
-  ctx.fillStyle = g;
-  ctx.fillRect(px - TILE_OVERDRAW, py - TILE_OVERDRAW, fw, TILE + TILE_OVERDRAW * 2);
-
-  g = ctx.createLinearGradient(px + TILE, py, px + TILE - fw, py);
-  g.addColorStop(0, rgbaFromHex(color, 0.45));
-  g.addColorStop(1, rgbaFromHex(color, 0));
-  ctx.fillStyle = g;
-  ctx.fillRect(px + TILE - fw, py - TILE_OVERDRAW, fw, TILE + TILE_OVERDRAW * 2);
 }
 
 function drawTerrainBlendStrip(x, y, side, neighborType) {
@@ -343,33 +312,41 @@ function drawTerrainBlendStrip(x, y, side, neighborType) {
   let gradient;
 
   if (side === 'left') {
-    gradient = ctx.createLinearGradient(px, 0, px + w, 0);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.72));
-    gradient.addColorStop(0.6, rgbaFromHex(color, 0.28));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(px - w, 0, px + w * 0.3, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+    ctx.fillRect(px - w, py - TILE_OVERDRAW, w * 1.3, TILE + TILE_OVERDRAW * 2);
   } else if (side === 'right') {
-    gradient = ctx.createLinearGradient(px + TILE, 0, px + TILE - w, 0);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.72));
-    gradient.addColorStop(0.6, rgbaFromHex(color, 0.28));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(px + TILE + w, 0, px + TILE - w * 0.3, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px + TILE - w + 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+    ctx.fillRect(px + TILE - w * 0.3, py - TILE_OVERDRAW, w * 1.3, TILE + TILE_OVERDRAW * 2);
   } else if (side === 'top') {
-    gradient = ctx.createLinearGradient(0, py, 0, py + w);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.72));
-    gradient.addColorStop(0.6, rgbaFromHex(color, 0.28));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(0, py - w, 0, py + w * 0.3);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - TILE_OVERDRAW, py - 0.5, TILE + TILE_OVERDRAW * 2, w);
+    ctx.fillRect(px - TILE_OVERDRAW, py - w, TILE + TILE_OVERDRAW * 2, w * 1.3);
   } else if (side === 'bottom') {
-    gradient = ctx.createLinearGradient(0, py + TILE, 0, py + TILE - w, 0);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.72));
-    gradient.addColorStop(0.6, rgbaFromHex(color, 0.28));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(0, py + TILE + w, 0, py + TILE - w * 0.3);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - TILE_OVERDRAW, py + TILE - w + 0.5, TILE + TILE_OVERDRAW * 2, w);
+    ctx.fillRect(px - TILE_OVERDRAW, py + TILE - w * 0.3, TILE + TILE_OVERDRAW * 2, w * 1.3);
   }
 }
 
@@ -398,7 +375,7 @@ function drawTerrainBlendCorner(x, y, corner, neighborType) {
   if (!neighborType) return;
   const px = x * TILE;
   const py = y * TILE;
-  const r = TILE_BLEND_WIDTH * 1.2;
+  const r = TILE_BLEND_WIDTH * 1.5;
   const color = terrainBaseColor(neighborType);
   let cx, cy;
   if (corner === 'tl') { cx = px; cy = py; }
@@ -406,8 +383,9 @@ function drawTerrainBlendCorner(x, y, corner, neighborType) {
   else if (corner === 'bl') { cx = px; cy = py + TILE; }
   else { cx = px + TILE; cy = py + TILE; }
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  grad.addColorStop(0, rgbaFromHex(color, 0.6));
-  grad.addColorStop(0.5, rgbaFromHex(color, 0.22));
+  grad.addColorStop(0, rgbaFromHex(color, 0.38));
+  grad.addColorStop(0.3, rgbaFromHex(color, 0.28));
+  grad.addColorStop(0.6, rgbaFromHex(color, 0.14));
   grad.addColorStop(1, rgbaFromHex(color, 0));
   ctx.fillStyle = grad;
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
