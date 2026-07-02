@@ -245,8 +245,8 @@ const TERRAIN_BASE_COLORS = Object.freeze({
   stone: '#626966',
   water: '#1f6f88'
 });
-const TILE_OVERDRAW = 1.4;
-const TILE_BLEND_WIDTH = 9;
+const TILE_OVERDRAW = 8.0;
+const TILE_BLEND_WIDTH = 24;
 const TILE_SOURCE_CROP_RATIO = 0.055;
 
 function terrainBaseColor(type) {
@@ -282,22 +282,43 @@ function drawTerrainTexture(img, x, y) {
   const sw = img.naturalWidth || img.width || TILE;
   const sh = img.naturalHeight || img.height || TILE;
   const crop = Math.max(0, Math.min(14, Math.floor(Math.min(sw, sh) * TILE_SOURCE_CROP_RATIO)));
-  const sx = crop;
-  const sy = crop;
-  const sWidth = Math.max(1, sw - crop * 2);
-  const sHeight = Math.max(1, sh - crop * 2);
 
-  ctx.drawImage(
-    img,
-    sx,
-    sy,
-    sWidth,
-    sHeight,
-    x * TILE - TILE_OVERDRAW,
-    y * TILE - TILE_OVERDRAW,
-    TILE + TILE_OVERDRAW * 2,
-    TILE + TILE_OVERDRAW * 2
-  );
+  const px = x * TILE - TILE_OVERDRAW;
+  const py = y * TILE - TILE_OVERDRAW;
+  const size = TILE + TILE_OVERDRAW * 2;
+
+  ctx.drawImage(img, crop, crop, Math.max(1, sw - crop * 2), Math.max(1, sh - crop * 2), px, py, size, size);
+
+  const fw = TILE_OVERDRAW;
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  let g;
+
+  g = ctx.createLinearGradient(px, py, px, py + fw);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py, size, fw);
+
+  g = ctx.createLinearGradient(px, py + size, px, py + size - fw);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py + size - fw, size, fw);
+
+  g = ctx.createLinearGradient(px, py, px + fw, py);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py, fw, size);
+
+  g = ctx.createLinearGradient(px + size, py, px + size - fw, py);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px + size - fw, py, fw, size);
+
+  ctx.restore();
 }
 
 function drawTerrainBlendStrip(x, y, side, neighborType) {
@@ -310,29 +331,41 @@ function drawTerrainBlendStrip(x, y, side, neighborType) {
   let gradient;
 
   if (side === 'left') {
-    gradient = ctx.createLinearGradient(px, 0, px + w, 0);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(px - w, 0, px + w * 0.3, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+    ctx.fillRect(px - w, py - TILE_OVERDRAW, w * 1.3, TILE + TILE_OVERDRAW * 2);
   } else if (side === 'right') {
-    gradient = ctx.createLinearGradient(px + TILE, 0, px + TILE - w, 0);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(px + TILE + w, 0, px + TILE - w * 0.3, 0);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px + TILE - w + 0.5, py - TILE_OVERDRAW, w, TILE + TILE_OVERDRAW * 2);
+    ctx.fillRect(px + TILE - w * 0.3, py - TILE_OVERDRAW, w * 1.3, TILE + TILE_OVERDRAW * 2);
   } else if (side === 'top') {
-    gradient = ctx.createLinearGradient(0, py, 0, py + w);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(0, py - w, 0, py + w * 0.3);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - TILE_OVERDRAW, py - 0.5, TILE + TILE_OVERDRAW * 2, w);
+    ctx.fillRect(px - TILE_OVERDRAW, py - w, TILE + TILE_OVERDRAW * 2, w * 1.3);
   } else if (side === 'bottom') {
-    gradient = ctx.createLinearGradient(0, py + TILE, 0, py + TILE - w);
-    gradient.addColorStop(0, rgbaFromHex(color, 0.5));
-    gradient.addColorStop(1, rgbaFromHex(color, 0));
+    gradient = ctx.createLinearGradient(0, py + TILE + w, 0, py + TILE - w * 0.3);
+    gradient.addColorStop(0, rgbaFromHex(color, 0));
+    gradient.addColorStop(0.35, rgbaFromHex(color, 0.18));
+    gradient.addColorStop(0.65, rgbaFromHex(color, 0.32));
+    gradient.addColorStop(0.85, rgbaFromHex(color, 0.42));
+    gradient.addColorStop(1, rgbaFromHex(color, 0.35));
     ctx.fillStyle = gradient;
-    ctx.fillRect(px - TILE_OVERDRAW, py + TILE - w + 0.5, TILE + TILE_OVERDRAW * 2, w);
+    ctx.fillRect(px - TILE_OVERDRAW, py + TILE - w * 0.3, TILE + TILE_OVERDRAW * 2, w * 1.3);
   }
 }
 
@@ -346,6 +379,35 @@ function drawTerrainBlends(x, y, type) {
   if (right && right !== type) drawTerrainBlendStrip(x, y, 'right', right);
   if (top && top !== type) drawTerrainBlendStrip(x, y, 'top', top);
   if (bottom && bottom !== type) drawTerrainBlendStrip(x, y, 'bottom', bottom);
+
+  const tl = terrainAtTile(x - 1, y - 1);
+  const tr = terrainAtTile(x + 1, y - 1);
+  const bl = terrainAtTile(x - 1, y + 1);
+  const br = terrainAtTile(x + 1, y + 1);
+  if (tl && tl !== type && tl !== left && tl !== top) drawTerrainBlendCorner(x, y, 'tl', tl);
+  if (tr && tr !== type && tr !== right && tr !== top) drawTerrainBlendCorner(x, y, 'tr', tr);
+  if (bl && bl !== type && bl !== left && bl !== bottom) drawTerrainBlendCorner(x, y, 'bl', bl);
+  if (br && br !== type && br !== right && br !== bottom) drawTerrainBlendCorner(x, y, 'br', br);
+}
+
+function drawTerrainBlendCorner(x, y, corner, neighborType) {
+  if (!neighborType) return;
+  const px = x * TILE;
+  const py = y * TILE;
+  const r = TILE_BLEND_WIDTH * 1.5;
+  const color = terrainBaseColor(neighborType);
+  let cx, cy;
+  if (corner === 'tl') { cx = px; cy = py; }
+  else if (corner === 'tr') { cx = px + TILE; cy = py; }
+  else if (corner === 'bl') { cx = px; cy = py + TILE; }
+  else { cx = px + TILE; cy = py + TILE; }
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0, rgbaFromHex(color, 0.38));
+  grad.addColorStop(0.3, rgbaFromHex(color, 0.28));
+  grad.addColorStop(0.6, rgbaFromHex(color, 0.14));
+  grad.addColorStop(1, rgbaFromHex(color, 0));
+  ctx.fillStyle = grad;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 }
 
 function drawTile(x, y, type) {
