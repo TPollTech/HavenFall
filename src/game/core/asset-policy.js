@@ -3,7 +3,7 @@
 (() => {
   const NATURE_KEYS = new Set([
     'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
-    'tree', 'bush', 'rock', 'logs', 'berry', 'crop_patch'
+    'tree', 'bush', 'rock', 'logs', 'berry'
   ]);
 
   const NATURE_PREFIXES = [
@@ -24,10 +24,12 @@
     'edificios_',
     'ferramentas_',
     'station_',
-    'stations_raw_v19b_cut_'
+    'stations_raw_v19b_cut_',
+    'crop_'
   ];
 
   const PROCEDURAL_EXACT = new Set([
+    'crop_patch',
     'bed_single', 'table_wood', 'crate_wood', 'stool', 'wall_stone', 'door_wood',
     'campfire', 'chest_large', 'crafting_bench', 'research_desk', 'stove', 'med_station',
     'forge', 'bench', 'smokehouse', 'sewing_table',
@@ -94,7 +96,7 @@
     try { window.isProceduralRuntimeAsset = isProceduralRuntimeAssetPolicy; } catch (_) {}
     window.HavenfallContext = window.HavenfallContext || {};
     window.HavenfallContext.assetPolicy = {
-      rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI e objetos modulares ficam em JS.',
+      rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI, objetos modulares e cultivo por talhão ficam em JS.',
       loadedNatureKeys: [...NATURE_KEYS]
     };
   }
@@ -107,7 +109,7 @@
     report,
     installGlobalBindings,
     natureKeys: [...NATURE_KEYS],
-    rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI e objetos modulares ficam em JS.'
+    rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI, objetos modulares e cultivo por talhão ficam em JS.'
   });
 
   installGlobalBindings();
