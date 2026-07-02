@@ -9,7 +9,7 @@
   const BATCH_SIZE = 32;
 
   const ROOTS = Object.freeze({
-    ground: Object.freeze(['assets/tiles']),
+    ground: Object.freeze(['assets/tiles/Tiles do chão', 'assets/tiles']),
     vegetation: Object.freeze(['assets/tiles/Arvores e arbustos', 'assets/tiles/Arvores e Arbustos', 'assets/tiles/arvores e arbustos'])
   });
 
@@ -24,35 +24,24 @@
     return [...new Set(names.filter(Boolean).flatMap(name => suffixes.map(suffix => `${name}${suffix}`)))];
   }
 
-  const VEGETATION_CUTS = [
-    'nature_and_survival_resource_icons_1_cut_001',
-    'nature_and_survival_resource_icons_1_cut_002',
-    'nature_and_survival_resource_icons_1_cut_003',
-    'nature_and_survival_resource_icons_1_cut_004',
-    'nature_and_survival_resource_icons_1_cut_005',
-    'nature_and_survival_resource_icons_1_cut_006',
-    'nature_and_survival_resource_icons_1_cut_007',
-    'nature_and_survival_resource_icons_1_cut_008'
-  ];
-
   const ASSETS = Object.freeze({
-    tile_grass: { roots: ROOTS.ground, files: variants('tile_grass', 'edificios_tile_grass_1', 'edificios_tile_grass') },
-    tile_dirt: { roots: ROOTS.ground, files: variants('tile_dirt', 'edificios_tile_dirt_1', 'edificios_tile_dirt') },
-    tile_sand: { roots: ROOTS.ground, files: variants('tile_sand', 'edificios_tile_sand_1', 'edificios_tile_sand') },
-    tile_stone: { roots: ROOTS.ground, files: variants('tile_stone', 'edificios_tile_stone_1', 'edificios_tile_stone', 'edificios_tile_rocky_1', 'edificios_tile_rocky') },
-    tree: { roots: ROOTS.vegetation, files: [...variants('tree', 'arvore', 'árvore'), ...VEGETATION_CUTS] },
-    tree_oak: { roots: ROOTS.vegetation, files: [...variants('tree_oak', 'oak_tree', 'carvalho'), ...VEGETATION_CUTS] },
-    tree_birch: { roots: ROOTS.vegetation, files: [...variants('tree_birch', 'birch_tree', 'betula', 'bétula'), ...VEGETATION_CUTS] },
-    tree_pine: { roots: ROOTS.vegetation, files: [...variants('tree_pine', 'pine_tree', 'pinheiro', 'conifer'), ...VEGETATION_CUTS] },
-    tree_palm: { roots: ROOTS.vegetation, files: [...variants('tree_palm', 'palm_tree', 'palmeira', 'coqueiro'), ...VEGETATION_CUTS] },
-    tree_willow: { roots: ROOTS.vegetation, files: [...variants('tree_willow', 'willow_tree', 'salgueiro'), ...VEGETATION_CUTS] },
-    tree_eucalyptus: { roots: ROOTS.vegetation, files: [...variants('tree_eucalyptus', 'eucalyptus_tree', 'eucalipto'), ...VEGETATION_CUTS] },
-    bush: { roots: ROOTS.vegetation, files: [...variants('bush', 'arbusto'), ...VEGETATION_CUTS] },
-    bush_dense: { roots: ROOTS.vegetation, files: [...variants('bush_dense', 'arbusto_denso'), ...VEGETATION_CUTS] },
-    bush_dry: { roots: ROOTS.vegetation, files: [...variants('bush_dry', 'dry_bush', 'arbusto_seco'), ...VEGETATION_CUTS] },
-    berry: { roots: ROOTS.vegetation, files: [...variants('berry', 'berry_bush', 'arbusto_frutas', 'res_berries'), ...VEGETATION_CUTS] },
+    tile_grass: { roots: ROOTS.ground, files: variants('grama', 'grama2', '2d_rpg_sprite_sheet_and_assets_cut_005', 'tile_grass') },
+    tile_dirt: { roots: ROOTS.ground, files: variants('terra', 'terra2', 'terra3', 'caminho de terra', '2d_rpg_sprite_sheet_and_assets_cut_006', 'tile_dirt') },
+    tile_sand: { roots: ROOTS.ground, files: variants('areia', 'areia2', '2d_rpg_sprite_sheet_and_assets_cut_011', 'tile_sand') },
+    tile_stone: { roots: ROOTS.ground, files: variants('pedregulho', 'pedregulho2', 'pedregulho3', '2d_rpg_sprite_sheet_and_assets_cut_012', 'tile_stone') },
+    tree: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_001', 'tree', 'arvore') },
+    tree_oak: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_001', 'tree_oak', 'carvalho') },
+    tree_birch: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_002', 'tree_birch', 'bétula') },
+    tree_pine: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_003', 'tree_pine', 'pinheiro') },
+    tree_palm: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_004', 'tree_palm', 'palmeira') },
+    tree_willow: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_005', 'tree_willow', 'salgueiro') },
+    tree_eucalyptus: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_006', 'tree_eucalyptus', 'eucalipto') },
+    bush: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_007', 'bush', 'arbusto') },
+    bush_dense: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_007', 'bush_dense', 'arbusto_denso') },
+    bush_dry: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_008', 'bush_dry', 'arbusto_seco') },
+    berry: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_008', 'berry', 'arbusto_frutas') },
     rock: { roots: ROOTS.ground, files: variants('rock', 'pedra', 'rocha') },
-    logs: { roots: ROOTS.vegetation, files: [...variants('logs', 'toras', 'madeira'), ...VEGETATION_CUTS] }
+    logs: { roots: ROOTS.vegetation, files: variants('nature_and_survival_resource_icons_1_cut_005', 'logs', 'toras') }
   });
 
   function isMappedAsset(name) { return !!ASSETS[String(name || '')]; }
