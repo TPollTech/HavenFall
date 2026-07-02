@@ -2,27 +2,59 @@
 
 let currentOrderTool = null;
 
-const ORDER_TOOL_CLASSES = ['order-mine-active', 'order-deconstruct-active', 'order-cancel-active'];
+const ORDER_TOOL_DEFINITIONS = [
+  { key: 'move', label: 'Mover' },
+  { key: 'mine', label: 'Minerar' },
+  { key: 'gather', label: 'Coletar' },
+  { key: 'build', label: 'Construir' },
+  { key: 'haul', label: 'Estocar' },
+  { key: 'inspect', label: 'Investigar' },
+  { key: 'loot', label: 'Vasculhar' },
+  { key: 'research', label: 'Pesquisar' },
+  { key: 'forge', label: 'Forjar' },
+  { key: 'cook', label: 'Cozinhar' },
+  { key: 'heal', label: 'Tratar' },
+  { key: 'fight', label: 'Combater' },
+  { key: 'sleep', label: 'Dormir' },
+  { key: 'deconstruct', label: 'Desconstruir' },
+  { key: 'cancel', label: 'Cancelar' }
+];
+
+const ORDER_TOOL_LABELS = ORDER_TOOL_DEFINITIONS.reduce((labels, tool) => {
+  labels[tool.key] = tool.label;
+  return labels;
+}, {});
+
+const ORDER_TOOL_CLASSES = ORDER_TOOL_DEFINITIONS.map(tool => `order-${tool.key}-active`);
+
+function orderLog(message) {
+  if (typeof log === 'function') log(message);
+}
+
+function syncOrderToolBodyClasses(tool = currentOrderTool) {
+  if (typeof document === 'undefined' || !document.body?.classList) return;
+  document.body.classList.remove(...ORDER_TOOL_CLASSES);
+  for (const def of ORDER_TOOL_DEFINITIONS) {
+    document.body.classList.toggle(`order-${def.key}-active`, tool === def.key);
+  }
+}
 
 function setOrderTool(tool = null) {
-  currentOrderTool = tool || null;
-  document.body.classList.remove(...ORDER_TOOL_CLASSES);
-  document.body.classList.toggle('order-mine-active', currentOrderTool === 'mine');
-  document.body.classList.toggle('order-deconstruct-active', currentOrderTool === 'deconstruct');
-  document.body.classList.toggle('order-cancel-active', currentOrderTool === 'cancel');
+  currentOrderTool = ORDER_TOOL_LABELS[tool] ? tool : null;
+  syncOrderToolBodyClasses();
 
   if (currentOrderTool) {
     if (typeof clearZoneTool === 'function') clearZoneTool('orders');
     const label = orderToolLabel(currentOrderTool);
-    log(`Ordem ${label} ativa: clique no mapa para aplicar.`);
+    orderLog(`Ordem ${label} ativa: clique no mapa para aplicar.`);
   }
   return currentOrderTool;
 }
 
 function clearOrderTool(reason = 'manual') {
   currentOrderTool = null;
-  document.body.classList.remove(...ORDER_TOOL_CLASSES);
-  if (reason === 'manual') log('Ferramenta de ordem desativada.');
+  syncOrderToolBodyClasses();
+  if (reason === 'manual') orderLog('Ferramenta de ordem desativada.');
 }
 
 function getOrderTool() {
@@ -34,7 +66,11 @@ function isOrderToolActive(tool) {
 }
 
 function orderToolLabel(tool = currentOrderTool) {
-  return ({ mine: 'Minerar', deconstruct: 'Desconstruir', cancel: 'Cancelar' })[tool] || 'Nenhuma';
+  return ORDER_TOOL_LABELS[tool] || 'Nenhuma';
+}
+
+function getOrderToolDefinitions() {
+  return ORDER_TOOL_DEFINITIONS.map(tool => ({ ...tool }));
 }
 
 function countMarkedMines() {
@@ -78,18 +114,18 @@ function nearestMineableRock(c, markedOnly = false) {
 function assignNearestMine(c = null, options = {}) {
   const colonist = c || (typeof selectedColonist === 'function' ? selectedColonist() : null);
   if (!colonist) {
-    log('Selecione um colono para iniciar mineração automática.');
+    orderLog('Selecione um colono para iniciar mineração automática.');
     return false;
   }
   const target = nearestMineableRock(colonist, !!options.markedOnly) || nearestMineableRock(colonist, false);
   if (!target) {
-    log('Nenhuma rocha mineável acessível foi encontrada.');
+    orderLog('Nenhuma rocha mineável acessível foi encontrada.');
     return false;
   }
   if (typeof markRockForMining === 'function') markRockForMining(target.x, target.y, true);
   if (typeof assignMine === 'function') {
     const ok = assignMine(colonist, target.x, target.y, true);
-    if (ok) log(`${colonist.name} recebeu ordem de mineração automática.`);
+    if (ok) orderLog(`${colonist.name} recebeu ordem de mineração automática.`);
     return ok;
   }
   return false;
@@ -118,7 +154,7 @@ function markVisibleMineableRocks(limit = 12) {
     for (const p of picked) markRockForMining(p.x, p.y, true);
   }
   if (picked.length) {
-    log(`${picked.length} rocha${picked.length > 1 ? 's' : ''} próxima${picked.length > 1 ? 's' : ''} marcada${picked.length > 1 ? 's' : ''} para mineração.`);
+    orderLog(`${picked.length} rocha${picked.length > 1 ? 's' : ''} próxima${picked.length > 1 ? 's' : ''} marcada${picked.length > 1 ? 's' : ''} para mineração.`);
   }
   return picked.length;
 }
@@ -157,31 +193,31 @@ function cancelObjectOrder(obj) {
     if (def?.cost && typeof addResources === 'function') addResources(def.cost);
     state.objects = (state.objects || []).filter(o => o.id !== obj.id);
     if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-    log(`Construção cancelada: ${objectDisplayName(obj)}. Materiais devolvidos.`);
+    orderLog(`Construção cancelada: ${objectDisplayName(obj)}. Materiais devolvidos.`);
     return true;
   }
   if (obj.markedForDeconstruct) {
     obj.markedForDeconstruct = false;
-    log(`Desconstrução cancelada: ${objectDisplayName(obj)}.`);
+    orderLog(`Desconstrução cancelada: ${objectDisplayName(obj)}.`);
     return true;
   }
   if (obj.markedForGather) {
     obj.markedForGather = false;
-    log(`Coleta cancelada: ${objectDisplayName(obj)}.`);
+    orderLog(`Coleta cancelada: ${objectDisplayName(obj)}.`);
     return true;
   }
-  log('Nada pendente para cancelar nesse objeto.');
+  orderLog('Nada pendente para cancelar nesse objeto.');
   return false;
 }
 
 function markObjectForDeconstruct(obj, assignNow = true) {
   if (!obj || obj.type === 'blueprint') return false;
   if (!buildDefForObject(obj) && !objectDefs?.[obj.type]) {
-    log('Esse objeto não pode ser desconstruído ainda.');
+    orderLog('Esse objeto não pode ser desconstruído ainda.');
     return false;
   }
   obj.markedForDeconstruct = true;
-  log(`${objectDisplayName(obj)} marcado para desconstrução.`);
+  orderLog(`${objectDisplayName(obj)} marcado para desconstrução.`);
   if (assignNow) assignNearestDeconstruct();
   return true;
 }
@@ -231,27 +267,77 @@ function handleDeconstructTask(c, task, tick) {
   window.HavenfallWorkFeedback?.notifyComplete?.('deconstruct', { objectType: obj.type, refund }, obj.x, obj.y);
   state.objects = state.objects.filter(o => o.id !== obj.id);
   if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
-  log(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}.`);
+  orderLog(`${c.name} desmontou ${objectDisplayName(obj)}. ${refundText(refund)}.`);
   c.task = null;
   c.note = 'Ocioso';
   c.work = 0;
   return true;
 }
 
-function handleOrderToolAtTile(tool, tile, event = null) {
-  if (!tool || !tile || appScreen !== SCREEN.PLAYING || !state) return false;
-  const obj = isTileDiscovered(tile.x, tile.y) && typeof getObjectAt === 'function' ? getObjectAt(tile.x, tile.y) : null;
+function selectedOrderColonist() {
+  const c = typeof selectedColonist === 'function' ? selectedColonist() : null;
+  if (!c) orderLog('Selecione um colono antes de dar essa ordem.');
+  return c;
+}
 
-  if (tool === 'mine') {
-    const rock = isTileDiscovered(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
-    if (!rock?.solid) {
-      log('Minerar: clique em uma rocha ou montanha mineável.');
-      return true;
+function discoveredTile(x, y) {
+  return typeof isTileDiscovered !== 'function' || isTileDiscovered(x, y);
+}
+
+function visibleTile(x, y) {
+  if (typeof isTileVisible === 'function') return isTileVisible(x, y);
+  return discoveredTile(x, y);
+}
+
+function objectAtOrderTile(tile) {
+  return discoveredTile(tile.x, tile.y) && typeof getObjectAt === 'function' ? getObjectAt(tile.x, tile.y) : null;
+}
+
+function poiAtOrderTile(tile) {
+  if (!state?.world?.pointsOfInterest || !discoveredTile(tile.x, tile.y)) return null;
+  return state.world.pointsOfInterest.find(p => Math.abs(p.x - tile.x) <= 1 && Math.abs(p.y - tile.y) <= 1 && !p.inspected) || null;
+}
+
+function wolfAtOrderTile(tile) {
+  if (!visibleTile(tile.x, tile.y)) return null;
+  const query = window.HavenfallEntityQuery || null;
+  if (typeof query?.getWolfAt === 'function') return query.getWolfAt(tile.x, tile.y);
+  if (typeof getWolfAt === 'function') return getWolfAt(tile.x, tile.y);
+  return null;
+}
+
+function objectIsHaulable(obj) {
+  return !!obj && (obj.itemKey || obj.type === 'logs' || obj.type === 'rubble');
+}
+
+function assignSleepAt(c, obj = null) {
+  if (!c) return false;
+  if (obj && obj.type !== 'bed') {
+    orderLog('Dormir: clique em uma cama, ou em qualquer chão para descansar no local.');
+    return false;
+  }
+  if (obj?.type === 'bed') {
+    const adj = typeof nearestFreeAdjacent === 'function' ? nearestFreeAdjacent(obj.x, obj.y, c.x, c.y) : null;
+    if (!adj) {
+      orderLog(`${c.name} não conseguiu chegar na cama.`);
+      return false;
     }
-    const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(tile.x, tile.y) : 'Rocha';
-    if (typeof markRockForMining === 'function' && markRockForMining(tile.x, tile.y, true)) log(`${label} marcada para mineração.`);
+    c.task = { type: 'sleep', x: adj.x, y: adj.y, bedId: obj.id };
+    c.path = typeof findPath === 'function' ? findPath(c.x, c.y, adj.x, adj.y, obj) : [];
+    c.work = 0;
+    c.note = 'Indo dormir';
     return true;
   }
+  c.task = { type: 'sleep', x: c.x, y: c.y, manualRest: true };
+  c.path = [];
+  c.work = 0;
+  c.note = 'Descansando no local';
+  return true;
+}
+
+function handleOrderToolAtTile(tool, tile, event = null) {
+  if (!tool || !tile || appScreen !== SCREEN.PLAYING || !state) return false;
+  const obj = objectAtOrderTile(tile);
 
   if (tool === 'cancel') {
     let changed = false;
@@ -259,23 +345,154 @@ function handleOrderToolAtTile(tool, tile, event = null) {
     const rock = typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
     if (rock?.markedForMining && typeof markRockForMining === 'function') {
       markRockForMining(tile.x, tile.y, false);
-      log('Ordem de mineração cancelada nesse tile.');
+      orderLog('Ordem de mineração cancelada nesse tile.');
       changed = true;
     }
-    if (!changed) log('Nenhuma ordem pendente encontrada nesse tile.');
+    if (!changed) orderLog('Nenhuma ordem pendente encontrada nesse tile.');
     return true;
   }
 
   if (tool === 'deconstruct') {
     if (!obj) {
-      log('Desconstruir: clique em uma estrutura ou mobília construída.');
+      orderLog('Desconstruir: clique em uma estrutura ou mobília construída.');
       return true;
     }
     if (obj.type === 'blueprint') {
-      log('Blueprint encontrado. Use Cancelar para remover construção pendente.');
+      orderLog('Blueprint encontrado. Use Cancelar para remover construção pendente.');
       return true;
     }
     markObjectForDeconstruct(obj, true);
+    return true;
+  }
+
+  const c = selectedOrderColonist();
+  if (!c) return true;
+
+  if (tool === 'move') {
+    if (!discoveredTile(tile.x, tile.y)) {
+      orderLog('Mover: esse tile ainda não foi descoberto.');
+      return true;
+    }
+    if (typeof assignMove === 'function' && assignMove(c, tile.x, tile.y)) orderLog(`${c.name} recebeu ordem de movimento.`);
+    else orderLog('Mover: não dá para caminhar até esse tile.');
+    return true;
+  }
+
+  if (tool === 'mine') {
+    const rock = discoveredTile(tile.x, tile.y) && typeof getRockAt === 'function' ? getRockAt(tile.x, tile.y) : null;
+    if (!rock?.solid) {
+      orderLog('Minerar: clique em uma rocha ou montanha mineável.');
+      return true;
+    }
+    if (typeof assignMine === 'function' && assignMine(c, tile.x, tile.y, true)) return true;
+    orderLog('Minerar: esse colono não encontrou caminho até a rocha.');
+    return true;
+  }
+
+  if (tool === 'gather') {
+    if (!obj || typeof isGatherableReady !== 'function' || !isGatherableReady(obj)) {
+      orderLog('Coletar: clique em uma árvore, planta madura ou recurso coletável.');
+      return true;
+    }
+    if (typeof assignGather === 'function') assignGather(c, obj);
+    return true;
+  }
+
+  if (tool === 'build') {
+    if (!obj || obj.type !== 'blueprint') {
+      orderLog('Construir: clique em uma construção pendente/blueprint.');
+      return true;
+    }
+    if (typeof assignBuild === 'function') assignBuild(c, obj);
+    return true;
+  }
+
+  if (tool === 'haul') {
+    if (!objectIsHaulable(obj)) {
+      orderLog('Estocar: clique em item solto, madeira, entulho ou loot no chão.');
+      return true;
+    }
+    if (typeof assignHaulTask !== 'function' || !assignHaulTask(c, obj)) {
+      orderLog('Estocar: crie uma zona/depósito válido ou libere o caminho até o item.');
+    }
+    return true;
+  }
+
+  if (tool === 'inspect') {
+    const poi = poiAtOrderTile(tile);
+    if (poi && typeof assignPoiInspect === 'function') {
+      assignPoiInspect(c, poi);
+      return true;
+    }
+    if (!obj || !objectDefs?.[obj.type]?.interactable) {
+      orderLog('Investigar: clique em um objeto especial ou ponto de interesse.');
+      return true;
+    }
+    if (typeof assignInspect === 'function') assignInspect(c, obj);
+    return true;
+  }
+
+  if (tool === 'loot') {
+    if (!obj || !objectDefs?.[obj.type]?.interactable) {
+      orderLog('Vasculhar: clique em um objeto que possa ser aberto/vasculhado.');
+      return true;
+    }
+    if (obj.looted) {
+      orderLog('Esse objeto já foi vasculhado.');
+      return true;
+    }
+    if (typeof assignLoot === 'function') assignLoot(c, obj);
+    return true;
+  }
+
+  if (tool === 'research') {
+    if (!obj || obj.type !== 'research_desk') {
+      orderLog('Pesquisar: clique na mesa de pesquisa.');
+      return true;
+    }
+    if (typeof assignResearch === 'function') assignResearch(c, obj);
+    return true;
+  }
+
+  if (tool === 'forge') {
+    if (!obj || obj.type !== 'forge') {
+      orderLog('Forjar: clique na forja.');
+      return true;
+    }
+    if (typeof assignForge === 'function') assignForge(c, obj);
+    return true;
+  }
+
+  if (tool === 'cook') {
+    if (!obj || obj.type !== 'stove') {
+      orderLog('Cozinhar: clique no fogão.');
+      return true;
+    }
+    if (typeof assignCook === 'function') assignCook(c, obj);
+    return true;
+  }
+
+  if (tool === 'heal') {
+    if (!obj || obj.type !== 'med_station') {
+      orderLog('Tratar: clique na estação médica.');
+      return true;
+    }
+    if (typeof assignHeal === 'function') assignHeal(c, obj);
+    return true;
+  }
+
+  if (tool === 'fight') {
+    const wolf = wolfAtOrderTile(tile);
+    if (!wolf) {
+      orderLog('Combater: clique em uma ameaça visível.');
+      return true;
+    }
+    if (typeof assignScare === 'function') assignScare(c, wolf);
+    return true;
+  }
+
+  if (tool === 'sleep') {
+    assignSleepAt(c, obj);
     return true;
   }
 
@@ -313,6 +530,8 @@ window.clearOrderTool = clearOrderTool;
 window.getOrderTool = getOrderTool;
 window.isOrderToolActive = isOrderToolActive;
 window.orderToolLabel = orderToolLabel;
+window.getOrderToolDefinitions = getOrderToolDefinitions;
+window.syncOrderToolBodyClasses = syncOrderToolBodyClasses;
 window.countMarkedMines = countMarkedMines;
 window.countMarkedDeconstruct = countMarkedDeconstruct;
 window.nearestMineableRock = nearestMineableRock;
