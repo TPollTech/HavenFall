@@ -9,7 +9,7 @@
     growing: {
       label: 'Zona de cultivo',
       short: 'Cultivo',
-      hint: 'Área de plantio automático.',
+      hint: 'Cria talhões agrícolas por área pintada.',
       fill: 'rgba(74,222,128,.16)',
       stroke: 'rgba(74,222,128,.82)'
     },
@@ -20,11 +20,6 @@
       fill: 'rgba(56,189,248,.12)',
       stroke: 'rgba(56,189,248,.72)'
     }
-  });
-
-  const cropDefs = Object.freeze({
-    food: { label: 'Comida básica', seedCost: { food: 1 } },
-    berries: { label: 'Bagas', seedCost: { food: 1 } }
   });
 
   const baseZoneDefs = typeof zoneDefs !== 'undefined' ? zoneDefs : {};
@@ -39,7 +34,6 @@
     const zones = nativeEnsureState();
     if (!zones) return null;
     zones.grid = zones.grid || {};
-    zones.growing = zones.growing || { cropType: 'food' };
     return zones;
   };
 
@@ -103,6 +97,7 @@
     };
   }
 
+<<<<<<< HEAD
   function canPlantInTile(tile) {
     if (!tile || getObjectAt(tile.x, tile.y)) return false;
     if (typeof isBlocked === 'function' && isBlocked(tile.x, tile.y)) return false;
@@ -147,8 +142,10 @@
     return true;
   }
 
+=======
+>>>>>>> 1a2ad510a3edd63d39e85506acb9a71a2ba19418
   const nativeUpdateZoneBehaviors = updateZoneBehaviors;
-  updateZoneBehaviors = function advancedZoneBehaviorsWithoutUi() {
+  updateZoneBehaviors = function advancedZoneBehaviorsWithoutCropObjects() {
     nativeUpdateZoneBehaviors?.();
     if (!state || appScreen !== SCREEN.PLAYING) return;
     for (const c of state.colonists || []) {
@@ -156,12 +153,9 @@
       if (zoneSystem.hasAllowedArea?.() && !zoneSystem.isTileAllowed?.(c.x, c.y)) {
         if (assignMoveToZone(c, 'allowed', 'Retornando para área permitida')) continue;
       }
-      const growTile = zoneSystem.entries('growing').filter(canPlantInTile).sort((a, b) => dist(c.x, c.y, a.x, a.y) - dist(c.x, c.y, b.x, b.y))[0] || null;
-      if (growTile && assignPlantZone(c, growTile)) continue;
+      if (window.HavenfallFarming?.assignFarmingTask?.(c)) continue;
     }
   };
 
   window.zoneSystem = zoneSystem;
-  window.cropDefs = cropDefs;
-  window.GameSystems?.registerTaskHandler('plantZone', 'zones.growing', handlePlantZoneTask, { order: 26 });
 })();

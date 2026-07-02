@@ -9,7 +9,6 @@ const baseObjectDefs = {
   logs: { name: 'toras', img: 'logs', blocks: false, gather: { wood: 5 }, work: 1.4 },
   stockpile: { name: 'pilha de estoque', img: 'logs', blocks: false, stored: true },
   rubble: { name: 'entulho', img: 'rock', blocks: false, work: 1.0, debris: true },
-  crop: { name: 'plantação', img: 'crop_patch', blocks: false, gather: { food: 10 }, work: 2.4 },
   bed: { name: 'cama', img: 'bed_single', blocks: true, comfort: 1.25 },
   campfire: { name: 'fogueira', img: 'campfire', blocks: true, warmth: 1, light: { radius: 7, power: 1.0, color: '#ffb35c', flicker: 0.12 } },
   torch: { name: 'tocha', img: 'campfire', blocks: false, light: { radius: 4, power: 0.72, color: '#ffc16a', flicker: 0.18 } },
