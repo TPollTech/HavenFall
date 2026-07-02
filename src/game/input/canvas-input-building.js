@@ -193,7 +193,6 @@ function routePrimaryObjectAction(c, obj) {
   else if (CRAFT_STATION_TYPES.includes(obj.type)) openCraftingForStation(obj);
   else if (obj.type === 'research_desk') assignResearch(c, obj);
   else if (objectDefs[obj.type]?.interactable) assignInspect(c, obj);
-  else if (obj.type === 'crop' && (obj.growth || 0) < 100) log('Essa plantação ainda está crescendo.');
   else if (obj.itemKey && typeof assignHaulTask === 'function') {
     if (!assignHaulTask(c, obj)) log('Crie uma zona de estoque ou depósito para guardar esse item.');
   }
@@ -418,7 +417,7 @@ function placeBlueprint(buildKey, x, y) {
   if (!paidResources || !paidItems) {
     if (paidResources && typeof refundCost === 'function') refundCost(def.cost || {}, { reason: 'legacy-build-rollback', targetId: buildKey, x, y });
     if (paidItems && typeof refundItems === 'function') refundItems(def.itemCost || {}, { reason: 'legacy-build-rollback', targetId: buildKey, x, y });
-    log(`Recursos insuficientes para essa construÃ§Ã£o. Precisa de ${itemCostText(def.cost, def.itemCost)}.`);
+    log(`Recursos insuficientes para essa construção. Precisa de ${itemCostText(def.cost, def.itemCost)}.`);
     return;
   }
   const rotation = isBuildRotatable(buildKey) ? normalizeBuildRotation(currentBuildRotation) : 0;
