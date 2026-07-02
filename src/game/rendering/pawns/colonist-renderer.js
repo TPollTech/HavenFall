@@ -36,13 +36,8 @@
     drawEllipse(headX - forward.x * 1.2, headY - 4, 8.8, 4.6, style.hair, null, 1, forward.x * 0.2);
   }
 
-  function isRestingPose(c) {
-    if (!c) return false;
-    if (c.isUnconscious || c.isDowned || c.health <= 1) return true;
-    if (c.task?.type === 'sleep') return true;
-    if (c.sleeping || c.resting) return true;
-    const note = String(c.note || '').toLowerCase();
-    return note.includes('dormindo') || note.includes('descansando') || note.includes('inconsciente') || note.includes('atordoado');
+  function isSleepingTask(c) {
+    return c?.task?.type === 'sleep';
   }
 
   function isDangerDowned(c) {
@@ -140,7 +135,7 @@
 
   function drawColonistPawn(c) {
     if (isDangerDowned(c)) return drawUnconsciousPawn(c);
-    if (isRestingPose(c)) return drawRestingPawn(c);
+    if (isSleepingTask(c)) return drawRestingPawn(c);
     drawSelection(c);
     drawHumanoidPawn(c);
     drawTinyBars?.(c);
