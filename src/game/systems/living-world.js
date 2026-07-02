@@ -74,6 +74,7 @@
     window.GameSystems?.registerWorldOverlay?.('living-world.markers', drawLivingWorldMarkers, { order: 92 });
     window.GameSystems?.registerCollisionProvider?.('living-world.water-collision', waterCollisionAt, { order: 8 });
     installMapControls();
+    window.HavenfallDebugRuntime?.registerProvider?.('living-world.events', livingWorldDebugProvider, { order: 40, flags: ['socialEvents'] });
     window.HavenfallLivingWorld = {
       version: 'living-world-v3',
       animalProfiles,
@@ -86,7 +87,8 @@
       triggerEncounter: visitorId => openVisitorEncounter(findVisitorById(visitorId)),
       resolveEncounter: chooseEncounterAction,
       recruitVisitor: visitorId => recruitVisitor(findVisitorById(visitorId)),
-      openBriefing: maybeOpenIntroBriefing
+      openBriefing: maybeOpenIntroBriefing,
+      debugScheduleSnapshot
     };
   }
 
@@ -434,6 +436,83 @@
     living.nextVisitorAt = next;
     living.nextVisitorDay = Math.max(1, Math.floor(next / 24));
     return next;
+  }
+
+  function livingRound1(value) {
+    return Math.round((Number(value) || 0) * 10) / 10;
+  }
+
+  function debugScheduleSnapshot() {
+    const living = ensureRuntimeState();
+    if (!living) return null;
+    const now = livingClockHours();
+    const nextVisitorAt = Number(living.nextVisitorAt);
+    return {
+      now,
+      day: Number(state?.day || 0),
+      hour: livingRound1(state?.hour || 0),
+      intensity: state?.config?.eventIntensity || 'normal',
+      visitorCount: Array.isArray(state?.visitors) ? state.visitors.length : 0,
+      socialEventCount: Number(living.socialEventCount || 0),
+      nextVisitorAt: Number.isFinite(nextVisitorAt) ? nextVisitorAt : null,
+      nextVisitorDay: Number(living.nextVisitorDay || 0),
+      etaHours: Number.isFinite(nextVisitorAt) ? Math.max(0, livingRound1(nextVisitorAt - now)) : null,
+      activeEncounterId: living.activeEncounter?.id || null,
+      activeEncounterType: living.activeEncounter?.type || null
+    };
+  }
+
+  function livingWorldDebugProvider(context = {}) {
+    const schedule = debugScheduleSnapshot();
+    if (!schedule) return null;
+
+    const nextLine = Number.isFinite(schedule.nextVisitorAt)
+      ? `proximo visitante D${schedule.nextVisitorDay} em ${livingRound1(schedule.etaHours)}h`
+      : 'proximo visitante nao agendado';
+
+    const sections = [
+      {
+        title: 'Eventos sociais',
+        accent: '#67e8f9',
+        lines: [
+          `agora D${schedule.day} ${schedule.hour}h | intensidade ${schedule.intensity}`,
+          nextLine,
+          `visitantes ativos ${schedule.visitorCount} | eventos ${schedule.socialEventCount}`,
+          schedule.activeEncounterId ? `encontro ativo ${schedule.activeEncounterType || 'encounter'}:${schedule.activeEncounterId}` : 'nenhum encontro ativo'
+        ]
+      }
+    ];
+
+    const world = [];
+    const bounds = context?.bounds || null;
+    const inBounds = (x, y) => !bounds || (x >= bounds.startX && x <= bounds.endX && y >= bounds.startY && y <= bounds.endY);
+    const base = currentBasePoint();
+
+    if (inBounds(base.x, base.y)) {
+      world.push({
+        kind: 'label',
+        x: base.x * TILE + TILE / 2,
+        y: base.y * TILE + 10,
+        text: Number.isFinite(schedule.etaHours) ? `evento em ${livingRound1(schedule.etaHours)}h` : 'sem evento agendado',
+        color: '#67e8f9',
+        bg: 'rgba(6,22,33,.88)'
+      });
+    }
+
+    for (const visitor of state?.visitors || []) {
+      if (!visitor || !inBounds(visitor.x, visitor.y)) continue;
+      world.push({
+        kind: 'point',
+        x: Number(visitor.px || (visitor.x * TILE + TILE / 2)),
+        y: Number(visitor.py || (visitor.y * TILE + TILE / 2)),
+        radius: visitor.kind === 'merchant' ? 12 : 10,
+        color: visitor.kind === 'merchant' ? '#f6c76a' : '#67e8f9',
+        fill: visitor.kind === 'merchant' ? 'rgba(246,199,106,.16)' : 'rgba(103,232,249,.12)',
+        label: `${visitor.kind === 'merchant' ? 'Mercador' : 'Visitante'} ${visitor.stage || 'idle'}`
+      });
+    }
+
+    return { sections, world };
   }
 
   function findVisitorById(id) {

@@ -47,6 +47,86 @@
     return !!(img && !img.dataset?.missingAsset && (img.naturalWidth || img.width) > 2 && (img.naturalHeight || img.height) > 2);
   }
 
+  const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
+  const supportedSimpleTypes = new Set(['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes]);
+
+  function simpleObjectType(obj) {
+    return obj?.type === 'blueprint' ? buildDefs?.[obj.buildType]?.type : obj?.type;
+  }
+
+  function isSupportedSimpleType(type) {
+    return supportedSimpleTypes.has(type);
+  }
+
+  function assetInfoForObject(obj) {
+    if (!obj) return null;
+    const isBlueprint = obj.type === 'blueprint';
+    const type = simpleObjectType(obj);
+    const key = obj?.img || objectDefs?.[type]?.img || null;
+    const img = key ? images?.[key] : null;
+    const supported = isSupportedSimpleType(type);
+    const ready = imageReadyFor(obj, type);
+    return {
+      objectId: obj.id || null,
+      type,
+      isBlueprint,
+      supported,
+      assetKey: key,
+      ready,
+      proceduralFallback: !!supported && !ready,
+      source: img?.currentSrc || img?.src || img?.dataset?.originalSrc || null,
+      missingAsset: img?.dataset?.missingAsset || null
+    };
+  }
+
+  function objectAssetDebugProvider(context = {}) {
+    const focus = context?.focusTile || window.HavenfallDebugRuntime?.focusTile?.(context?.bounds) || null;
+    if (!focus) return null;
+    const obj = typeof getObjectAt === 'function'
+      ? getObjectAt(focus.x, focus.y)
+      : (state?.objects || []).find(entry => Math.round(Number(entry?.x) || 0) === focus.x && Math.round(Number(entry?.y) || 0) === focus.y) || null;
+    const info = assetInfoForObject(obj);
+    if (!obj) {
+      return {
+        sections: [{ title: 'Asset em foco', accent: '#d6a24a', lines: [`tile ${focus.x},${focus.y}`, 'sem objeto no tile em foco'] }]
+      };
+    }
+
+    const status = info?.proceduralFallback
+      ? 'fallback procedural'
+      : info?.ready
+        ? 'asset pronto'
+        : info?.supported
+          ? 'asset pendente'
+          : 'fora do renderer simples';
+
+    return {
+      world: [
+        {
+          kind: 'tile',
+          x: focus.x,
+          y: focus.y,
+          color: info?.proceduralFallback ? '#ef4444' : '#d6a24a',
+          fill: info?.proceduralFallback ? 'rgba(239,68,68,.14)' : 'rgba(214,162,74,.12)',
+          label: `${info?.type || obj.type} -> ${info?.assetKey || 'sem_key'}`
+        }
+      ],
+      sections: [
+        {
+          title: 'Asset em foco',
+          accent: info?.proceduralFallback ? '#ef4444' : '#d6a24a',
+          lines: [
+            `tile ${focus.x},${focus.y}`,
+            `objeto ${info?.type || obj.type}${info?.objectId ? ` (${info.objectId})` : ''}`,
+            `asset ${info?.assetKey || 'nenhum'}`,
+            `status ${status}`,
+            info?.source ? `src ${info.source}` : 'src sem origem resolvida'
+          ]
+        }
+      ]
+    };
+  }
+
   function drawTreeFallback(x, y, type = 'tree') {
     const palette = type === 'pine_tree' ? ['#153f2c', '#1f5d3b', '#2f7a4f']
       : type === 'eucalypt_tree' ? ['#3f6f56', '#5f8f6a', '#9fb49a']
@@ -246,9 +326,7 @@
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
-    const allTypes = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes];
-    const supported = allTypes.includes(type);
+    const supported = isSupportedSimpleType(type);
     if (!supported) return false;
     if (imageReadyFor(obj, type)) return false;
 
@@ -285,7 +363,8 @@
     if (window.HavenfallContext?.simpleObjectRendererInstalled) return;
     window.HavenfallContext = window.HavenfallContext || {};
     window.GameSystems?.registerObjectRenderer?.('objects.simple-procedural', drawSimpleObject, { order: 35 });
-    window.HavenfallSimpleObjectRenderer = Object.freeze({ drawObject: drawSimpleObject });
+    window.HavenfallDebugRuntime?.registerProvider?.('objects.assets', objectAssetDebugProvider, { order: 50, flags: ['objectAssets'] });
+    window.HavenfallSimpleObjectRenderer = Object.freeze({ drawObject: drawSimpleObject, assetInfoForObject, objectAssetDebugProvider });
     window.HavenfallContext.simpleObjectRendererInstalled = true;
     console.info('[Simple Object Renderer] Objetos simples em JS carregados.');
   }

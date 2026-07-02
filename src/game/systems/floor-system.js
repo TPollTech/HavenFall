@@ -359,15 +359,95 @@
     return true;
   }
 
+  function floorMaskCode(mask) {
+    if (!mask) return '----';
+    const cardinals = `${mask.n ? 'N' : '-'}${mask.e ? 'E' : '-'}${mask.s ? 'S' : '-'}${mask.w ? 'W' : '-'}`;
+    const diagonals = ['ne', 'se', 'sw', 'nw']
+      .filter(key => !!mask[key])
+      .map(key => key.toUpperCase())
+      .join(' ');
+    return diagonals ? `${cardinals} | ${diagonals}` : cardinals;
+  }
+
+  function floorDirectionCode(direction) {
+    if (direction === 'horizontal') return 'H';
+    if (direction === 'vertical') return 'V';
+    if (direction === 'masonry') return 'M';
+    if (direction === 'organic') return 'O';
+    return '?';
+  }
+
+  function debugFloorInfoAt(x, y, world = state?.world) {
+    const tx = Math.round(Number(x) || 0);
+    const ty = Math.round(Number(y) || 0);
+    const floorType = getFloorAt(tx, ty, world);
+    if (!floorType) return null;
+    const mask = getFloorNeighborMask(tx, ty, floorType);
+    const direction = patternDirectionForFloor(floorType, tx, ty);
+    return {
+      x: tx,
+      y: ty,
+      floorType,
+      label: floorLabel(floorType),
+      direction,
+      directionCode: floorDirectionCode(direction),
+      mask,
+      maskCode: floorMaskCode(mask)
+    };
+  }
+
+  function floorDebugProvider(context = {}) {
+    const focus = context?.focusTile || window.HavenfallDebugRuntime?.focusTile?.(context?.bounds) || null;
+    const info = focus ? debugFloorInfoAt(focus.x, focus.y) : null;
+    if (!info) return null;
+
+    const world = [
+      { kind: 'tile', x: info.x, y: info.y, color: '#f59e0b', fill: 'rgba(245,158,11,.16)', label: `${info.directionCode} ${info.maskCode}` }
+    ];
+
+    const neighbors = [
+      ['n', 0, -1, '#60a5fa'],
+      ['e', 1, 0, '#60a5fa'],
+      ['s', 0, 1, '#60a5fa'],
+      ['w', -1, 0, '#60a5fa'],
+      ['ne', 1, -1, '#c084fc'],
+      ['se', 1, 1, '#c084fc'],
+      ['sw', -1, 1, '#c084fc'],
+      ['nw', -1, -1, '#c084fc']
+    ];
+
+    for (const [key, dx, dy, color] of neighbors) {
+      if (!info.mask[key]) continue;
+      world.push({ kind: 'tile', x: info.x + dx, y: info.y + dy, color, fill: color === '#60a5fa' ? 'rgba(96,165,250,.08)' : 'rgba(192,132,252,.08)' });
+    }
+
+    return {
+      world,
+      sections: [
+        {
+          title: 'Piso em foco',
+          accent: '#f59e0b',
+          lines: [
+            `tile ${info.x},${info.y}`,
+            `tipo ${info.label}`,
+            `orientacao ${info.direction}`,
+            `adjacencia ${info.maskCode}`
+          ]
+        }
+      ]
+    };
+  }
+
   function movementModifier(c, current) { const floor = getFloorAt(c?.x, c?.y); const def = floorDef(floor); return Number(current || 1) * Number(def?.moveSpeed || 1); }
   function tick() { ensureFloorLayer(); }
 
-  window.FloorSystem = Object.freeze({ FLOOR_DEFS, BLEND_PROFILES, MAX_PENDING_FLOOR_BLUEPRINTS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, countFloorBlueprints, floorDef, floorLabel, blendProfile, patternDirectionForFloor, getFloorNeighborMask, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion });
+  window.FloorSystem = Object.freeze({ FLOOR_DEFS, BLEND_PROFILES, MAX_PENDING_FLOOR_BLUEPRINTS, ensureFloorLayer, getFloorAt, setFloorAt, clearFloorAt, canPlaceFloor, hasFloorBlueprintAt, countFloorBlueprints, floorDef, floorLabel, blendProfile, patternDirectionForFloor, getFloorNeighborMask, drawFloorTile, drawFloorBlueprintObject, bumpFloorVersion, debugFloorInfoAt, floorDebugProvider });
   window.ensureFloorLayer = ensureFloorLayer;
   window.getFloorAt = getFloorAt;
   window.setFloorAt = setFloorAt;
   window.clearFloorAt = clearFloorAt;
   window.canPlaceFloor = canPlaceFloor;
+  window.HavenfallDebugRuntime?.registerProvider?.('floor.adjacency', floorDebugProvider, { order: 30, flags: ['floorAdjacency'] });
   window.GameSystems?.registerTick?.('floor-system.ensure-layer', tick, { order: 9, intervalMs: 600, critical: true });
   window.GameSystems?.registerTileRenderer?.('floor.layer', drawFloorTileRenderer, { order: 3, critical: true, renderPass: 'static' });
   window.GameSystems?.registerObjectRenderer?.('floor.blueprint-renderer', drawFloorBlueprintObject, { order: 1, critical: true });

@@ -59,12 +59,22 @@
     });
   }
 
-  function renderDockPanel(key) {
+  function recordDockPanelOpen(key, meta = null) {
+    window.HavenfallDebugRuntime?.recordPanelOpen?.({
+      key,
+      title: TAB_LABELS[key] || key,
+      origin: meta?.origin || 'dock-api',
+      source: meta?.source || null
+    });
+  }
+
+  function renderDockPanel(key, meta = null) {
     const view = window.HavenfallUI.tabViews[key];
     if (!view) return false;
     if (typeof view.onOpen === 'function') view.onOpen();
     const { panel, title, body } = panelParts();
     if (!panel || !title || !body) return false;
+    const previousKey = activeDockTab;
     window.uiManager?.forceCloseAll?.({ except: 'panel' });
     activeDockTab = key;
     title.textContent = TAB_LABELS[key] || key;
@@ -75,6 +85,7 @@
     panel.classList.add('is-active');
     panel.setAttribute('aria-hidden', 'false');
     setDockButton(key);
+    if (meta || previousKey !== key) recordDockPanelOpen(key, meta);
     return true;
   }
 
@@ -91,6 +102,15 @@
     setDockButton(null);
   }
 
+  function closeDockPanel() {
+    const { panel } = panelParts();
+    if (panel) {
+      panel.classList.remove('is-active');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+    clearDockPanelState();
+  }
+
   function handleDockClick(event) {
     const button = event.target.closest?.('#bottom-navigation-dock [data-ui-panel]');
     if (!button) return;
@@ -101,12 +121,10 @@
     event.stopImmediatePropagation();
     const panel = document.getElementById('anchored-ui-panel');
     if (activeDockTab === key && panel?.classList.contains('is-active')) {
-      panel.classList.remove('is-active');
-      panel.setAttribute('aria-hidden', 'true');
-      clearDockPanelState();
+      closeDockPanel();
       return;
     }
-    renderDockPanel(key);
+    renderDockPanel(key, { origin: 'bottom-navigation-dock', source: 'dock-tab-router.handleDockClick' });
   }
 
   addStyle();
@@ -114,4 +132,5 @@
   document.addEventListener('click', handleDockClick, true);
   window.HavenfallUI.renderDockPanel = renderDockPanel;
   window.HavenfallUI.refreshDockPanel = refreshDockPanel;
+  window.HavenfallUI.closeDockPanel = closeDockPanel;
 })();

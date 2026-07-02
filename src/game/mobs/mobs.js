@@ -189,6 +189,73 @@ function getCreatureAtWorld(worldX, worldY) {
   return creatureAtWorld([...(state?.wolves || []), ...ensureMobState()], worldX, worldY);
 }
 
+function creatureDebugInfo(entity) {
+  if (!entity || !Number.isFinite(Number(entity.px)) || !Number.isFinite(Number(entity.py))) return null;
+  const hitbox = creatureHitboxFor(entity);
+  const centerX = Number(entity.px);
+  const centerY = Number(entity.py) + hitbox.offsetY;
+  return {
+    entityId: entity.id || null,
+    type: entity.type,
+    label: mobName(entity.type),
+    centerX,
+    centerY,
+    x: centerX - hitbox.width / 2,
+    y: centerY - hitbox.height / 2,
+    width: hitbox.width,
+    height: hitbox.height,
+    hitbox
+  };
+}
+
+function mobHitboxDebugProvider(context = {}) {
+  const bounds = context?.bounds || null;
+  const visible = [];
+  for (const entity of allMobileEntities()) {
+    const tx = Math.round(Number(entity?.x) || 0);
+    const ty = Math.round(Number(entity?.y) || 0);
+    if (bounds && (tx < bounds.startX || tx > bounds.endX || ty < bounds.startY || ty > bounds.endY)) continue;
+    const info = creatureDebugInfo(entity);
+    if (info) visible.push({ entity, info });
+  }
+
+  const focusPoint = context?.focusWorldPoint || window.HavenfallDebugRuntime?.focusWorldPoint?.(bounds) || null;
+  const focusEntity = focusPoint ? getCreatureAtWorld(focusPoint.x, focusPoint.y) : null;
+  const focusInfo = focusEntity ? creatureDebugInfo(focusEntity) : null;
+
+  const world = visible.map(({ entity, info }) => {
+    const focused = !!focusEntity && String(focusEntity.id) === String(entity.id);
+    return {
+      kind: 'rect',
+      x: info.x,
+      y: info.y,
+      width: info.width,
+      height: info.height,
+      color: focused ? '#f59e0b' : isHostileMobType(entity.type) ? '#ef4444' : '#67e8f9',
+      fill: focused ? 'rgba(245,158,11,.14)' : isHostileMobType(entity.type) ? 'rgba(239,68,68,.10)' : 'rgba(103,232,249,.08)',
+      label: focused ? `${info.label} ${Math.round(info.width)}x${Math.round(info.height)}` : null
+    };
+  });
+
+  return {
+    world,
+    sections: [
+      {
+        title: 'Hitbox animal',
+        accent: focusInfo ? '#f59e0b' : '#67e8f9',
+        lines: focusInfo
+          ? [
+              `foco ${focusInfo.label}${focusInfo.entityId ? ` (${focusInfo.entityId})` : ''}`,
+              `caixa ${Math.round(focusInfo.width)}x${Math.round(focusInfo.height)}`,
+              `centro ${Math.round(focusInfo.centerX)},${Math.round(focusInfo.centerY)}`,
+              `visiveis ${visible.length}`
+            ]
+          : [`visiveis ${visible.length}`, 'nenhum animal em foco']
+      }
+    ]
+  };
+}
+
 function countMob(type) {
   const mobs = ensureMobState();
   const normal = mobs.filter(m => m.type === type).length;
@@ -1020,6 +1087,14 @@ function installMobRendererHook() {
   window.HavenfallContext.mobRendererHooked = true;
 }
 
+function installMobDebugProvider() {
+  if (window.HavenfallContext?.mobDebugProviderInstalled) return;
+  if (window.HavenfallDebugRuntime && typeof window.HavenfallDebugRuntime.registerProvider === 'function') {
+    window.HavenfallDebugRuntime.registerProvider('mobs.hitboxes', mobHitboxDebugProvider, { order: 60, flags: ['animalHitboxes'] });
+  }
+  window.HavenfallContext.mobDebugProviderInstalled = true;
+}
+
 function drawMobsOverlay() {
   if (!state?.mobs?.length || appScreen !== SCREEN.PLAYING) return;
   ctx.save(); ctx.translate(viewTransform.offsetX, viewTransform.offsetY); ctx.scale(viewTransform.scale, viewTransform.scale);
@@ -1061,6 +1136,7 @@ window.getAnimalAtWorld = getPassiveMobAtWorld;
 window.getHostileAt = getHostileMobAt;
 window.getHostileAtWorld = getHostileMobAtWorld;
 window.getCreatureAtWorld = getCreatureAtWorld;
+window.creatureHitboxFor = creatureHitboxFor;
 window.HavenfallEntityQuery = Object.freeze({
   getWolfAt,
   getWolfAtWorld,
@@ -1071,11 +1147,14 @@ window.HavenfallEntityQuery = Object.freeze({
   getHostileAt: getHostileMobAt,
   getHostileAtWorld: getHostileMobAtWorld,
   getCreatureAt,
-  getCreatureAtWorld
+  getCreatureAtWorld,
+  creatureHitboxFor,
+  creatureDebugInfo
 });
 window.assignHuntMob = assignHuntMob;
 window.makeColonistUnconscious = makeColonistUnconscious;
 
 installMobRuntimeHooks();
 installMobRendererHook();
+installMobDebugProvider();
 window.GameSystems?.registerTick('mobs', updateMobsTick, { order: 80 });

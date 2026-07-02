@@ -220,10 +220,20 @@
     return `<p class="empty">Painel ${escapeHtml(PANELS[key] || key)} em preparação.</p>`;
   }
 
-  function openPanel(key) {
+  function recordPanelOpen(key, meta = null) {
+    window.HavenfallDebugRuntime?.recordPanelOpen?.({
+      key,
+      title: PANELS[key] || key,
+      origin: meta?.origin || 'api',
+      source: meta?.source || null
+    });
+  }
+
+  function openPanel(key, meta = null) {
     closeAllOldModals();
     disableLegacyHud();
     if (key === 'research') {
+      recordPanelOpen(key, { origin: meta?.origin || 'api', source: meta?.source || 'research-overlay' });
       closePanel();
       if (window.HavenfallUI?.openResearchOverlay) window.HavenfallUI.openResearchOverlay();
       return;
@@ -242,9 +252,12 @@
     closeAllOldModals();
     panel.classList.add('is-active');
     panel.setAttribute('aria-hidden', 'false');
+    delete panel.dataset.activeDockTab;
+    delete body.dataset.activeDockTab;
     activeHudTab = key;
     activeButton(key);
     stopUiPointerPropagation();
+    recordPanelOpen(key, meta);
   }
 
   function closePanel() {
@@ -264,9 +277,18 @@
     event.stopPropagation();
     event.stopImmediatePropagation();
     const key = button.dataset.uiPanel;
+    if (window.HavenfallUI?.tabViews?.[key] && typeof window.HavenfallUI.renderDockPanel === 'function') {
+      const panel = document.getElementById('anchored-ui-panel');
+      if (panel?.classList.contains('is-active') && panel?.dataset?.activeDockTab === key) {
+        window.HavenfallUI.closeDockPanel?.();
+      } else {
+        window.HavenfallUI.renderDockPanel(key, { origin: 'bottom-navigation-dock', source: 'ui-manager.handleDockClick' });
+      }
+      return;
+    }
     const panel = document.getElementById('anchored-ui-panel');
     if (key !== 'research' && panel?.classList.contains('is-active') && activeHudTab === key) closePanel();
-    else openPanel(key);
+    else openPanel(key, { origin: 'bottom-navigation-dock', source: 'ui-manager.handleDockClick' });
   }
 
   function handlePanelClick(event) {
@@ -281,7 +303,7 @@
     if (tab) {
       event.preventDefault();
       window.HavenfallUI.activeBuildGroup = tab.dataset.buildGroup;
-      openPanel('build');
+      openPanel('build', { origin: 'build-group-tab', source: tab.dataset.buildGroup });
       return;
     }
     const build = event.target.closest('[data-build]');
@@ -347,7 +369,7 @@
       const originalOpenCrafting = openCraftingForStation;
       openCraftingForStation = station => {
         originalOpenCrafting(station);
-        openPanel('crafting');
+        openPanel('crafting', { origin: 'workstation', source: station?.id || station?.type || 'crafting-station' });
       };
       window.HavenfallUI.craftingHooked = true;
     }
@@ -374,6 +396,9 @@
     refreshVisibility: updateVisibility,
     refreshOpenModal: updateVisibility
   };
+
+  window.HavenfallUI.openPanel = openPanel;
+  window.HavenfallUI.closePanel = closePanel;
 
   initUiManager();
 })();
