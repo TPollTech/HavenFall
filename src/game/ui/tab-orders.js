@@ -22,24 +22,6 @@
     { key: 'cancel', label: 'Cancelar', mode: 'area' }
   ];
 
-  const ORDER_TOOL_MARKS = {
-    move: 'MOV',
-    mine: 'MIN',
-    gather: 'COL',
-    build: 'CON',
-    haul: 'EST',
-    inspect: 'INV',
-    loot: 'VAS',
-    research: 'PES',
-    forge: 'FOR',
-    cook: 'COZ',
-    heal: 'MED',
-    fight: 'COM',
-    sleep: 'DOR',
-    deconstruct: 'DES',
-    cancel: 'CAN'
-  };
-
   function activeOrderTool() {
     return typeof getOrderTool === 'function' ? getOrderTool() : currentOrderTool;
   }
@@ -53,9 +35,8 @@
   }
 
   function renderOrderButton(tool, activeTool) {
-    const mark = ORDER_TOOL_MARKS[tool.key] || tool.label.slice(0, 3).toUpperCase();
     const mode = toolMode(tool);
-    return `<button type="button" class="dock-chip order-chip ${activeTool === tool.key ? 'is-active' : ''}" data-order-tool="${escapeHtml(tool.key)}" data-order-mode="${escapeHtml(mode)}"><span>${escapeHtml(mark)}</span>${escapeHtml(tool.label)}</button>`;
+    return `<button type="button" class="dock-chip order-chip ${activeTool === tool.key ? 'is-active' : ''}" data-order-tool="${escapeHtml(tool.key)}" data-order-mode="${escapeHtml(mode)}">${escapeHtml(tool.label)}</button>`;
   }
 
   function renderGroup(title, tools, activeTool) {
