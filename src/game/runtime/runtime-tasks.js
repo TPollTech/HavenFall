@@ -154,6 +154,12 @@
       return { ok: true, target: rock };
     }
 
+    if (task.type === 'veinMine') {
+      const obj = objectById(task.objId);
+      if (!obj?.vein) return { ok: false, reason: 'Veio não existe mais.' };
+      return { ok: true, target: obj };
+    }
+
     if (['forge', 'research', 'cook', 'heal', 'craft'].includes(task.type)) {
       const station = objectById(task.objId);
       if (!station) return { ok: false, reason: 'Estação de trabalho não existe mais.' };

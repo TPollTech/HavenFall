@@ -220,13 +220,12 @@
   function updateFoodAggregate() {
     if (!state?.resources) return;
     const farming = ensureFarmingState();
-    const fromLots = (farming?.foodLots || []).reduce((sum, lot) => sum + Math.max(0, Number(lot.amount || 0) - Number(lot.spoiled || 0)), 0);
-    const itemFood = Object.entries(state.items || {}).reduce((sum, [key, amount]) => {
-      const def = itemDefs?.[key];
-      if (def?.kind === 'food' || def?.resourceKey === 'food') return sum + Math.max(0, Number(amount || 0));
-      return sum;
-    }, 0);
-    state.resources.food = Math.max(0, fromLots || itemFood);
+    const total = (farming?.foodLots || []).reduce((sum, lot) => sum + Math.max(0, Number(lot.amount || 0) - Number(lot.spoiled || 0)), 0);
+    const prev = farming._lastFoodAggregate || 0;
+    if (total !== prev) {
+      state.resources.food = Math.max(0, (state.resources.food || 0) + total - prev);
+      farming._lastFoodAggregate = total;
+    }
   }
 
   function updatePerish(hours) {
@@ -286,7 +285,14 @@
     if (!cell || !plot?.cropId) return null;
     if (cell._retryCooldown && cell._retryCooldown > Date.now()) return null;
     if (cell.phase === CELL_PHASES.PREPARE || cell.phase === CELL_PHASES.EMPTY) return 'prepareSoil';
-    if (cell.phase === CELL_PHASES.READY_TO_SOW || cell.phase === CELL_PHASES.NEEDS_REPLANT || cell.phase === CELL_PHASES.HARVESTED) return plot.allowReplant === false ? null : 'sowCrop';
+    if (cell.phase === CELL_PHASES.READY_TO_SOW || cell.phase === CELL_PHASES.NEEDS_REPLANT || cell.phase === CELL_PHASES.HARVESTED) {
+      if (plot.allowReplant === false) return null;
+      if (plot.cropId) {
+        const def = cropDef(plot.cropId);
+        if (def?.seedItem && !(state?.items?.[def.seedItem] > 0)) return null;
+      }
+      return 'sowCrop';
+    }
     if ((cell.phase === CELL_PHASES.SOWN || cell.phase === CELL_PHASES.GROWING) && (cell.water < 24 || cell.health < 72)) return 'tendCrop';
     if (cell.phase === CELL_PHASES.MATURE) return 'harvestCrop';
     return null;
@@ -344,6 +350,7 @@
     const def = cropDef(plot.cropId);
     if (!def) return false;
     for (const [itemKey, amount] of Object.entries(def.yieldItems || {})) addFoodLot(itemKey, amount, plot.cropId);
+    if (def.seedItem) addItem(def.seedItem, 1);
     cell.phase = plot.allowReplant === false ? CELL_PHASES.HARVESTED : CELL_PHASES.NEEDS_REPLANT;
     cell.growth = 0;
     cell.plantedAt = null;
@@ -434,6 +441,20 @@
       if (c.task || c.energy < 18 || c.health < 20) continue;
       if (c._farmingFailCooldown > 0) { c._farmingFailCooldown -= 1; continue; }
       assignFarmingTask(c);
+    }
+    const seedAlertHour = Math.floor((Number(state.day || 0) * 24) + Number(state.hour || 0));
+    if (seedAlertHour !== farming._lastSeedAlertHour) {
+      farming._lastSeedAlertHour = seedAlertHour;
+      for (const cell of Object.values(farming.cells || {})) {
+        const plot = farming.plots[cell.plotId];
+        if (!plot?.cropId) continue;
+        const phase = cell.phase;
+        if (phase !== CELL_PHASES.READY_TO_SOW && phase !== CELL_PHASES.NEEDS_REPLANT) continue;
+        const def = cropDef(plot.cropId);
+        if (def?.seedItem && !(state?.items?.[def.seedItem] > 0)) {
+          if (typeof log === 'function') log(`Falta ${def.label.toLowerCase()} para semear no talhão ${plot.name}. Use a bancada para extrair sementes dos vegetais.`);
+        }
+      }
     }
   }
 

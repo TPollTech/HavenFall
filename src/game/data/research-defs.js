@@ -22,16 +22,27 @@ const expandedResearchDefs = Object.freeze({
 
   thermal_comfort: { label: 'Conforto Térmico', category: 'construction', tier: 3, pos: [3, 2], cost: 36, requires: ['carpentry', 'medicine'], prerequisites: ['carpentry', 'medicine'], unlocks: ['thermalClothes'], description: 'Ajuda contra frio, chuva e colonos molhados.' },
   cart: { label: 'Carrinho de Mão', category: 'logistics', tier: 3, pos: [3, 6], cost: 34, requires: ['light_hauling', 'carpentry'], prerequisites: ['light_hauling', 'carpentry'], unlocks: ['handcart'], description: 'Transporte de quantidades maiores de loot e material.' },
-  heavy_hauling: { label: 'Carga Pesada', category: 'logistics', tier: 4, pos: [4, 6], cost: 50, requires: ['cart', 'reinforced_tools'], prerequisites: ['cart', 'reinforced_tools'], unlocks: ['handcart'], description: 'Aumenta capacidade de transporte e reduz viagens inúteis.' }
+  heavy_hauling: { label: 'Carga Pesada', category: 'logistics', tier: 4, pos: [4, 6], cost: 50, requires: ['cart', 'reinforced_tools'], prerequisites: ['cart', 'reinforced_tools'], unlocks: ['handcart'], description: 'Aumenta capacidade de transporte e reduz viagens inúteis.' },
+
+  // === Mineração e Metalurgia ===
+  basic_prospecting: { label: 'Prospecção Básica', category: 'crafting', tier: 1, pos: [1, 9], cost: 20, requires: ['basic_tools'], prerequisites: ['basic_tools'], unlocks: ['pestle', 'geologicalHammer'], description: 'Identificação de minérios e trituração manual de rocha mineral.' },
+  ore_processing: { label: 'Processamento de Minério', category: 'crafting', tier: 1, pos: [1, 10], cost: 25, requires: ['basic_prospecting'], prerequisites: ['basic_prospecting'], unlocks: ['selectionTable'], description: 'Separação de minério útil de impurezas e subprodutos.' },
+  basic_smelting: { label: 'Fundição Básica', category: 'crafting', tier: 2, pos: [2, 9], cost: 30, requires: ['ore_processing'], prerequisites: ['ore_processing'], unlocks: ['furnace'], description: 'Construção de fornalha para fundir minério preparado em lingotes.' },
+  basic_metalworking: { label: 'Metalurgia do Ferro', category: 'crafting', tier: 2, pos: [2, 10], cost: 35, requires: ['basic_smelting'], prerequisites: ['basic_smelting'], unlocks: ['anvil'], description: 'Forjamento de chapas, fios, engrenagens e barras de metal.' },
+  copper_tools: { label: 'Ferramentas de Cobre', category: 'crafting', tier: 2, pos: [2, 11], cost: 28, requires: ['basic_smelting'], prerequisites: ['basic_smelting'], unlocks: ['copperPickaxe'], description: 'Picareta de cobre para mineração mais eficiente.' },
+  iron_tools: { label: 'Ferramentas de Ferro', category: 'crafting', tier: 3, pos: [3, 10], cost: 40, requires: ['basic_metalworking'], prerequisites: ['basic_metalworking'], unlocks: ['ironPickaxe'], description: 'Picareta de ferro para mineração pesada e veios mais duros.' }
 });
 
 function installExpandedResearchTree() {
-  Object.keys(researchDefs).forEach(key => delete researchDefs[key]);
-  Object.assign(researchDefs, expandedResearchDefs);
+  for (const [key, def] of Object.entries(expandedResearchDefs)) {
+    if (!researchDefs[key]) {
+      researchDefs[key] = { ...def };
+    }
+  }
   researchOrder.length = 0;
-  researchOrder.push(...Object.keys(expandedResearchDefs).sort((a, b) => {
-    const pa = expandedResearchDefs[a].pos || [0, 0];
-    const pb = expandedResearchDefs[b].pos || [0, 0];
+  researchOrder.push(...Object.keys(researchDefs).sort((a, b) => {
+    const pa = researchDefs[a].pos || [0, 0];
+    const pb = researchDefs[b].pos || [0, 0];
     return pa[0] - pb[0] || pa[1] - pb[1] || a.localeCompare(b);
   }));
 

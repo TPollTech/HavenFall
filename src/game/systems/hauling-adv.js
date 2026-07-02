@@ -54,7 +54,7 @@ function getHaulAmountForColonist(c, resource = 'wood') {
 }
 
 function getHaulingPriority(c) {
-  if (typeof getColonistTaskPriority === 'function') return getColonistTaskPriority(c, 'handle');
+  if (typeof getColonistTaskPriority === 'function') return getColonistTaskPriority(c, 'hauling');
   return 2;
 }
 

@@ -98,7 +98,8 @@
         ['lighting_system','src/game/systems/lighting-system.js'],
         ['world_region_system','src/game/systems/world-region-system.js'],
         ['mining_task_handler','src/game/systems/mining-task-handler.js'],
-        ['mining_orders','src/game/systems/mining-orders.js']
+        ['mining_orders','src/game/systems/mining-orders.js'],
+        ['mining_processing_system','src/game/systems/mining-processing-system.js']
       ])
     }),
     Object.freeze({
@@ -261,6 +262,7 @@
     floor_system: 'Preparando pisos construíveis',
     runtime_tasks: 'Preparando tarefas dos colonos',
     work_coordination: 'Preparando coordenação de trabalho',
+    mining_processing_system: 'Instalando mineração e metalurgia',
     crop_defs: 'Preparando cultivos',
     farming_system: 'Preparando talhões agrícolas',
     zone_input_system: 'Preparando pintura de zonas',

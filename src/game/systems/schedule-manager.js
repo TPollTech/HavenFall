@@ -75,7 +75,7 @@
 
   function isWorkTask(c) {
     const type = c?.task?.type;
-    return ['gather','mine','build','buildRoof','haul','deconstruct','research','craft','forge','cook','inspect','loot','inspectPoi'].includes(type);
+    return ['gather','mine','build','buildRoof','haul','deconstruct','research','craft','forge','cook','inspect','loot','inspectPoi','prepareSoil','sowCrop','tendCrop','harvestCrop','heal'].includes(type);
   }
 
   function nearestLeisureObject(c) {

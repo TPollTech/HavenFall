@@ -8,18 +8,18 @@ const baseObjectDefs = {
   palm_tree: { name: 'palmeira', img: 'tree_palm', blocks: true, gather: { wood: 6 }, work: 2.8, respawn: false },
   willow_tree: { name: 'salgueiro', img: 'tree_willow', blocks: true, gather: { wood: 8 }, work: 3.4, respawn: false },
   eucalypt_tree: { name: 'eucalipto', img: 'tree_eucalyptus', blocks: true, gather: { wood: 9 }, work: 3.5, respawn: false },
-  bush: { name: 'arbusto', img: 'bush', blocks: true, gather: { wood: 2 }, work: 1.5 },
+  bush: { name: 'arbusto', img: 'bush', blocks: true, gather: { wood: 3 }, work: 1.5 },
   berry: { name: 'frutas silvestres', img: 'berry', blocks: false, gather: { food: 7 }, work: 2.0 },
   rock: { name: 'rocha', img: 'rock', blocks: true, gather: { stone: 7 }, work: 3.4 },
-  ore: { name: 'veio de metal', img: 'icon_metal', blocks: true, gather: { stone: 2, metal: 4 }, work: 4.0 },
+  ore: { name: 'veio de metal', img: 'icon_metal', blocks: true, gather: { stone: 3, metal: 6 }, work: 4.5 },
   logs: { name: 'toras', img: 'logs', blocks: false, gather: { wood: 5 }, work: 1.4 },
   stockpile: { name: 'pilha de estoque', img: 'logs', blocks: false, stored: true },
   rubble: { name: 'entulho', img: 'rock', blocks: false, work: 1.0, debris: true },
   bed: { name: 'cama', img: 'bed_single', blocks: true, comfort: 1.25 },
   campfire: { name: 'fogueira', img: 'campfire', blocks: true, warmth: 1, light: { radius: 7, power: 1.0, color: '#ffb35c', flicker: 0.12 } },
   torch: { name: 'tocha', img: 'campfire', blocks: false, light: { radius: 4, power: 0.72, color: '#ffc16a', flicker: 0.18 } },
-  forge: { name: 'forja de metal', img: 'edificios_forge', blocks: true, forge: { input: { stone: 3 }, output: { metal: 1 } }, work: 4.5, light: { radius: 5, power: 0.78, color: '#ff9a4f', flicker: 0.14, requiresActivity: true } },
-  stove: { name: 'fogão', img: 'stove', blocks: true, cook: { input: { food: 2, wood: 1 }, output: { food: 4 } }, work: 3.8 },
+  forge: { name: 'forja de metal', img: 'edificios_forge', blocks: true, forge: { input: { stone: 2 }, output: { metal: 1 } }, work: 3.0, light: { radius: 5, power: 0.78, color: '#ff9a4f', flicker: 0.14, requiresActivity: true } },
+  stove: { name: 'fogão', img: 'stove', blocks: true, cook: { input: { food: 2, wood: 1 }, output: { food: 4 } }, work: 3.0 },
   med_station: { name: 'estação médica', img: 'med_station', blocks: true, heal: { input: { medicine: 1 }, amount: 28 }, work: 4.2 },
   research_desk: { name: 'mesa de pesquisa', img: 'research_desk', blocks: true, research: 1, work: 5.0 },
   crate: { name: 'depósito', img: 'crate_wood', blocks: true, storage: 1, storageCapacity: 80 },
@@ -28,5 +28,17 @@ const baseObjectDefs = {
   supply_crate: { name: 'caixa de suprimentos', img: 'crate_wood', blocks: true, interactable: true, unknown: true, work: 2.2 },
   wall: { name: 'parede', img: 'wall_stone', blocks: true },
   bench: { name: 'bancada', img: 'crafting_bench', blocks: true, craft: 1 },
-  door: { name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true }
+  door: { name: 'porta', img: 'door_wood', blocks: false, door: true, roofBoundary: true },
+
+  // Veios fixos de minério (persistentes, não somem ao minerar)
+  ironVein: { name: 'veio de ferro', img: 'icon_metal', blocks: true, vein: true, veinType: 'iron', work: 8.0 },
+  copperVein: { name: 'veio de cobre', img: 'icon_metal', blocks: true, vein: true, veinType: 'copper', work: 8.0 },
+  coalVein: { name: 'veio de carvão', img: 'icon_coal', blocks: true, vein: true, veinType: 'coal', work: 6.0 },
+  tinVein: { name: 'veio de estanho', img: 'icon_metal', blocks: true, vein: true, veinType: 'tin', work: 7.0 },
+
+  // Bancadas de processamento de minério
+  pestle: { name: 'pilão de pedra', img: 'crafting_bench', blocks: true, craft: 1 },
+  selectionTable: { name: 'mesa de seleção', img: 'crafting_bench', blocks: true, craft: 1 },
+  furnace: { name: 'fornalha simples', img: 'campfire', blocks: true, craft: 1, light: { radius: 4, power: 0.7, color: '#ff8c42', flicker: 0.15 } },
+  anvil: { name: 'bigorna', img: 'edificios_forge', blocks: true, craft: 1 }
 };

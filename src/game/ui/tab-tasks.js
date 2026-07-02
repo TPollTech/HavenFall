@@ -7,8 +7,10 @@
   const TASKS = [
     ['gather', 'Coletar'],
     ['build', 'Construir'],
+    ['farming', 'Agricultura'],
+    ['crafting', 'Artesanato'],
     ['research', 'Pesquisar'],
-    ['handle', 'Manusear']
+    ['hauling', 'Transporte']
   ];
 
   const TASK_LABELS = Object.fromEntries(TASKS);
@@ -17,7 +19,10 @@
     if (!state) return null;
     state.taskPriorities = state.taskPriorities || {};
     for (const c of state.colonists || []) {
-      state.taskPriorities[c.id] = state.taskPriorities[c.id] || { gather: 2, build: 2, research: 2, handle: 2 };
+      state.taskPriorities[c.id] = state.taskPriorities[c.id] || { gather: 2, build: 2, farming: 2, crafting: 2, research: 2, hauling: 2 };
+      if (state.taskPriorities[c.id].handle !== undefined && state.taskPriorities[c.id].hauling === undefined) {
+        state.taskPriorities[c.id].hauling = state.taskPriorities[c.id].handle;
+      }
       for (const [key] of TASKS) if (state.taskPriorities[c.id][key] === undefined) state.taskPriorities[c.id][key] = 2;
     }
     return state.taskPriorities;

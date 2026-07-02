@@ -127,6 +127,21 @@ function assignHeal(c, station) {
   c.note = 'Indo receber tratamento';
 }
 
+function degradeTool(c) {
+  const key = c.equipment?.tool;
+  if (!key) return;
+  const def = itemDefs?.[key];
+  if (!def?.maxDurability) return;
+  c.equipment._durability = c.equipment._durability || {};
+  c.equipment._durability[key] = (c.equipment._durability[key] ?? def.maxDurability) - 1;
+  if (c.equipment._durability[key] <= 0) {
+    delete c.equipment._durability[key];
+    c.equipment.tool = null;
+    if (state?.items?.[key]) state.items[key] = Math.max(0, state.items[key] - 1);
+    if (typeof log === 'function') log(`${c.name} quebrou ${def.label}.`);
+  }
+}
+
 function assignCraft(c, recipeKey, stationOverride = null) {
   const recipe = recipeDefs[recipeKey];
   if (!recipe) return;
@@ -247,8 +262,10 @@ function taskPriorityOrder(c) {
   return [
     ['gather', taskPriorityValue(c, 'gather')],
     ['build', taskPriorityValue(c, 'build')],
+    ['farming', taskPriorityValue(c, 'farming')],
+    ['crafting', taskPriorityValue(c, 'crafting')],
     ['research', taskPriorityValue(c, 'research')],
-    ['handle', taskPriorityValue(c, 'handle')]
+    ['hauling', taskPriorityValue(c, 'hauling')]
   ].filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]);
 }
 
@@ -268,11 +285,19 @@ function canDoPriorityTask(c, key) {
     return !!(mine || nearestGatherable(c, true));
   }
   if (key === 'build') return !!nearestBlueprint(c);
+  if (key === 'farming') return typeof window.HavenfallFarming?.findPendingCell === 'function' && !!window.HavenfallFarming.findPendingCell(c);
+  if (key === 'crafting') {
+    const stations = ['bench','forge','stove','med_station','sewing_table','smokehouse'];
+    return Object.keys(recipeDefs).some(k => {
+      const r = recipeDefs[k];
+      return recipeUnlocked(k) && hasRecipeCost(r) && state.objects.some(o => o.type === r.station);
+    });
+  }
   if (key === 'research') {
     ensureResearchState();
     return !!state.research?.current && !!state.objects.find(o => o.type === 'research_desk');
   }
-  if (key === 'handle') {
+  if (key === 'hauling') {
     if (typeof findLooseHaulTarget !== 'function' || typeof assignHaulTask !== 'function') return false;
     const target = findLooseHaulTarget(c);
     if (!target) return false;
@@ -295,13 +320,29 @@ function assignPriorityTask(c, key) {
     if (bp) { assignBuild(c, bp); return true; }
   }
 
+  if (key === 'farming') {
+    if (typeof window.HavenfallFarming?.assignFarmingTask === 'function') return window.HavenfallFarming.assignFarmingTask(c);
+  }
+
+  if (key === 'crafting') {
+    const stations = ['bench','forge','stove','med_station','sewing_table','smokehouse'];
+    for (const rkey of Object.keys(recipeDefs)) {
+      const r = recipeDefs[rkey];
+      if (!recipeUnlocked(rkey) || !hasRecipeCost(r)) continue;
+      const station = state.objects.find(o => o.type === r.station);
+      if (!station) continue;
+      assignCraft(c, rkey, station);
+      return true;
+    }
+  }
+
   if (key === 'research') {
     ensureResearchState();
     const desk = state.objects.find(o => o.type === 'research_desk');
     if (desk && state.research?.current) { assignResearch(c, desk); return true; }
   }
 
-  if (key === 'handle') {
+  if (key === 'hauling') {
     if (typeof zoneSystem !== 'undefined' && typeof findLooseHaulTarget === 'function' && typeof assignHaulTask === 'function') {
       const target = findLooseHaulTarget(c);
       const destination = storageDestinationForPriority(target, c);
@@ -494,6 +535,7 @@ function handleTaskAtTarget(c, tick) {
     if (!rock?.solid) { c.task = null; c.note = 'Ocioso'; c.work = 0; return; }
     const label = typeof geologyLabelAt === 'function' ? geologyLabelAt(task.mineX, task.mineY) : 'rocha';
     c.work += tick * workRate(c, 'gather');
+    degradeTool(c);
     c.note = `Minerando ${label}`;
     const rockBeforeHit = { type: rock.type, resource: rock.resource, maxHp: rock.maxHp };
     const result = typeof mineRockAt === 'function' ? mineRockAt(task.mineX, task.mineY, tick * 12 * workRate(c, 'gather')) : null;
@@ -513,8 +555,14 @@ function handleTaskAtTarget(c, tick) {
     if (!obj) { c.task = null; c.note = 'Ocioso'; return; }
     const def = objectDefs[obj.type];
     c.work += tick * workRate(c, 'gather', obj);
+    degradeTool(c);
     c.note = `Coletando ${def.name} ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
+      const regrowable = { tree: 48, oak_tree: 48, birch_tree: 48, pine_tree: 60, palm_tree: 48, willow_tree: 48, eucalypt_tree: 48, bush: 36, berry: 24, rock: 72, ore: 120 };
+      if (regrowable[obj.type] && Array.isArray(window.regrowthQueue)) {
+        const readyAt = (Number(state.day || 0) * 24) + Number(state.hour || 0) + regrowable[obj.type];
+        window.regrowthQueue.push({ type: obj.type, x: Math.round(obj.x), y: Math.round(obj.y), readyAt });
+      }
       addResources(def.gather);
       notifyWorkComplete(feedbackKindForGatherObject(obj, def), { objectType: obj.type, gain: def.gather }, obj.x, obj.y);
       state.objects = state.objects.filter(o => o.id !== obj.id);
@@ -536,6 +584,7 @@ function handleTaskAtTarget(c, tick) {
       return;
     }
     c.work += tick * workRate(c, 'craft');
+    degradeTool(c);
     c.note = `Fabricando ${recipe.label} ${Math.floor((c.work / recipe.duration) * 100)}%`;
     if (c.work >= recipe.duration) {
       if (!payRecipeCost(recipe)) {
@@ -567,6 +616,7 @@ function handleTaskAtTarget(c, tick) {
       return;
     }
     c.work += tick * workRate(c, 'forge');
+    degradeTool(c);
     c.note = `Forjando metal ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
       if (!payCost(input)) {
@@ -632,22 +682,25 @@ function handleTaskAtTarget(c, tick) {
     const station = state.objects.find(o => o.id === task.objId && o.type === 'med_station');
     if (!station) { c.task = null; c.note = 'Ocioso'; return; }
     const def = objectDefs.med_station;
-    if (!hasCost(def.heal.input)) {
-      log('Falta remédio para usar a estação médica.');
+    const hasResources = hasCost(def.heal.input) || hasItems({ bandage: 1 });
+    if (!hasResources) {
+      log('Falta remédio ou curativo para usar a estação médica.');
       c.task = null; c.note = 'Ocioso'; c.work = 0;
       return;
     }
     c.work += tick * workRate(c, 'heal');
     c.note = `Tratamento médico ${Math.floor((c.work / def.work) * 100)}%`;
     if (c.work >= def.work) {
-      if (!payCost(def.heal.input)) {
+      const paidResources = payCost(def.heal.input, { requireEnough: false });
+      const paidItems = !paidResources ? payItems({ bandage: 1 }, { requireEnough: false }) : false;
+      if (!paidResources && !paidItems) {
         log('Faltaram recursos para concluir o tratamento.');
         c.task = null; c.note = 'Sem recursos'; c.work = 0;
         return;
       }
       c.health = clamp(c.health + def.heal.amount, 0, 100);
       c.mood = clamp(c.mood + 3, 0, 100);
-      notifyWorkComplete('heal', { objectType: station.type, input: def.heal.input, amount: def.heal.amount }, station.x, station.y);
+      notifyWorkComplete('heal', { objectType: station.type, input: paidResources ? def.heal.input : { bandage: 1 }, amount: def.heal.amount }, station.x, station.y);
       log(`${c.name} recebeu tratamento médico.`);
       c.task = null; c.note = 'Ocioso'; c.work = 0;
     }
@@ -658,6 +711,7 @@ function handleTaskAtTarget(c, tick) {
     const bp = state.objects.find(o => o.id === task.objId && o.type === 'blueprint');
     if (!bp) { c.task = null; c.note = 'Ocioso'; return; }
     bp.progress = (bp.progress || 0) + tick * workRate(c, 'build');
+    degradeTool(c);
     const buildType = bp.buildType;
     const def = buildDefs[buildType];
     c.note = `Construindo ${def.label} ${Math.floor((bp.progress / def.work) * 100)}%`;

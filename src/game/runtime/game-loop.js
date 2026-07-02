@@ -10,6 +10,8 @@ const loopErrorState = new Set();
 let doorAutoClosePulse = 0;
 let lastRenderAt = 0;
 
+window.regrowthQueue = [];
+
 window.HavenfallPerf = window.HavenfallPerf || {
   frame: 0,
   updateMs: 0,
@@ -129,6 +131,30 @@ function updateDoorAutoClose(dt) {
   }
 }
 
+function processRegrowth() {
+  if (!state?.objects || !window.regrowthQueue?.length) return;
+  const now = (Number(state.day || 0) * 24) + Number(state.hour || 0);
+  const remaining = [];
+  for (const entry of window.regrowthQueue) {
+    if (now < entry.readyAt) { remaining.push(entry); continue; }
+    const spots = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const nx = Math.round(entry.x) + dx;
+        const ny = Math.round(entry.y) + dy;
+        if (state.terrain?.[ny]?.[nx] && !getObjectAt(nx, ny) && !isBlocked(nx, ny)) spots.push({ x: nx, y: ny });
+      }
+    }
+    spots.sort(() => Math.random() - 0.5);
+    if (spots.length) {
+      const spot = spots[0];
+      state.objects.push({ id: uid('obj'), type: entry.type, x: spot.x, y: spot.y });
+      if (typeof invalidateSpatialGrid === 'function') invalidateSpatialGrid();
+    }
+  }
+  window.regrowthQueue = remaining;
+}
+
 function updateWorld(dt) {
   if (!isRealGameplay() || appScreen !== SCREEN.PLAYING) return;
   const speed = Number(state.speed || 1);
@@ -170,6 +196,7 @@ function updateWorld(dt) {
 
   for (const c of state.colonists || []) {
     try {
+      if (c.isDead) continue;
       updateColonist(c, dt);
     } catch (err) {
       console.error('[Colonist Update Error]', { colonist: c, task: c?.task, error: err });
@@ -182,7 +209,27 @@ function updateWorld(dt) {
       }
     }
   }
+  removeDeadColonists();
+  processRegrowth();
   checkGoals();
+}
+
+function removeDeadColonists() {
+  if (!state?.colonists) return;
+  const deadTimeout = 12;
+  const currentTime = (Number(state.day || 0) * 24) + Number(state.hour || 0);
+  const alive = [];
+  for (const c of state.colonists) {
+    if (c.isDead && c.deathTime != null) {
+      const hoursSinceDeath = currentTime - c.deathTime;
+      if (hoursSinceDeath >= deadTimeout) {
+        if (typeof log === 'function') log(`${c.name} foi enterrado após ${Math.round(hoursSinceDeath)}h (causa: ${c.deathCause || 'desconhecida'}).`);
+        continue;
+      }
+    }
+    alive.push(c);
+  }
+  state.colonists = alive;
 }
 
 function randomEvent() {

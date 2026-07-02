@@ -291,6 +291,18 @@
     if (shouldStartScheduledSleep(c)) return startAutonomySleep(c, 'scheduled');
     if (c.task) { if (isWorkTask(taskType(c))) rememberIntent(c, INTENT.WORK, 'current-task', 0.10); return false; }
     if (c.health < 18 && Number(c.energy ?? 100) < 35) return startAutonomySleep(c, 'injured');
+    if (c.health < 35 && c.health > 0 && !c.task) {
+      const station = state?.objects?.find(o => o.type === 'med_station');
+      if (station && typeof assignHeal === 'function') {
+        const def = typeof objectDefs !== 'undefined' ? objectDefs.med_station : null;
+        const needMedicine = def?.heal?.input && hasCost?.(def.heal.input);
+        const needBandage = typeof hasItems === 'function' && hasItems({ bandage: 1 });
+        if (needMedicine || needBandage) {
+          assignHeal(c, station);
+          return true;
+        }
+      }
+    }
     if (c.hunger < 32 && maybeEat(c)) return true;
     if (isSchedule(c, schedule.LEISURE)) { if (Number(c.energy ?? 100) <= ENERGY.FORCE_SLEEP) return startAutonomySleep(c, 'leisure-exhausted'); if (!workExists() || Number(c.mood ?? 100) < 35) return assignLeisure(c); }
     if (shouldAvoidNewLongWork(c)) { c.note = 'Preparando descanso'; rememberIntent(c, INTENT.IDLE, 'sleep-soon', 0.12); return true; }
@@ -307,21 +319,9 @@
 
   function runBeforeHooksWithoutLegacySchedule(c, dt) {
     const manager = window.ScheduleManager;
-    if (!window.GameSystems?.runBeforeColonistUpdate || !manager?.getScheduleState || !manager?.SCHEDULE) { window.GameSystems?.runBeforeColonistUpdate?.(c, dt); return; }
-    const originalGetScheduleState = manager.getScheduleState;
-    try {
-      manager.getScheduleState = (colonist, hour) => {
-        if (colonist === c) {
-          const schedule = manager.ensureColonistSchedule?.(colonist);
-          if (Array.isArray(schedule)) colonist.scheduleMode = schedule[manager.normalizeHour?.(hour ?? state?.hour ?? 0) ?? 0] ?? manager.SCHEDULE.WORK;
-          return manager.SCHEDULE.WORK;
-        }
-        return originalGetScheduleState(colonist, hour);
-      };
-      window.GameSystems.runBeforeColonistUpdate(c, dt);
-    } finally {
-      manager.getScheduleState = originalGetScheduleState;
-    }
+    if (!window.GameSystems?.runBeforeColonistUpdate) return;
+    manager?.ensureColonistSchedule?.(c);
+    window.GameSystems.runBeforeColonistUpdate(c, dt);
   }
 
   function autonomyUpdateColonist(c, dt) {

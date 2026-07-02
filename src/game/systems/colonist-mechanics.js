@@ -31,6 +31,10 @@ function workRate(c, kind, target = null) {
   if (c.priority === 'build' && kind === 'build') rate += 0.10;
   if (c.priority === 'gather' && kind === 'gather') rate += 0.10;
   if (c.priority === 'defense' && kind === 'defense') rate += 0.10;
+  if (c.priority === 'farming' && (kind === 'gather' || kind === 'prepareSoil' || kind === 'sowCrop' || kind === 'tendCrop' || kind === 'harvestCrop')) rate += 0.10;
+  if (c.priority === 'crafting' && (kind === 'craft' || kind === 'forge' || kind === 'cook')) rate += 0.10;
+  if (c.priority === 'hauling' && kind === 'haul') rate += 0.10;
+  if (c.priority === 'research' && kind === 'research') rate += 0.10;
 
   const eq = c.equipment || {};
   const tool = itemDefs[eq.tool];

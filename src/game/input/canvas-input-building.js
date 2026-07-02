@@ -275,7 +275,7 @@ function makeContextActions(c, target, tile) {
       } });
     }
     if (CRAFT_STATION_TYPES.includes(obj.type)) actions.push({ label: 'Abrir crafting', hint: stationLabels[obj.type] || def.name, run: () => openCraftingForStation(obj) });
-    if (obj.type === 'forge') actions.push({ label: 'Forjar metal rápido', hint: '3 pedra → 1 metal', run: () => assignForge(c, obj) });
+    if (obj.type === 'forge') actions.push({ label: 'Forjar metal rápido', hint: '2 pedra → 1 metal', run: () => assignForge(c, obj) });
     if (obj.type === 'research_desk') actions.push({ label: 'Pesquisar', hint: 'avança a pesquisa atual', run: () => assignResearch(c, obj) });
     if (obj.type === 'stove') actions.push({ label: 'Preparar comida rápida', hint: 'receita básica', run: () => assignCook(c, obj) });
     if (obj.type === 'med_station') actions.push({ label: 'Receber tratamento', hint: 'usa remédio', run: () => assignHeal(c, obj) });

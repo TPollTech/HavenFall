@@ -904,12 +904,14 @@
 
   function defaultPrioritySet(workPreferenceId = 'gather') {
     const presets = {
-      gather: { gather: 4, build: 2, research: 1, handle: 2 },
-      build: { gather: 2, build: 4, research: 1, handle: 2 },
-      defense: { gather: 1, build: 1, research: 1, handle: 1 },
-      research: { gather: 1, build: 1, research: 4, handle: 2 },
-      cooking: { gather: 1, build: 1, research: 2, handle: 3 },
-      medicine: { gather: 1, build: 1, research: 2, handle: 3 }
+      gather: { gather: 4, build: 2, farming: 1, crafting: 1, research: 1, hauling: 2 },
+      build: { gather: 2, build: 4, farming: 1, crafting: 1, research: 1, hauling: 2 },
+      defense: { gather: 1, build: 1, farming: 1, crafting: 1, research: 1, hauling: 1 },
+      farming: { gather: 1, build: 1, farming: 4, crafting: 1, research: 1, hauling: 2 },
+      crafting: { gather: 1, build: 1, farming: 1, crafting: 4, research: 1, hauling: 2 },
+      research: { gather: 1, build: 1, farming: 1, crafting: 1, research: 4, hauling: 2 },
+      cooking: { gather: 1, build: 1, farming: 2, crafting: 2, research: 2, hauling: 3 },
+      medicine: { gather: 1, build: 1, farming: 1, crafting: 2, research: 2, hauling: 3 }
     };
     return { ...(presets[workPreferenceId] || presets.gather) };
   }

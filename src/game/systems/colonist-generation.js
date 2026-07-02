@@ -35,7 +35,9 @@ const colonistWorkPreferenceDefs = Object.freeze({
   build: { label: 'Construção', priority: 'build' },
   gather: { label: 'Coleta', priority: 'gather' },
   defense: { label: 'Defesa', priority: 'defense' },
-  research: { label: 'Pesquisa', priority: null },
+  farming: { label: 'Agricultura', priority: 'farming' },
+  crafting: { label: 'Artesanato', priority: 'crafting' },
+  research: { label: 'Pesquisa', priority: 'research' },
   cooking: { label: 'Culinária', priority: null },
   medicine: { label: 'Medicina', priority: null }
 });

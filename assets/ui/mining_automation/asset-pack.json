@@ -1,0 +1,817 @@
+{
+  "generatedAt": "2026-07-02T23:07:13.605Z",
+  "root": "assets/ui/mining_automation",
+  "note": "Pacote isolado para roadmap de mineracao/metalurgia/energia/automacao. O manifesto global assets/manifest.js nao foi regenerado aqui para evitar sobrescrever referencias legadas do projeto.",
+  "total": 114,
+  "categories": {
+    "tools": 9,
+    "workstations": 6,
+    "resources": 26,
+    "deposits": 13,
+    "metals": 12,
+    "components": 12,
+    "energy": 10,
+    "logistics": 9,
+    "machines": 17
+  },
+  "assets": [
+    {
+      "id": "mining_tool_bare_hands",
+      "label": "Maos nuas",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_bare_hands.svg"
+    },
+    {
+      "id": "mining_tool_pickaxe_stone",
+      "label": "Picareta de pedra",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_pickaxe_stone.svg"
+    },
+    {
+      "id": "mining_tool_pickaxe_copper",
+      "label": "Picareta de cobre",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_pickaxe_copper.svg"
+    },
+    {
+      "id": "mining_tool_pickaxe_iron",
+      "label": "Picareta de ferro",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_pickaxe_iron.svg"
+    },
+    {
+      "id": "mining_tool_pickaxe_steel",
+      "label": "Picareta de aco",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_pickaxe_steel.svg"
+    },
+    {
+      "id": "mining_tool_manual_drill",
+      "label": "Broca manual",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_manual_drill.svg"
+    },
+    {
+      "id": "mining_tool_geological_hammer",
+      "label": "Martelo geologico",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_geological_hammer.svg"
+    },
+    {
+      "id": "mining_tool_lantern",
+      "label": "Lanterna de mineracao",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_lantern.svg"
+    },
+    {
+      "id": "mining_tool_helmet_lamp",
+      "label": "Capacete com luz",
+      "category": "tools",
+      "folder": "tools",
+      "path": "assets/ui/mining_automation/tools/mining_tool_helmet_lamp.svg"
+    },
+    {
+      "id": "mining_station_simple_bench",
+      "label": "Bancada simples",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_simple_bench.svg"
+    },
+    {
+      "id": "mining_station_stone_mortar",
+      "label": "Pilao de pedra",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_stone_mortar.svg"
+    },
+    {
+      "id": "mining_station_sorting_table",
+      "label": "Mesa de selecao",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_sorting_table.svg"
+    },
+    {
+      "id": "mining_station_simple_furnace",
+      "label": "Fornalha simples",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_simple_furnace.svg"
+    },
+    {
+      "id": "mining_station_anvil",
+      "label": "Bigorna",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_anvil.svg"
+    },
+    {
+      "id": "mining_station_coal_crate",
+      "label": "Caixa de carvao",
+      "category": "workstations",
+      "folder": "workstations",
+      "path": "assets/ui/mining_automation/workstations/mining_station_coal_crate.svg"
+    },
+    {
+      "id": "mining_resource_stone",
+      "label": "Pedra comum",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_stone.svg"
+    },
+    {
+      "id": "mining_resource_granite",
+      "label": "Granito",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_granite.svg"
+    },
+    {
+      "id": "mining_resource_slate",
+      "label": "Ardosia",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_slate.svg"
+    },
+    {
+      "id": "mining_resource_sandstone",
+      "label": "Arenito",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_sandstone.svg"
+    },
+    {
+      "id": "mining_resource_basalt",
+      "label": "Basalto",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_basalt.svg"
+    },
+    {
+      "id": "mining_resource_limestone",
+      "label": "Calcario",
+      "category": "resources",
+      "folder": "resources/rocks",
+      "path": "assets/ui/mining_automation/resources/rocks/mining_resource_limestone.svg"
+    },
+    {
+      "id": "mining_ore_iron_raw",
+      "label": "Minerio bruto de ferro",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_iron_raw.svg"
+    },
+    {
+      "id": "mining_ore_copper_raw",
+      "label": "Minerio bruto de cobre",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_copper_raw.svg"
+    },
+    {
+      "id": "mining_ore_tin_raw",
+      "label": "Estanho bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_tin_raw.svg"
+    },
+    {
+      "id": "mining_ore_coal_raw",
+      "label": "Carvao bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_coal_raw.svg"
+    },
+    {
+      "id": "mining_ore_lead_raw",
+      "label": "Chumbo bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_lead_raw.svg"
+    },
+    {
+      "id": "mining_ore_silver_raw",
+      "label": "Prata bruta",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_silver_raw.svg"
+    },
+    {
+      "id": "mining_ore_gold_raw",
+      "label": "Ouro bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_gold_raw.svg"
+    },
+    {
+      "id": "mining_ore_quartz_raw",
+      "label": "Quartzo bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_quartz_raw.svg"
+    },
+    {
+      "id": "mining_ore_bauxite_raw",
+      "label": "Bauxita",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_bauxite_raw.svg"
+    },
+    {
+      "id": "mining_ore_nickel_raw",
+      "label": "Niquel bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_nickel_raw.svg"
+    },
+    {
+      "id": "mining_ore_titanium_raw",
+      "label": "Titanio bruto",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_titanium_raw.svg"
+    },
+    {
+      "id": "mining_ore_energy_raw",
+      "label": "Minerio energetico raro",
+      "category": "resources",
+      "folder": "resources/ores",
+      "path": "assets/ui/mining_automation/resources/ores/mining_ore_energy_raw.svg"
+    },
+    {
+      "id": "mining_byproduct_gravel",
+      "label": "Cascalho",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_gravel.svg"
+    },
+    {
+      "id": "mining_byproduct_mineral_dust",
+      "label": "Poeira mineral",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_mineral_dust.svg"
+    },
+    {
+      "id": "mining_byproduct_silica",
+      "label": "Silica",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_silica.svg"
+    },
+    {
+      "id": "mining_byproduct_clay",
+      "label": "Argila",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_clay.svg"
+    },
+    {
+      "id": "mining_byproduct_sulfur",
+      "label": "Enxofre",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_sulfur.svg"
+    },
+    {
+      "id": "mining_byproduct_saltpeter",
+      "label": "Salitre",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_saltpeter.svg"
+    },
+    {
+      "id": "mining_byproduct_rare_crystals",
+      "label": "Cristais raros",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_rare_crystals.svg"
+    },
+    {
+      "id": "mining_byproduct_gems",
+      "label": "Gemas",
+      "category": "resources",
+      "folder": "resources/byproducts",
+      "path": "assets/ui/mining_automation/resources/byproducts/mining_byproduct_gems.svg"
+    },
+    {
+      "id": "mining_deposit_surface_fragment",
+      "label": "Fragmento superficial",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_deposit_surface_fragment.svg"
+    },
+    {
+      "id": "mining_deposit_scrap_metal",
+      "label": "Restos metalicos",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_deposit_scrap_metal.svg"
+    },
+    {
+      "id": "mining_vein_iron",
+      "label": "Veio de ferro",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_vein_iron.svg"
+    },
+    {
+      "id": "mining_vein_copper",
+      "label": "Veio de cobre",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_vein_copper.svg"
+    },
+    {
+      "id": "mining_vein_coal",
+      "label": "Veio de carvao",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_vein_coal.svg"
+    },
+    {
+      "id": "mining_vein_quartz",
+      "label": "Veio de quartzo",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_vein_quartz.svg"
+    },
+    {
+      "id": "mining_purity_impure",
+      "label": "Pureza impura",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_purity_impure.svg"
+    },
+    {
+      "id": "mining_purity_normal",
+      "label": "Pureza normal",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_purity_normal.svg"
+    },
+    {
+      "id": "mining_purity_rich",
+      "label": "Pureza rica",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_purity_rich.svg"
+    },
+    {
+      "id": "mining_purity_exceptional",
+      "label": "Pureza excepcional",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_purity_exceptional.svg"
+    },
+    {
+      "id": "mining_scanner_geologic",
+      "label": "Scanner geologico",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_scanner_geologic.svg"
+    },
+    {
+      "id": "mining_probe_depth",
+      "label": "Sonda de profundidade",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_probe_depth.svg"
+    },
+    {
+      "id": "mining_sensor_seismic",
+      "label": "Analise sismica",
+      "category": "deposits",
+      "folder": "deposits",
+      "path": "assets/ui/mining_automation/deposits/mining_sensor_seismic.svg"
+    },
+    {
+      "id": "mining_ingot_iron",
+      "label": "Lingote de ferro",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_iron.svg"
+    },
+    {
+      "id": "mining_ingot_copper",
+      "label": "Lingote de cobre",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_copper.svg"
+    },
+    {
+      "id": "mining_ingot_tin",
+      "label": "Lingote de estanho",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_tin.svg"
+    },
+    {
+      "id": "mining_ingot_lead",
+      "label": "Lingote de chumbo",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_lead.svg"
+    },
+    {
+      "id": "mining_ingot_silver",
+      "label": "Lingote de prata",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_silver.svg"
+    },
+    {
+      "id": "mining_ingot_gold",
+      "label": "Lingote de ouro",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_ingot_gold.svg"
+    },
+    {
+      "id": "mining_alloy_bronze",
+      "label": "Liga de bronze",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_bronze.svg"
+    },
+    {
+      "id": "mining_alloy_steel",
+      "label": "Liga de aco",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_steel.svg"
+    },
+    {
+      "id": "mining_alloy_brass",
+      "label": "Liga de latao",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_brass.svg"
+    },
+    {
+      "id": "mining_alloy_aluminum",
+      "label": "Liga de aluminio",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_aluminum.svg"
+    },
+    {
+      "id": "mining_alloy_reinforced_steel",
+      "label": "Aco reforcado",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_reinforced_steel.svg"
+    },
+    {
+      "id": "mining_alloy_titanium",
+      "label": "Liga de titanio",
+      "category": "metals",
+      "folder": "metals",
+      "path": "assets/ui/mining_automation/metals/mining_alloy_titanium.svg"
+    },
+    {
+      "id": "mining_part_iron_plate",
+      "label": "Chapa de ferro",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_iron_plate.svg"
+    },
+    {
+      "id": "mining_part_iron_bar",
+      "label": "Barra de ferro",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_iron_bar.svg"
+    },
+    {
+      "id": "mining_part_gear",
+      "label": "Engrenagem",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_gear.svg"
+    },
+    {
+      "id": "mining_part_shaft",
+      "label": "Eixo",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_shaft.svg"
+    },
+    {
+      "id": "mining_part_screw",
+      "label": "Parafuso",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_screw.svg"
+    },
+    {
+      "id": "mining_part_copper_pipe",
+      "label": "Tubo de cobre",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_copper_pipe.svg"
+    },
+    {
+      "id": "mining_part_copper_wire",
+      "label": "Fio de cobre",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_copper_wire.svg"
+    },
+    {
+      "id": "mining_part_coil",
+      "label": "Bobina",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_coil.svg"
+    },
+    {
+      "id": "mining_part_metal_plate",
+      "label": "Placa metalica",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_metal_plate.svg"
+    },
+    {
+      "id": "mining_part_mechanical_component",
+      "label": "Componente mecanico",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_mechanical_component.svg"
+    },
+    {
+      "id": "mining_part_electrical_component",
+      "label": "Componente eletrico",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_electrical_component.svg"
+    },
+    {
+      "id": "mining_part_simple_circuit",
+      "label": "Circuito simples",
+      "category": "components",
+      "folder": "components",
+      "path": "assets/ui/mining_automation/components/mining_part_simple_circuit.svg"
+    },
+    {
+      "id": "mining_power_wood_generator",
+      "label": "Gerador a lenha",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_wood_generator.svg"
+    },
+    {
+      "id": "mining_power_coal_generator",
+      "label": "Gerador a carvao",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_coal_generator.svg"
+    },
+    {
+      "id": "mining_power_hand_dynamo",
+      "label": "Dinamo manual",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_hand_dynamo.svg"
+    },
+    {
+      "id": "mining_power_water_wheel",
+      "label": "Roda d'agua",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_water_wheel.svg"
+    },
+    {
+      "id": "mining_power_steam_engine",
+      "label": "Motor a vapor",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_steam_engine.svg"
+    },
+    {
+      "id": "mining_power_pole",
+      "label": "Poste simples",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_pole.svg"
+    },
+    {
+      "id": "mining_power_connector",
+      "label": "Conector",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_connector.svg"
+    },
+    {
+      "id": "mining_power_small_battery",
+      "label": "Bateria pequena",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_small_battery.svg"
+    },
+    {
+      "id": "mining_power_panel",
+      "label": "Quadro de energia",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_panel.svg"
+    },
+    {
+      "id": "mining_power_fuse",
+      "label": "Fusivel",
+      "category": "energy",
+      "folder": "energy",
+      "path": "assets/ui/mining_automation/energy/mining_power_fuse.svg"
+    },
+    {
+      "id": "mining_logistics_conveyor_basic",
+      "label": "Esteira simples",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_conveyor_basic.svg"
+    },
+    {
+      "id": "mining_logistics_conveyor_fast",
+      "label": "Esteira rapida",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_conveyor_fast.svg"
+    },
+    {
+      "id": "mining_logistics_splitter",
+      "label": "Divisor",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_splitter.svg"
+    },
+    {
+      "id": "mining_logistics_merger",
+      "label": "Unificador",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_merger.svg"
+    },
+    {
+      "id": "mining_logistics_machine_input",
+      "label": "Entrada de maquina",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_machine_input.svg"
+    },
+    {
+      "id": "mining_logistics_machine_output",
+      "label": "Saida de maquina",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_machine_output.svg"
+    },
+    {
+      "id": "mining_logistics_industrial_crate",
+      "label": "Caixa industrial",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_industrial_crate.svg"
+    },
+    {
+      "id": "mining_logistics_lift_basic",
+      "label": "Elevador simples",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_lift_basic.svg"
+    },
+    {
+      "id": "mining_logistics_filter_sorter",
+      "label": "Filtro",
+      "category": "logistics",
+      "folder": "logistics",
+      "path": "assets/ui/mining_automation/logistics/mining_logistics_filter_sorter.svg"
+    },
+    {
+      "id": "mining_machine_miner_assisted",
+      "label": "Mineradora assistida",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_miner_assisted.svg"
+    },
+    {
+      "id": "mining_machine_miner_mk1",
+      "label": "Mineradora MK1",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_miner_mk1.svg"
+    },
+    {
+      "id": "mining_machine_miner_mk2",
+      "label": "Mineradora MK2",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_miner_mk2.svg"
+    },
+    {
+      "id": "mining_machine_miner_heavy",
+      "label": "Mineradora pesada",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_miner_heavy.svg"
+    },
+    {
+      "id": "mining_machine_deep_drill",
+      "label": "Broca profunda",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_deep_drill.svg"
+    },
+    {
+      "id": "mining_machine_excavator_industrial",
+      "label": "Escavadora industrial",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_excavator_industrial.svg"
+    },
+    {
+      "id": "mining_machine_crusher",
+      "label": "Britador",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_crusher.svg"
+    },
+    {
+      "id": "mining_machine_sieve",
+      "label": "Peneira",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_sieve.svg"
+    },
+    {
+      "id": "mining_machine_washer",
+      "label": "Lavador",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_washer.svg"
+    },
+    {
+      "id": "mining_machine_industrial_furnace",
+      "label": "Fornalha industrial",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_industrial_furnace.svg"
+    },
+    {
+      "id": "mining_machine_electric_smelter",
+      "label": "Fundicao eletrica",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_electric_smelter.svg"
+    },
+    {
+      "id": "mining_machine_press",
+      "label": "Prensa",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_press.svg"
+    },
+    {
+      "id": "mining_machine_cutter",
+      "label": "Cortadora",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_cutter.svg"
+    },
+    {
+      "id": "mining_machine_coiler",
+      "label": "Bobinadeira",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_coiler.svg"
+    },
+    {
+      "id": "mining_machine_assembler",
+      "label": "Montadora",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_assembler.svg"
+    },
+    {
+      "id": "mining_machine_mixer",
+      "label": "Misturador",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_mixer.svg"
+    },
+    {
+      "id": "mining_machine_refinery",
+      "label": "Refinaria",
+      "category": "machines",
+      "folder": "machines",
+      "path": "assets/ui/mining_automation/machines/mining_machine_refinery.svg"
+    }
+  ]
+}

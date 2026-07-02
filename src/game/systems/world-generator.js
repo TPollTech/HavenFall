@@ -114,6 +114,7 @@ function generateWorldFromSeed(config) {
   };
 
   generateResourceFields({ terrain, objects, occupiedTiles, cols, rows, spawn, config, rand, add });
+  generateOreVeins({ terrain, objects, occupiedTiles, cols, rows, spawn, config, rand, add });
   const pointsOfInterest = generatePointsOfInterest({ terrain, objects, occupiedTiles, cols, rows, spawn, config, rand, add });
   placeStartingCamp({ objects, spawn, add });
 
@@ -412,6 +413,46 @@ function generateResourceFields(ctx) {
       const tile = weightedResourceTile(type, terrain, occupiedTiles, cols, rows, spawn, rand, config.seed);
       if (!tile) continue;
       add(type, tile.x, tile.y);
+    }
+  }
+}
+
+function generateOreVeins(ctx) {
+  const { terrain, occupiedTiles, cols, rows, spawn, config, rand, add } = ctx;
+  const size = getMapSizeDef(config.mapSize);
+  const area = cols * rows;
+  const multiplier = size.resourceMultiplier * difficultyResourceFactor(config.difficulty);
+  const veinCounts = {
+    iron: Math.floor(area * 0.0018 * multiplier),
+    copper: Math.floor(area * 0.0016 * multiplier),
+    coal: Math.floor(area * 0.0020 * multiplier),
+    tin: Math.floor(area * 0.0008 * multiplier)
+  };
+  const scan = planetScanProfile(config);
+  if (scan) {
+    const rock = scanBiomeStat(config, 'rock');
+    veinCounts.iron = Math.floor(veinCounts.iron * (1 + (rock - 24) * 0.015));
+    veinCounts.copper = Math.floor(veinCounts.copper * (1 + (rock - 24) * 0.012));
+    veinCounts.coal = Math.floor(veinCounts.coal * (1 + (rock - 24) * 0.010));
+  }
+  const MIN_DIST_FROM_SPAWN = 12;
+  for (const [veinType, count] of Object.entries(veinCounts)) {
+    for (let i = 0; i < Math.min(count, 8); i++) {
+      let attempts = 0;
+      let placed = false;
+      while (attempts < 40 && !placed) {
+        attempts++;
+        const x = 3 + Math.floor(rand() * (cols - 6));
+        const y = 3 + Math.floor(rand() * (rows - 6));
+        const t = terrain[y]?.[x];
+        if (!t) continue;
+        const d = Math.hypot(x - spawn.x, y - spawn.y);
+        if (d < MIN_DIST_FROM_SPAWN) continue;
+        if (occupiedTiles?.has(worldTileKey(x, y))) continue;
+        if (t !== 'stone' && t !== 'rock' && worldNoise(config.seed, x, y, `${veinType}Vein`) < 0.75) continue;
+        add(veinType + 'Vein', x, y, { vein: true, veinType: veinType });
+        placed = true;
+      }
     }
   }
 }

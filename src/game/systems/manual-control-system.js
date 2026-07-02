@@ -199,6 +199,8 @@
     }
     const rock = rockInteraction(c);
     if (rock) actions.push(rock);
+    const vein = typeof veinInteraction === 'function' ? veinInteraction(c) : null;
+    if (vein) actions.push(vein);
     actions.sort((a, b) => (b.priority || 0) - (a.priority || 0));
     return actions[0] || null;
   }
@@ -220,6 +222,9 @@
       markManualTask(c);
     } else if (action.kind === 'mine') {
       if (typeof assignMine === 'function') assignMine(c, action.x, action.y, true);
+      markManualTask(c);
+    } else if (action.kind === 'veinMine') {
+      if (typeof assignVeinMine === 'function') assignVeinMine(c, action.obj);
       markManualTask(c);
     } else if (action.kind === 'research') {
       if (typeof assignResearch === 'function') assignResearch(c, action.obj);
