@@ -43,15 +43,15 @@
     if (type === 'sleep') return false;
     if (type === 'move') return false;
     if (type === 'combat' || type === 'scare') return false;
-    return ['gather', 'build', 'buildRoof', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine'].includes(type);
+    return ['gather', 'build', 'buildRoof', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'leisure', 'mine', 'prepareSoil', 'sowCrop', 'tendCrop', 'harvestCrop'].includes(type);
   }
 
   function isWorkingTask(type) {
-    return ['gather', 'build', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'mine'].includes(type);
+    return ['gather', 'build', 'research', 'craft', 'haul', 'inspect', 'loot', 'inspectPoi', 'forge', 'cook', 'heal', 'mine', 'prepareSoil', 'sowCrop', 'tendCrop', 'harvestCrop'].includes(type);
   }
 
   function isHeavyTask(type) {
-    return ['mine', 'forge', 'build', 'combat', 'scare'].includes(type);
+    return ['mine', 'forge', 'build', 'combat', 'scare', 'prepareSoil'].includes(type);
   }
 
   function energyDrainFor(c) {
@@ -84,14 +84,16 @@
   }
 
   function maybeEat(c) {
-    if (!state?.resources || c.hunger >= 32 || state.resources.food <= 0 || c.task?.type === 'sleep') return;
+    if (!state || c.hunger >= 32 || c.task?.type === 'sleep') return;
+    if (window.HavenfallFarming?.consumeBestFoodForColonist?.(c)) return;
+    if (!state.resources || state.resources.food <= 0) return;
     const spent = typeof consumeCost === 'function'
       ? consumeCost({ food: 1 }, { reason: 'colonist-eat', actorId: c.id })
       : window.GameState?.consumeResources?.({ food: 1 }, { reason: 'colonist-eat', actorId: c.id });
     if (!spent) return;
-    c.hunger = safeClamp(c.hunger + 42, 0, 100);
-    c.mood = safeClamp(c.mood + 4, 0, 100);
-    if (typeof log === 'function') log(`${c.name} comeu uma refeição rápida.`);
+    c.hunger = safeClamp(c.hunger + 32, 0, 100);
+    c.mood = safeClamp(c.mood + 1, 0, 100);
+    if (typeof log === 'function') log(`${c.name} comeu ração básica.`);
   }
 
   function restTileForBed(c, bed) {
@@ -247,6 +249,6 @@
     ENERGY,
     startRest,
     original,
-    version: 'main-energy-balance-no-spawn-lock'
+    version: 'farming-food-resolver'
   });
 })();
