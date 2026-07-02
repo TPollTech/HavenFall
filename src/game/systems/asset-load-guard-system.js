@@ -10,37 +10,56 @@
   const BACKGROUND_TIMEOUT_MS = 1800;
   const BACKGROUND_BATCH_SIZE = 32;
   const BACKGROUND_BATCH_DELAY_MS = 24;
-  const ORGANIZED_TILE_ROOT = 'assets/tiles/Tiles do chão';
-  const LEGACY_TILE_ROOT = 'assets/tiles';
+
+  const GROUND_TILE_ROOTS = Object.freeze([
+    'assets/tiles/Tiles do chão',
+    'assets/tiles/Tiles do chao',
+    'assets/tiles/tiles do chao'
+  ]);
+
+  const VEGETATION_TILE_ROOTS = Object.freeze([
+    'assets/tiles/arvores e arbustos',
+    'assets/tiles/Arvores e arbustos',
+    'assets/tiles/Arvores e Arbustos',
+    'assets/tiles/Árvores e arbustos',
+    'assets/tiles/Árvores e Arbustos'
+  ]);
+
+  const MOUNTAIN_TILE_ROOTS = Object.freeze([
+    'assets/tiles/Tiles do chão',
+    'assets/tiles/Tiles do chao',
+    'assets/tiles/montanhas',
+    'assets/tiles/Montanhas'
+  ]);
+
   const CRITICAL_BOOT_ASSETS = Object.freeze([
     'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
-    'tree', 'bush', 'rock', 'logs', 'berry',
     'bed_single', 'crate_wood', 'campfire',
     'icon_food', 'icon_wood', 'icon_stone', 'icon_metal', 'icon_warn'
   ]);
 
-  const NATURE_ASSET_CANDIDATES = Object.freeze({
-    tile_grass: ['tile_grass.png', 'grass.png', 'grama.png', 'tile_grama.png', 'edificios_tile_grass_1.png', 'edificios_tile_grass_2.png'],
-    tile_dirt: ['tile_dirt.png', 'dirt.png', 'terra.png', 'chao_batido.png', 'chão_batido.png', 'edificios_tile_dirt_1.png', 'edificios_tile_dirt_2.png'],
-    tile_sand: ['tile_sand.png', 'sand.png', 'areia.png', 'edificios_tile_sand_1.png', 'edificios_tile_sand_2.png'],
-    tile_stone: ['tile_stone.png', 'stone.png', 'pedra.png', 'rocky.png', 'edificios_tile_stone_1.png', 'edificios_tile_stone_2.png', 'edificios_tile_rocky_1.png', 'edificios_tile_rocky_2.png'],
-    tree: ['tree.png', 'arvore.png', 'árvore.png', 'carvalho.png', 'oak.png', 'tree_oak.png', 'oak_tree.png'],
-    tree_oak: ['tree_oak.png', 'oak_tree.png', 'carvalho.png', 'arvore_carvalho.png', 'árvore_carvalho.png', 'oak.png'],
-    tree_birch: ['tree_birch.png', 'birch_tree.png', 'betula.png', 'bétula.png', 'arvore_betula.png'],
-    tree_pine: ['tree_pine.png', 'pine_tree.png', 'pinheiro.png', 'arvore_pinheiro.png', 'conifer.png'],
-    tree_palm: ['tree_palm.png', 'palm_tree.png', 'palmeira.png', 'coqueiro.png'],
-    tree_willow: ['tree_willow.png', 'willow_tree.png', 'salgueiro.png'],
-    tree_eucalyptus: ['tree_eucalyptus.png', 'eucalyptus_tree.png', 'eucalipto.png', 'eucalyptus.png', 'arvore_eucalipto.png'],
-    bush: ['bush.png', 'arbusto.png', 'bush_dense.png', 'arbusto_denso.png'],
-    bush_dense: ['bush_dense.png', 'arbusto_denso.png', 'bush.png', 'arbusto.png'],
-    bush_dry: ['bush_dry.png', 'arbusto_seco.png', 'dry_bush.png', 'bush.png'],
-    berry: ['berry.png', 'berry_bush.png', 'frutas_silvestres.png', 'arbusto_frutas.png', 'res_berries.png'],
-    rock: ['rock.png', 'pedra.png', 'rocha.png', 'mountain_inner.svg'],
-    logs: ['logs.png', 'toras.png', 'madeira.png']
+  const ORGANIZED_ASSETS = Object.freeze({
+    tile_grass: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_grass_1.png', 'edificios_tile_grass_2.png', 'tile_grass.png', 'grass.png', 'grama.png'] },
+    tile_dirt: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_dirt_1.png', 'edificios_tile_dirt_2.png', 'tile_dirt.png', 'dirt.png', 'terra.png'] },
+    tile_sand: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_sand_1.png', 'edificios_tile_sand_2.png', 'tile_sand.png', 'sand.png', 'areia.png'] },
+    tile_stone: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_stone_1.png', 'edificios_tile_stone_2.png', 'edificios_tile_rocky_1.png', 'edificios_tile_rocky_2.png', 'tile_stone.png', 'stone.png', 'pedra.png'] },
+    tree: { roots: VEGETATION_TILE_ROOTS, files: ['arvore.png', 'arvores.png', 'carvalho.png'] },
+    tree_oak: { roots: VEGETATION_TILE_ROOTS, files: ['carvalho.png', 'arvore_carvalho.png', 'tree_oak.png'] },
+    tree_birch: { roots: VEGETATION_TILE_ROOTS, files: ['betula.png', 'arvore_betula.png', 'tree_birch.png'] },
+    tree_pine: { roots: VEGETATION_TILE_ROOTS, files: ['pinheiro.png', 'arvore_pinheiro.png', 'tree_pine.png'] },
+    tree_palm: { roots: VEGETATION_TILE_ROOTS, files: ['palmeira.png', 'coqueiro.png', 'tree_palm.png'] },
+    tree_willow: { roots: VEGETATION_TILE_ROOTS, files: ['salgueiro.png', 'tree_willow.png'] },
+    tree_eucalyptus: { roots: VEGETATION_TILE_ROOTS, files: ['eucalipto.png', 'arvore_eucalipto.png', 'tree_eucalyptus.png'] },
+    bush: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto.png', 'arbustos.png', 'bush.png'] },
+    bush_dense: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_denso.png', 'arbusto.png', 'bush_dense.png'] },
+    bush_dry: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_seco.png', 'arbusto_seco_1.png', 'bush_dry.png'] },
+    berry: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_frutas.png', 'frutas_silvestres.png', 'berry.png'] },
+    rock: { roots: MOUNTAIN_TILE_ROOTS, files: ['rock.png', 'pedra.png', 'rocha.png', 'mountain_inner.svg'] },
+    logs: { roots: VEGETATION_TILE_ROOTS, files: ['toras.png', 'madeira.png', 'logs.png'] }
   });
 
-  function natureAssetNames() {
-    return Object.keys(NATURE_ASSET_CANDIDATES);
+  function organizedAssetNames() {
+    return Object.keys(ORGANIZED_ASSETS);
   }
 
   function fallbackImage(name, src) {
@@ -55,27 +74,33 @@
     return window.HavenfallAssets?.assets?.[String(name || '')] || null;
   }
 
-  function prefixedCandidate(path) {
-    if (!path) return null;
-    if (/^(https?:|data:|assets\/)/.test(path)) return path;
-    return `${ORGANIZED_TILE_ROOT}/${path}`;
+  function organizedAssetSources(name) {
+    const entry = ORGANIZED_ASSETS[String(name || '')];
+    if (!entry) return [];
+    const roots = Array.isArray(entry.roots) ? entry.roots : [];
+    const files = Array.isArray(entry.files) ? entry.files : [];
+    const paths = [];
+    for (const root of roots) {
+      for (const file of files) paths.push(`${root}/${file}`);
+    }
+    return paths;
   }
 
-  function organizedTileCandidates(name) {
-    const key = String(name || '');
-    const candidates = NATURE_ASSET_CANDIDATES[key];
-    if (!candidates?.length) return [];
-    const direct = candidates.map(prefixedCandidate).filter(Boolean);
-    const legacy = candidates.map(item => /^(https?:|data:|assets\/)/.test(item) ? item : `${LEGACY_TILE_ROOT}/${item}`).filter(Boolean);
-    return [...direct, ...legacy];
+  function isOrganizedRuntimeAsset(name) {
+    return !!ORGANIZED_ASSETS[String(name || '')];
   }
 
   function assetSources(name) {
     const key = String(name || '');
     const sources = [];
+
+    if (isOrganizedRuntimeAsset(key)) {
+      sources.push(...organizedAssetSources(key));
+      return [...new Set(sources.filter(Boolean))];
+    }
+
     const entry = manifestEntry(key);
     if (entry?.path) sources.push(entry.path);
-    sources.push(...organizedTileCandidates(key));
     if (typeof spriteSrc === 'function') sources.push(spriteSrc(key));
     sources.push(`assets/ui/${key}.png`);
     return [...new Set(sources.filter(Boolean))];
@@ -159,7 +184,7 @@
 
   function baseAssetNames() {
     const names = Array.isArray(window.assetNames) ? window.assetNames : (typeof assetNames !== 'undefined' ? assetNames : []);
-    return unique([...names, ...natureAssetNames()]).filter(name => !shouldSkipAsset(name));
+    return unique([...names, ...organizedAssetNames()]).filter(name => !shouldSkipAsset(name));
   }
 
   function essentialAssetNames() {
@@ -175,7 +200,7 @@
       .map(name => ({ name, src: assetSources(name), key: name }));
 
     const manifestJobs = manifestAssetNames()
-      .filter(name => !essential.has(name) && !shouldSkipAsset(name))
+      .filter(name => !essential.has(name) && !shouldSkipAsset(name) && !isOrganizedRuntimeAsset(name))
       .map(name => ({ name, src: assetSources(name), key: name }));
 
     const animationJobs = Object.entries(window.HavenfallAssets?.animations || {})
@@ -224,8 +249,12 @@
 
   function guardedLoadImages() {
     const report = {
-      version: 'asset-load-guard-organized-tiles-v1',
-      organizedTileRoot: ORGANIZED_TILE_ROOT,
+      version: 'asset-load-guard-organized-assets-v2',
+      roots: {
+        ground: GROUND_TILE_ROOTS,
+        vegetation: VEGETATION_TILE_ROOTS,
+        mountain: MOUNTAIN_TILE_ROOTS
+      },
       startedAt: new Date().toISOString(),
       loaded: 0,
       missing: [],
@@ -255,14 +284,14 @@
   }
 
   window.HavenfallNatureAssets = Object.freeze({
-    root: ORGANIZED_TILE_ROOT,
-    names: natureAssetNames,
+    roots: { ground: GROUND_TILE_ROOTS, vegetation: VEGETATION_TILE_ROOTS, mountain: MOUNTAIN_TILE_ROOTS },
+    names: organizedAssetNames,
     sourcesFor: assetSources,
-    candidates: NATURE_ASSET_CANDIDATES
+    candidates: ORGANIZED_ASSETS
   });
 
   window.HavenfallAssetLoadGuard = Object.freeze({
-    version: 'asset-load-guard-organized-tiles-v1',
+    version: 'asset-load-guard-organized-assets-v2',
     guardedLoadImages,
     runBackgroundAssetLoad,
     essentialAssetNames,
