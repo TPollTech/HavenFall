@@ -2,6 +2,12 @@
 
 const baseObjectDefs = {
   tree: { name: 'árvore', img: 'tree', blocks: true, gather: { wood: 8 }, work: 3.2, respawn: false },
+  oak_tree: { name: 'carvalho', img: 'tree_oak', blocks: true, gather: { wood: 8 }, work: 3.2, respawn: false },
+  birch_tree: { name: 'bétula', img: 'tree_birch', blocks: true, gather: { wood: 7 }, work: 3.0, respawn: false },
+  pine_tree: { name: 'pinheiro', img: 'tree_pine', blocks: true, gather: { wood: 10 }, work: 3.8, respawn: false },
+  palm_tree: { name: 'palmeira', img: 'tree_palm', blocks: true, gather: { wood: 6 }, work: 2.8, respawn: false },
+  willow_tree: { name: 'salgueiro', img: 'tree_willow', blocks: true, gather: { wood: 8 }, work: 3.4, respawn: false },
+  eucalypt_tree: { name: 'eucalipto', img: 'tree_eucalyptus', blocks: true, gather: { wood: 9 }, work: 3.5, respawn: false },
   bush: { name: 'arbusto', img: 'bush', blocks: true, gather: { wood: 2 }, work: 1.5 },
   berry: { name: 'frutas silvestres', img: 'berry', blocks: false, gather: { food: 7 }, work: 2.0 },
   rock: { name: 'rocha', img: 'rock', blocks: true, gather: { stone: 7 }, work: 3.4 },
