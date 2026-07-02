@@ -8,6 +8,7 @@
   const WATER_TILE = 'water';
   const VISITOR_STAY_HOURS = 10;
   const BRIDGE_TYPES = new Set(['bridge', 'wood_bridge', 'stone_bridge']);
+  const SOCIAL_BOOTSTRAP_VERSION = 'living-world-social-v4';
   const RESOURCE_LABELS = Object.freeze({ food: 'comida', wood: 'madeira', stone: 'pedra', metal: 'metal', medicine: 'remedio', water: 'agua' });
   const ITEM_LABELS = Object.freeze({ rope: 'corda', nails: 'pregos', cloth: 'tecido', leather: 'couro', bandage: 'curativos', simpleMeal: 'refeicao', toolkit: 'kit', shield: 'escudo' });
   const VISITOR_STORIES = Object.freeze([
@@ -88,7 +89,8 @@
       resolveEncounter: chooseEncounterAction,
       recruitVisitor: visitorId => recruitVisitor(findVisitorById(visitorId)),
       openBriefing: maybeOpenIntroBriefing,
-      debugScheduleSnapshot
+      debugScheduleSnapshot,
+      scheduleNextVisitor
     };
   }
 
@@ -146,12 +148,17 @@
     state.livingWorld.activeEncounter = state.livingWorld.activeEncounter || null;
     state.livingWorld.socialEventCount = Number(state.livingWorld.socialEventCount || 0);
     state.livingWorld.nextVisitorDay = Number(state.livingWorld.nextVisitorDay || 0);
-    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt))) {
+    state.livingWorld.nextVisitorKind = state.livingWorld.nextVisitorKind || null;
+    state.livingWorld.nextVisitorReason = state.livingWorld.nextVisitorReason || null;
+    state.livingWorld.visitorSeen = !!state.livingWorld.visitorSeen;
+    state.livingWorld.merchantSeen = !!state.livingWorld.merchantSeen;
+    state.livingWorld.socialBootstrapVersion = state.livingWorld.socialBootstrapVersion || SOCIAL_BOOTSTRAP_VERSION;
+    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt)) || Number(state.livingWorld.nextVisitorAt) <= 0) {
       const legacyDay = Number(state.livingWorld.nextVisitorDay || 0);
       state.livingWorld.nextVisitorAt = legacyDay > 0 ? legacyDay * 24 + 10 : null;
     }
     state.visitors = Array.isArray(state.visitors) ? state.visitors : [];
-    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt))) scheduleNextVisitor(true, state.livingWorld);
+    if (!Number.isFinite(Number(state.livingWorld.nextVisitorAt)) || Number(state.livingWorld.nextVisitorAt) <= 0) scheduleNextVisitor(true, state.livingWorld);
     state.world.livingWorld = state.livingWorld;
     return state.livingWorld;
   }
@@ -398,6 +405,70 @@
     return Number(state?.day || 1) * 24 + Number(state?.hour || 0);
   }
 
+  function stableHash(text = '') {
+    let hash = 2166136261;
+    for (const char of String(text)) {
+      hash ^= char.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function stableUnit(seed = '') {
+    return (stableHash(seed) % 10000) / 10000;
+  }
+
+  function socialSeed(label = '') {
+    return `${state?.world?.seed || state?.config?.seed || 'havenfall'}|${state?.config?.difficulty || 'normal'}|${state?.config?.eventIntensity || 'normal'}|${label}`;
+  }
+
+  function absoluteDayHour(day = 1, hour = 0) {
+    return Math.max(24, Number(day || 1) * 24 + Number(hour || 0));
+  }
+
+  function bootstrapContactProfile() {
+    const intensity = state?.config?.eventIntensity || 'normal';
+    if (intensity === 'low') return { visitorDay: 1, visitorMin: 10.0, visitorMax: 12.4, merchantDay: 2, merchantMin: 13.0, merchantMax: 17.4 };
+    if (intensity === 'high') return { visitorDay: 1, visitorMin: 7.4, visitorMax: 10.2, merchantDay: 1, merchantMin: 15.0, merchantMax: 19.2 };
+    return { visitorDay: 1, visitorMin: 8.2, visitorMax: 11.5, merchantDay: 2, merchantMin: 9.0, merchantMax: 14.8 };
+  }
+
+  function bootstrapContactTime(day, minHour, maxHour, salt) {
+    const spread = Math.max(0.2, maxHour - minHour);
+    return absoluteDayHour(day, minHour + stableUnit(socialSeed(salt)) * spread);
+  }
+
+  function setScheduledVisitor(living, at, kind, reason) {
+    if (!living || !Number.isFinite(Number(at))) return null;
+    living.nextVisitorAt = Number(at);
+    living.nextVisitorDay = Math.max(1, Math.floor(Number(at) / 24));
+    living.nextVisitorKind = kind || null;
+    living.nextVisitorReason = reason || null;
+    return living.nextVisitorAt;
+  }
+
+  function scheduleBootstrapSocialEvent(forceEarly = false, living = state?.livingWorld) {
+    if (!living) return null;
+    living.socialBootstrapVersion = SOCIAL_BOOTSTRAP_VERSION;
+    const now = livingClockHours();
+    const profile = bootstrapContactProfile();
+
+    if (!living.visitorSeen && Number(state?.day || 1) <= 2) {
+      const plannedVisitor = bootstrapContactTime(profile.visitorDay, profile.visitorMin, profile.visitorMax, 'first-visitor');
+      if (forceEarly || Number(living.socialEventCount || 0) <= 0 || !Number.isFinite(Number(living.nextVisitorAt))) {
+        return setScheduledVisitor(living, plannedVisitor <= now ? now + 0.35 : plannedVisitor, 'visitor', 'bootstrap-first-visitor');
+      }
+    }
+
+    const merchantWindowClosesAt = absoluteDayHour(Math.max(2, profile.merchantDay), 21);
+    if (!living.merchantSeen && Number(living.socialEventCount || 0) >= 1 && now <= merchantWindowClosesAt) {
+      const plannedMerchant = bootstrapContactTime(profile.merchantDay, profile.merchantMin, profile.merchantMax, 'first-merchant');
+      return setScheduledVisitor(living, plannedMerchant <= now ? now + 0.45 : plannedMerchant, 'merchant', 'bootstrap-first-merchant');
+    }
+
+    return null;
+  }
+
   function livingUid(prefix = 'living') {
     return typeof uid === 'function'
       ? uid(prefix)
@@ -429,13 +500,13 @@
 
   function scheduleNextVisitor(forceEarly = false, living = state?.livingWorld) {
     if (!living) return null;
+    const bootstrapAt = scheduleBootstrapSocialEvent(forceEarly, living);
+    if (Number.isFinite(Number(bootstrapAt))) return bootstrapAt;
     const profile = socialIntensityProfile();
     const min = forceEarly ? profile.firstMin : profile.revisitMin;
     const max = forceEarly ? profile.firstMax : profile.revisitMax;
     const next = livingClockHours() + min + Math.random() * Math.max(0.5, max - min);
-    living.nextVisitorAt = next;
-    living.nextVisitorDay = Math.max(1, Math.floor(next / 24));
-    return next;
+    return setScheduledVisitor(living, next, null, forceEarly ? 'ambient-early' : 'ambient-repeat');
   }
 
   function livingRound1(value) {
@@ -456,6 +527,10 @@
       socialEventCount: Number(living.socialEventCount || 0),
       nextVisitorAt: Number.isFinite(nextVisitorAt) ? nextVisitorAt : null,
       nextVisitorDay: Number(living.nextVisitorDay || 0),
+      nextVisitorKind: living.nextVisitorKind || null,
+      nextVisitorReason: living.nextVisitorReason || null,
+      merchantSeen: !!living.merchantSeen,
+      visitorSeen: !!living.visitorSeen,
       etaHours: Number.isFinite(nextVisitorAt) ? Math.max(0, livingRound1(nextVisitorAt - now)) : null,
       activeEncounterId: living.activeEncounter?.id || null,
       activeEncounterType: living.activeEncounter?.type || null
@@ -467,7 +542,7 @@
     if (!schedule) return null;
 
     const nextLine = Number.isFinite(schedule.nextVisitorAt)
-      ? `proximo visitante D${schedule.nextVisitorDay} em ${livingRound1(schedule.etaHours)}h`
+      ? `proximo ${schedule.nextVisitorKind === 'merchant' ? 'mercador' : 'visitante'} D${schedule.nextVisitorDay} em ${livingRound1(schedule.etaHours)}h`
       : 'proximo visitante nao agendado';
 
     const sections = [
@@ -477,6 +552,7 @@
         lines: [
           `agora D${schedule.day} ${schedule.hour}h | intensidade ${schedule.intensity}`,
           nextLine,
+          schedule.nextVisitorReason ? `agenda ${schedule.nextVisitorReason}` : 'agenda livre',
           `visitantes ativos ${schedule.visitorCount} | eventos ${schedule.socialEventCount}`,
           schedule.activeEncounterId ? `encontro ativo ${schedule.activeEncounterType || 'encounter'}:${schedule.activeEncounterId}` : 'nenhum encontro ativo'
         ]
@@ -1027,11 +1103,15 @@
     if (living.activeEncounter || !Number.isFinite(Number(living.nextVisitorAt)) || now < living.nextVisitorAt) return;
     if (state.hour < 7 || state.hour > 19) return;
     const profile = socialIntensityProfile();
-    const kind = Math.random() < profile.merchantChance ? 'merchant' : 'visitor';
+    const kind = living.nextVisitorKind || (Math.random() < profile.merchantChance ? 'merchant' : 'visitor');
     const visitor = spawnVisitor(kind, living.socialEventCount);
-    scheduleNextVisitor(false, living);
     if (!visitor) return;
     living.socialEventCount += 1;
+    living.visitorSeen = living.visitorSeen || kind === 'visitor';
+    living.merchantSeen = living.merchantSeen || kind === 'merchant';
+    living.nextVisitorKind = null;
+    living.nextVisitorReason = null;
+    scheduleNextVisitor(false, living);
     if (typeof log === 'function') log(kind === 'merchant' ? 'Um mercador apareceu nos arredores da colonia.' : 'Uma figura foi avistada vindo pela estrada.');
   }
 

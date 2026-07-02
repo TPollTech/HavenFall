@@ -647,6 +647,63 @@ test('Living world can pause for encounters and recruit a visitor into the colon
   assert.equal(context.state.speed, 2);
 });
 
+test('Living world scripts the first visitor and first merchant into an early deterministic window', () => {
+  const math = Object.create(Math);
+  math.random = () => 0.91;
+  const context = createContext({
+    console,
+    Math: math,
+    performance: { now: () => 0 },
+    TILE: 48,
+    SCREEN: { PLAYING: 'playing' },
+    appScreen: 'playing',
+    buildDefs: {},
+    objectDefs: {},
+    itemDefs: {},
+    state: {
+      day: 1,
+      hour: 6,
+      speed: 1,
+      weather: 'limpo',
+      terrain: Array.from({ length: 16 }, () => Array(16).fill('grass')),
+      objects: [],
+      mobs: [],
+      wolves: [],
+      colonists: [{ id: 1, name: 'Lia', x: 8, y: 8 }],
+      visitors: [],
+      resources: { food: 20, medicine: 1, wood: 0, stone: 0, metal: 0, water: 0 },
+      items: {},
+      taskPriorities: {},
+      config: { seed: 'SOCIAL', eventIntensity: 'normal', difficulty: 'normal' },
+      world: { seed: 'SOCIAL', cols: 16, rows: 16, terrain: Array.from({ length: 16 }, () => Array(16).fill('grass')), waterTiles: [], livingWorld: null, spawn: { x: 8, y: 8 } }
+    },
+    document: createFakeModalDocument(),
+    uid: prefix => `${prefix}-1`,
+    getWorldCols: () => 16,
+    getWorldRows: () => 16,
+    getObjectAt: () => null,
+    isBlocked: () => false,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    updateUI() {}
+  });
+  runBrowserScript('src/game/core/game-systems.js', context);
+  runBrowserScript('src/game/systems/living-world.js', context);
+
+  const firstSchedule = context.HavenfallLivingWorld.debugScheduleSnapshot();
+  assert.equal(context.state.livingWorld.nextVisitorKind, 'visitor');
+  assert.ok(firstSchedule.nextVisitorAt >= 32.2 && firstSchedule.nextVisitorAt <= 35.5);
+
+  context.state.livingWorld.visitorSeen = true;
+  context.state.livingWorld.socialEventCount = 1;
+  context.state.livingWorld.nextVisitorAt = null;
+  context.state.livingWorld.nextVisitorKind = null;
+  context.HavenfallLivingWorld.scheduleNextVisitor(false, context.state.livingWorld);
+
+  const secondSchedule = context.HavenfallLivingWorld.debugScheduleSnapshot();
+  assert.equal(context.state.livingWorld.nextVisitorKind, 'merchant');
+  assert.ok(secondSchedule.nextVisitorAt >= 57 && secondSchedule.nextVisitorAt <= 62.8);
+});
+
 test('World systems do not grant craft output when payment fails at completion', () => {
   const logs = [];
   let outputCalls = 0;

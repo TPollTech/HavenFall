@@ -66,10 +66,55 @@
     return `<tr>${renderColonistCell(c)}${TASKS.map(([key]) => renderCell(c, key)).join('')}</tr>`;
   }
 
+  function objectiveSnapshot() {
+    return window.HavenfallObjectives?.getSnapshot?.() || window.HavenfallObjectives?.evaluate?.() || null;
+  }
+
+  function socialSnapshot() {
+    return window.HavenfallLivingWorld?.debugScheduleSnapshot?.() || null;
+  }
+
+  function renderObjectiveCards() {
+    const snapshot = objectiveSnapshot();
+    const social = socialSnapshot();
+    if (!snapshot?.entries?.length) return '';
+
+    const primary = snapshot.primary;
+    const primaryText = primary
+      ? `${primary.label}. ${primary.detail}`
+      : 'Os objetivos iniciais estao fechados. Agora a colonia precisa expandir, negociar e explorar.';
+
+    const socialLine = social?.visitorCount
+      ? `${social.visitorCount} visitante(s) ativo(s) no mapa.`
+      : (social?.etaHours != null
+        ? `${social.nextVisitorKind === 'merchant' ? 'Mercador' : 'Visitante'} previsto em ${social.etaHours}h.`
+        : 'Nenhum encontro social agendado no momento.');
+
+    return `<div class="dock-card-grid" style="margin-bottom:10px;">
+      <div class="dock-card">
+        <span class="dock-badge">Agora</span>
+        <strong>${escapeHtml(primary?.label || 'Base estabilizada')}</strong>
+        <small>${escapeHtml(primaryText)}</small>
+      </div>
+      <div class="dock-card">
+        <span class="dock-badge">Mundo vivo</span>
+        <strong>${escapeHtml(social?.nextVisitorKind === 'merchant' ? 'Mercador na rota' : 'Ciclo social')}</strong>
+        <small>${escapeHtml(socialLine)}</small>
+      </div>
+    </div>
+    <div class="dock-card-grid" style="margin-bottom:10px;">${snapshot.entries.map(entry => `
+      <div class="dock-card">
+        <strong>${escapeHtml(entry.label)}</strong>
+        <small>${escapeHtml(entry.detail)}</small>
+        <span class="dock-badge">${escapeHtml(entry.progress || (entry.done ? 'ok' : 'pendente'))}</span>
+      </div>
+    `).join('')}</div>`;
+  }
+
   function render() {
     if (!state?.colonists?.length) return '<div class="dock-empty">Nenhum colono para priorizar.</div>';
     ensureTaskPriorities();
-    return `<div class="task-priority-panel">
+    return `${renderObjectiveCards()}<div class="task-priority-panel">
       <div class="task-legend"><span>0 desativa</span><span>4 máxima</span><span>Status no hover</span></div>
       <div class="dock-table-wrap task-table-wrap"><table class="dock-table task-table task-compact-table"><thead><tr><th>Colono</th>${TASKS.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${state.colonists.map(renderRow).join('')}</tbody></table></div>
     </div>`;

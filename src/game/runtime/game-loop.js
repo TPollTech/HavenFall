@@ -146,6 +146,8 @@ function updateWorld(dt) {
   const currentHour = Math.floor(state.hour || 0);
   if (currentHour !== previousHour && typeof window.HavenfallUI?.refreshDockPanel === 'function') {
     window.HavenfallUI.refreshDockPanel('schedule');
+    window.HavenfallUI.refreshDockPanel('tasks');
+    window.HavenfallUI.refreshDockPanel('events');
   }
 
   if (!state.eventDoneToday && state.hour > 7.5) {
@@ -253,19 +255,87 @@ function freeRandomStoneTile() {
   return null;
 }
 
+function livingWorldState() {
+  return state?.livingWorld || state?.world?.livingWorld || null;
+}
+
+function socialObjectiveState() {
+  const living = livingWorldState();
+  const nextKind = living?.nextVisitorKind || null;
+  const now = (Number(state?.day || 1) * 24) + Number(state?.hour || 0);
+  const nextAt = Number(living?.nextVisitorAt);
+  const eta = Number.isFinite(nextAt) ? Math.max(0, Math.round((nextAt - now) * 10) / 10) : null;
+  const firstContactDone = !!(living?.visitorSeen || living?.merchantSeen || Number(living?.socialEventCount || 0) > 0 || (state?.visitors?.length || 0) > 0);
+  const merchantSeen = !!living?.merchantSeen || (state?.visitors || []).some(visitor => visitor?.kind === 'merchant');
+  return { firstContactDone, merchantSeen, nextKind, eta };
+}
+
+function buildObjectiveSnapshot() {
+  const beds = (state?.objects || []).filter(o => o.type === 'bed').length;
+  const campfire = (state?.objects || []).some(o => o.type === 'campfire');
+  const researchDesk = (state?.objects || []).some(o => o.type === 'research_desk');
+  const food = Number(state?.resources?.food || 0);
+  const medicine = Number(state?.resources?.medicine || 0);
+  const social = socialObjectiveState();
+
+  const entries = [
+    { key: 'beds', label: 'Construir 2 camas', done: beds >= 2, progress: `${Math.min(beds, 2)}/2`, detail: beds >= 2 ? 'Leitos suficientes para a primeira noite.' : `Faltam ${Math.max(0, 2 - beds)} cama(s).` },
+    { key: 'campfire', label: 'Construir 1 fogueira', done: campfire, progress: campfire ? 'ok' : '0/1', detail: campfire ? 'Calor e luz basicos garantidos.' : 'Sem fogo, a base continua sem ponto central.' },
+    { key: 'researchDesk', label: 'Construir 1 mesa de pesquisa', done: researchDesk, progress: researchDesk ? 'ok' : '0/1', detail: researchDesk ? 'A colonia ja pode destravar tecnologia.' : 'Monte uma mesa para sair do improviso.' },
+    { key: 'food', label: 'Estocar 20 comidas', done: food >= 20, progress: `${Math.min(food, 20)}/20`, detail: food >= 20 ? 'Reserva inicial de comida fechada.' : 'A reserva ainda esta curta para varios colonos.' },
+    { key: 'medicine', label: 'Garantir 1 remedio', done: medicine >= 1, progress: `${Math.min(medicine, 1)}/1`, detail: medicine >= 1 ? 'Ja existe ao menos um recurso medico de emergencia.' : 'Explore ruinas ou negocie para conseguir remedio.' },
+    {
+      key: 'firstContact',
+      label: 'Receber o primeiro visitante',
+      done: social.firstContactDone,
+      progress: social.firstContactDone ? 'ok' : 'pendente',
+      detail: social.firstContactDone
+        ? (social.merchantSeen ? 'A colonia ja fez contato com gente de fora, inclusive mercador.' : 'A colonia ja teve o primeiro contato social.')
+        : (social.eta != null ? `${social.nextKind === 'merchant' ? 'Mercador' : 'Visitante'} previsto em ${social.eta}h.` : 'Sem encontro social agendado ainda.')
+    }
+  ];
+
+  return {
+    entries,
+    pending: entries.filter(entry => !entry.done),
+    primary: entries.find(entry => !entry.done) || null,
+    social
+  };
+}
+
+let lastObjectiveSignature = '';
+
+function ensureLegacyGoalList(snapshot = null) {
+  const list = dom.goalList;
+  if (!list?.querySelectorAll) return;
+  const source = snapshot?.entries || buildObjectiveSnapshot().entries;
+  const items = [...list.querySelectorAll('li')];
+  source.forEach((entry, index) => {
+    const item = items[index];
+    if (!item) return;
+    item.dataset.goal = entry.key;
+    item.textContent = entry.label;
+  });
+}
+
 function checkGoals() {
   if (!isRealGameplay()) return;
   if (typeof ensureResearchState === 'function') ensureResearchState();
-  const beds = state.objects.filter(o => o.type === 'bed').length;
-  const campfire = state.objects.some(o => o.type === 'campfire');
-  const researchDesk = state.objects.some(o => o.type === 'research_desk');
-  const allTechs = researchOrder.every(key => !!state.research?.unlocked?.[key]);
-  setGoal('beds', beds >= 2);
-  setGoal('campfire', campfire);
-  setGoal('researchDesk', researchDesk);
-  setGoal('techs', allTechs);
-  setGoal('food', state.resources.food >= 20);
-  setGoal('medicine', state.resources.medicine >= 1);
+  const snapshot = buildObjectiveSnapshot();
+  ensureLegacyGoalList(snapshot);
+  state.objectives = snapshot;
+  window.HavenfallObjectives = {
+    evaluate: buildObjectiveSnapshot,
+    getSnapshot: () => state?.objectives || buildObjectiveSnapshot()
+  };
+
+  for (const entry of snapshot.entries) setGoal(entry.key, entry.done);
+
+  const signature = snapshot.entries.map(entry => `${entry.key}:${entry.done ? 1 : 0}:${entry.progress}`).join('|');
+  if (signature !== lastObjectiveSignature) {
+    lastObjectiveSignature = signature;
+    window.HavenfallUI?.refreshDockPanel?.('tasks');
+  }
 }
 
 function setGoal(key, done) {

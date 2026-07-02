@@ -240,6 +240,10 @@
     }
     updateVisibility();
     if (!isGameplayScreen()) return;
+    if (window.HavenfallUI?.tabViews?.[key] && typeof window.HavenfallUI.renderDockPanel === 'function') {
+      window.HavenfallUI.renderDockPanel(key, { origin: meta?.origin || 'api', source: meta?.source || 'ui-manager.openPanel' });
+      return;
+    }
     const panel = document.getElementById('anchored-ui-panel');
     const title = document.getElementById('anchoredPanelTitle');
     const body = document.getElementById('anchoredPanelBody');
@@ -261,6 +265,12 @@
   }
 
   function closePanel() {
+    if (typeof window.HavenfallUI?.closeDockPanel === 'function') {
+      window.HavenfallUI.closeDockPanel();
+      closeAllOldModals();
+      activeButton(null);
+      return;
+    }
     const panel = document.getElementById('anchored-ui-panel');
     if (panel) {
       panel.classList.remove('is-active');
