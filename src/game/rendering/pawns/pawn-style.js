@@ -44,19 +44,19 @@
     },
     deer: {
       family: 'deer',
-      scale: 1,
+      scale: 0.9,
       outline: '#2f2519',
       healthColor: '#d6a24a',
       palette: {
         body: '#9a7244',
-        bodyLight: '#b88b54',
-        head: '#ad8352',
-        neck: '#b28652',
+        bodyLight: '#a77745',
+        head: '#9f7447',
+        neck: '#8b623a',
         flank: '#c49a67',
-        chest: '#dfc4a0',
+        chest: '#d9bf98',
         rump: '#eadbc4',
-        ear: '#d4a16c',
-        snout: '#e8d4bc',
+        ear: '#c38f5e',
+        snout: '#e3cfb3',
         leg: '#714c31',
         antler: '#4b3524',
         tail: '#e7dac7',
@@ -64,8 +64,14 @@
         eye: '#120f0c'
       },
       anatomy: {
-        shadowRx: 20,
-        shadowRy: 7
+        shadowRx: 18,
+        shadowRy: 6.2
+      },
+      variation: {
+        headLift: -0.25,
+        bodyStretch: 1.12,
+        bodyTall: 0.88,
+        earSpread: 0.46
       }
     },
     goat: {
