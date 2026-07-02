@@ -400,21 +400,9 @@
     ctx.restore();
   }
 
-  function cornerLight(x, y, layer, wRows, wCols) {
-    const cx = Math.round(x), cy = Math.round(y);
-    let sum = 0, count = 0;
-    for (let dy = 0; dy <= 1; dy++) {
-      for (let dx = 0; dx <= 1; dx++) {
-        const nx = cx + dx, ny = cy + dy;
-        if (nx < 0 || ny < 0 || nx >= wCols || ny >= wRows) {
-          sum += DEFAULT_LIGHT; count++; continue;
-        }
-        const val = layer[ny]?.[nx];
-        if (val !== undefined) { sum += val; count++; }
-      }
-    }
-    return count > 0 ? sum / count : DEFAULT_LIGHT;
-  }
+  let _darknessCanvas = null;
+  let _darknessCtx = null;
+  let _darknessVersion = -1;
 
   function drawLightingOverlay(bounds = null) {
     if (!ctx || !state?.world || appScreen !== SCREEN.PLAYING) return;
@@ -440,53 +428,44 @@
     drawAmbientTint(drawBounds, sun);
 
     const wRows = rowsFor(state.world), wCols = colsFor(state.world);
-    const cRows = endY - startY + 2, cCols = endX - startX + 2;
-    const corners = Array.from({ length: cRows }, () => new Float64Array(cCols));
-    for (let cy = 0; cy < cRows; cy++) {
-      for (let cx = 0; cx < cCols; cx++) {
-        corners[cy][cx] = cornerLight(startX + cx - 1, startY + cy - 1, layer, wRows, wCols);
+    const cW = endX - startX + 2, cH = endY - startY + 2;
+
+    if (!_darknessCanvas || _darknessCanvas.width !== cW || _darknessCanvas.height !== cH) {
+      _darknessCanvas = new OffscreenCanvas(cW, cH);
+      _darknessCtx = _darknessCanvas.getContext('2d');
+    }
+    const dCtx = _darknessCtx;
+    const imgData = dCtx.createImageData(cW, cH);
+    const pixels = imgData.data;
+
+    for (let cy = 0; cy < cH; cy++) {
+      for (let cx = 0; cx < cW; cx++) {
+        const tx = startX + cx - 1, ty = startY + cy - 1;
+        let light;
+        if (tx < 0 || ty < 0 || tx >= wCols || ty >= wRows) {
+          light = DEFAULT_LIGHT;
+        } else {
+          const explored = explorationMaskActive ? Number(state.world.exploration?.[ty]?.[tx] || 0) : 2;
+          light = explored ? clampLight(layer[ty]?.[tx] ?? DEFAULT_LIGHT) : 0;
+        }
+        const darkness = (tx >= 0 && ty >= 0 && tx < wCols && ty < wRows)
+          ? (explorationMaskActive ? (Number(state.world.exploration?.[ty]?.[tx] || 0) ? Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)) : 0.92) : Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)))
+          : 0;
+        const alpha = Math.min(0.86, darkness * 0.82);
+        const idx = (cy * cW + cx) * 4;
+        pixels[idx] = 1;
+        pixels[idx + 1] = 5;
+        pixels[idx + 2] = 14;
+        pixels[idx + 3] = alpha <= 0.035 ? 0 : Math.round(alpha * 255);
       }
     }
+    dCtx.putImageData(imgData, 0, 0);
 
     ctx.save();
-    for (let y = startY; y <= endY; y++) {
-      for (let x = startX; x <= endX; x++) {
-        const explored = explorationMaskActive ? Number(state.world.exploration?.[y]?.[x] || 0) : 2;
-        const light = tileLightAt(x, y, state.world, sun.light);
-        const darkness = explored ? Math.max(0, 1 - Math.max(light, MEMORY_LIGHT)) : 0.92;
-        if (darkness <= 0.035) continue;
-
-        const ci = y - startY, cj = x - startX;
-        const d00 = 1 - corners[ci][cj];
-        const d10 = 1 - corners[ci][cj + 1];
-        const d01 = 1 - corners[ci + 1][cj];
-        const d11 = 1 - corners[ci + 1][cj + 1];
-
-        const px = x * TILE, py = y * TILE;
-        const darkTop = Math.min(0.86, d00 * 0.82);
-        const darkBot = Math.min(0.86, d01 * 0.82);
-        const darkLeft = Math.min(0.86, d00 * 0.82);
-        const darkRight = Math.min(0.86, d10 * 0.82);
-
-        if (darkTop <= 0.035 && darkBot <= 0.035 && darkLeft <= 0.035 && darkRight <= 0.035) continue;
-
-        const gx = ctx.createLinearGradient(px, py, px + TILE, py);
-        gx.addColorStop(0, `rgba(1,5,14,${darkLeft})`);
-        gx.addColorStop(1, `rgba(1,5,14,${darkRight})`);
-
-        const gy = ctx.createLinearGradient(px, py, px, py + TILE);
-        gy.addColorStop(0, `rgba(1,5,14,${darkTop})`);
-        gy.addColorStop(1, `rgba(1,5,14,${darkBot})`);
-
-        ctx.fillStyle = gx;
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.fillRect(px, py, TILE, TILE);
-        ctx.fillStyle = gy;
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.fillRect(px, py, TILE, TILE);
-      }
-    }
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = true;
+    const sx = (startX - 1) * TILE, sy = (startY - 1) * TILE;
+    ctx.drawImage(_darknessCanvas, sx, sy, cW * TILE, cH * TILE);
+    ctx.imageSmoothingEnabled = false;
     ctx.restore();
   }
 
