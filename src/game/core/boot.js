@@ -21,7 +21,8 @@
         ['data_buildings','src/game/data/buildings.js'],
         ['data_items','src/game/data/items.js'],
         ['data_recipes','src/game/data/recipes.js'],
-        ['definitions','src/game/data/definitions.js']
+        ['definitions','src/game/data/definitions.js'],
+        ['crop_defs','src/game/data/crop-defs.js']
       ])
     }),
     Object.freeze({
@@ -139,6 +140,7 @@
       entries: Object.freeze([
         ['zones','src/game/systems/zones.js'],
         ['advanced_zones','src/game/systems/advanced-zones.js'],
+        ['farming_system','src/game/systems/farming-system.js'],
         ['advanced_zone_labels','src/game/systems/advanced-zones-labels.js'],
         ['deconstruct_dumping_hook','src/game/systems/deconstruct-dumping-hook.js'],
         ['environment','src/game/systems/environment.js'],
@@ -258,6 +260,8 @@
     floor_system: 'Preparando pisos construíveis',
     runtime_tasks: 'Preparando tarefas dos colonos',
     work_coordination: 'Preparando coordenação de trabalho',
+    crop_defs: 'Preparando cultivos',
+    farming_system: 'Preparando talhões agrícolas',
     renderer: 'Preparando renderização',
     planet_globe_renderer: 'Preparando globo orbital',
     worldgen_cohesion: 'Preparando validação de mundo',
