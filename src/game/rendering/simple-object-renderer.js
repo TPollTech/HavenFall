@@ -41,6 +41,72 @@
     ellipse(x, y + 17, rx, ry, 'rgba(0,0,0,.30)');
   }
 
+  function imageReadyFor(obj, type) {
+    const key = obj?.img || objectDefs?.[type]?.img;
+    const img = key ? images?.[key] : null;
+    return !!(img && !img.dataset?.missingAsset && (img.naturalWidth || img.width) > 2 && (img.naturalHeight || img.height) > 2);
+  }
+
+  function drawTreeFallback(x, y, type = 'tree') {
+    const palette = type === 'pine_tree' ? ['#153f2c', '#1f5d3b', '#2f7a4f']
+      : type === 'eucalypt_tree' ? ['#3f6f56', '#5f8f6a', '#9fb49a']
+        : type === 'palm_tree' ? ['#2f7a3f', '#4e9a51', '#7aa35a']
+          : ['#25562e', '#36733a', '#5f8d47'];
+    shadow(x, y, 22, 8);
+    line(x, y + 15, x, y - 22, '#5a341d', 7);
+    line(x - 5, y + 8, x + 4, y - 18, '#7a4a25', 3);
+    if (type === 'pine_tree') {
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - 44 + i * 12);
+        ctx.lineTo(x - 24 + i * 3, y - 14 + i * 8);
+        ctx.lineTo(x + 24 - i * 3, y - 14 + i * 8);
+        ctx.closePath();
+        ctx.fillStyle = palette[i];
+        ctx.fill();
+        ctx.strokeStyle = '#17311f';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+      return;
+    }
+    if (type === 'palm_tree') {
+      for (let i = 0; i < 7; i++) {
+        const a = -Math.PI * 0.85 + i * Math.PI * 0.28;
+        line(x, y - 30, x + Math.cos(a) * 28, y - 30 + Math.sin(a) * 15, palette[i % palette.length], 5);
+      }
+      return;
+    }
+    ellipse(x, y - 31, 24, 20, palette[0], '#14301d', 1.4);
+    ellipse(x - 15, y - 22, 18, 16, palette[1], '#14301d', 1.2);
+    ellipse(x + 15, y - 23, 18, 16, palette[1], '#14301d', 1.2);
+    ellipse(x, y - 13, 21, 15, palette[2], '#14301d', 1.1);
+  }
+
+  function drawBushFallback(x, y, dry = false) {
+    shadow(x, y, 18, 6);
+    const colors = dry ? ['#7a5b32', '#9a7540', '#b68b4c'] : ['#2f6b35', '#3f8a42', '#72a35a'];
+    ellipse(x - 10, y + 4, 13, 11, colors[0], '#1f3b22', 1.1);
+    ellipse(x + 8, y + 3, 14, 12, colors[1], '#1f3b22', 1.1);
+    ellipse(x, y - 4, 16, 13, colors[2], '#1f3b22', 1.1);
+  }
+
+  function drawBerryFallback(x, y) {
+    drawBushFallback(x, y, false);
+    ctx.save();
+    ctx.fillStyle = '#dc2626';
+    for (const [ox, oy] of [[-8, -4], [3, -7], [10, 1], [-1, 4]]) ellipse(x + ox, y + oy, 2.3, 2.3, '#dc2626', '#7f1d1d', 0.7);
+    ctx.restore();
+  }
+
+  function drawLogsFallback(x, y) {
+    shadow(x, y, 20, 7);
+    for (let i = 0; i < 3; i++) {
+      roundRect(x - 22 + i * 3, y - 8 + i * 7, 38, 8, 4, '#7a4a25', '#2b1b12', 1.2);
+      ellipse(x + 15 + i * 3, y - 4 + i * 7, 4, 4, '#b48754', '#3f2717', 1);
+    }
+  }
+
   function drawBed(x, y) {
     shadow(x, y, 26, 9);
     roundRect(x - 24, y - 12, 48, 25, 5, '#5b3a25', '#21160f', 1.5);
@@ -163,8 +229,10 @@
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile'].includes(type);
+    const natureTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs'];
+    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...natureTypes].includes(type);
     if (!supported) return false;
+    if (natureTypes.includes(type) && imageReadyFor(obj, type)) return false;
 
     const p = anchor(obj);
     ctx.save();
@@ -179,6 +247,10 @@
     else if (type === 'bridge') drawBridge(p.x, p.y);
     else if (type === 'loot') drawLoot(p.x, p.y, obj);
     else if (type === 'stockpile') drawStockpile(p.x, p.y, obj);
+    else if (['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree'].includes(type)) drawTreeFallback(p.x, p.y, type);
+    else if (type === 'bush') drawBushFallback(p.x, p.y, obj.img === 'bush_dry');
+    else if (type === 'berry') drawBerryFallback(p.x, p.y);
+    else if (type === 'logs') drawLogsFallback(p.x, p.y);
     ctx.restore();
 
     if (isBlueprint) {

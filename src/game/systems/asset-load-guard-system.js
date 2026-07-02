@@ -10,6 +10,8 @@
   const BACKGROUND_TIMEOUT_MS = 1800;
   const BACKGROUND_BATCH_SIZE = 32;
   const BACKGROUND_BATCH_DELAY_MS = 24;
+  const ORGANIZED_TILE_ROOT = 'assets/tiles/Tiles do chão';
+  const LEGACY_TILE_ROOT = 'assets/tiles';
   const CRITICAL_BOOT_ASSETS = Object.freeze([
     'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
     'tree', 'bush', 'rock', 'logs', 'berry',
@@ -17,10 +19,34 @@
     'icon_food', 'icon_wood', 'icon_stone', 'icon_metal', 'icon_warn'
   ]);
 
+  const NATURE_ASSET_CANDIDATES = Object.freeze({
+    tile_grass: ['tile_grass.png', 'grass.png', 'grama.png', 'tile_grama.png', 'edificios_tile_grass_1.png', 'edificios_tile_grass_2.png'],
+    tile_dirt: ['tile_dirt.png', 'dirt.png', 'terra.png', 'chao_batido.png', 'chão_batido.png', 'edificios_tile_dirt_1.png', 'edificios_tile_dirt_2.png'],
+    tile_sand: ['tile_sand.png', 'sand.png', 'areia.png', 'edificios_tile_sand_1.png', 'edificios_tile_sand_2.png'],
+    tile_stone: ['tile_stone.png', 'stone.png', 'pedra.png', 'rocky.png', 'edificios_tile_stone_1.png', 'edificios_tile_stone_2.png', 'edificios_tile_rocky_1.png', 'edificios_tile_rocky_2.png'],
+    tree: ['tree.png', 'arvore.png', 'árvore.png', 'carvalho.png', 'oak.png', 'tree_oak.png', 'oak_tree.png'],
+    tree_oak: ['tree_oak.png', 'oak_tree.png', 'carvalho.png', 'arvore_carvalho.png', 'árvore_carvalho.png', 'oak.png'],
+    tree_birch: ['tree_birch.png', 'birch_tree.png', 'betula.png', 'bétula.png', 'arvore_betula.png'],
+    tree_pine: ['tree_pine.png', 'pine_tree.png', 'pinheiro.png', 'arvore_pinheiro.png', 'conifer.png'],
+    tree_palm: ['tree_palm.png', 'palm_tree.png', 'palmeira.png', 'coqueiro.png'],
+    tree_willow: ['tree_willow.png', 'willow_tree.png', 'salgueiro.png'],
+    tree_eucalyptus: ['tree_eucalyptus.png', 'eucalyptus_tree.png', 'eucalipto.png', 'eucalyptus.png', 'arvore_eucalipto.png'],
+    bush: ['bush.png', 'arbusto.png', 'bush_dense.png', 'arbusto_denso.png'],
+    bush_dense: ['bush_dense.png', 'arbusto_denso.png', 'bush.png', 'arbusto.png'],
+    bush_dry: ['bush_dry.png', 'arbusto_seco.png', 'dry_bush.png', 'bush.png'],
+    berry: ['berry.png', 'berry_bush.png', 'frutas_silvestres.png', 'arbusto_frutas.png', 'res_berries.png'],
+    rock: ['rock.png', 'pedra.png', 'rocha.png', 'mountain_inner.svg'],
+    logs: ['logs.png', 'toras.png', 'madeira.png']
+  });
+
+  function natureAssetNames() {
+    return Object.keys(NATURE_ASSET_CANDIDATES);
+  }
+
   function fallbackImage(name, src) {
     const img = new Image();
     img.dataset.missingAsset = String(name || 'unknown');
-    img.dataset.originalSrc = String(src || '');
+    img.dataset.originalSrc = Array.isArray(src) ? src.join(' | ') : String(src || '');
     img.src = FALLBACK_PIXEL;
     return img;
   }
@@ -29,11 +55,34 @@
     return window.HavenfallAssets?.assets?.[String(name || '')] || null;
   }
 
+  function prefixedCandidate(path) {
+    if (!path) return null;
+    if (/^(https?:|data:|assets\/)/.test(path)) return path;
+    return `${ORGANIZED_TILE_ROOT}/${path}`;
+  }
+
+  function organizedTileCandidates(name) {
+    const key = String(name || '');
+    const candidates = NATURE_ASSET_CANDIDATES[key];
+    if (!candidates?.length) return [];
+    const direct = candidates.map(prefixedCandidate).filter(Boolean);
+    const legacy = candidates.map(item => /^(https?:|data:|assets\/)/.test(item) ? item : `${LEGACY_TILE_ROOT}/${item}`).filter(Boolean);
+    return [...direct, ...legacy];
+  }
+
+  function assetSources(name) {
+    const key = String(name || '');
+    const sources = [];
+    const entry = manifestEntry(key);
+    if (entry?.path) sources.push(entry.path);
+    sources.push(...organizedTileCandidates(key));
+    if (typeof spriteSrc === 'function') sources.push(spriteSrc(key));
+    sources.push(`assets/ui/${key}.png`);
+    return [...new Set(sources.filter(Boolean))];
+  }
+
   function assetSource(name) {
-    const entry = manifestEntry(name);
-    if (entry?.path) return entry.path;
-    if (typeof spriteSrc === 'function') return spriteSrc(name);
-    return `assets/ui/${name}.png`;
+    return assetSources(name)[0] || null;
   }
 
   function animationSource(animation) {
@@ -53,42 +102,54 @@
   }
 
   function loadImageSafe(name, src, targetKey, report, timeoutMs = ESSENTIAL_TIMEOUT_MS) {
+    const sources = unique(Array.isArray(src) ? src : [src]);
     return new Promise(resolve => {
-      if (!src) {
-        images[targetKey] = fallbackImage(name, src);
-        report.missing.push({ name, src, reason: 'empty-src' });
-        resolve({ ok: false, name, src, reason: 'empty-src' });
+      if (!sources.length) {
+        images[targetKey] = fallbackImage(name, sources);
+        report.missing.push({ name, src: '', reason: 'empty-src' });
+        resolve({ ok: false, name, src: '', reason: 'empty-src' });
         return;
       }
 
-      const img = new Image();
-      let settled = false;
-      const finish = result => {
-        if (settled) return;
-        settled = true;
-        resolve(result);
-      };
-      const timer = setTimeout(() => {
-        images[targetKey] = fallbackImage(name, src);
-        report.missing.push({ name, src, reason: 'timeout' });
-        finish({ ok: false, name, src, reason: 'timeout' });
-      }, timeoutMs);
+      let index = 0;
+      const failed = [];
+      const tryNext = () => {
+        const currentSrc = sources[index++];
+        if (!currentSrc) {
+          images[targetKey] = fallbackImage(name, sources);
+          report.missing.push({ name, src: sources.join(' | '), reason: 'all-candidates-failed', failed });
+          resolve({ ok: false, name, src: sources[0], reason: 'all-candidates-failed' });
+          return;
+        }
 
-      img.onload = () => {
-        clearTimeout(timer);
-        images[targetKey] = img;
-        report.loaded += 1;
-        finish({ ok: true, name, src });
+        const img = new Image();
+        let settled = false;
+        const finishFailed = reason => {
+          if (settled) return;
+          settled = true;
+          failed.push({ src: currentSrc, reason });
+          tryNext();
+        };
+        const timer = setTimeout(() => finishFailed('timeout'), timeoutMs);
+
+        img.onload = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          images[targetKey] = img;
+          report.loaded += 1;
+          if (index > 1) report.recovered = [...(report.recovered || []), { name, key: targetKey, src: currentSrc }];
+          resolve({ ok: true, name, src: currentSrc });
+        };
+        img.onerror = () => {
+          clearTimeout(timer);
+          finishFailed('error');
+        };
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.src = currentSrc;
       };
-      img.onerror = () => {
-        clearTimeout(timer);
-        images[targetKey] = fallbackImage(name, src);
-        report.missing.push({ name, src, reason: 'error' });
-        finish({ ok: false, name, src, reason: 'error' });
-      };
-      img.decoding = 'async';
-      img.loading = 'eager';
-      img.src = src;
+      tryNext();
     });
   }
 
@@ -98,7 +159,7 @@
 
   function baseAssetNames() {
     const names = Array.isArray(window.assetNames) ? window.assetNames : (typeof assetNames !== 'undefined' ? assetNames : []);
-    return unique(names).filter(name => !shouldSkipAsset(name));
+    return unique([...names, ...natureAssetNames()]).filter(name => !shouldSkipAsset(name));
   }
 
   function essentialAssetNames() {
@@ -111,11 +172,11 @@
     const essential = new Set(essentialAssetNames());
     const baseJobs = baseAssetNames()
       .filter(name => !essential.has(name) && !shouldSkipAsset(name))
-      .map(name => ({ name, src: assetSource(name), key: name }));
+      .map(name => ({ name, src: assetSources(name), key: name }));
 
     const manifestJobs = manifestAssetNames()
       .filter(name => !essential.has(name) && !shouldSkipAsset(name))
-      .map(name => ({ name, src: assetSource(name), key: name }));
+      .map(name => ({ name, src: assetSources(name), key: name }));
 
     const animationJobs = Object.entries(window.HavenfallAssets?.animations || {})
       .filter(([key, animation]) => !shouldSkipAsset(key) && !shouldSkipAsset(animation?.key))
@@ -163,10 +224,12 @@
 
   function guardedLoadImages() {
     const report = {
-      version: 'asset-load-guard-farming-boot',
+      version: 'asset-load-guard-organized-tiles-v1',
+      organizedTileRoot: ORGANIZED_TILE_ROOT,
       startedAt: new Date().toISOString(),
       loaded: 0,
       missing: [],
+      recovered: [],
       essentialTotal: 0,
       backgroundTotal: 0,
       backgroundLoaded: 0
@@ -174,7 +237,7 @@
 
     const essentials = essentialAssetNames();
     report.essentialTotal = essentials.length;
-    const essentialLoads = essentials.map(name => loadImageSafe(name, assetSource(name), name, report, ESSENTIAL_TIMEOUT_MS));
+    const essentialLoads = essentials.map(name => loadImageSafe(name, assetSources(name), name, report, ESSENTIAL_TIMEOUT_MS));
 
     return Promise.all(essentialLoads).then(() => {
       report.finishedAt = new Date().toISOString();
@@ -191,11 +254,19 @@
     loadImages = guardedLoadImages;
   }
 
+  window.HavenfallNatureAssets = Object.freeze({
+    root: ORGANIZED_TILE_ROOT,
+    names: natureAssetNames,
+    sourcesFor: assetSources,
+    candidates: NATURE_ASSET_CANDIDATES
+  });
+
   window.HavenfallAssetLoadGuard = Object.freeze({
-    version: 'asset-load-guard-farming-boot',
+    version: 'asset-load-guard-organized-tiles-v1',
     guardedLoadImages,
     runBackgroundAssetLoad,
     essentialAssetNames,
-    backgroundAssetJobs
+    backgroundAssetJobs,
+    assetSources
   });
 })();

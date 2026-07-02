@@ -6,7 +6,7 @@
     label: 'Floresta temperada',
     tileFloor: 'grass',
     terrainWeights: { grass: 0.72, dirt: 0.20, stone: 0.08 },
-    trees: ['oak_tree', 'birch_tree', 'pine_tree'],
+    trees: ['oak_tree', 'birch_tree', 'pine_tree', 'eucalypt_tree'],
     forageables: ['berry', 'herbs', 'mushrooms'],
     objects: {
       treeDensity: 1.25,

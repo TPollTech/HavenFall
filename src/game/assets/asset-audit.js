@@ -1,9 +1,13 @@
 'use strict';
 
 const RAW_ASSET_PIPELINE_NOTE = 'Assets brutos em assets/raw são fonte de produção. O runtime carrega sprites organizados em assets/mobs, assets/tiles, assets/vfx e assets/ui via assets/manifest.js.';
+const NATURE_RUNTIME_KEYS = [
+  'tree_oak', 'tree_birch', 'tree_pine', 'tree_palm', 'tree_willow', 'tree_eucalyptus',
+  'bush_dense', 'bush_dry', 'berry_bush'
+];
 
 const assetAudit = {
-  available: new Set([...assetNames, ...Object.keys(window.HavenfallAssets?.assets || {})]),
+  available: new Set([...assetNames, ...Object.keys(window.HavenfallAssets?.assets || {}), ...NATURE_RUNTIME_KEYS]),
   rawSourcePath: 'assets/raw',
   rawSourceOnly: true,
   pipelineNote: RAW_ASSET_PIPELINE_NOTE,
@@ -37,11 +41,15 @@ const assetAudit = {
       wolf: { candidates: ['wolf_0', 'wolf_1', 'wolf_2', 'wolf_3', 'wolf_4'], fallback: 'wolf_0', rawRequired: false }
     },
     vegetation: {
-      oak_tree: { candidates: ['oak_tree'], fallback: 'tree', rawRequired: true },
-      birch_tree: { candidates: ['birch_tree'], fallback: 'tree', rawRequired: true },
-      pine_tree: { candidates: ['pine_tree'], fallback: 'tree', rawRequired: true },
-      palm_tree: { candidates: ['palm_tree'], fallback: 'tree', rawRequired: true },
-      willow_tree: { candidates: ['willow_tree'], fallback: 'tree', rawRequired: true }
+      oak_tree: { candidates: ['tree_oak', 'oak_tree', 'carvalho', 'oak'], fallback: 'tree', rawRequired: false },
+      birch_tree: { candidates: ['tree_birch', 'birch_tree', 'betula', 'bétula'], fallback: 'tree', rawRequired: false },
+      pine_tree: { candidates: ['tree_pine', 'pine_tree', 'pinheiro'], fallback: 'tree', rawRequired: false },
+      palm_tree: { candidates: ['tree_palm', 'palm_tree', 'palmeira'], fallback: 'tree', rawRequired: false },
+      willow_tree: { candidates: ['tree_willow', 'willow_tree', 'salgueiro'], fallback: 'tree', rawRequired: false },
+      eucalypt_tree: { candidates: ['tree_eucalyptus', 'eucalyptus_tree', 'eucalipto'], fallback: 'tree', rawRequired: false },
+      bush_dense: { candidates: ['bush_dense', 'bush'], fallback: 'bush', rawRequired: false },
+      bush_dry: { candidates: ['bush_dry', 'bush'], fallback: 'bush', rawRequired: false },
+      berry_bush: { candidates: ['berry_bush', 'berry'], fallback: 'berry', rawRequired: false }
     },
     workstations: {
       forge: { candidates: ['edificios_forge', 'forge', 'advanced_forge'], fallback: 'edificios_forge', rawRequired: false },
@@ -52,7 +60,7 @@ const assetAudit = {
       crate: { candidates: ['container_crate_large', 'stations_raw_v19b_cut_010'], fallback: 'crate_wood', rawRequired: false },
       chest: { candidates: ['container_chest_large_alt', 'stations_raw_v19b_cut_012'], fallback: 'chest_large', rawRequired: false },
       weapon_rack: { candidates: ['weapon_rack_alt', 'stations_raw_v19b_cut_011'], fallback: 'weapon_rack_alt', rawRequired: false },
-      tool_rack: { candidates: ['tool_rack_alt', 'stations_raw_v19b_cut_013'], fallback: 'tool_rack_alt', rawRequired: false }
+      tool_rack: { candidates: ['tool_rack_alt', 'stations_raw_v19b_cut_013'], fallback: 'toolkit', rawRequired: false }
     },
     tools: {
       sickle: { candidates: ['tool_sickle', 'sickle'], fallback: 'tool_sickle', rawRequired: false },
@@ -112,7 +120,7 @@ const assetAudit = {
           nativeReady,
           fallbackActive: !nativeReady,
           rawSourceOnly: !!normalized.rawRequired && !nativeReady,
-          note: nativeReady ? 'sprite pronto no assetNames' : 'fallback registrado; raw não é carregado no runtime'
+          note: nativeReady ? 'sprite pronto ou alias organizado' : 'fallback registrado; raw não é carregado no runtime'
         });
       }
     }
