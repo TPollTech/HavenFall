@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-  <rect width="96" height="96" fill="none"/>
-  <g stroke="#3f2414" stroke-width="24" stroke-linejoin="round"><path d="M24 50 L69 23" stroke-linecap="round"/><path d="M24 50 A38 38 0 0 1 62 12" fill="none" stroke-width="4" opacity=".55"/></g>
-  <g stroke="#9a6439" stroke-width="18" stroke-linejoin="round"><path d="M24 50 L69 23" stroke-linecap="round"/><path d="M24 50 A38 38 0 0 1 62 12" fill="none" stroke-width="4" opacity=".55"/></g>
-  <path d="M12 48 L25 48 M71 48 L84 48" stroke="#3f2414" stroke-width="10" stroke-linecap="round"/>
-  <text x="48" y="88" text-anchor="middle" font-family="monospace" font-size="7" fill="#3f2414" opacity=".42">wood</text>
-</svg>
