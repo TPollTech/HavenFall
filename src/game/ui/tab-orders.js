@@ -4,16 +4,58 @@
   window.HavenfallUI = window.HavenfallUI || {};
   window.HavenfallUI.tabViews = window.HavenfallUI.tabViews || {};
 
+  const FALLBACK_ORDER_TOOLS = [
+    { key: 'move', label: 'Mover' },
+    { key: 'mine', label: 'Minerar' },
+    { key: 'gather', label: 'Coletar' },
+    { key: 'build', label: 'Construir' },
+    { key: 'haul', label: 'Estocar' },
+    { key: 'inspect', label: 'Investigar' },
+    { key: 'loot', label: 'Vasculhar' },
+    { key: 'research', label: 'Pesquisar' },
+    { key: 'forge', label: 'Forjar' },
+    { key: 'cook', label: 'Cozinhar' },
+    { key: 'heal', label: 'Tratar' },
+    { key: 'fight', label: 'Combater' },
+    { key: 'sleep', label: 'Dormir' },
+    { key: 'deconstruct', label: 'Desconstruir' },
+    { key: 'cancel', label: 'Cancelar' }
+  ];
+
+  const ORDER_TOOL_ICONS = {
+    move: '➜',
+    mine: '⛏️',
+    gather: '☘️',
+    build: '🔨',
+    haul: '📦',
+    inspect: '🔎',
+    loot: '🎒',
+    research: '📖',
+    forge: '🔥',
+    cook: '🍲',
+    heal: '✚',
+    fight: '⚔️',
+    sleep: '☾',
+    deconstruct: '⌫',
+    cancel: '✕'
+  };
+
   function activeOrderTool() {
     return typeof getOrderTool === 'function' ? getOrderTool() : currentOrderTool;
+  }
+
+  function orderTools() {
+    return typeof getOrderToolDefinitions === 'function' ? getOrderToolDefinitions() : FALLBACK_ORDER_TOOLS;
+  }
+
+  function renderOrderButton(tool, activeTool) {
+    const icon = ORDER_TOOL_ICONS[tool.key] || '•';
+    return `<button type="button" class="dock-chip ${activeTool === tool.key ? 'is-active' : ''}" data-order-tool="${escapeHtml(tool.key)}">${icon} ${escapeHtml(tool.label)}</button>`;
   }
 
   function render() {
     if (!state) return '<div class="dock-empty">Inicie uma partida para usar ordens.</div>';
     const tool = activeOrderTool();
-    const activeMine = tool === 'mine';
-    const activeDeconstruct = tool === 'deconstruct';
-    const activeCancel = tool === 'cancel';
 
     return `<div class="orders-panel">
       <div class="dock-tab-head">
@@ -23,18 +65,13 @@
       </div>
 
       <div class="dock-chip-row" aria-label="Ordens do colono">
-        <button type="button" class="dock-chip ${activeMine ? 'is-active' : ''}" data-order-tool="mine">⛏️ Minerar</button>
-        <button type="button" class="dock-chip ${activeDeconstruct ? 'is-active' : ''}" data-order-tool="deconstruct">⌫ Desconstruir</button>
-        <button type="button" class="dock-chip ${activeCancel ? 'is-active' : ''}" data-order-tool="cancel">✕ Cancelar</button>
+        ${orderTools().map(orderTool => renderOrderButton(orderTool, tool)).join('')}
       </div>
     </div>`;
   }
 
   function onOpen() {
-    const tool = activeOrderTool();
-    document.body.classList.toggle('order-mine-active', tool === 'mine');
-    document.body.classList.toggle('order-deconstruct-active', tool === 'deconstruct');
-    document.body.classList.toggle('order-cancel-active', tool === 'cancel');
+    if (typeof syncOrderToolBodyClasses === 'function') syncOrderToolBodyClasses(activeOrderTool());
   }
 
   function handleClick(event) {
