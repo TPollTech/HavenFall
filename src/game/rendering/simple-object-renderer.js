@@ -93,10 +93,7 @@
 
   function drawBerryFallback(x, y) {
     drawBushFallback(x, y, false);
-    ctx.save();
-    ctx.fillStyle = '#dc2626';
     for (const [ox, oy] of [[-8, -4], [3, -7], [10, 1], [-1, 4]]) ellipse(x + ox, y + oy, 2.3, 2.3, '#dc2626', '#7f1d1d', 0.7);
-    ctx.restore();
   }
 
   function drawLogsFallback(x, y) {
@@ -105,6 +102,26 @@
       roundRect(x - 22 + i * 3, y - 8 + i * 7, 38, 8, 4, '#7a4a25', '#2b1b12', 1.2);
       ellipse(x + 15 + i * 3, y - 4 + i * 7, 4, 4, '#b48754', '#3f2717', 1);
     }
+  }
+
+  function drawRockFallback(x, y) {
+    shadow(x, y, 22, 8);
+    ctx.beginPath();
+    ctx.moveTo(x - 22, y + 10);
+    ctx.lineTo(x - 15, y - 10);
+    ctx.lineTo(x - 2, y - 21);
+    ctx.lineTo(x + 16, y - 14);
+    ctx.lineTo(x + 23, y + 5);
+    ctx.lineTo(x + 10, y + 16);
+    ctx.lineTo(x - 10, y + 16);
+    ctx.closePath();
+    ctx.fillStyle = '#6b7280';
+    ctx.fill();
+    ctx.strokeStyle = '#2f3640';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    ctx.fillRect(x - 11, y - 10, 15, 3);
   }
 
   function drawBed(x, y) {
@@ -229,10 +246,10 @@
     if (!obj) return false;
     const isBlueprint = obj.type === 'blueprint';
     const type = isBlueprint ? buildDefs?.[obj.buildType]?.type : obj.type;
-    const natureTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs'];
-    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...natureTypes].includes(type);
+    const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
+    const supported = ['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes].includes(type);
     if (!supported) return false;
-    if (natureTypes.includes(type) && imageReadyFor(obj, type)) return false;
+    if (fallbackTypes.includes(type) && imageReadyFor(obj, type)) return false;
 
     const p = anchor(obj);
     ctx.save();
@@ -251,6 +268,7 @@
     else if (type === 'bush') drawBushFallback(p.x, p.y, obj.img === 'bush_dry');
     else if (type === 'berry') drawBerryFallback(p.x, p.y);
     else if (type === 'logs') drawLogsFallback(p.x, p.y);
+    else if (type === 'rock') drawRockFallback(p.x, p.y);
     ctx.restore();
 
     if (isBlueprint) {
