@@ -22,21 +22,36 @@ function createLightingContext({ exploration, explorationDisabled = false, hour 
   let now = 1;
   const draws = [];
   const drawImages = [];
+  const mockCtx = {
+    globalCompositeOperation: 'source-over',
+    imageSmoothingEnabled: false,
+    save() {},
+    restore() {},
+    beginPath() {},
+    ellipse() {},
+    fillRect(x, y, width, height) { draws.push({ kind: 'rect', style: this._fillStyle, x, y, width, height }); },
+    fill() { draws.push({ kind: 'shape', style: this._fillStyle }); },
+    drawImage(_img, x, y, w, h) { drawImages.push({ x, y, w, h }); },
+    set fillStyle(value) { this._fillStyle = value; },
+    get fillStyle() { return this._fillStyle; }
+  };
+  const FakeOffscreenCanvas = class {
+    constructor(w, h) { this.width = w; this.height = h; }
+    getContext() {
+      const self = this;
+      return {
+        createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData(imgData) { self._pixels = imgData.data; }
+      };
+    }
+  };
   const context = createContext({
     TILE: 48,
     SCREEN: { PLAYING: 'playing' },
     appScreen: 'playing',
     HavenfallContext: {},
     performance: { now: () => now },
-    OffscreenCanvas: class OffscreenCanvas {
-      constructor(w, h) { this.width = w; this.height = h; this._data = new Uint8ClampedArray(w * h * 4); }
-      getContext() {
-        return {
-          createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
-          putImageData: (imgData) => { this._data = imgData.data; }.bind(this)
-        };
-      }
-    },
+    OffscreenCanvas: FakeOffscreenCanvas,
     state: {
       hour,
       weather: 'limpo',
@@ -56,44 +71,19 @@ function createLightingContext({ exploration, explorationDisabled = false, hour 
       tree: { blocks: true },
       torch: { fuelMax: 100, light: { radius: 4, power: 0.7 } }
     },
-    ctx: {
-      globalCompositeOperation: 'source-over',
-      save() {},
-      restore() {},
-      beginPath() {},
-      ellipse() {},
-      fillRect(x, y, width, height) { draws.push({ kind: 'rect', style: this._fillStyle, x, y, width, height }); },
-      fill() { draws.push({ kind: 'shape', style: this._fillStyle }); },
-      createLinearGradient(x0, y0, x1, y1) {
-        const stops = [];
-        return {
-          addColorStop(offset, color) { stops.push({ offset, color }); },
-          _stops: stops,
-          _x0: x0, _y0: y0, _x1: x1, _y1: y1,
-          toString() { return `gradient(${stops.map(s => s.color).join('|')})`; }
-        };
-      },
-      set fillStyle(value) { this._fillStyle = value; },
-      get fillStyle() { return this._fillStyle; }
-    },
+    ctx: mockCtx,
     getWorldCols: () => 3,
     getWorldRows: () => 3
   });
 
   context.draws = () => draws;
+  context.drawImages = () => drawImages;
   context.advanceMs = ms => { now += ms; };
   return context;
 }
 
 function darkOverlayDraws(context) {
-  return context.draws().filter(draw => {
-    const s = draw.style;
-    if (typeof s === 'string') return s.startsWith('rgba(1, 5, 14,');
-    if (s && typeof s === 'object' && Array.isArray(s._stops)) {
-      return s._stops.some(stop => typeof stop.color === 'string' && stop.color.startsWith('rgba(1,5,14'));
-    }
-    return false;
-  });
+  return context.drawImages().filter(d => d.w > 0 && d.h > 0);
 }
 
 function shadowDraws(context) {
@@ -119,7 +109,7 @@ test('Lighting overlay keeps heavy fog when a valid exploration mask hides tiles
 
   context.LightingSystem.drawLightingOverlay({ startX: 0, startY: 0, endX: 2, endY: 2 });
 
-  assert.ok(darkOverlayDraws(context).length >= 9);
+  assert.equal(darkOverlayDraws(context).length, 1);
 });
 
 test('Lighting system eases global daylight instead of snapping or updating by map chunks', () => {

@@ -402,7 +402,6 @@
 
   let _darknessCanvas = null;
   let _darknessCtx = null;
-  let _darknessVersion = -1;
 
   function drawLightingOverlay(bounds = null) {
     if (!ctx || !state?.world || appScreen !== SCREEN.PLAYING) return;
@@ -431,13 +430,20 @@
     const cW = endX - startX + 2, cH = endY - startY + 2;
 
     if (!_darknessCanvas || _darknessCanvas.width !== cW || _darknessCanvas.height !== cH) {
-      _darknessCanvas = new OffscreenCanvas(cW, cH);
+      if (typeof OffscreenCanvas === 'function') {
+        _darknessCanvas = new OffscreenCanvas(cW, cH);
+      } else {
+        _darknessCanvas = document.createElement('canvas');
+        _darknessCanvas.width = cW;
+        _darknessCanvas.height = cH;
+      }
       _darknessCtx = _darknessCanvas.getContext('2d');
     }
     const dCtx = _darknessCtx;
     const imgData = dCtx.createImageData(cW, cH);
     const pixels = imgData.data;
 
+    let hasContent = false;
     for (let cy = 0; cy < cH; cy++) {
       for (let cx = 0; cx < cW; cx++) {
         const tx = startX + cx - 1, ty = startY + cy - 1;
@@ -459,9 +465,15 @@
         pixels[idx] = 1;
         pixels[idx + 1] = 5;
         pixels[idx + 2] = 14;
-        pixels[idx + 3] = alpha <= 0.035 ? 0 : Math.round(alpha * 255);
+        if (alpha > 0.035) {
+          pixels[idx + 3] = Math.round(alpha * 255);
+          hasContent = true;
+        } else {
+          pixels[idx + 3] = 0;
+        }
       }
     }
+    if (!hasContent) return;
     dCtx.putImageData(imgData, 0, 0);
 
     ctx.save();
