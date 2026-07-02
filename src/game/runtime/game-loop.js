@@ -164,13 +164,6 @@ function updateWorld(dt) {
     }
   }
 
-  for (const obj of state.objects || []) {
-    if (obj.type === 'crop') {
-      const rainBonus = state.weather === 'chuva' ? 2.1 : 1;
-      obj.growth = clamp((obj.growth || 0) + tick * 0.85 * rainBonus, 0, 100);
-    }
-  }
-
   updateDoorAutoClose(dt);
 
   for (const c of state.colonists || []) {
@@ -198,7 +191,7 @@ function randomEvent() {
   if (event === 'rain') {
     state.weather = 'chuva';
     state.weatherTime = 45;
-    log('Chuva fina: plantações crescem mais rápido hoje.');
+    log('Chuva fina: umidade dos talhões mudou.');
     return;
   }
 
