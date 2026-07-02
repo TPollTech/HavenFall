@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const TERRAIN_KEYS = new Set(['tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone', 'tile_water']);
+  const TERRAIN_KEYS = new Set(['tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone']);
   const NATURE_KEYS = new Set([
     'tree', 'tree_oak', 'tree_birch', 'tree_pine', 'tree_palm', 'tree_willow', 'tree_eucalyptus',
     'bush', 'bush_dense', 'bush_dry', 'rock', 'logs', 'berry'
@@ -14,7 +14,10 @@
   function isTerrainTextureAsset(name) {
     const key = String(name || '');
     const path = assetPath(key);
-    return TERRAIN_KEYS.has(key) || key.startsWith('edificios_tile_') || path.includes('Tiles do chão') || path.includes('Tiles do chao');
+    return TERRAIN_KEYS.has(key)
+      || key.startsWith('edificios_tile_')
+      || path.includes('Tiles do chão')
+      || path.includes('Tiles do chao');
   }
 
   function isNatureRuntimeAsset(name) {
@@ -35,12 +38,14 @@
   function isProceduralRuntimeAssetPolicy(name) {
     const key = String(name || '');
     if (!key) return true;
+    if (key === 'tile_water') return true;
+    if (key === 'mountain_inner' || key.startsWith('mountain_')) return true;
     return !isPngRuntimeAsset(key);
   }
 
   function shouldLoadRuntimeSprite(name) {
     const key = String(name || '');
-    return !!key && isPngRuntimeAsset(key);
+    return !!key && !isProceduralRuntimeAssetPolicy(key) && isPngRuntimeAsset(key);
   }
 
   function classify(name) {
@@ -48,7 +53,7 @@
     return {
       key,
       path: assetPath(key),
-      mode: shouldLoadRuntimeSprite(key) ? 'PNG_RUNTIME' : 'JS_OR_UNUSED',
+      mode: shouldLoadRuntimeSprite(key) ? 'PNG_RUNTIME' : 'JS_OR_EXISTING_RUNTIME',
       keepPngRuntime: shouldLoadRuntimeSprite(key)
     };
   }
@@ -61,8 +66,9 @@
     try { window.isProceduralRuntimeAsset = isProceduralRuntimeAssetPolicy; } catch (_) {}
     window.HavenfallContext = window.HavenfallContext || {};
     window.HavenfallContext.assetPolicy = {
-      rule: 'Carregar PNG apenas para chão, natureza, árvores, arbustos, rochas e água.',
-      pngRuntimeKeys: [...TERRAIN_KEYS, ...NATURE_KEYS]
+      rule: 'Carregar PNG apenas para chão natural, natureza, árvores, arbustos e pedras/rochas naturais. Água e montanha ficam no sistema já existente.',
+      pngRuntimeKeys: [...TERRAIN_KEYS, ...NATURE_KEYS],
+      excludedRuntimePngKeys: ['tile_water', 'mountain_inner', 'mountain_*']
     };
   }
 
