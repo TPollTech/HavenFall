@@ -1,14 +1,23 @@
 'use strict';
 
 (() => {
+  const TERRAIN_TEXTURE_KEYS = new Set([
+    'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone', 'tile_water'
+  ]);
+
+  const TERRAIN_TEXTURE_PREFIXES = [
+    'edificios_tile_',
+    'hand_painted_game_terrain_tileset_cut_'
+  ];
+
   const NATURE_KEYS = new Set([
-    'tile_grass', 'tile_dirt', 'tile_sand', 'tile_stone',
-    'tree', 'bush', 'rock', 'logs', 'berry'
+    'tree', 'tree_oak', 'tree_birch', 'tree_pine', 'tree_palm', 'tree_willow', 'tree_eucalyptus',
+    'bush', 'bush_dense', 'bush_dry', 'rock', 'logs', 'berry'
   ]);
 
   const NATURE_PREFIXES = [
-    'edificios_tile_',
-    'hand_painted_game_terrain_tileset_cut_'
+    'tree_',
+    'bush_'
   ];
 
   const PROCEDURAL_PREFIXES = [
@@ -51,12 +60,21 @@
     return prefixes.some(prefix => key.startsWith(prefix));
   }
 
+  function isTerrainTextureAsset(name) {
+    const key = String(name || '');
+    const path = assetPath(key);
+    if (TERRAIN_TEXTURE_KEYS.has(key)) return true;
+    if (hasAnyPrefix(key, TERRAIN_TEXTURE_PREFIXES)) return true;
+    if (path.includes('/tiles/') && /tile|terrain|ground|ch[aã]o|grass|dirt|sand|stone/i.test(path) && !/arvores|arbustos|tree|bush|rock|rocha|pedra|montanha/i.test(path)) return true;
+    return false;
+  }
+
   function isNatureRuntimeAsset(name) {
     const key = String(name || '');
     const path = assetPath(key);
     if (NATURE_KEYS.has(key)) return true;
     if (hasAnyPrefix(key, NATURE_PREFIXES)) return true;
-    if (path.includes('/tiles/') && !path.includes('modular_medieval_building')) return true;
+    if (path.includes('/tiles/') && /arvores|arbustos|tree|bush|rock|rocha|pedra|montanha/i.test(path)) return true;
     return false;
   }
 
@@ -64,6 +82,7 @@
     const key = String(name || '');
     const path = assetPath(key);
     if (!key) return true;
+    if (isTerrainTextureAsset(key)) return true;
     if (isNatureRuntimeAsset(key)) return false;
     if (PROCEDURAL_EXACT.has(key)) return true;
     if (hasAnyPrefix(key, PROCEDURAL_PREFIXES)) return true;
@@ -96,20 +115,23 @@
     try { window.isProceduralRuntimeAsset = isProceduralRuntimeAssetPolicy; } catch (_) {}
     window.HavenfallContext = window.HavenfallContext || {};
     window.HavenfallContext.assetPolicy = {
-      rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI, objetos modulares e cultivo por talhão ficam em JS.',
-      loadedNatureKeys: [...NATURE_KEYS]
+      rule: 'Terreno/chão fica procedural para não aceitar tiles brancos incompatíveis; vegetação, rochas e montanhas organizadas podem usar PNG.',
+      loadedNatureKeys: [...NATURE_KEYS],
+      proceduralTerrainKeys: [...TERRAIN_TEXTURE_KEYS]
     };
   }
 
   window.HavenfallAssetPolicy = Object.freeze({
     isNatureRuntimeAsset,
+    isTerrainTextureAsset,
     isProceduralRuntimeAsset: isProceduralRuntimeAssetPolicy,
     shouldLoadRuntimeSprite,
     classify,
     report,
     installGlobalBindings,
     natureKeys: [...NATURE_KEYS],
-    rule: 'Natureza e terreno orgânico podem usar PNG; gameplay, estruturas, pawns, mobs, ferramentas, UI, objetos modulares e cultivo por talhão ficam em JS.'
+    terrainTextureKeys: [...TERRAIN_TEXTURE_KEYS],
+    rule: 'Terreno/chão fica procedural para não aceitar tiles brancos incompatíveis; vegetação, rochas e montanhas organizadas podem usar PNG.'
   });
 
   installGlobalBindings();
