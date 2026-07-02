@@ -14,22 +14,39 @@
   const GROUND_TILE_ROOTS = Object.freeze([
     'assets/tiles/Tiles do chão',
     'assets/tiles/Tiles do chao',
-    'assets/tiles/tiles do chao'
+    'assets/tiles/Tiles da natureza',
+    'assets/tiles/Tiles da Natureza',
+    'assets/tiles/Natureza',
+    'assets/tiles/natureza'
   ]);
 
   const VEGETATION_TILE_ROOTS = Object.freeze([
-    'assets/tiles/arvores e arbustos',
     'assets/tiles/Arvores e arbustos',
     'assets/tiles/Arvores e Arbustos',
+    'assets/tiles/arvores e arbustos',
     'assets/tiles/Árvores e arbustos',
-    'assets/tiles/Árvores e Arbustos'
+    'assets/tiles/Árvores e Arbustos',
+    'assets/tiles/Arvores',
+    'assets/tiles/arvores',
+    'assets/tiles/Arbustos',
+    'assets/tiles/arbustos',
+    'assets/tiles/Tiles da natureza',
+    'assets/tiles/Tiles da Natureza',
+    'assets/tiles/Natureza',
+    'assets/tiles/natureza'
   ]);
 
   const MOUNTAIN_TILE_ROOTS = Object.freeze([
     'assets/tiles/Tiles do chão',
     'assets/tiles/Tiles do chao',
+    'assets/tiles/Tiles da natureza',
+    'assets/tiles/Tiles da Natureza',
+    'assets/tiles/Montanhas',
     'assets/tiles/montanhas',
-    'assets/tiles/Montanhas'
+    'assets/tiles/Rochas',
+    'assets/tiles/rochas',
+    'assets/tiles/Rochas e montanhas',
+    'assets/tiles/Rochas e Montanhas'
   ]);
 
   const CRITICAL_BOOT_ASSETS = Object.freeze([
@@ -38,24 +55,33 @@
     'icon_food', 'icon_wood', 'icon_stone', 'icon_metal', 'icon_warn'
   ]);
 
+  function fileVariants(...bases) {
+    const suffixes = ['.png', '_1.png', '_01.png', '-1.png', ' 1.png', '_2.png', '_02.png', '-2.png', ' 2.png'];
+    const out = [];
+    for (const base of bases.filter(Boolean)) {
+      for (const suffix of suffixes) out.push(`${base}${suffix}`);
+    }
+    return [...new Set(out)];
+  }
+
   const ORGANIZED_ASSETS = Object.freeze({
-    tile_grass: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_grass_1.png', 'edificios_tile_grass_2.png', 'tile_grass.png', 'grass.png', 'grama.png'] },
-    tile_dirt: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_dirt_1.png', 'edificios_tile_dirt_2.png', 'tile_dirt.png', 'dirt.png', 'terra.png'] },
-    tile_sand: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_sand_1.png', 'edificios_tile_sand_2.png', 'tile_sand.png', 'sand.png', 'areia.png'] },
-    tile_stone: { roots: GROUND_TILE_ROOTS, files: ['edificios_tile_stone_1.png', 'edificios_tile_stone_2.png', 'edificios_tile_rocky_1.png', 'edificios_tile_rocky_2.png', 'tile_stone.png', 'stone.png', 'pedra.png'] },
-    tree: { roots: VEGETATION_TILE_ROOTS, files: ['arvore.png', 'arvores.png', 'carvalho.png'] },
-    tree_oak: { roots: VEGETATION_TILE_ROOTS, files: ['carvalho.png', 'arvore_carvalho.png', 'tree_oak.png'] },
-    tree_birch: { roots: VEGETATION_TILE_ROOTS, files: ['betula.png', 'arvore_betula.png', 'tree_birch.png'] },
-    tree_pine: { roots: VEGETATION_TILE_ROOTS, files: ['pinheiro.png', 'arvore_pinheiro.png', 'tree_pine.png'] },
-    tree_palm: { roots: VEGETATION_TILE_ROOTS, files: ['palmeira.png', 'coqueiro.png', 'tree_palm.png'] },
-    tree_willow: { roots: VEGETATION_TILE_ROOTS, files: ['salgueiro.png', 'tree_willow.png'] },
-    tree_eucalyptus: { roots: VEGETATION_TILE_ROOTS, files: ['eucalipto.png', 'arvore_eucalipto.png', 'tree_eucalyptus.png'] },
-    bush: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto.png', 'arbustos.png', 'bush.png'] },
-    bush_dense: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_denso.png', 'arbusto.png', 'bush_dense.png'] },
-    bush_dry: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_seco.png', 'arbusto_seco_1.png', 'bush_dry.png'] },
-    berry: { roots: VEGETATION_TILE_ROOTS, files: ['arbusto_frutas.png', 'frutas_silvestres.png', 'berry.png'] },
-    rock: { roots: MOUNTAIN_TILE_ROOTS, files: ['rock.png', 'pedra.png', 'rocha.png', 'mountain_inner.svg'] },
-    logs: { roots: VEGETATION_TILE_ROOTS, files: ['toras.png', 'madeira.png', 'logs.png'] }
+    tile_grass: { roots: GROUND_TILE_ROOTS, files: fileVariants('edificios_tile_grass', 'edificios_tile_grass_1', 'tile_grass', 'grass', 'grama') },
+    tile_dirt: { roots: GROUND_TILE_ROOTS, files: fileVariants('edificios_tile_dirt', 'edificios_tile_dirt_1', 'tile_dirt', 'dirt', 'terra') },
+    tile_sand: { roots: GROUND_TILE_ROOTS, files: fileVariants('edificios_tile_sand', 'edificios_tile_sand_1', 'tile_sand', 'sand', 'areia') },
+    tile_stone: { roots: GROUND_TILE_ROOTS, files: fileVariants('edificios_tile_stone', 'edificios_tile_stone_1', 'edificios_tile_rocky', 'edificios_tile_rocky_1', 'tile_stone', 'stone', 'pedra') },
+    tree: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('arvore', 'árvore', 'arvores', 'árvores', 'carvalho', 'tree') },
+    tree_oak: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('carvalho', 'arvore_carvalho', 'árvore_carvalho', 'tree_oak', 'oak_tree', 'oak') },
+    tree_birch: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('betula', 'bétula', 'arvore_betula', 'árvore_bétula', 'tree_birch', 'birch_tree') },
+    tree_pine: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('pinheiro', 'arvore_pinheiro', 'árvore_pinheiro', 'tree_pine', 'pine_tree', 'conifer') },
+    tree_palm: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('palmeira', 'coqueiro', 'tree_palm', 'palm_tree') },
+    tree_willow: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('salgueiro', 'tree_willow', 'willow_tree') },
+    tree_eucalyptus: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('eucalipto', 'arvore_eucalipto', 'árvore_eucalipto', 'tree_eucalyptus', 'eucalyptus_tree', 'eucalyptus') },
+    bush: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('arbusto', 'arbustos', 'bush') },
+    bush_dense: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('arbusto_denso', 'arbusto', 'bush_dense', 'bush') },
+    bush_dry: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('arbusto_seco', 'dry_bush', 'bush_dry') },
+    berry: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('arbusto_frutas', 'frutas_silvestres', 'berry', 'berry_bush', 'res_berries') },
+    rock: { roots: MOUNTAIN_TILE_ROOTS, files: [...fileVariants('rock', 'pedra', 'rocha', 'mountain_inner'), 'mountain_inner.svg'] },
+    logs: { roots: VEGETATION_TILE_ROOTS, files: fileVariants('toras', 'madeira', 'logs') }
   });
 
   function organizedAssetNames() {
@@ -104,10 +130,6 @@
     if (typeof spriteSrc === 'function') sources.push(spriteSrc(key));
     sources.push(`assets/ui/${key}.png`);
     return [...new Set(sources.filter(Boolean))];
-  }
-
-  function assetSource(name) {
-    return assetSources(name)[0] || null;
   }
 
   function animationSource(animation) {
@@ -249,7 +271,7 @@
 
   function guardedLoadImages() {
     const report = {
-      version: 'asset-load-guard-organized-assets-v2',
+      version: 'asset-load-guard-organized-assets',
       roots: {
         ground: GROUND_TILE_ROOTS,
         vegetation: VEGETATION_TILE_ROOTS,
@@ -291,7 +313,7 @@
   });
 
   window.HavenfallAssetLoadGuard = Object.freeze({
-    version: 'asset-load-guard-organized-assets-v2',
+    version: 'asset-load-guard-organized-assets',
     guardedLoadImages,
     runBackgroundAssetLoad,
     essentialAssetNames,
