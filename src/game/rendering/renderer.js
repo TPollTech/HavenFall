@@ -288,6 +288,37 @@ function drawTerrainTexture(img, x, y) {
   const size = TILE + TILE_OVERDRAW * 2;
 
   ctx.drawImage(img, crop, crop, Math.max(1, sw - crop * 2), Math.max(1, sh - crop * 2), px, py, size, size);
+
+  const fw = TILE_OVERDRAW;
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  let g;
+
+  g = ctx.createLinearGradient(px, py, px, py + fw);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py, size, fw);
+
+  g = ctx.createLinearGradient(px, py + size, px, py + size - fw);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py + size - fw, size, fw);
+
+  g = ctx.createLinearGradient(px, py, px + fw, py);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px, py, fw, size);
+
+  g = ctx.createLinearGradient(px + size, py, px + size - fw, py);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(px + size - fw, py, fw, size);
+
+  ctx.restore();
 }
 
 function drawTerrainBlendStrip(x, y, side, neighborType) {

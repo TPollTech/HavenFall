@@ -10,9 +10,9 @@
   const terrainCache = new Map();
   const objectChunkIndex = new Map();
   const renderBuckets = [];
-  const TERRAIN_OVERDRAW = 2;
-  const TERRAIN_BLEND_WIDTH = 10;
-  const TERRAIN_SOURCE_CROP_RATIO = 0.03;
+  const TERRAIN_OVERDRAW = 8;
+  const TERRAIN_BLEND_WIDTH = 24;
+  const TERRAIN_SOURCE_CROP_RATIO = 0.055;
 
   let terrainCacheWorldRef = null;
   let terrainCacheTerrainRef = null;
@@ -138,7 +138,7 @@
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
-  function tileTypeAt(x, y) { return state?.terrain?.[y]?.[x] || null; }
+function tileTypeAt(x, y) { return state?.terrain?.[y]?.[x] || null; }
 
   function drawTerrainTextureTo(targetCtx, img, x, y) {
     if (!img) return;
@@ -149,6 +149,31 @@
     const py = y * TILE - TERRAIN_OVERDRAW;
     const size = TILE + TERRAIN_OVERDRAW * 2;
     targetCtx.drawImage(img, crop, crop, Math.max(1, sw - crop * 2), Math.max(1, sh - crop * 2), px, py, size, size);
+    const fw = TERRAIN_OVERDRAW;
+    targetCtx.save();
+    targetCtx.globalCompositeOperation = 'destination-out';
+    let g;
+    g = targetCtx.createLinearGradient(px, py, px, py + fw);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py, size, fw);
+    g = targetCtx.createLinearGradient(px, py + size, px, py + size - fw);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py + size - fw, size, fw);
+    g = targetCtx.createLinearGradient(px, py, px + fw, py);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px, py, fw, size);
+    g = targetCtx.createLinearGradient(px + size, py, px + size - fw, py);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    targetCtx.fillStyle = g;
+    targetCtx.fillRect(px + size - fw, py, fw, size);
+    targetCtx.restore();
   }
 
   function drawBlendStripTo(targetCtx, x, y, side, neighborType) {
