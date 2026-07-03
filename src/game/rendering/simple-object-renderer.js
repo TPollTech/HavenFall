@@ -48,7 +48,7 @@
   }
 
   const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
-  const supportedSimpleTypes = new Set(['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'bridge', 'loot', 'stockpile', ...fallbackTypes]);
+  const supportedSimpleTypes = new Set(['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'ironVein', 'copperVein', 'coalVein', 'tinVein', 'bridge', 'loot', 'stockpile', ...fallbackTypes]);
 
   function simpleObjectType(obj) {
     return obj?.type === 'blueprint' ? buildDefs?.[obj.buildType]?.type : obj?.type;
@@ -279,6 +279,23 @@
     ctx.fillRect(x - 12, y - 12, 14, 3);
   }
 
+  function drawVeinFallback(x, y, type) {
+    const palette = {
+      ironVein: { accent: '#7a4034', glow: '#de7e60' },
+      copperVein: { accent: '#d07a3d', glow: '#6bc2a9' },
+      coalVein: { accent: '#1f2430', glow: '#f8fafc' },
+      tinVein: { accent: '#7f8ea3', glow: '#d9e1ea' }
+    }[type] || { accent: '#9ca3af', glow: '#e5e7eb' };
+    shadow(x, y, 22, 8);
+    roundRect(x - 18, y - 18, 35, 33, 7, '#4c5663', '#1f2933', 1.5);
+    line(x - 10, y + 6, x - 1, y - 8, palette.accent, 4.5);
+    line(x - 1, y - 8, x + 8, y - 2, palette.accent, 4.5);
+    line(x + 3, y - 18, x - 2, y - 8, palette.glow, 3);
+    ellipse(x + 10, y - 15, 5, 5, palette.glow, '#24313f', 1);
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.fillRect(x - 12, y - 12, 14, 3);
+  }
+
   function drawBridge(x, y) {
     shadow(x, y, 23, 6);
     for (const oy of [-9, 1, 11]) {
@@ -340,6 +357,7 @@
     else if (type === 'cactus') drawCactus(p.x, p.y);
     else if (type === 'ruin') drawRuin(p.x, p.y);
     else if (type === 'ore') drawOre(p.x, p.y);
+    else if (['ironVein', 'copperVein', 'coalVein', 'tinVein'].includes(type)) drawVeinFallback(p.x, p.y, type);
     else if (type === 'bridge') drawBridge(p.x, p.y);
     else if (type === 'loot') drawLoot(p.x, p.y, obj);
     else if (type === 'stockpile') drawStockpile(p.x, p.y, obj);

@@ -4102,7 +4102,7 @@
     "mining_vein_iron": { "path": "assets/ui/mining_automation/deposits/mining_vein_iron.svg", "category": "ui" },
     "mining_vein_copper": { "path": "assets/ui/mining_automation/deposits/mining_vein_copper.svg", "category": "ui" },
     "mining_vein_coal": { "path": "assets/ui/mining_automation/deposits/mining_vein_coal.svg", "category": "ui" },
-    "mining_vein_tin": { "path": "assets/ui/mining_automation/deposits/mining_vein_quartz.svg", "category": "ui" },
+    "mining_vein_tin": { "path": "assets/ui/mining_automation/deposits/mining_vein_tin.svg", "category": "ui" },
     "mining_vein_quartz": { "path": "assets/ui/mining_automation/deposits/mining_vein_quartz.svg", "category": "ui" },
     "mining_purity_impure": { "path": "assets/ui/mining_automation/deposits/mining_purity_impure.svg", "category": "ui" },
     "mining_purity_normal": { "path": "assets/ui/mining_automation/deposits/mining_purity_normal.svg", "category": "ui" },

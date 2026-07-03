@@ -190,6 +190,9 @@ function handleCanvasContextMenu(e) {
 function routePrimaryObjectAction(c, obj) {
   if (!c || !obj) return;
   if (obj.type === 'blueprint') assignBuild(c, obj);
+  else if (obj.vein && typeof assignVeinMine === 'function') {
+    if (!assignVeinMine(c, obj) && typeof log === 'function') log(`${c.name} nao encontrou caminho ate esse veio.`);
+  }
   else if (CRAFT_STATION_TYPES.includes(obj.type)) openCraftingForStation(obj);
   else if (obj.type === 'research_desk') assignResearch(c, obj);
   else if (objectDefs[obj.type]?.interactable) assignInspect(c, obj);
@@ -265,6 +268,16 @@ function makeContextActions(c, target, tile) {
       actions.push({ label: obj.looted ? 'Já vasculhado' : 'Vasculhar / abrir', hint: obj.looted ? 'sem loot restante' : 'coleta suprimentos do local', disabled: !!obj.looted, run: () => assignLoot(c, obj) });
     }
     if (obj.type === 'blueprint') actions.push({ label: 'Construir', hint: buildDefs[obj.buildType]?.label || 'obra', run: () => assignBuild(c, obj) });
+    if (obj.vein && typeof assignVeinMine === 'function') {
+      const purity = typeof purityText === 'function' ? purityText(obj, { colonist: c }) : '';
+      actions.push({
+        label: 'Minerar veio',
+        hint: purity ? `${def.name || obj.type} · ${purity}` : (def.name || obj.type),
+        run: () => {
+          if (!assignVeinMine(c, obj) && typeof log === 'function') log(`${c.name} nao encontrou caminho ate esse veio.`);
+        }
+      });
+    }
     if (def.gather) {
       actions.push({ label: obj.markedForGather ? 'Desmarcar coleta' : 'Marcar para coleta', hint: 'fila automática de coleta', run: () => toggleGatherMark(obj) });
       actions.push({ label: 'Coletar agora', hint: def.name || obj.type, run: () => assignGather(c, obj) });

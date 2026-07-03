@@ -47,11 +47,47 @@
   function isMappedAsset(name) { return !!ASSETS[String(name || '')]; }
   function isBlockedKey(name) { return BLOCKED_KEYS.has(String(name || '')); }
 
-  function assetNamesToLoad() {
-    const configured = Array.isArray(window.assetNames) ? window.assetNames : (typeof assetNames !== 'undefined' ? assetNames : []);
-    return [...new Set([...configured, ...Object.keys(ASSETS)])]
-      .filter(name => isMappedAsset(name) && !isBlockedKey(name)
-        && !(typeof isProceduralRuntimeAsset === 'function' && isProceduralRuntimeAsset(name)));
+  function configuredAssetNames() {
+    return Array.isArray(window.assetNames) ? window.assetNames : (typeof assetNames !== 'undefined' ? assetNames : []);
+  }
+
+  function miningManifestAssetNames() {
+    return Object.keys(window.HavenfallAssets?.assets || {}).filter(name => String(name || '').startsWith('mining_'));
+  }
+
+  function collectReferencedAssetNames() {
+    const names = new Set([...configuredAssetNames(), ...Object.keys(ASSETS), ...miningManifestAssetNames()]);
+    const push = value => {
+      if (typeof value === 'string' && value) names.add(value);
+    };
+    const objectEntries = typeof objectDefs !== 'undefined' ? Object.values(objectDefs || {}) : [];
+    const itemEntries = typeof itemDefs !== 'undefined' ? Object.values(itemDefs || {}) : [];
+    for (const entry of objectEntries) {
+      push(entry?.img);
+      push(entry?.icon);
+    }
+    for (const entry of itemEntries) {
+      push(entry?.img);
+      push(entry?.icon);
+    }
+    return [...names].filter(name => !isBlockedKey(name)
+      && !(typeof isProceduralRuntimeAsset === 'function' && isProceduralRuntimeAsset(name)));
+  }
+
+  function mappedAssetNames() {
+    return collectReferencedAssetNames().filter(isMappedAsset);
+  }
+
+  function genericAssetNames() {
+    return collectReferencedAssetNames().filter(name => !isMappedAsset(name));
+  }
+
+  function animationEntriesToLoad() {
+    return Object.entries(window.HavenfallAssets?.animations || {}).filter(([key, animation]) => {
+      if (isBlockedKey(key)) return false;
+      if (typeof isProceduralRuntimeAsset === 'function' && (isProceduralRuntimeAsset(key) || isProceduralRuntimeAsset(animation?.key))) return false;
+      return !!animation?.path;
+    });
   }
 
   function assetSources(name) {
@@ -97,25 +133,124 @@
     });
   }
 
+  function markGenericMissing(name, src, report) {
+    const img = new Image();
+    img.dataset.missingAsset = String(name || 'unknown');
+    img.dataset.originalSrc = src;
+    images[name] = img;
+    report.missing.push({ name, src });
+  }
+
+  function loadGenericImage(name, report) {
+    const src = typeof spriteSrc === 'function' ? spriteSrc(name) : `assets/ui/${name}.png`;
+    return new Promise(resolve => {
+      const img = new Image();
+      let settled = false;
+      const fail = () => {
+        if (settled) return;
+        settled = true;
+        markGenericMissing(name, src, report);
+        resolve(false);
+      };
+      const timer = setTimeout(fail, TIMEOUT_MS);
+      img.onload = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        images[name] = img;
+        report.loaded += 1;
+        resolve(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        fail();
+      };
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+    });
+  }
+
+  function loadAnimationAsset(key, animation, report) {
+    const src = animation?.path || '';
+    return new Promise(resolve => {
+      if (!src) {
+        report.missing.push({ name: `vfx:${key}`, src: 'missing-animation-path' });
+        resolve(false);
+        return;
+      }
+      const img = new Image();
+      let settled = false;
+      const fail = () => {
+        if (settled) return;
+        settled = true;
+        report.missing.push({ name: `vfx:${key}`, src });
+        resolve(false);
+      };
+      const timer = setTimeout(fail, TIMEOUT_MS);
+      img.onload = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        images[`vfx:${key}`] = img;
+        report.loaded += 1;
+        resolve(true);
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        fail();
+      };
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+    });
+  }
+
+  function loadInBatches(names, loader, report, batchDelay = 24, batchSize = BATCH_SIZE) {
+    let index = 0;
+    const tick = () => {
+      const slice = names.slice(index, index + batchSize);
+      index += batchSize;
+      Promise.all(slice.map(name => loader(name, report))).finally(() => {
+        window.HavenfallAssetLoadReport = report;
+        if (index < names.length) setTimeout(tick, batchDelay);
+        else report.backgroundFinishedAt = new Date().toISOString();
+      });
+    };
+    if (names.length) setTimeout(tick, 40);
+  }
+
   function guardedLoadImages() {
-    const report = { version: 'asset-load-guard-natural-png-v4', roots: ROOTS, loaded: 0, missing: [], recovered: [], startedAt: new Date().toISOString() };
-    const names = assetNamesToLoad();
-    const essentials = names.filter(name => name.startsWith('tile_'));
-    const background = names.filter(name => !essentials.includes(name));
+    const report = {
+      version: 'asset-load-guard-natural-png-v5',
+      roots: ROOTS,
+      loaded: 0,
+      missing: [],
+      recovered: [],
+      startedAt: new Date().toISOString()
+    };
+    const mapped = mappedAssetNames();
+    const generic = genericAssetNames();
+    const animations = animationEntriesToLoad();
+    const essentials = mapped.filter(name => name.startsWith('tile_'));
+    const backgroundMapped = mapped.filter(name => !essentials.includes(name));
     return Promise.all(essentials.map(name => loadMappedImage(name, report))).then(() => {
       report.finishedAt = new Date().toISOString();
       window.HavenfallAssetLoadReport = report;
-      let index = 0;
-      const tick = () => {
-        const slice = background.slice(index, index + BATCH_SIZE);
-        index += BATCH_SIZE;
-        Promise.all(slice.map(name => loadMappedImage(name, report))).finally(() => {
-          window.HavenfallAssetLoadReport = report;
-          if (index < background.length) setTimeout(tick, 24);
-          else report.backgroundFinishedAt = new Date().toISOString();
-        });
-      };
-      if (background.length) setTimeout(tick, 120);
+      loadInBatches(backgroundMapped, loadMappedImage, report);
+      loadInBatches(generic, loadGenericImage, report, 24, 18);
+      if (animations.length) {
+        let index = 0;
+        const tick = () => {
+          const slice = animations.slice(index, index + 8);
+          index += 8;
+          Promise.all(slice.map(([key, animation]) => loadAnimationAsset(key, animation, report))).finally(() => {
+            window.HavenfallAssetLoadReport = report;
+            if (index < animations.length) setTimeout(tick, 36);
+          });
+        };
+        setTimeout(tick, 80);
+      }
       return report;
     });
   }
@@ -126,5 +261,5 @@
   }
 
   window.HavenfallNatureAssets = Object.freeze({ roots: ROOTS, names: () => Object.keys(ASSETS), sourcesFor: assetSources, candidates: ASSETS });
-  window.HavenfallAssetLoadGuard = Object.freeze({ version: 'asset-load-guard-natural-png-v4', guardedLoadImages, assetSources });
+  window.HavenfallAssetLoadGuard = Object.freeze({ version: 'asset-load-guard-natural-png-v5', guardedLoadImages, assetSources });
 })();
