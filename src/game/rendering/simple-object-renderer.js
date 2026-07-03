@@ -48,7 +48,7 @@
   }
 
   const fallbackTypes = ['tree', 'oak_tree', 'birch_tree', 'pine_tree', 'palm_tree', 'willow_tree', 'eucalypt_tree', 'bush', 'berry', 'logs', 'rock'];
-  const supportedSimpleTypes = new Set(['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'ironVein', 'copperVein', 'coalVein', 'tinVein', 'bridge', 'loot', 'stockpile', ...fallbackTypes]);
+  const supportedSimpleTypes = new Set(['bed', 'crate', 'campfire', 'cactus', 'supply_crate', 'cache', 'ruin', 'ore', 'ironVein', 'copperVein', 'coalVein', 'tinVein', 'silverVein', 'bridge', 'loot', 'stockpile', ...fallbackTypes]);
 
   function simpleObjectType(obj) {
     return obj?.type === 'blueprint' ? buildDefs?.[obj.buildType]?.type : obj?.type;
@@ -284,7 +284,8 @@
       ironVein: { accent: '#7a4034', glow: '#de7e60' },
       copperVein: { accent: '#d07a3d', glow: '#6bc2a9' },
       coalVein: { accent: '#1f2430', glow: '#f8fafc' },
-      tinVein: { accent: '#7f8ea3', glow: '#d9e1ea' }
+      tinVein: { accent: '#7f8ea3', glow: '#d9e1ea' },
+      silverVein: { accent: '#8a9bb5', glow: '#e2e8f0' }
     }[type] || { accent: '#9ca3af', glow: '#e5e7eb' };
     shadow(x, y, 22, 8);
     roundRect(x - 18, y - 18, 35, 33, 7, '#4c5663', '#1f2933', 1.5);
@@ -357,7 +358,7 @@
     else if (type === 'cactus') drawCactus(p.x, p.y);
     else if (type === 'ruin') drawRuin(p.x, p.y);
     else if (type === 'ore') drawOre(p.x, p.y);
-    else if (['ironVein', 'copperVein', 'coalVein', 'tinVein'].includes(type)) drawVeinFallback(p.x, p.y, type);
+    else if (['ironVein', 'copperVein', 'coalVein', 'tinVein', 'silverVein'].includes(type)) drawVeinFallback(p.x, p.y, type);
     else if (type === 'bridge') drawBridge(p.x, p.y);
     else if (type === 'loot') drawLoot(p.x, p.y, obj);
     else if (type === 'stockpile') drawStockpile(p.x, p.y, obj);

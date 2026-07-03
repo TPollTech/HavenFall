@@ -9,7 +9,8 @@
     iron: { label: 'Ferro', rawItem: 'rawIron', purityWeights: [0.20, 0.50, 0.25, 0.05], baseYield: 2, work: 8.0, color: '#7f1d1d', glowColor: 'rgba(200,50,50,0.25)' },
     copper: { label: 'Cobre', rawItem: 'rawCopper', purityWeights: [0.25, 0.45, 0.25, 0.05], baseYield: 2, work: 8.0, color: '#b85c1e', glowColor: 'rgba(220,120,40,0.25)' },
     coal: { label: 'Carvão', rawItem: 'rawCoal', purityWeights: [0.30, 0.45, 0.20, 0.05], baseYield: 3, work: 6.0, color: '#1f2937', glowColor: 'rgba(50,50,50,0.20)' },
-    tin: { label: 'Estanho', rawItem: 'rawTin', purityWeights: [0.30, 0.50, 0.18, 0.02], baseYield: 2, work: 7.0, color: '#71717a', glowColor: 'rgba(150,150,160,0.20)' }
+    tin: { label: 'Estanho', rawItem: 'rawTin', purityWeights: [0.30, 0.50, 0.18, 0.02], baseYield: 2, work: 7.0, color: '#71717a', glowColor: 'rgba(150,150,160,0.20)' },
+    silver: { label: 'Prata', rawItem: 'rawSilver', purityWeights: [0.35, 0.45, 0.18, 0.02], baseYield: 1, work: 9.0, color: '#94a3b8', glowColor: 'rgba(200,200,220,0.25)' }
   });
 
   const PURITY_LABELS = Object.freeze(['Impuro', 'Normal', 'Rico', 'Excepcional']);

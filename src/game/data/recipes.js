@@ -28,6 +28,7 @@ const baseRecipeDefs = {
   crushCopper: { label: 'Triturar cobre bruto', station: 'pestle', cost: {}, itemCost: { rawCopper: 2 }, duration: 5, output: { items: { crushedCopper: 2 } }, unlock: 'basic_prospecting', desc: 'Tritura minério de cobre no pilão.' },
   crushCoal: { label: 'Triturar carvão bruto', station: 'pestle', cost: {}, itemCost: { rawCoal: 2 }, duration: 4, output: { items: { crushedCoal: 2 } }, unlock: 'basic_prospecting', desc: 'Tritura carvão bruto no pilão.' },
   crushTin: { label: 'Triturar estanho bruto', station: 'pestle', cost: {}, itemCost: { rawTin: 2 }, duration: 5, output: { items: { crushedTin: 2 } }, unlock: 'basic_prospecting', desc: 'Tritura minério de estanho no pilão.' },
+  crushSilver: { label: 'Triturar prata bruta', station: 'pestle', cost: {}, itemCost: { rawSilver: 2 }, duration: 6, output: { items: { crushedSilver: 2 } }, unlock: 'basic_prospecting', desc: 'Tritura minério de prata no pilão.' },
 
   // Seleção de minério (Mesa de Seleção)
   separateIron: { label: 'Selecionar ferro triturado', station: 'selectionTable', cost: {}, itemCost: { crushedIron: 3 }, duration: 5, output: { items: { preparedIron: 2, gravel: 1 } }, unlock: 'ore_processing', desc: 'Separa o ferro útil do cascalho.' },
@@ -35,10 +36,13 @@ const baseRecipeDefs = {
   separateCoal: { label: 'Limpar carvão triturado', station: 'selectionTable', cost: {}, itemCost: { crushedCoal: 3 }, duration: 4, output: { items: { preparedCoal: 2 } }, unlock: 'ore_processing', desc: 'Limpa as impurezas do carvão triturado.' },
   separateTin: { label: 'Selecionar estanho triturado', station: 'selectionTable', cost: {}, itemCost: { crushedTin: 3 }, duration: 5, output: { items: { preparedTin: 2, gravel: 1 } }, unlock: 'ore_processing', desc: 'Separa o estanho útil do cascalho.' },
 
+  separateSilver: { label: 'Selecionar prata triturada', station: 'selectionTable', cost: {}, itemCost: { crushedSilver: 3 }, duration: 6, output: { items: { preparedSilver: 2, gravel: 1 } }, unlock: 'ore_processing', desc: 'Separa a prata útil do cascalho.' },
+
   // Fundição (Fornalha Simples)
   smeltIron: { label: 'Fundir ferro', station: 'furnace', cost: { wood: 1 }, itemCost: { preparedIron: 3 }, duration: 8, output: { items: { ironIngot: 2 } }, unlock: 'basic_smelting', desc: 'Funde minério de ferro preparado em lingotes.' },
   smeltCopper: { label: 'Fundir cobre', station: 'furnace', cost: { wood: 1 }, itemCost: { preparedCopper: 3 }, duration: 8, output: { items: { copperIngot: 2 } }, unlock: 'basic_smelting', desc: 'Funde minério de cobre preparado em lingotes.' },
   smeltTin: { label: 'Fundir estanho', station: 'furnace', cost: { wood: 1 }, itemCost: { preparedTin: 3 }, duration: 7, output: { items: { tinIngot: 2 } }, unlock: 'basic_smelting', desc: 'Funde minério de estanho preparado em lingotes.' },
+  smeltSilver: { label: 'Fundir prata', station: 'furnace', cost: { wood: 1 }, itemCost: { preparedSilver: 3 }, duration: 9, output: { items: { silverIngot: 2 } }, unlock: 'basic_smelting', desc: 'Funde minério de prata preparado em lingotes.' },
 
   // Forjaria (Bigorna)
   forgeIronPlate: { label: 'Forjar chapa de ferro', station: 'anvil', cost: {}, itemCost: { ironIngot: 2 }, duration: 6, output: { items: { ironPlate: 1 } }, unlock: 'basic_metalworking', desc: 'Forja lingotes em chapas de ferro.' },

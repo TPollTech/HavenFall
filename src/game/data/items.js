@@ -6,7 +6,7 @@ const baseItemDefs = {
   cloth: { label: 'Tecido', icon: 'res_cloth', kind: 'material', note: 'Material para itens médicos.' },
   leather: { label: 'Couro', icon: 'res_leather', kind: 'material', note: 'Material resistente.' },
   stoneAxe: { label: 'Machado de pedra', icon: 'weapon_axe', slot: 'tool', kind: 'tool', gatherBonus: { wood: 0.35 }, combat: 1.5, maxDurability: 25, note: 'Corta madeira melhor e ajuda em defesa.' },
-  pickaxe: { label: 'Picareta', icon: 'tool_pickaxe', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.35, metal: 0.35 }, combat: 1.2, maxDurability: 25, note: 'Minera pedra e metal mais rápido.' },
+  pickaxe: { label: 'Picareta', icon: 'mining_tool_pickaxe_stone', slot: 'tool', kind: 'tool', gatherBonus: { stone: 0.35, metal: 0.35 }, combat: 1.2, maxDurability: 25, note: 'Minera pedra e metal mais rápido.' },
   hammer: { label: 'Martelo', icon: 'tool_hammer', slot: 'tool', kind: 'tool', buildBonus: 0.28, combat: 1.1, maxDurability: 30, note: 'Acelera construção.' },
   toolkit: { label: 'Kit de ferramentas', icon: 'toolkit', slot: 'tool', kind: 'tool', buildBonus: 0.45, craftBonus: 0.25, combat: 1.0, maxDurability: 40, note: 'Ferramenta avançada para construir e fabricar.' },
   knife: { label: 'Faca simples', icon: 'weapon_knife', slot: 'weapon', kind: 'weapon', combat: 2.1, note: 'Defesa básica, melhor que lutar desarmado.' },
@@ -35,6 +35,8 @@ const baseItemDefs = {
   preparedCopper: { label: 'Cobre preparado', icon: 'mining_ore_copper_raw', kind: 'smeltable', note: 'Cobre separado e limpo, pronto para fundir.' },
   preparedCoal: { label: 'Carvão limpo', icon: 'mining_ore_coal_raw', kind: 'fuel', note: 'Carvão limpo e seco, combustível de qualidade.' },
   preparedTin: { label: 'Estanho preparado', icon: 'mining_ore_tin_raw', kind: 'smeltable', note: 'Estanho separado e limpo, pronto para fundir.' },
+  crushedSilver: { label: 'Prata triturada', icon: 'mining_ore_silver_raw', kind: 'crushedOre', note: 'Prata triturada, pronto para seleção.' },
+  preparedSilver: { label: 'Prata preparada', icon: 'mining_ore_silver_raw', kind: 'smeltable', note: 'Prata separada e limpa, pronta para fundir.' },
 
   // Metais em lingote
   ironIngot: { label: 'Lingote de ferro', icon: 'mining_ingot_iron', kind: 'metal', note: 'Ferro fundido em lingote. Base para ferramentas, peças e máquinas.' },

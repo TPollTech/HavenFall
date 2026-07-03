@@ -426,7 +426,8 @@ function generateOreVeins(ctx) {
     iron: Math.floor(area * 0.0018 * multiplier),
     copper: Math.floor(area * 0.0016 * multiplier),
     coal: Math.floor(area * 0.0020 * multiplier),
-    tin: Math.floor(area * 0.0008 * multiplier)
+    tin: Math.floor(area * 0.0008 * multiplier),
+    silver: Math.floor(area * 0.0005 * multiplier)
   };
   const scan = planetScanProfile(config);
   if (scan) {
@@ -434,6 +435,7 @@ function generateOreVeins(ctx) {
     veinCounts.iron = Math.floor(veinCounts.iron * (1 + (rock - 24) * 0.015));
     veinCounts.copper = Math.floor(veinCounts.copper * (1 + (rock - 24) * 0.012));
     veinCounts.coal = Math.floor(veinCounts.coal * (1 + (rock - 24) * 0.010));
+    veinCounts.silver = Math.floor(veinCounts.silver * (1 + (rock - 24) * 0.020));
   }
   const MIN_DIST_FROM_SPAWN = 12;
   for (const [veinType, count] of Object.entries(veinCounts)) {
