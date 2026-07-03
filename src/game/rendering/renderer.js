@@ -480,13 +480,13 @@ const OBJECT_TARGET_H = {
   stove: TILE * 1.0, med_station: TILE * 1.0, research_desk: TILE * 1.0,
   crate: TILE * 1.1, ruin: TILE * 1.0,  cache: TILE * 1.1,
   supply_crate: TILE * 1.1, wall: TILE * 1.5, door: TILE * 1.35, bench: TILE * 1.0, stool: TILE * 1.0,
-  sewing_table: TILE * 1.0, smokehouse: TILE * 1.0
-};
-
-const OBJECT_TARGET_W = {
-  bench: TILE * 0.90,
-  sewing_table: TILE * 0.95,
-  smokehouse: TILE * 0.95
+  sewing_table: TILE * 1.0, smokehouse: TILE * 1.0,
+  // Veios de minério
+  ironVein: TILE * 1.0, copperVein: TILE * 1.0, coalVein: TILE * 1.0,
+  tinVein: TILE * 1.0, silverVein: TILE * 1.0,
+  // Bancadas de mineração
+  pestle: TILE * 1.0, selectionTable: TILE * 1.0,
+  furnace: TILE * 1.0, anvil: TILE * 1.0
 };
 
 function objectScale(type, img) {

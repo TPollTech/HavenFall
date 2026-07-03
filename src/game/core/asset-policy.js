@@ -40,7 +40,22 @@
     if (!key) return true;
     if (key === 'tile_water') return true;
     if (key === 'mountain_inner' || key.startsWith('mountain_')) return true;
-    return !isPngRuntimeAsset(key);
+    if (isPngRuntimeAsset(key)) return false;
+    const asset = window.HavenfallAssets?.assets?.[key];
+    const path = String(asset?.path || '');
+    return /^colonist[A-Z]+_/.test(key)
+      || /^wolf_\d+$/.test(key)
+      || key.startsWith('creature_sprite_sheet_with_various_animals_cut_')
+      || path.includes('/mobs/')
+      || key === 'crafting_bench'
+      || key === 'research_desk'
+      || key === 'stove'
+      || key === 'edificios_stove'
+      || key === 'med_station'
+      || key === 'edificios_forge'
+      || key === 'edificios_sewing_table'
+      || key.startsWith('station_')
+      || key.startsWith('stations_raw_v19b_cut_');
   }
 
   function shouldLoadRuntimeSprite(name) {
