@@ -260,7 +260,7 @@ function updateCraftingUI() {
   if (!station) {
     selectedCraftStationId = null;
     if (activeHudTab === 'crafting') setHudTab('build');
-    info.innerHTML = '<div><b>Crafting fechado.</b></div><div class="empty">Clique com o botão direito em uma Bancada, Forja, Fogão ou Estação Médica para abrir as receitas.</div>';
+    info.innerHTML = '<div><b>Crafting fechado.</b></div><div class="empty">Clique com o botão direito em uma Bancada, Pilão, Fornalha ou outra estação de trabalho para abrir as receitas.</div>';
     recipeGrid.innerHTML = '';
     inventory.innerHTML = '';
     return;

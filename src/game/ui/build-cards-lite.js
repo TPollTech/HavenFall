@@ -12,9 +12,10 @@
   const groups = {
     structures: ['wall', 'door', 'crop'],
     furniture: ['bed', 'campfire', 'crate', 'bench', 'research_desk', 'stove', 'forge', 'med_station', 'sewing_table', 'smokehouse'],
+    mining: ['pestle', 'selectionTable', 'furnace', 'anvil'],
     support: ['torch']
   };
-  const groupNames = { structures: 'Estruturas', furniture: 'Mobília', support: 'Suporte' };
+  const groupNames = { structures: 'Estruturas', furniture: 'Mobília', mining: 'Mineração', support: 'Suporte' };
   const costNames = { wood: 'Madeira', stone: 'Pedra', food: 'Comida', metal: 'Metal', medicine: 'Remédio', leather: 'Couro', cloth: 'Tecido', nails: 'Pregos' };
 
   function miss(key, qty, item) {

@@ -19,6 +19,7 @@
     floors: { label: 'Pisos', items: ['floor_dirt', 'floor_wood', 'floor_stone'] },
     furniture: { label: 'Mobília', items: ['bed', 'campfire', 'bench', 'research_desk'] },
     production: { label: 'Produção', items: ['forge', 'stove', 'med_station'] },
+    mining: { label: 'Mineração', items: ['pestle', 'selectionTable', 'furnace', 'anvil'] },
     agriculture: { label: 'Agricultura', items: ['crop', 'irrigation_channel'] },
     water: { label: 'Água', items: ['bridge', 'fish_trap', 'water_collector'] }
   };
@@ -179,6 +180,10 @@
       forge: 'Produção metálica.',
       stove: 'Preparo de refeições.',
       med_station: 'Tratamento e resgate.',
+      pestle: 'Britagem manual do minério bruto.',
+      selectionTable: 'Separação manual de minério útil e cascalho.',
+      furnace: 'Fundição inicial de minério preparado.',
+      anvil: 'Forja peças e ferramentas metálicas.',
       crop: 'Produção agrícola.',
       bridge: 'Permite cruzar água profunda.',
       fish_trap: 'Gera comida quando instalada na água.',

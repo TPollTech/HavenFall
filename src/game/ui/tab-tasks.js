@@ -127,7 +127,9 @@
 
   function getColonistTaskPriority(c, taskKey) {
     if (!c) return 0;
-    return ensureTaskPriorities()?.[c.id]?.[taskKey] ?? 2;
+    const normalizedKey = taskKey === 'handle' ? 'hauling' : taskKey;
+    const row = ensureTaskPriorities()?.[c.id];
+    return row?.[normalizedKey] ?? (normalizedKey === 'hauling' ? row?.handle : undefined) ?? 2;
   }
 
   function onPriorityClick(event) {

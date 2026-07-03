@@ -25,7 +25,7 @@
 
   function ensureVeinState(obj) {
     if (!obj) return null;
-    if (!obj.veinPurity) {
+    if (!Number.isInteger(obj.veinPurity) || obj.veinPurity < 0 || obj.veinPurity >= PURITY_LABELS.length) {
       const weights = veinDefFor(obj)?.purityWeights || VEIN_TYPES.iron.purityWeights;
       const roll = Math.random();
       let cumulative = 0;
@@ -37,7 +37,30 @@
     }
     if (!Number.isFinite(obj.veinHp)) obj.veinHp = 100;
     if (!Number.isFinite(obj.veinMaxHp)) obj.veinMaxHp = 100;
+    if (obj.veinPurityKnown === undefined) obj.veinPurityKnown = false;
     return obj;
+  }
+
+  function colonistCanRevealVeinPurity(c) {
+    return c?.equipment?.tool === 'geologicalHammer';
+  }
+
+  function isVeinPurityKnown(obj) {
+    ensureVeinState(obj);
+    return !!obj?.veinPurityKnown;
+  }
+
+  function revealVeinPurity(obj, c = null) {
+    ensureVeinState(obj);
+    if (colonistCanRevealVeinPurity(c)) obj.veinPurityKnown = true;
+    return !!obj?.veinPurityKnown;
+  }
+
+  function purityText(obj, options = {}) {
+    ensureVeinState(obj);
+    const known = revealVeinPurity(obj, options.colonist) || isVeinPurityKnown(obj) || !!options.forceReveal;
+    if (!known) return options.includeUnknown === false ? '' : 'pureza desconhecida';
+    return PURITY_LABELS[obj.veinPurity] || 'Normal';
   }
 
   function getVeinYield(obj, c) {
@@ -101,11 +124,11 @@
     const def = veinDefFor(vein);
     if (!def) return null;
     ensureVeinState(vein);
-    const purity = vein.veinPurity || 0;
+    const purity = purityText(vein, { colonist: c });
     return {
       kind: 'veinMine',
       obj: vein,
-      label: `Minerar ${def.label} (${PURITY_LABELS[purity] || 'Normal'})`,
+      label: purity ? `Minerar ${def.label} (${purity})` : `Minerar ${def.label}`,
       priority: 91
     };
   }
@@ -121,6 +144,7 @@
 
   function assignVeinMine(c, obj) {
     if (!c || !obj) return false;
+    revealVeinPurity(obj, c);
     const adj = typeof nearestFreeAdjacent === 'function'
       ? nearestFreeAdjacent(obj.x, obj.y, c.x, c.y)
       : null;
@@ -174,6 +198,8 @@
     obj.veinHp = Math.max(0, (obj.veinHp || 100) - progress);
     if (obj.veinHp <= 0) {
       const yieldCount = getVeinYield(obj, c);
+      const wasKnown = isVeinPurityKnown(obj);
+      obj.veinPurityKnown = true;
       if (typeof addItems === 'function') {
         addItems({ [def.rawItem]: yieldCount }, { reason: 'vein-mine', actorId: c.id, x: obj.x, y: obj.y });
       }
@@ -181,13 +207,18 @@
       obj.veinHp = obj.veinMaxHp || 100;
       c._veinMineCooldown = now + VEIN_MINE_COOLDOWN_MS;
       c.work = 0;
-      const purity = obj.veinPurity || 0;
-      const logMsg = `${c.name} minerou ${def.label} (${PURITY_LABELS[purity] || 'Normal'}). Obtido: +${yieldCount} ${def.label}.`;
+      const purity = PURITY_LABELS[obj.veinPurity || 0] || 'Normal';
+      const logMsg = wasKnown
+        ? `${c.name} minerou ${def.label} (${purity}). Obtido: +${yieldCount} ${def.label}.`
+        : `${c.name} confirmou pureza ${purity} em ${def.label}. Obtido: +${yieldCount} ${def.label}.`;
       if (typeof log === 'function') log(logMsg);
       c.note = `Minerando ${def.label}`;
     } else {
       const pct = Math.floor((1 - (obj.veinHp / (obj.veinMaxHp || 100))) * 100);
-      c.note = `Minerando ${def.label} ${pct}% (${PURITY_LABELS[obj.veinPurity || 0] || 'Normal'})`;
+      const purity = purityText(obj, { includeUnknown: false });
+      c.note = purity
+        ? `Minerando ${def.label} ${pct}% (${purity})`
+        : `Minerando ${def.label} ${pct}%`;
     }
     return true;
   }
@@ -241,14 +272,13 @@
       const def = veinDefFor(obj);
       if (!def) continue;
       ensureVeinState(obj);
-      const purity = obj.veinPurity || 0;
       const cx = obj.x * TILE + TILE / 2;
       const cy = obj.y * TILE + TILE / 2;
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = def.color;
       ctx.fillRect(obj.x * TILE + 1, obj.y * TILE + 1, TILE - 2, TILE - 2);
       ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = PURITY_COLORS[purity] || '#fbbf24';
+      ctx.strokeStyle = isVeinPurityKnown(obj) ? (PURITY_COLORS[obj.veinPurity] || '#fbbf24') : '#cbd5e1';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]);
       ctx.strokeRect(obj.x * TILE + 3, obj.y * TILE + 3, TILE - 6, TILE - 6);
@@ -307,9 +337,10 @@
   window.VEIN_TYPES = VEIN_TYPES;
   window.PURITY_LABELS = PURITY_LABELS;
   window.PURITY_COLORS = PURITY_COLORS;
+  window.revealVeinPurity = revealVeinPurity;
+  window.isVeinPurityKnown = isVeinPurityKnown;
 
   window.GameSystems?.registerTick('mining-processing', updateTick, { order: 65 });
   window.GameSystems?.registerTaskHandler('veinMine', 'mining-processing.vein', handleVeinMineTask, { order: 15 });
-  window.GameSystems?.registerAutoTaskProvider('mining-processing.auto-vein', autoVeinMineProvider, { order: 5 });
   window.GameSystems?.registerDrawOverlay('mining-processing.veins', drawVeinOverlay, { order: 20 });
 })();

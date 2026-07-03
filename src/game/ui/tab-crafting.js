@@ -101,7 +101,7 @@
   }
 
   function renderStations(list, selected) {
-    if (!list.length) return `<div class="craft-empty-panel"><b>Nenhuma estação construída</b><span>Construa uma Bancada, Forja, Fogão ou Estação Médica para liberar receitas.</span></div>`;
+    if (!list.length) return `<div class="craft-empty-panel"><b>Nenhuma estação construída</b><span>Construa uma Bancada, Pilão, Fornalha ou outra estação de trabalho para liberar receitas.</span></div>`;
     return `<div class="craft-station-list">${list.map(o => {
       const active = selected?.id === o.id;
       const count = Object.values(recipeDefs || {}).filter(recipe => recipe.station === o.type).length;

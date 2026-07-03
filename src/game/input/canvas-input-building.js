@@ -10,7 +10,7 @@ canvas.addEventListener('mouseup', handleCanvasMouseUp);
 canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('contextmenu', handleCanvasContextMenu);
 
-const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse', 'butcher_table'];
+const CRAFT_STATION_TYPES = ['bench', 'forge', 'stove', 'med_station', 'sewing_table', 'smokehouse', 'butcher_table', 'pestle', 'selectionTable', 'furnace', 'anvil'];
 const ROTATABLE_BUILD_TYPES = new Set(['wall', 'door']);
 
 function entityQuery() {

@@ -254,8 +254,12 @@ function toggleGatherMark(obj) {
 function taskPriorityValue(c, key) {
   if (!c || !state?.taskPriorities) return 2;
   const row = state.taskPriorities[c.id] || state.taskPriorities[String(c.id)];
-  if (!row || row[key] === undefined) return 2;
-  return Math.max(0, Math.min(4, Number(row[key]) || 0));
+  if (!row) return 2;
+  const normalizedKey = key === 'handle' ? 'hauling' : key;
+  const value = row[normalizedKey] ?? (normalizedKey === 'hauling' ? row.handle : undefined);
+  if (value === undefined) return 2;
+  if (normalizedKey === 'hauling' && row.hauling === undefined && row.handle !== undefined) row.hauling = row.handle;
+  return Math.max(0, Math.min(4, Number(value) || 0));
 }
 
 function taskPriorityOrder(c) {
@@ -279,6 +283,7 @@ function storageDestinationForPriority(obj, c = null) {
 }
 
 function canDoPriorityTask(c, key) {
+  key = key === 'handle' ? 'hauling' : key;
   if (taskPriorityValue(c, key) <= 0) return false;
   if (key === 'gather') {
     const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
@@ -308,6 +313,7 @@ function canDoPriorityTask(c, key) {
 }
 
 function assignPriorityTask(c, key) {
+  key = key === 'handle' ? 'hauling' : key;
   if (key === 'gather') {
     const mine = typeof nearestMarkedMine === 'function' ? nearestMarkedMine(c) : null;
     if (mine && assignMine(c, mine.x, mine.y)) return true;

@@ -34,7 +34,7 @@ const baseObjectDefs = {
   ironVein: { name: 'veio de ferro', img: 'mining_vein_iron', blocks: true, vein: true, veinType: 'iron', work: 8.0 },
   copperVein: { name: 'veio de cobre', img: 'mining_vein_copper', blocks: true, vein: true, veinType: 'copper', work: 8.0 },
   coalVein: { name: 'veio de carvão', img: 'mining_vein_coal', blocks: true, vein: true, veinType: 'coal', work: 6.0 },
-  tinVein: { name: 'veio de estanho', img: 'mining_vein_iron', blocks: true, vein: true, veinType: 'tin', work: 7.0 },
+  tinVein: { name: 'veio de estanho', img: 'mining_vein_tin', blocks: true, vein: true, veinType: 'tin', work: 7.0 },
 
   // Bancadas de processamento de minério
   pestle: { name: 'pilão de pedra', img: 'mining_station_stone_mortar', blocks: true, craft: 1 },

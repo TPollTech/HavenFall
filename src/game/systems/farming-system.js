@@ -363,7 +363,7 @@
     const cell = farming?.cells?.[task.cellKey];
     const plot = cell ? farming.plots[cell.plotId] : null;
     if (!cell || !plot) { c.task = null; c.work = 0; c.note = 'Ocioso'; return true; }
-    c.work = Number(c.work || 0) + tick * (typeof workRate === 'function' ? workRate(c, 'handle') : 1);
+    c.work = Number(c.work || 0) + tick * (typeof workRate === 'function' ? workRate(c, 'farming') : 1);
     c.note = `${WORK[task.type].note} ${Math.floor((c.work / WORK[task.type].duration) * 100)}%`;
     if (c.work < WORK[task.type].duration) return true;
     let ok = true;
@@ -431,7 +431,7 @@
 
   function updateFarmingSystem(tick) {
     if (!state || appScreen !== SCREEN.PLAYING) return;
-    ensureFarmingState();
+    const farming = ensureFarmingState();
     ensureStartingSeeds();
     migrateLegacyCropObjects();
     const hours = Math.max(0, Number(tick || 0)) / 60;

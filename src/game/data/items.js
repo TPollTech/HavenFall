@@ -30,9 +30,11 @@ const baseItemDefs = {
   crushedIron: { label: 'Ferro triturado', icon: 'mining_ore_iron_raw', kind: 'crushedOre', note: 'Ferro triturado, pronto para seleção.' },
   crushedCopper: { label: 'Cobre triturado', icon: 'mining_ore_copper_raw', kind: 'crushedOre', note: 'Cobre triturado, pronto para seleção.' },
   crushedCoal: { label: 'Carvão triturado', icon: 'mining_ore_coal_raw', kind: 'crushedOre', note: 'Carvão triturado, precisa ser limpo.' },
+  crushedTin: { label: 'Estanho triturado', icon: 'mining_ore_tin_raw', kind: 'crushedOre', note: 'Estanho triturado, pronto para seleção.' },
   preparedIron: { label: 'Ferro preparado', icon: 'mining_ore_iron_raw', kind: 'smeltable', note: 'Ferro separado e limpo, pronto para fundir.' },
   preparedCopper: { label: 'Cobre preparado', icon: 'mining_ore_copper_raw', kind: 'smeltable', note: 'Cobre separado e limpo, pronto para fundir.' },
   preparedCoal: { label: 'Carvão limpo', icon: 'mining_ore_coal_raw', kind: 'fuel', note: 'Carvão limpo e seco, combustível de qualidade.' },
+  preparedTin: { label: 'Estanho preparado', icon: 'mining_ore_tin_raw', kind: 'smeltable', note: 'Estanho separado e limpo, pronto para fundir.' },
 
   // Metais em lingote
   ironIngot: { label: 'Lingote de ferro', icon: 'mining_ingot_iron', kind: 'metal', note: 'Ferro fundido em lingote. Base para ferramentas, peças e máquinas.' },
