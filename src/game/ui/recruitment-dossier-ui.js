@@ -14,11 +14,11 @@
       }
 
       .colonist-select-screen .menu-card.max-card {
-        width: min(1180px, calc(100vw - 24px));
-        max-height: calc(100vh - 24px);
-        border: 1px solid rgba(125, 211, 252, .14);
-        background: linear-gradient(180deg, rgba(15, 23, 42, .72), rgba(2, 6, 23, .86));
-        box-shadow: 0 24px 80px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.04);
+        width: min(1320px, calc(100vw - 34px));
+        max-height: calc(100vh - 34px);
+        border: 1px solid rgba(125, 211, 252, .16);
+        background: linear-gradient(180deg, rgba(15, 23, 42, .74), rgba(2, 6, 23, .88));
+        box-shadow: 0 28px 100px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
       }
 
       .colonist-select-screen .screen-title-row h1::before {
@@ -106,16 +106,16 @@
 
       .bio-dossier-body {
         display: grid;
-        grid-template-columns: 1fr 1.3fr;
-        gap: 12px;
+        grid-template-columns: 180px minmax(250px, .8fr) minmax(360px, 1.25fr);
+        gap: 16px;
         align-items: stretch;
       }
 
       .bio-candidate-file, .bio-chart-panel, .bio-controls-panel {
-        border: 1px solid rgba(148, 163, 184, .11);
-        border-radius: 14px;
-        background: rgba(2, 6, 23, .38);
-        padding: 11px;
+        border: 1px solid rgba(148, 163, 184, .13);
+        border-radius: 18px;
+        background: rgba(2, 6, 23, .42);
+        padding: 13px;
       }
 
       .bio-candidate-file { display: grid; gap: 10px; align-content: start; }
@@ -124,23 +124,23 @@
         position: relative;
         display: grid;
         place-items: center;
-        min-height: 110px;
-        border-radius: 14px;
+        min-height: 132px;
+        border-radius: 16px;
         overflow: hidden;
-        border: 1px solid rgba(94, 234, 212, .20);
+        border: 1px solid rgba(94, 234, 212, .22);
         background:
-          radial-gradient(circle at center, rgba(45, 212, 191, .11), transparent 58%),
-          linear-gradient(180deg, rgba(8, 47, 73, .32), rgba(2, 6, 23, .86));
+          radial-gradient(circle at center, rgba(45, 212, 191, .13), transparent 58%),
+          linear-gradient(180deg, rgba(8, 47, 73, .36), rgba(2, 6, 23, .88));
       }
 
       .bio-scan-frame img {
         position: relative;
         z-index: 1;
-        width: 72px;
-        height: 72px;
+        width: 82px;
+        height: 82px;
         object-fit: contain;
         image-rendering: pixelated;
-        filter: drop-shadow(0 0 14px rgba(94, 234, 212, .26));
+        filter: drop-shadow(0 0 16px rgba(94, 234, 212, .28));
       }
 
       .bio-scan-lines {
@@ -184,14 +184,14 @@
 
       .bio-chart-panel {
         display: grid;
-        grid-template-rows: auto minmax(160px, 1fr) auto;
-        gap: 8px;
+        grid-template-rows: auto minmax(210px, 1fr) auto;
+        gap: 10px;
       }
 
       .bio-panel-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
       .bio-panel-title b { color: #a7f3d0; }
-      .bio-spider-wrap { display: grid; place-items: center; min-height: 170px; }
-      .bio-spider-chart { width: min(200px, 100%); max-height: 200px; overflow: visible; }
+      .bio-spider-wrap { display: grid; place-items: center; min-height: 220px; }
+      .bio-spider-chart { width: min(245px, 100%); max-height: 245px; overflow: visible; }
 
       .bio-spider-rings polygon { fill: transparent; stroke: rgba(148, 163, 184, .20); stroke-width: .8; }
       .bio-spider-axis line { stroke: rgba(125, 211, 252, .19); stroke-width: .8; }
@@ -313,14 +313,14 @@
 
       @media (max-width: 1080px) {
         .bio-dossier-body { grid-template-columns: 1fr; }
-        .bio-candidate-file { grid-template-columns: 110px minmax(0, 1fr); align-items: center; }
+        .bio-candidate-file { grid-template-columns: 132px minmax(0, 1fr); align-items: center; }
         .bio-scan-frame { grid-row: span 4; }
       }
 
       @media (max-width: 720px) {
         .bio-select-grid { grid-template-columns: 1fr; }
         .bio-candidate-file { grid-template-columns: 1fr; }
-        .bio-skill-row { grid-template-columns: 1fr 24px minmax(80px, 1fr) 24px !important; }
+        .bio-skill-row { grid-template-columns: 1fr 28px minmax(90px, 1fr) 28px !important; }
       }
     `;
     document.head.appendChild(style);
