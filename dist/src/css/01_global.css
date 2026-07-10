@@ -1,0 +1,34 @@
+:root {
+  --hf-bg-deep: #05070b;
+  --hf-panel-deep: rgba(7, 10, 16, .86);
+  --hf-panel-glass: rgba(16, 19, 27, .76);
+  --hf-gold: #e3a93f;
+  --hf-gold-soft: rgba(227, 169, 63, .24);
+  --hf-blue: #79c7e8;
+  --hf-red: #e67866;
+  --hf-green: #9bd36a;
+  --hf-text: #f4efe4;
+  --hf-muted: #b8b0a0;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 0;
+}
+
+.hud-block,
+.card,
+.menu-card,
+.pause-card,
+.modal-box {
+  backdrop-filter: blur(14px) saturate(1.12);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(227, 169, 63, .74);
+  outline-offset: 2px;
+}

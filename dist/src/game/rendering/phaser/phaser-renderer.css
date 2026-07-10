@@ -1,0 +1,48 @@
+/* Phaser optional terrain renderer layer.
+   Canvas remains above this layer to preserve the existing HUD/input/render overlays. */
+.gameplay-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #05070b;
+}
+
+#phaserGameLayer,
+#game {
+  position: absolute;
+  inset: 0;
+}
+
+#phaserGameLayer {
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  background: #070b11;
+  transition: opacity .12s ease;
+}
+
+#phaserGameLayer canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#game {
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  image-rendering: auto;
+}
+
+body.phaser-visual-active #phaserGameLayer {
+  opacity: 1;
+}
+
+body.phaser-visual-active #game {
+  background: transparent;
+}

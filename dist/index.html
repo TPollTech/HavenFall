@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HavenFall Alpha 1.0</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="src/styles.css" />
+  <link rel="stylesheet" href="src/hud_footer.css" />
+  <link rel="stylesheet" href="src/pregame-cinematic.css" />
+  <link rel="stylesheet" href="src/game/rendering/phaser/phaser-renderer.css" />
+  <style id="havenfallBootOverlayStyle">
+    #havenfallBootOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+      overflow: hidden;
+      color: #f4efe4;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #05070b;
+      transition: opacity .24s ease, visibility .24s ease;
+      pointer-events: auto;
+    }
+    #havenfallBootOverlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #havenfallBootOverlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(3,7,12,.38), rgba(3,7,12,.90)),
+        url("menu.png") center / cover no-repeat;
+      background-size: 46px 46px, 46px 46px, auto, cover;
+      filter: saturate(.75) contrast(1.08);
+      transform: scale(1.02);
+    }
+    #havenfallBootOverlay::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(2,5,10,.42), rgba(2,5,10,.76)),
+        radial-gradient(circle at 50% 42%, rgba(120, 167, 170, .22), transparent 34%);
+      pointer-events: none;
+    }
+    #havenfallBootOverlay .boot-card {
+      position: relative;
+      z-index: 1;
+      width: min(760px, calc(100vw - 40px));
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 22px;
+      align-items: center;
+      padding: 24px;
+      border: 1px solid rgba(227,169,63,.30);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(12,17,25,.94), rgba(5,8,14,.94));
+      box-shadow: 0 30px 90px rgba(0,0,0,.62), inset 0 0 0 1px rgba(255,255,255,.045);
+      backdrop-filter: blur(10px);
+    }
+    #havenfallBootOverlay .boot-emblem {
+      width: 118px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(227,169,63,.34);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(26,32,42,.86), rgba(8,12,18,.92));
+      box-shadow: inset 0 0 34px rgba(227,169,63,.08);
+    }
+    #havenfallBootOverlay .boot-emblem img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.55));
+    }
+    #havenfallBootOverlay .boot-content {
+      min-width: 0;
+    }
+    #havenfallBootOverlay .boot-kicker {
+      margin-bottom: 7px;
+      color: #e3a93f;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+    #havenfallBootOverlay .boot-title {
+      margin: 0 0 10px;
+      color: #fff4d9;
+      font-size: clamp(38px, 7vw, 72px);
+      font-weight: 950;
+      line-height: .9;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 4px 0 rgba(0,0,0,.42);
+    }
+    #havenfallBootOverlay .boot-status {
+      min-height: 24px;
+      margin-bottom: 16px;
+      color: #dce7ee;
+      font-size: 15px;
+      font-weight: 760;
+    }
+    #havenfallBootOverlay .boot-bar {
+      height: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      background: rgba(0,0,0,.42);
+      box-shadow: inset 0 0 16px rgba(0,0,0,.55);
+    }
+    #havenfallBootOverlay .boot-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #56d7d0, #e3a93f 62%, #fff4d9);
+      box-shadow: 0 0 18px rgba(86,215,208,.26);
+      transition: width .18s ease;
+    }
+    #havenfallBootOverlay .boot-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 11px;
+      color: #9da9bd;
+      font-size: 12px;
+      font-weight: 760;
+    }
+    #havenfallBootOverlay .boot-meta span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 620px) {
+      #havenfallBootOverlay {
+        padding: 18px;
+      }
+      #havenfallBootOverlay .boot-card {
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 18px;
+      }
+      #havenfallBootOverlay .boot-emblem {
+        width: 84px;
+      }
+      #havenfallBootOverlay .boot-emblem img {
+        width: 58px;
+        height: 58px;
+      }
+      #havenfallBootOverlay .boot-title {
+        font-size: 40px;
+      }
+      #havenfallBootOverlay .boot-meta {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #havenfallBootOverlay .boot-meta span:first-child {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="havenfallBootOverlay" role="status" aria-live="polite" aria-label="Carregando HavenFall">
+    <div class="boot-card">
+      <div class="boot-emblem" aria-hidden="true"><img src="logo.png" alt="" /></div>
+      <div class="boot-content">
+        <div class="boot-kicker">HavenFall</div>
+        <h1 class="boot-title">Carregando</h1>
+        <div id="bootStatusText" class="boot-status">Inicializando motor...</div>
+        <div class="boot-bar" aria-hidden="true"><div id="bootProgressFill" class="boot-fill"></div></div>
+        <div class="boot-meta"><span id="bootDetailText">Preparando arquivos</span><span id="bootPercentText">0%</span></div>
+      </div>
+    </div>
+  </div>
+  <main id="app" class="app-shell">
+    <section id="mainMenuScreen" class="screen menu-screen main-menu-classic active" data-screen="MAIN_MENU">
+      <div class="main-menu-bg" aria-hidden="true"></div>
+      <div class="main-menu-vignette" aria-hidden="true"></div>
+
+      <div class="classic-title-wrap">
+        <h1 class="game-title">Havenfall</h1>
+        <div class="game-subtitle">Colony Survival Simulator</div>
+      </div>
+
+      <nav class="classic-menu-list" aria-label="Menu principal">
+        <button id="newGameBtn" class="classic-menu-item">Novo Jogo</button>
+        <button id="continueBtn" class="classic-menu-item">Carregar</button>
+        <button id="openMultiplayerBtn" class="classic-menu-item">Multiplayer</button>
+        <button id="openSettingsBtn" class="classic-menu-item">Configurações</button>
+        <button id="exitBtn" class="classic-menu-item muted-item">Sair</button>
+      </nav>
+
+      <button id="openLoadBtn" class="hidden-menu-control" aria-hidden="true" tabindex="-1">Carregar Jogo</button>
+      <div id="menuSaveInfo" class="main-menu-save-info">Verificando save...</div>
+    </section>
+
+    <section id="multiplayerScreen" class="screen multiplayer-screen" data-screen="MULTIPLAYER">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Online / LAN</div>
+            <h1>Multiplayer básico</h1>
+            <p>Modo provisório para testar host por IP/LAN usando o servidor simples do HavenFall.</p>
+          </div>
+          <button id="multiplayerBackBtn" class="secondary">Voltar</button>
+        </div>
+
+        <div class="multiplayer-layout">
+          <section class="multiplayer-panel">
+            <h2>Conexão</h2>
+            <p>Para jogar com amigo, o host precisa rodar o servidor web do jogo e passar o endereço/IP.</p>
+            <div class="form-grid">
+              <label>Teu nome
+                <input id="multiplayerNickInput" type="text" value="Jogador" maxlength="22" />
+              </label>
+              <label>Endereço do servidor
+                <input id="multiplayerServerInput" type="text" placeholder="http://IP-DO-HOST:5173" />
+              </label>
+            </div>
+            <div id="multiplayerStatus" class="multiplayer-status">Offline</div>
+            <div class="multiplayer-actions">
+              <button id="multiplayerHostNewGameBtn">Hospedar novo mundo</button>
+              <button id="multiplayerHostBtn" class="secondary">Hospedar mundo atual</button>
+              <button id="multiplayerJoinBtn" class="secondary">Entrar</button>
+              <button id="multiplayerStopBtn" class="danger">Parar</button>
+            </div>
+          </section>
+
+          <aside class="multiplayer-panel">
+            <h2>Host</h2>
+            <p>Endereço para compartilhar:</p>
+            <div class="multiplayer-copy-row">
+              <input id="multiplayerHostAddress" type="text" readonly value="http://localhost:5173" />
+            </div>
+            <ul class="multiplayer-help-list">
+              <li>Host: roda <b>npm run web</b> e abre o jogo pelo navegador.</li>
+              <li>Amigo: abre <b>http://IP-DO-HOST:5173</b> e entra pelo menu Multiplayer.</li>
+              <li>No Windows, talvez precise permitir o Node.js no Firewall.</li>
+              <li>Por enquanto é um modo de teste: estado do mundo + jogadores + controle básico.</li>
+            </ul>
+            <h2 style="margin-top:16px">Jogadores</h2>
+            <div id="multiplayerPlayers" class="multiplayer-player-list"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="newGameSetupScreen" class="screen setup-screen" data-screen="NEW_GAME_SETUP">
+      <div class="menu-card wide-card setup-sandbox-card">
+        <div class="screen-title-row">
+          <div>
+            <div class="kicker">Novo jogo</div>
+            <h1>Configuração da Colônia</h1>
+            <p>Defina o setor de pouso, o risco da expedição e a equipe inicial.</p>
+          </div>
+          <button id="setupBackBtn" class="secondary">Voltar</button>
+        </div>
+
+        <div class="setup-layout">
+          <section class="setup-controls-panel" aria-label="Parâmetros da expedição">
+            <div class="setup-section">
+              <div class="setup-section-head"><span>01</span><b>Identidade</b></div>
+              <div class="form-grid setup-form-grid">
+                <label>Nome da colônia<input id="colonyNameInput" type="text" value="Primeiro Refúgio" maxlength="32" /></label>
+                <label>Seed do mundo<div class="inline-field"><input id="worldSeedInput" type="text" value="" placeholder="ex: HVF-89X-OMEGA" /><button id="randomSeedBtn" type="button">Gerar</button></div></label>
+              </div>
+            </div>
+            <div class="setup-section">
+              <div class="setup-section-head"><span>02</span><b>Expedição</b></div>
+              <div class="form-grid setup-form-grid">
+                <label>Dificuldade<select id="difficultySelect"><option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option><option value="hardcore">Hardcore (Ironman)</option></select></label>
+                <label>Colonos iniciais<input id="colonist-count" type="number" min="1" max="8" value="3" inputmode="numeric" /></label>
+                <label>Recursos iniciais<select id="resourcesPresetSelect"><option value="scarce">Escassos</option><option value="standard" selected>Padrão</option><option value="rich">Abundantes</option></select></label>
+                <label><span class="field-label-with-help">Intensidade de eventos <span class="setup-help" title="Define a frequência de ataques, doenças e tempestades." aria-label="Define a frequência de ataques, doenças e tempestades.">?</span></span><select id="eventIntensitySelect"><option value="low">Baixa</option><option value="normal" selected>Normal</option><option value="high">Alta</option></select></label>
+                <label class="setup-wide-field">Tamanho do mapa<select id="mapSizeSelect"><option value="large" selected>Grande · Vale expandido</option><option value="huge">Enorme · Fronteira selvagem</option><option value="giant">Gigante · Múltiplos Biomas</option><option value="infinite_chunks">Infinito (Chunks)</option></select></label>
+              </div>
+            </div>
+          </section>
+          <aside class="setup-briefing-panel" aria-label="Resumo da expedição">
+            <div class="setup-sector-visual" aria-hidden="true"><div class="setup-orbit-ring"></div><div class="setup-sector-grid"></div><span class="setup-landing-dot"></span></div>
+            <div id="setupSummary" class="setup-summary" aria-live="polite"></div>
+            <div class="setup-next-step"><span>Próxima etapa</span><b>Varredura planetária</b></div>
+          </aside>
+        </div>
+        <div class="menu-actions row setup-actions"><button id="setupNextBtn">Iniciar Varredura Planetária</button></div>
+      </div>
+    </section>
+
+    <section id="planetScanScreen" class="screen planet-scan-screen" data-screen="PLANET_SCAN">
+      <div class="planet-scan-shell">
+        <div class="scan-panel scan-hologram-panel"><div class="scan-radar" aria-hidden="true"><div id="scanRadarLabel" class="scan-sector-label"><span>SETOR</span><b>HV-00000</b></div></div></div>
+        <div class="scan-panel scan-grid">
+          <div class="scan-title-row"><div><div class="kicker">Varredura Planetária</div><h1>Análise de Setor</h1><p>Leitura orbital do setor que será usado pela geração do mapa, clima, recursos e pontos de interesse.</p></div><div class="scan-status-pill">Leitura pronta</div></div>
+          <div class="scan-signature-card"><b id="scanSectorTitle">Primeiro Refúgio</b><small id="scanSectorMeta">Seed · setor · intensidade</small></div>
+          <div><div class="kicker">Dados do Setor</div><div id="scanMetrics" class="scan-data-list"></div></div>
+          <div><div class="kicker">Assinaturas Detectadas</div><div id="scanSignatures" class="scan-signature-list"></div></div>
+          <div><div class="kicker">Log de Processamento</div><div id="scanProcessingLog" class="scan-log-list"></div></div>
+          <div class="scan-actions"><button id="scanBackBtn" type="button">Voltar</button><button id="scanRefreshBtn" type="button">Gerar outro setor</button><button id="scanProceedBtn" type="button" class="primary">Continuar para Colonos</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="colonistSelectScreen" class="screen colonist-select-screen" data-screen="COLONIST_SELECT">
+      <div class="menu-card wide-card max-card">
+        <div class="screen-title-row"><div><div class="kicker">Seleção de colonos</div><h1>Escolha quem vai começar</h1><p>Revise papéis, aptidões e cobertura operacional antes do pouso.</p></div><button id="colonistBackBtn" class="secondary">Voltar</button></div>
+        <div id="colonistCards" class="colonist-cards"></div>
+        <div class="menu-actions row spread"><button id="rerollAllBtn" class="secondary">Rerolar todos não travados</button><button id="startSelectedGameBtn">Iniciar Partida</button></div>
+      </div>
+    </section>
+
+    <section id="loadGameScreen" class="screen load-screen" data-screen="LOAD_GAME">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row"><div><div class="kicker">Carregar</div><h1>Save local</h1><p>Esta V1 usa um save local no navegador para continuar rápido.</p></div><button id="loadBackBtn" class="secondary">Voltar</button></div>
+        <div id="loadSlot" class="load-slot"></div>
+        <div class="menu-actions row"><button id="loadSlotBtn">Carregar Save</button><button id="deleteSaveBtn" class="danger">Apagar Save</button></div>
+      </div>
+    </section>
+
+    <section id="settingsScreen" class="screen settings-screen" data-screen="SETTINGS">
+      <div class="menu-card wide-card">
+        <div class="screen-title-row"><div><div class="kicker">Configurações</div><h1>Opções</h1><p>Base preparada para configurações persistentes.</p></div><button id="settingsBackBtn" class="secondary">Voltar</button></div>
+        <div class="form-grid"><label>Escala da interface<select id="uiScaleSelect"><option value="compact">Compacta</option><option value="normal" selected>Normal</option><option value="large">Grande</option></select></label><label>Autosave<select id="autosaveSelect"><option value="on" selected>Ligado</option><option value="off">Desligado</option></select></label></div>
+        <div class="subtle-box">Nesta etapa, as opções já ficam centralizadas para expansão, sem afetar a gameplay atual.</div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen" data-screen="PLAYING">
+      <div class="game-layout hud-remake-layout">
+        <header id="topBar" class="hud-block topbar component-topbar">
+          <div class="top-left-info"><strong id="colonyTitle">Havenfall</strong><span id="gameConfigLabel" class="muted">Seed · Dificuldade</span></div>
+          <div id="top-resource-bar" class="top-resource-bar" aria-label="Recursos da colônia">
+            <div class="res-item" title="Comida"><span class="res-icon">🥩</span> Comida <b id="resFood">0</b></div><div class="res-item" title="Madeira"><span class="res-icon">🪵</span> Madeira <b id="resWood">0</b></div><div class="res-item" title="Pedra"><span class="res-icon">🪨</span> Pedra <b id="resStone">0</b></div><div class="res-item" title="Metal"><span class="res-icon">🪙</span> Metal <b id="resMetal">0</b></div><div class="res-item" title="Remédios"><span class="res-icon">💊</span> Remédios <b id="resMedicine">0</b></div>
+          </div>
+          <div class="clock top-center-info"><span id="dayLabel">Dia 1</span><span id="timeLabel">06:00</span><span id="weatherLabel">Tempo limpo</span></div>
+          <div class="top-actions"><button id="pauseBtn">Pausar</button><button id="menuPauseBtn" class="secondary">Menu</button></div>
+        </header>
+        <section class="gameplay-viewport" aria-label="Área de gameplay">
+          <div id="phaserGameLayer" aria-hidden="true"></div>
+          <canvas id="game" aria-label="Mapa do jogo"></canvas>
+        </section>
+        <footer id="hud" class="bottom-command-panel component-hud">
+          <nav id="bottomActionBar" class="hud-block bottom-action-bar component-bottomactionbar" aria-label="Funções de jogabilidade"><div class="bottom-tabs"><button data-tab="build" class="active">Construir</button><button data-tab="resources">Recursos</button><button data-tab="tasks">Tarefas</button><button data-tab="research">Pesquisa</button><button data-tab="crafting">Crafting</button><button data-tab="zones">Zonas</button><button data-tab="colonists">Colonos</button><button data-tab="selected">Selecionado</button><button data-tab="events">Eventos</button></div><div class="speed-inline"><button data-speed="1">1x</button><button data-speed="2">2x</button><button data-speed="3">3x</button></div></nav>
+          <div class="bottom-panel-content">
+            <section id="buildPanel" class="hud-block card bottom-tab-panel active component-buildpanel" data-panel="build"><div class="panel-title-row"><div><h2>Construção</h2><p class="panel-hint">Escolha uma construção e clique no mapa para posicionar a blueprint.</p></div><button id="cancelBuild" class="secondary">Cancelar construção</button></div><div class="build-grid compact-grid"><button data-build="bed">Cama<br><small>12 madeira</small></button><button data-build="campfire">Fogueira<br><small>6 madeira + 2 pedra</small></button><button data-build="crate">Depósito<br><small>10 madeira</small></button><button data-build="wall">Parede<br><small>4 madeira</small></button><button data-build="door">Porta<br><small>6 madeira</small></button><button data-build="crop">Plantação<br><small>2 comida</small></button><button data-build="bench">Bancada<br><small>18 madeira + 8 pedra</small></button><button data-build="research_desk">Mesa Pesquisa<br><small>20 madeira + 6 pedra</small></button><button data-build="forge">Forja<br><small>pesquisar metalurgia</small></button><button data-build="stove">Fogão<br><small>pesquisar cozinha</small></button><button data-build="med_station">Estação Médica<br><small>pesquisar medicina</small></button></div><div id="buildStatus" class="build-status">Nenhuma construção selecionada.</div></section>
+            <section id="resourcePanel" class="hud-block card bottom-tab-panel component-resourcepanel" data-panel="resources"><div class="panel-title-row"><div><h2>Recursos</h2><p class="panel-hint">Visão detalhada do estoque geral.</p></div></div><div class="subtle-box">Utilize a barra superior para monitoramento global. Itens avançados e manufaturados entrarão aqui nas próximas sub-versões.</div></section>
+            <section id="tasksPanel" class="hud-block card bottom-tab-panel component-taskspanel" data-panel="tasks"><div class="panel-title-row"><div><h2>Tarefas</h2><p class="panel-hint">Ajuste a prioridade do colono selecionado. O comando manual por clique continua tendo prioridade.</p></div></div><div id="selectedInfo" class="selected-info-inline empty">Nenhum colono selecionado.</div><div id="goalsPanel" class="goals compact-goals component-goalspanel"><h2>Objetivos V1.9</h2><ul id="goalList"><li data-goal="beds">Construir 2 camas</li><li data-goal="campfire">Construir 1 fogueira</li><li data-goal="researchDesk">Construir Mesa de Pesquisa</li><li data-goal="techs">Desbloquear tecnologias avançadas</li><li data-goal="food">Ter 20 comidas</li><li data-goal="medicine">Encontrar remédio em ruínas</li></ul></div></section>
+            <section id="researchPanel" class="hud-block card bottom-tab-panel component-researchpanel" data-panel="research"><div class="panel-title-row"><div><h2>Pesquisa</h2><p class="panel-hint">Tecnologias desbloqueiam novas construções e receitas.</p></div></div><div id="researchInfo" class="research-info empty">Nenhuma pesquisa ativa.</div></section>
+            <section id="craftingPanel" class="hud-block card bottom-tab-panel component-craftingpanel" data-panel="crafting"><div class="panel-title-row"><div><h2>Crafting</h2><p class="panel-hint">Selecione um colono e use estações para fabricar ferramentas, armas e suprimentos.</p></div></div><div id="craftingInfo" class="empty">Nenhuma estação selecionada.</div><div id="recipeGrid" class="recipe-grid compact-grid"></div><div id="inventoryInfo" class="inventory-info empty"></div></section>
+            <section id="zonesPanel" class="hud-block card bottom-tab-panel component-zonespanel" data-panel="zones"><div class="panel-title-row"><div><h2>Zonas</h2><p class="panel-hint">Base para zonas futuras de estoque, moradia e trabalho.</p></div></div><div class="zone-placeholder-grid"><div class="subtle-box">Estoque: em desenvolvimento.</div><div class="subtle-box">Moradia: em desenvolvimento.</div><div class="subtle-box">Segurança: em desenvolvimento.</div><div class="subtle-box">Plantio: em desenvolvimento.</div></div></section>
+            <section id="colonistsPanel" class="hud-block card bottom-tab-panel component-colonistspanel" data-panel="colonists"><div class="panel-title-row"><div><h2>Colonos</h2><p class="panel-hint">Clique em um colono para selecioná-lo.</p></div></div><div id="colonistList" class="colonist-list colonist-strip"></div></section>
+            <section id="selectedPanel" class="hud-block card bottom-tab-panel component-selectedpanel" data-panel="selected"><div class="panel-title-row"><div><h2>Selecionado</h2><p class="panel-hint">Resumo do colono ou objeto selecionado.</p></div></div><div id="selectedObjectInfo" class="empty">Nada selecionado.</div></section>
+            <section id="eventsPanel" class="hud-block card bottom-tab-panel component-eventspanel" data-panel="events"><div class="panel-title-row"><div><h2>Eventos</h2><p class="panel-hint">Registro narrativo da colônia.</p></div></div><div id="log" class="log compact-log"></div></section>
+          </div>
+        </footer>
+      </div>
+    </section>
+  </main>
+
+  <div id="pauseOverlay" class="pause-overlay game-popup-modal" aria-hidden="true"><div class="pause-card"><div class="kicker">Pausado</div><h1>Menu</h1><p>Salve, carregue ou ajuste a partida.</p><div class="menu-actions vertical"><button id="resumeBtn">Continuar</button><button id="pauseSaveBtn">Salvar Agora</button><button id="pauseLoadBtn">Carregar Save</button><button id="pauseSettingsBtn" class="secondary">Configurações</button><button id="pauseMainMenuBtn" class="secondary">Voltar ao Menu Principal</button></div></div></div>
+
+  <script src="src/game/rendering/phaser/phaser-renderer-adapter.js"></script>
+  <script type="module" src="src/game/core/boot.js"></script>
+</body>
+</html>

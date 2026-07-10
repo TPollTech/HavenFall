@@ -1,0 +1,387 @@
+/* Pre-game screens: full-screen menu layout, without giant modal/card overflow. */
+
+#newGameSetupScreen.screen.active,
+#planetScanScreen.screen.active,
+#colonistSelectScreen.screen.active {
+  display: block !important;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  padding: 0 !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(71, 120, 162, .18), transparent 30%),
+    radial-gradient(circle at 12% 88%, rgba(202, 139, 56, .12), transparent 34%),
+    linear-gradient(135deg, #07090d 0%, #111722 52%, #07080b 100%);
+  color: var(--text);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(227, 169, 63, .34) transparent;
+}
+
+#newGameSetupScreen.screen.active::before,
+#planetScanScreen.screen.active::before,
+#colonistSelectScreen.screen.active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 44%, rgba(0,0,0,.58) 100%);
+  background-size: 72px 72px, 72px 72px, auto;
+  opacity: .85;
+}
+
+#newGameSetupScreen > *,
+#planetScanScreen > *,
+#colonistSelectScreen > * {
+  position: relative;
+  z-index: 1;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar,
+#planetScanScreen.screen.active::-webkit-scrollbar,
+#colonistSelectScreen.screen.active::-webkit-scrollbar,
+#planetScanScreen .scan-grid::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-track,
+#planetScanScreen.screen.active::-webkit-scrollbar-track,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-track,
+#planetScanScreen .scan-grid::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-thumb,
+#planetScanScreen.screen.active::-webkit-scrollbar-thumb,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-thumb,
+#planetScanScreen .scan-grid::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(227, 169, 63, .52), rgba(121, 199, 232, .34)) border-box;
+  background-clip: padding-box;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#planetScanScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-thumb:hover,
+#planetScanScreen .scan-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(227, 169, 63, .68);
+  background-clip: padding-box;
+}
+
+#newGameSetupScreen.screen.active::-webkit-scrollbar-corner,
+#planetScanScreen.screen.active::-webkit-scrollbar-corner,
+#colonistSelectScreen.screen.active::-webkit-scrollbar-corner,
+#planetScanScreen .scan-grid::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Remove only the outer modal/card feeling. Inner option panels stay readable. */
+#newGameSetupScreen .menu-card,
+#colonistSelectScreen .menu-card {
+  width: min(1120px, calc(100vw - 32px)) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: 24px 0 28px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+#newGameSetupScreen .screen-title-row,
+#colonistSelectScreen .screen-title-row {
+  width: 100%;
+  margin: 0 0 18px !important;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+#newGameSetupScreen h1,
+#colonistSelectScreen h1 {
+  font-size: clamp(30px, 4vw, 48px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.035em !important;
+  text-shadow: 0 12px 30px rgba(0,0,0,.48);
+}
+
+#newGameSetupScreen .screen-title-row p,
+#colonistSelectScreen .screen-title-row p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: rgba(230, 236, 245, .70);
+  font-size: 14px;
+}
+
+#newGameSetupScreen .setup-layout,
+#colonistSelectScreen .colonist-cards,
+#newGameSetupScreen .setup-actions,
+#colonistSelectScreen .menu-actions {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+#newGameSetupScreen .setup-layout {
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  gap: 18px;
+  align-items: start;
+}
+
+#newGameSetupScreen .setup-briefing-panel {
+  max-height: none;
+}
+
+#newGameSetupScreen .setup-actions,
+#colonistSelectScreen .menu-actions {
+  margin-top: 18px !important;
+}
+
+/* Planet scan architecture: true full viewport, two working zones, internal data scroll. */
+#planetScanScreen.screen.active {
+  overflow: hidden !important;
+}
+
+#planetScanScreen .planet-scan-shell {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 18px 22px !important;
+  display: grid !important;
+  grid-template-columns: minmax(310px, 39vw) minmax(0, 1fr) !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#planetScanScreen .scan-panel,
+#planetScanScreen .scan-grid,
+#planetScanScreen .scan-hologram-panel {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#planetScanScreen .scan-hologram-panel {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+  align-content: stretch !important;
+  place-items: center !important;
+}
+
+#planetScanScreen .scan-radar {
+  width: min(100%, 420px, calc(100vh - 170px)) !important;
+  height: min(100%, 420px, calc(100vh - 170px)) !important;
+  max-width: 420px !important;
+  max-height: 420px !important;
+  min-width: 220px !important;
+  min-height: 220px !important;
+  aspect-ratio: 1 / 1 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  transform: none !important;
+}
+
+#planetScanScreen .scan-planet-canvas,
+#planetScanScreen .globe-marker-container {
+  width: 100% !important;
+  height: 100% !important;
+  inset: 0 !important;
+}
+
+#planetScanScreen .scan-grid {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  justify-self: stretch !important;
+  align-content: start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px !important;
+  gap: 10px !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(227, 169, 63, .34) transparent;
+  scrollbar-gutter: stable;
+}
+
+#planetScanScreen .scan-title-row {
+  margin: 0 0 4px !important;
+  gap: 12px !important;
+}
+
+#planetScanScreen .scan-title-row h1 {
+  font-size: clamp(26px, 3vw, 38px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.035em !important;
+}
+
+#planetScanScreen .scan-title-row p {
+  max-width: 66ch !important;
+  margin: 6px 0 0 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+#planetScanScreen .scan-signature-card,
+#planetScanScreen .scan-data-list,
+#planetScanScreen .scan-signature-list,
+#planetScanScreen .scan-log-list,
+#planetScanScreen .scan-world-card {
+  margin: 0 !important;
+}
+
+#planetScanScreen .scan-world-card {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  order: 3;
+}
+
+#planetScanScreen .scan-world-map-canvas,
+#planetScanScreen .landing-preview {
+  max-height: 170px !important;
+}
+
+#planetScanScreen .scan-world-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+#planetScanScreen .scan-biome-legend {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin-top: 10px !important;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)) !important;
+}
+
+#planetScanScreen .scan-data-row {
+  grid-template-columns: minmax(104px, 136px) minmax(0, 1fr) 38px !important;
+  gap: 8px !important;
+}
+
+#planetScanScreen .scan-custom-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+#planetScanScreen .scan-actions {
+  position: sticky !important;
+  bottom: -16px !important;
+  z-index: 8 !important;
+  margin: 2px -16px -16px !important;
+  padding: 12px 16px 16px !important;
+  background: linear-gradient(180deg, rgba(3, 7, 18, 0), rgba(3, 7, 18, .94) 35%, rgba(3, 7, 18, .98)) !important;
+}
+
+#colonistSelectScreen .colonist-cards {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@media (max-width: 980px) {
+  #planetScanScreen.screen.active {
+    overflow-y: auto !important;
+  }
+
+  #planetScanScreen .planet-scan-shell {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    padding: 14px !important;
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+  }
+
+  #planetScanScreen .scan-grid {
+    height: auto !important;
+    overflow: visible !important;
+    scrollbar-gutter: auto;
+  }
+
+  #planetScanScreen .scan-hologram-panel {
+    min-height: 280px !important;
+    height: auto !important;
+  }
+
+  #planetScanScreen .scan-radar {
+    width: min(330px, 82vw) !important;
+    height: min(330px, 82vw) !important;
+    max-width: 330px !important;
+    max-height: 330px !important;
+    min-width: 220px !important;
+    min-height: 220px !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  #planetScanScreen .scan-world-summary,
+  #planetScanScreen .scan-custom-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #planetScanScreen .scan-actions {
+    position: relative !important;
+    bottom: auto !important;
+    margin: 8px 0 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+}
+
+@media (max-width: 920px) {
+  #newGameSetupScreen .menu-card,
+  #colonistSelectScreen .menu-card {
+    width: calc(100vw - 24px) !important;
+    padding: 16px 0 22px !important;
+  }
+
+  #newGameSetupScreen .screen-title-row,
+  #colonistSelectScreen .screen-title-row {
+    display: grid;
+    gap: 12px;
+  }
+
+  #newGameSetupScreen .setup-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  #newGameSetupScreen h1,
+  #colonistSelectScreen h1 {
+    font-size: clamp(28px, 9vw, 42px) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  #newGameSetupScreen .setup-form-grid,
+  #newGameSetupScreen .setup-summary-grid,
+  #planetScanScreen .scan-data-row,
+  #planetScanScreen .scan-custom-grid,
+  #planetScanScreen .scan-world-summary {
+    grid-template-columns: 1fr !important;
+  }
+}

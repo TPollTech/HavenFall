@@ -1,0 +1,443 @@
+'use strict';
+
+(() => {
+  const ticks = new Map();
+  const colonistUpdateGuards = new Map();
+  const beforeColonistUpdate = new Map();
+  const afterColonistUpdate = new Map();
+  const autoTaskProviders = new Map();
+  const taskHandlers = new Map();
+  const tileRenderers = new Map();
+  const objectRenderers = new Map();
+  const worldOverlays = new Map();
+  const drawOverlays = new Map();
+  const collisionProviders = new Map();
+  const movementModifiers = new Map();
+  const workRateModifiers = new Map();
+  const installedHooks = new Set();
+
+  const registryVersions = new WeakMap();
+  const registryOrderedCache = new WeakMap();
+  const systemStats = new Map();
+  const SYSTEM_WARN_MS = 12;
+  const SYSTEM_BUDGET_MS = 32;
+  const SYSTEM_MAX_COOLDOWN_MS = 1500;
+
+  function perfNow() {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
+
+  function statsFor(id) {
+    const key = String(id);
+    if (!systemStats.has(key)) {
+      systemStats.set(key, {
+        id: key,
+        lastMs: 0,
+        avgMs: 0,
+        maxMs: 0,
+        calls: 0,
+        slowCalls: 0,
+        skipped: 0,
+        cooldownUntil: 0,
+        enabled: true
+      });
+    }
+    return systemStats.get(key);
+  }
+
+  function publishSystemStats() {
+    window.HavenfallPerf = window.HavenfallPerf || {};
+    window.HavenfallPerf.systems = Array.from(systemStats.values())
+      .map(stat => ({ ...stat, cooldownMs: Math.max(0, Math.round((stat.cooldownUntil || 0) - perfNow())) }))
+      .sort((a, b) => b.lastMs - a.lastMs || b.avgMs - a.avgMs)
+      .slice(0, 20);
+  }
+
+  function registryVersion(registry) {
+    return registryVersions.get(registry) || 0;
+  }
+
+  function touchRegistry(registry) {
+    registryVersions.set(registry, registryVersion(registry) + 1);
+    registryOrderedCache.delete(registry);
+  }
+
+  function orderedEntries(registry) {
+    const version = registryVersion(registry);
+    const cached = registryOrderedCache.get(registry);
+    if (cached && cached.version === version) return cached.entries;
+
+    const entries = [];
+    for (const item of registry.entries()) {
+      if (item[1].enabled) entries.push(item);
+    }
+    entries.sort((a, b) => a[1].order - b[1].order || String(a[0]).localeCompare(String(b[0])));
+    registryOrderedCache.set(registry, { version, entries });
+    return entries;
+  }
+
+  function register(registry, id, fn, options = {}) {
+    if (!id || typeof fn !== 'function') return false;
+    registry.set(id, {
+      fn,
+      order: Number(options.order ?? 100),
+      enabled: options.enabled !== false,
+      type: options.type || null,
+      renderPass: options.renderPass === 'static' ? 'static' : options.renderPass === 'dynamic' ? 'dynamic' : 'default',
+      critical: options.critical === true,
+      intervalMs: Number(options.intervalMs || 0),
+      nextAt: 0
+    });
+    touchRegistry(registry);
+    return true;
+  }
+
+  function setEnabled(registry, id, enabled) {
+    const entry = registry.get(id);
+    if (!entry) return false;
+    const next = !!enabled;
+    if (entry.enabled === next) return false;
+    entry.enabled = next;
+    const stat = statsFor(id);
+    stat.enabled = next;
+    touchRegistry(registry);
+    publishSystemStats();
+    return true;
+  }
+
+  function configureRegistryEntry(registry, id, options = {}) {
+    const entry = registry.get(id);
+    if (!entry || !options || typeof options !== 'object') return false;
+    let changed = false;
+
+    if (options.order !== undefined) {
+      const order = Number(options.order);
+      if (Number.isFinite(order) && entry.order !== order) {
+        entry.order = order;
+        changed = true;
+      }
+    }
+
+    if (options.enabled !== undefined) {
+      const enabled = !!options.enabled;
+      if (entry.enabled !== enabled) {
+        entry.enabled = enabled;
+        statsFor(id).enabled = enabled;
+        changed = true;
+      }
+    }
+
+    if (options.critical !== undefined) {
+      const critical = !!options.critical;
+      if (entry.critical !== critical) {
+        entry.critical = critical;
+        changed = true;
+      }
+    }
+
+    if (options.intervalMs !== undefined) {
+      const intervalMs = Math.max(0, Number(options.intervalMs) || 0);
+      if (entry.intervalMs !== intervalMs) {
+        entry.intervalMs = intervalMs;
+        entry.nextAt = 0;
+        changed = true;
+      }
+    }
+
+    if (changed) touchRegistry(registry);
+    publishSystemStats();
+    return changed;
+  }
+
+  function setRegistryEnabled(registry, matcher, enabled) {
+    let changed = 0;
+    const next = !!enabled;
+    const test = typeof matcher === 'function'
+      ? matcher
+      : (id, entry) => String(id) === String(matcher) || String(entry.type || '') === String(matcher);
+    for (const [id, entry] of registry.entries()) {
+      if (!test(id, entry) || entry.enabled === next) continue;
+      entry.enabled = next;
+      statsFor(id).enabled = next;
+      changed++;
+    }
+    if (changed) touchRegistry(registry);
+    publishSystemStats();
+    return changed;
+  }
+
+  function registerTick(id, fn, options = {}) {
+    return register(ticks, id, fn, options);
+  }
+
+  function unregisterTick(id) {
+    const removed = ticks.delete(id);
+    if (removed) touchRegistry(ticks);
+    return removed;
+  }
+
+  function hasTick(id) {
+    return ticks.has(id);
+  }
+
+  function setTickEnabled(id, enabled) {
+    return setEnabled(ticks, id, enabled);
+  }
+
+  function configureTick(id, options = {}) {
+    return configureRegistryEntry(ticks, id, options);
+  }
+
+  function runTickEntry(id, entry, dt, safeTick = null) {
+    const now = perfNow();
+    const stat = statsFor(id);
+    if (entry.intervalMs > 0 && now < entry.nextAt) {
+      stat.skipped++;
+      return;
+    }
+    if (!entry.critical && now < stat.cooldownUntil) {
+      stat.skipped++;
+      return;
+    }
+    if (entry.intervalMs > 0) entry.nextAt = now + entry.intervalMs;
+
+    const started = perfNow();
+    if (typeof safeTick === 'function') safeTick(id, () => entry.fn(dt));
+    else entry.fn(dt);
+    const elapsed = perfNow() - started;
+
+    stat.lastMs = Math.round(elapsed * 10) / 10;
+    stat.avgMs = stat.calls ? Math.round((stat.avgMs * 0.85 + elapsed * 0.15) * 10) / 10 : stat.lastMs;
+    stat.maxMs = Math.max(stat.maxMs, stat.lastMs);
+    stat.calls++;
+    stat.enabled = entry.enabled;
+
+    if (elapsed >= SYSTEM_WARN_MS) stat.slowCalls++;
+    if (!entry.critical && elapsed >= SYSTEM_BUDGET_MS) {
+      const cooldown = Math.min(SYSTEM_MAX_COOLDOWN_MS, Math.max(120, Math.round(elapsed * 2.5)));
+      stat.cooldownUntil = perfNow() + cooldown;
+    }
+  }
+
+  function tick(dt, safeTick = null) {
+    const entries = orderedEntries(ticks);
+    for (const [id, entry] of entries) runTickEntry(id, entry, dt, safeTick);
+    publishSystemStats();
+  }
+
+  function run(registry, ...args) {
+    for (const [, entry] of orderedEntries(registry)) entry.fn(...args);
+  }
+
+  function runFirst(registry, ...args) {
+    for (const [, entry] of orderedEntries(registry)) {
+      if (entry.fn(...args)) return true;
+    }
+    return false;
+  }
+
+  function registerColonistUpdateGuard(id, fn, options = {}) {
+    return register(colonistUpdateGuards, id, fn, options);
+  }
+
+  function runColonistUpdateGuards(c, dt) {
+    return runFirst(colonistUpdateGuards, c, dt);
+  }
+
+  function registerBeforeColonistUpdate(id, fn, options = {}) {
+    return register(beforeColonistUpdate, id, fn, options);
+  }
+
+  function runBeforeColonistUpdate(c, dt) {
+    run(beforeColonistUpdate, c, dt);
+  }
+
+  function registerAfterColonistUpdate(id, fn, options = {}) {
+    return register(afterColonistUpdate, id, fn, options);
+  }
+
+  function runAfterColonistUpdate(c, dt) {
+    run(afterColonistUpdate, c, dt);
+  }
+
+  function registerAutoTaskProvider(id, fn, options = {}) {
+    return register(autoTaskProviders, id, fn, options);
+  }
+
+  function assignAutoTask(c) {
+    return runFirst(autoTaskProviders, c);
+  }
+
+  function registerTaskHandler(taskType, id, fn, options = {}) {
+    return register(taskHandlers, id, fn, { ...options, type: taskType });
+  }
+
+  function handleTask(c, task, tickValue) {
+    for (const [, entry] of orderedEntries(taskHandlers)) {
+      if (entry.type === task?.type && entry.fn(c, task, tickValue)) return true;
+    }
+    return false;
+  }
+
+  function registerDrawOverlay(id, fn, options = {}) {
+    return register(drawOverlays, id, fn, options);
+  }
+
+  function setDrawOverlayEnabled(id, enabled) {
+    return setEnabled(drawOverlays, id, enabled);
+  }
+
+  function drawRegisteredOverlays() {
+    run(drawOverlays);
+  }
+
+  function registerTileRenderer(id, fn, options = {}) {
+    return register(tileRenderers, id, options.critical === undefined ? fn : fn, options);
+  }
+
+  function setTileRendererEnabled(id, enabled) {
+    return setEnabled(tileRenderers, id, enabled);
+  }
+
+  function matchesTileRenderPass(entry, pass = null) {
+    if (pass === 'static') return entry.renderPass === 'static';
+    if (pass === 'dynamic') return entry.renderPass !== 'static';
+    return true;
+  }
+
+  function drawTileRenderers(x, y, type, options = null) {
+    const pass = options?.pass === 'static' ? 'static' : options?.pass === 'dynamic' ? 'dynamic' : null;
+    for (const [, entry] of orderedEntries(tileRenderers)) {
+      if (!matchesTileRenderPass(entry, pass)) continue;
+      entry.fn(x, y, type, options);
+    }
+  }
+
+  function registerObjectRenderer(id, fn, options = {}) {
+    return register(objectRenderers, id, fn, options);
+  }
+
+  function setObjectRendererEnabled(id, enabled) {
+    return setEnabled(objectRenderers, id, enabled);
+  }
+
+  function drawObject(obj) {
+    return runFirst(objectRenderers, obj);
+  }
+
+  function registerWorldOverlay(id, fn, options = {}) {
+    return register(worldOverlays, id, fn, options);
+  }
+
+  function setWorldOverlayEnabled(id, enabled) {
+    return setEnabled(worldOverlays, id, enabled);
+  }
+
+  function drawWorldOverlays(bounds = null) {
+    run(worldOverlays, bounds);
+  }
+
+  function registerCollisionProvider(id, fn, options = {}) {
+    return register(collisionProviders, id, fn, options);
+  }
+
+  function collisionAt(x, y, target = null) {
+    for (const [, entry] of orderedEntries(collisionProviders)) {
+      const result = entry.fn(x, y, target);
+      if (result !== undefined && result !== null) return result;
+    }
+    return null;
+  }
+
+  function isCollisionBlocked(collision) {
+    if (collision === null || collision === undefined) return false;
+    if (typeof collision === 'object') return !!collision.blocks;
+    return collision === 1 || collision === 3 || collision === 4 || collision === 5;
+  }
+
+  function pathBlocked(x, y, target = null) {
+    const collision = collisionAt(x, y, target);
+    return collision === null ? null : isCollisionBlocked(collision);
+  }
+
+  function registerMovementModifier(id, fn, options = {}) {
+    return register(movementModifiers, id, fn, options);
+  }
+
+  function movementMultiplier(c) {
+    let multiplier = 1;
+    for (const [, entry] of orderedEntries(movementModifiers)) {
+      const next = entry.fn(c, multiplier);
+      if (Number.isFinite(next)) multiplier = next;
+    }
+    return multiplier;
+  }
+
+  function registerWorkRateModifier(id, fn, options = {}) {
+    return register(workRateModifiers, id, fn, options);
+  }
+
+  function applyWorkRateModifiers(rate, c, kind, target = null) {
+    let nextRate = rate;
+    for (const [, entry] of orderedEntries(workRateModifiers)) {
+      const next = entry.fn(nextRate, c, kind, target);
+      if (Number.isFinite(next)) nextRate = next;
+    }
+    return nextRate;
+  }
+
+  function installHook(id, installer) {
+    if (!id || installedHooks.has(id) || typeof installer !== 'function') return false;
+    installer();
+    installedHooks.add(id);
+    return true;
+  }
+
+  function listTicks() {
+    return orderedEntries(ticks).map(([id, entry]) => ({ id, order: entry.order, enabled: entry.enabled, type: entry.type, critical: !!entry.critical, intervalMs: entry.intervalMs || 0, stats: { ...statsFor(id) } }));
+  }
+
+  window.GameSystems = {
+    registerTick,
+    unregisterTick,
+    hasTick,
+    setTickEnabled,
+    configureTick,
+    tick,
+    listTicks,
+    systemStats: () => Array.from(systemStats.values()).map(stat => ({ ...stat })),
+    registerColonistUpdateGuard,
+    runColonistUpdateGuards,
+    registerBeforeColonistUpdate,
+    runBeforeColonistUpdate,
+    registerAfterColonistUpdate,
+    runAfterColonistUpdate,
+    registerAutoTaskProvider,
+    assignAutoTask,
+    registerTaskHandler,
+    handleTask,
+    registerDrawOverlay,
+    setDrawOverlayEnabled,
+    drawRegisteredOverlays,
+    registerTileRenderer,
+    setTileRendererEnabled,
+    drawTileRenderers,
+    registerObjectRenderer,
+    setObjectRendererEnabled,
+    drawObject,
+    registerWorldOverlay,
+    setWorldOverlayEnabled,
+    drawWorldOverlays,
+    registerCollisionProvider,
+    collisionAt,
+    isCollisionBlocked,
+    pathBlocked,
+    registerMovementModifier,
+    movementMultiplier,
+    registerWorkRateModifier,
+    applyWorkRateModifiers,
+    setRegistryEnabled,
+    installHook,
+    installedHooks
+  };
+})();

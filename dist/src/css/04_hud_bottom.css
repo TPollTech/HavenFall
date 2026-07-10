@@ -1,0 +1,206 @@
+.bottom-command-panel,
+#hud,
+#bottomActionBar,
+.bottom-panel-content {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.bottom-command-panel > * {
+  pointer-events: none !important;
+}
+
+.anchored-ui-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  transform: translate(-50%, 18px);
+  width: min(1120px, calc(100vw - 28px));
+  max-height: min(46vh, 390px);
+  z-index: 10;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  border: 1px solid rgba(227,169,63,.24);
+  border-radius: 22px;
+  padding: 12px;
+  background:
+    radial-gradient(circle at top left, rgba(227,169,63,.13), transparent 40%),
+    linear-gradient(180deg, rgba(16,19,27,.94), rgba(7,10,16,.92));
+  box-shadow: 0 28px 90px rgba(0,0,0,.56);
+  backdrop-filter: blur(14px) saturate(1.12);
+  transition: opacity .14s ease, transform .14s ease;
+}
+
+.anchored-ui-panel.is-active {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.anchored-ui-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.anchored-ui-header h3 {
+  margin: 0;
+  color: #fff3df;
+  font-size: 18px;
+}
+
+.anchored-ui-header button {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.anchored-ui-body {
+  min-height: 0;
+  overflow: hidden auto;
+  padding-right: 4px;
+}
+
+.anchored-subtabs,
+.build-category-tabs {
+  display: flex;
+  gap: 7px;
+  margin: 4px 0 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.anchored-subtabs button,
+.build-category-tabs button {
+  min-height: 32px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.anchored-subtabs button.is-active,
+.build-category-tabs button.active {
+  background: linear-gradient(180deg, rgba(227,169,63,.38), rgba(115,78,24,.48));
+  border-color: rgba(255,212,122,.72);
+}
+
+.anchored-build-grid,
+.build-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden auto;
+  padding-right: 4px;
+}
+
+.build-category-page {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.build-category-page.active {
+  display: grid;
+}
+
+.anchored-build-card,
+.build-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 104px;
+  padding: 11px;
+  text-align: left;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(34,39,51,.88), rgba(12,15,22,.82)),
+    radial-gradient(circle at top left, rgba(227,169,63,.18), transparent 60%);
+}
+
+.anchored-build-card.locked,
+.build-card.locked {
+  opacity: .48;
+  filter: grayscale(.35);
+}
+
+.anchored-build-card strong,
+.build-card strong {
+  color: #fff3df;
+  font-size: 13px;
+}
+
+.anchored-build-card small,
+.build-card small {
+  color: var(--hf-muted, #b8b0a0);
+  line-height: 1.25;
+  font-size: 11px;
+}
+
+.anchored-build-card span,
+.build-card-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.cost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 999px;
+  padding: 3px 6px;
+  border: 1px solid rgba(227,169,63,.22);
+  background: rgba(5,8,13,.58);
+  color: #ffe2a3;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.locked-badge {
+  color: #d7c8ff;
+  border-color: rgba(185,141,255,.34);
+}
+
+#bottom-navigation-dock {
+  z-index: 20 !important;
+}
+
+#bottom-navigation-dock[hidden],
+#top-resource-bar[hidden] {
+  display: none !important;
+}
+
+body.ui-modern-panels [id^="modal-"],
+body.ui-modern-panels #ui-modal-backdrop,
+body.ui-modern-panels .game-popup-modal:not(#eventModal):not(#pauseOverlay) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#eventModal,
+#pauseOverlay,
+.confirmation-modal,
+.confirm-modal {
+  z-index: 100 !important;
+}
+
+@media(max-width:760px) {
+  .anchored-ui-panel {
+    bottom: 82px;
+    width: calc(100vw - 16px);
+    max-height: 52vh;
+    padding: 9px;
+  }
+  .anchored-build-grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+}

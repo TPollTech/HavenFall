@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="48" cy="80" rx="28" ry="9" fill="#020617" opacity="0.16"/><path d="M16 73 C22 69 28 71 35 72 C46 74 56 74 66 70 C71 68 76 68 81 72" fill="none" stroke="#e6c08b" stroke-width="3" stroke-linecap="round" opacity="0.24"/>
+<polygon points="18,60 24,36 43,22 66,24 80,43 74,66 54,78 30,74" fill="#b98957" stroke="#111827" stroke-width="2.8" stroke-linejoin="round"/><polygon points="28,56 34,40 49,32 62,35 69,49 62,62 44,68 33,64" fill="#e6c08b" opacity="0.28" stroke="#111827" stroke-width="1.1" stroke-linejoin="round"/><line x1="31" y1="35" x2="48" y2="28" stroke="#a4afbe" stroke-width="3" stroke-linecap="round" opacity="0.34"/><line x1="23" y1="56" x2="34" y2="66" stroke="#a4afbe" stroke-width="3" stroke-linecap="round" opacity="0.28"/><line x1="25" y1="46" x2="71" y2="40" stroke="#e6c08b" stroke-width="3.6" opacity="0.6" stroke-linecap="round"/><line x1="23" y1="58" x2="68" y2="51" stroke="#e6c08b" stroke-width="3.6" opacity="0.44" stroke-linecap="round"/>
+</svg>
