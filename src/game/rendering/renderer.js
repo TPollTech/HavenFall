@@ -245,9 +245,9 @@ const TERRAIN_BASE_COLORS = Object.freeze({
   stone: '#626966',
   water: '#1f6f88'
 });
-const TILE_OVERDRAW = 2.0;
-const TILE_BLEND_WIDTH = 10;
-const TILE_SOURCE_CROP_RATIO = 0.03;
+const TILE_OVERDRAW = 8;
+const TILE_BLEND_WIDTH = 24;
+const TILE_SOURCE_CROP_RATIO = 0.055;
 
 function terrainBaseColor(type) {
   return TERRAIN_BASE_COLORS[type] || TERRAIN_BASE_COLORS.grass;
@@ -518,6 +518,12 @@ const OBJECT_TARGET_H = {
   // Bancadas de mineração
   pestle: TILE * 1.0, selectionTable: TILE * 1.0,
   furnace: TILE * 1.0, anvil: TILE * 1.0
+};
+
+const OBJECT_TARGET_W = {
+  bench: TILE * 0.90,
+  sewing_table: TILE * 0.95,
+  smokehouse: TILE * 0.95
 };
 
 function objectScale(type, img) {

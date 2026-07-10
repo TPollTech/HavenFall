@@ -2,20 +2,16 @@
   "name": "havenfall-v1",
   "version": "1.7.0",
   "private": true,
-  "description": "HavenFall Desktop Edition — survival/colony sim 2D empacotado com Tauri.",
+  "description": "HavenFall Desktop Edition — survival/colony sim 2D empacotado com Electron.",
   "main": "electron-main.cjs",
   "scripts": {
-    "start": "npm run tauri:dev",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:icon": "tauri icon src-tauri/icons/icon.png",
-    "dev:web": "node server.js",
-    "build:web": "node scripts/build-web.mjs",
+    "start": "npm run desktop",
     "desktop": "electron .",
     "electron": "electron .",
     "desktop:dev": "electron . --devtools",
     "desktop:diagnose": "node scripts/desktop-doctor.cjs",
     "web": "node server.js",
+    "dev:web": "node server.js",
     "assets:process": "node scripts/process-assets.mjs",
     "icons:prepare": "node scripts/prepare-icons.cjs",
     "test:logic": "node --test tests/*.test.mjs",
@@ -35,24 +31,18 @@
     "canvas",
     "game",
     "desktop",
-    "tauri",
-    "rust",
+    "electron",
     "seed"
   ],
   "author": "Enzo + ChatGPT",
   "license": "UNLICENSED",
   "devDependencies": {
-    "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/cli": "^2.11.4",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "gifuct-js": "^2.1.2",
     "playwright": "^1.61.1",
     "pngjs": "^7.0.0",
     "typescript": "^6.0.3"
-  },
-  "dependencies": {
-    "phaser": "^3.90.0"
   },
   "build": {
     "appId": "br.com.tpolltech.havenfall",
@@ -94,5 +84,8 @@
       "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false
     }
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
   }
 }
