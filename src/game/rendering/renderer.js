@@ -520,12 +520,6 @@ const OBJECT_TARGET_H = {
   furnace: TILE * 1.0, anvil: TILE * 1.0
 };
 
-const OBJECT_TARGET_W = {
-  bench: TILE * 0.90,
-  sewing_table: TILE * 0.95,
-  smokehouse: TILE * 0.95
-};
-
 function objectScale(type, img) {
   const imgH = img?.naturalHeight || img?.height || 0;
   const imgW = img?.naturalWidth || img?.width || 0;
