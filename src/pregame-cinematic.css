@@ -89,11 +89,11 @@
 /* Remove only the outer modal/card feeling. Inner option panels stay readable. */
 #newGameSetupScreen .menu-card,
 #colonistSelectScreen .menu-card {
-  width: min(1120px, calc(100vw - 32px)) !important;
+  width: min(1060px, calc(100vw - 28px)) !important;
   min-height: 0 !important;
   max-height: none !important;
   margin: 0 auto !important;
-  padding: 24px 0 28px !important;
+  padding: 20px 0 24px !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -104,25 +104,25 @@
 #newGameSetupScreen .screen-title-row,
 #colonistSelectScreen .screen-title-row {
   width: 100%;
-  margin: 0 0 18px !important;
+  margin: 0 0 14px !important;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
 }
 
 #newGameSetupScreen h1,
 #colonistSelectScreen h1 {
-  font-size: clamp(30px, 4vw, 48px) !important;
+  font-size: clamp(26px, 3.5vw, 42px) !important;
   line-height: 1 !important;
   letter-spacing: -.035em !important;
-  text-shadow: 0 12px 30px rgba(0,0,0,.48);
+  text-shadow: 0 10px 24px rgba(0,0,0,.44);
 }
 
 #newGameSetupScreen .screen-title-row p,
 #colonistSelectScreen .screen-title-row p {
-  max-width: 680px;
-  margin: 8px 0 0;
-  color: rgba(230, 236, 245, .70);
-  font-size: 14px;
+  max-width: 640px;
+  margin: 6px 0 0;
+  color: rgba(230, 236, 245, .68);
+  font-size: 13px;
 }
 
 #newGameSetupScreen .setup-layout,
@@ -135,8 +135,8 @@
 }
 
 #newGameSetupScreen .setup-layout {
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
-  gap: 18px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   align-items: start;
 }
 
@@ -146,7 +146,7 @@
 
 #newGameSetupScreen .setup-actions,
 #colonistSelectScreen .menu-actions {
-  margin-top: 18px !important;
+  margin-top: 14px !important;
 }
 
 /* Planet scan architecture: true full viewport, two working zones, internal data scroll. */

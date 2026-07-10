@@ -582,8 +582,8 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 }
 
 #newGameSetupScreen .setup-sandbox-card {
-  width: min(1180px, calc(100vw - 36px));
-  padding: clamp(22px, 3vw, 34px);
+  width: min(1060px, calc(100vw - 36px));
+  padding: clamp(18px, 2.5vw, 28px);
   border-radius: 18px;
 }
 
@@ -942,26 +942,22 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 }
 
 @media (max-width: 920px) {
-  .setup-layout { grid-template-columns: 1fr; }
-  .setup-briefing-panel { grid-template-rows: 130px auto auto; }
+  #newGameSetupScreen .setup-layout { grid-template-columns: 1fr; }
+  .setup-briefing-panel { grid-template-rows: auto; }
 }
 
 @media (max-height: 820px) and (min-width: 921px) {
   #newGameSetupScreen.screen.active { padding: 12px; }
-  #newGameSetupScreen .setup-sandbox-card { padding: 24px 34px; }
-  #newGameSetupScreen .screen-title-row { margin-bottom: 16px; }
+  #newGameSetupScreen .setup-sandbox-card { padding: 18px 28px; }
+  #newGameSetupScreen .screen-title-row { margin-bottom: 12px; }
   #newGameSetupScreen .screen-title-row h1 {
     margin: 4px 0 6px;
-    font-size: clamp(36px, 4vw, 50px);
+    font-size: clamp(32px, 3.5vw, 44px);
   }
-  .setup-controls-panel { gap: 10px; }
-  .setup-section { padding-top: 10px; }
-  #newGameSetupScreen .setup-form-grid { gap: 12px; }
-  .setup-briefing-panel {
-    grid-template-rows: 140px auto auto;
-    gap: 10px;
-  }
-  .setup-actions { margin-top: 12px; }
+  .setup-controls-panel { gap: 8px; }
+  .setup-section { padding-top: 8px; }
+  #newGameSetupScreen .setup-form-grid { gap: 10px; }
+  .setup-actions { margin-top: 10px; }
 }
 
 @media (max-width: 620px) {
@@ -989,23 +985,24 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
   }
 }
 
-/* Setup and planet scan realignment */
+/* Setup: compact 2-column layout */
 #newGameSetupScreen .setup-layout {
-  grid-template-columns: 1fr !important;
-  gap: 16px !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
 }
 
 #newGameSetupScreen .setup-briefing-panel {
-  display: grid !important;
-  grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr);
-  grid-template-rows: auto auto;
-  gap: 14px;
-  padding: 14px !important;
-  max-height: none !important;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px;
+  max-height: none;
 }
 
 #newGameSetupScreen .setup-sector-visual {
   min-height: 0;
+  height: 120px;
   padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,.08);
@@ -1017,7 +1014,6 @@ button.mini.active { background: linear-gradient(180deg, rgba(227, 169, 63, .42)
 }
 
 #newGameSetupScreen .setup-next-step {
-  grid-column: 1 / -1;
   margin-top: 0;
 }
 

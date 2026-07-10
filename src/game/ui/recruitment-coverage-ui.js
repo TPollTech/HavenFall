@@ -69,62 +69,62 @@
     style.textContent = `
       .squad-sync-panel {
         grid-area: coverage;
-        border: 1px solid rgba(125, 211, 252, .16);
-        border-radius: 18px;
+        border: 1px solid rgba(125, 211, 252, .14);
+        border-radius: 14px;
         background:
-          linear-gradient(90deg, rgba(8, 47, 73, .26), rgba(2, 6, 23, .78)),
-          rgba(2, 6, 23, .64);
-        padding: 13px;
+          linear-gradient(90deg, rgba(8, 47, 73, .22), rgba(2, 6, 23, .74)),
+          rgba(2, 6, 23, .60);
+        padding: 10px;
         display: grid;
-        gap: 12px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+        gap: 8px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
         min-width: 0;
       }
 
       .squad-sync-head {
         display: flex;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
         align-items: center;
       }
 
       .squad-sync-head div {
         display: grid;
-        gap: 3px;
+        gap: 2px;
       }
 
       .squad-sync-head span {
-        color: rgba(94, 234, 212, .82);
-        font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        letter-spacing: .22em;
+        color: rgba(94, 234, 212, .80);
+        font: 800 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .20em;
       }
 
       .squad-sync-head b {
         color: #ecfeff;
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .squad-sync-head em {
-        color: rgba(203, 213, 225, .70);
-        font: 800 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: rgba(203, 213, 225, .68);
+        font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-style: normal;
       }
 
       .squad-sync-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(120px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(5, minmax(100px, 1fr));
+        gap: 8px;
       }
 
       .squad-sync-row {
         display: grid;
-        gap: 7px;
+        gap: 5px;
         min-width: 0;
       }
 
       .squad-sync-row span {
-        color: rgba(226, 232, 240, .72);
-        font-size: 10px;
+        color: rgba(226, 232, 240, .70);
+        font-size: 9px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -133,17 +133,17 @@
       .squad-sync-eq {
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        gap: 3px;
-        height: 34px;
+        gap: 2px;
+        height: 28px;
         align-items: end;
       }
 
       .squad-sync-eq i {
         display: block;
-        min-height: 5px;
+        min-height: 4px;
         height: 22%;
-        border-radius: 4px 4px 2px 2px;
-        background: rgba(51, 65, 85, .82);
+        border-radius: 3px 3px 2px 2px;
+        background: rgba(51, 65, 85, .78);
         border: 1px solid rgba(255,255,255,.04);
       }
 
@@ -163,8 +163,8 @@
 
       .squad-sync-row b {
         color: #a7f3d0;
-        font: 900 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        letter-spacing: .10em;
+        font: 900 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: .08em;
       }
 
       .squad-sync-row.warn b,
@@ -181,8 +181,8 @@
       .squad-sync-ok,
       .squad-sync-alert {
         border-radius: 999px;
-        padding: 6px 9px;
-        font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 5px 8px;
+        font: 800 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         letter-spacing: .06em;
       }
 
@@ -200,13 +200,13 @@
 
       @media (max-width: 1080px) {
         .squad-sync-grid {
-          grid-template-columns: repeat(2, minmax(120px, 1fr));
+          grid-template-columns: repeat(3, minmax(100px, 1fr));
         }
       }
 
       @media (max-width: 620px) {
         .squad-sync-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(2, 1fr);
         }
       }
     `;

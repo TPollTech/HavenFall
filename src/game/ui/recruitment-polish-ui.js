@@ -17,11 +17,11 @@
 
       .colonist-select-screen .menu-card.max-card {
         position: relative;
-        grid-template-rows: auto minmax(0, 1fr) 58px !important;
+        grid-template-rows: auto minmax(0, 1fr) 52px !important;
       }
 
       .colonist-select-screen .colonist-cards {
-        grid-template-columns: minmax(420px, .95fr) minmax(560px, 1.05fr) !important;
+        grid-template-columns: minmax(320px, .88fr) minmax(460px, 1.12fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
       }
 
@@ -31,16 +31,16 @@
 
       .colonist-select-screen .screen-title-row .secondary#colonistBackBtn {
         position: absolute;
-        left: 28px;
-        bottom: 16px;
+        left: 22px;
+        bottom: 14px;
         z-index: 5;
-        min-width: 118px;
+        min-width: 100px;
       }
 
       .colonist-select-screen .menu-actions.row.spread {
         justify-content: flex-end !important;
-        padding-left: 150px;
-        min-height: 58px;
+        padding-left: 120px;
+        min-height: 52px;
       }
 
       .colonist-select-screen #startSelectedGameBtn {
@@ -105,55 +105,55 @@
       }
 
       .bio-dossier-active .bio-dossier-body {
-        grid-template-columns: minmax(220px, .86fr) minmax(320px, 1.14fr) !important;
+        grid-template-columns: 1fr 1.3fr !important;
         grid-template-rows: auto minmax(0, 1fr) !important;
-        gap: 12px !important;
+        gap: 10px !important;
         overflow: hidden !important;
       }
 
       .bio-dossier-active .bio-candidate-file {
         grid-column: 1;
         grid-row: 1;
-        grid-template-columns: 96px minmax(0, 1fr);
+        grid-template-columns: 84px minmax(0, 1fr);
         align-items: center;
         align-content: start;
-        padding: 10px !important;
+        padding: 9px !important;
       }
 
       .bio-dossier-active .bio-scan-frame {
         grid-row: span 4;
-        min-height: 104px;
+        min-height: 92px;
       }
 
       .bio-dossier-active .bio-scan-frame img {
-        width: 68px;
-        height: 68px;
+        width: 60px;
+        height: 60px;
       }
 
       .bio-dossier-active .bio-chart-panel {
         grid-column: 1;
         grid-row: 2;
-        grid-template-rows: auto minmax(120px, 1fr) auto !important;
+        grid-template-rows: auto minmax(100px, 1fr) auto !important;
         min-height: 0;
         overflow: hidden;
-        padding: 10px !important;
+        padding: 9px !important;
       }
 
       .bio-dossier-active .bio-controls-panel {
         grid-column: 2;
         grid-row: 1 / span 2;
         overflow: hidden !important;
-        padding: 10px !important;
-        gap: 8px !important;
+        padding: 9px !important;
+        gap: 7px !important;
       }
 
       .bio-dossier-active .bio-spider-wrap {
-        min-height: 138px !important;
+        min-height: 120px !important;
       }
 
       .bio-dossier-active .bio-spider-chart {
-        width: min(174px, 100%) !important;
-        max-height: 174px !important;
+        width: min(160px, 100%) !important;
+        max-height: 160px !important;
       }
 
       .bio-dossier-active .bio-diagnostic-box {
@@ -218,7 +218,7 @@
 
       .bio-dossier-active .bio-select-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px !important;
+        gap: 6px !important;
       }
 
       .bio-select-grid label,
@@ -228,41 +228,41 @@
       }
 
       .bio-select-grid label {
-        gap: 3px !important;
-        font-size: 9px !important;
+        gap: 2px !important;
+        font-size: 8px !important;
       }
 
       .bio-select-grid select {
-        min-height: 30px !important;
-        padding: 5px 8px !important;
+        min-height: 28px !important;
+        padding: 4px 7px !important;
         font-size: 10px !important;
         text-overflow: ellipsis;
       }
 
       .bio-skill-row {
-        grid-template-columns: minmax(78px, 92px) 24px minmax(0, 1fr) 24px !important;
-        gap: 5px !important;
-        padding: 3px 6px !important;
+        grid-template-columns: minmax(72px, 86px) 22px minmax(0, 1fr) 22px !important;
+        gap: 4px !important;
+        padding: 3px 5px !important;
         max-width: 100%;
-        min-height: 30px !important;
+        min-height: 28px !important;
       }
 
       .bio-skill-row button {
-        min-height: 22px !important;
-        height: 22px !important;
+        min-height: 20px !important;
+        height: 20px !important;
         padding: 0 !important;
       }
 
       .bio-skill-console {
-        gap: 5px !important;
+        gap: 4px !important;
       }
 
       .bio-skill-row > span {
-        font-size: 10px !important;
+        font-size: 9px !important;
       }
 
       .bio-skill-row .builder-skill-bar {
-        height: 10px !important;
+        height: 9px !important;
       }
 
       .bio-skill-row .builder-skill-bar {
@@ -280,13 +280,13 @@
         display: grid;
         grid-template-columns: repeat(8, 1fr);
         gap: 2px;
-        min-width: 54px;
+        min-width: 48px;
       }
 
       .personnel-prof-meter i {
-        height: 7px;
+        height: 6px;
         border-radius: 999px;
-        background: rgba(51, 65, 85, .8);
+        background: rgba(51, 65, 85, .78);
         border: 1px solid rgba(255,255,255,.04);
       }
 
@@ -311,7 +311,7 @@
 
       @media (max-width: 1180px) {
         .colonist-select-screen .colonist-cards {
-          grid-template-columns: minmax(300px, .9fr) minmax(440px, 1.1fr) !important;
+          grid-template-columns: minmax(260px, .88fr) minmax(380px, 1.12fr) !important;
         }
 
         .bio-dossier-active .bio-dossier-body {
